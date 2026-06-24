@@ -153,6 +153,16 @@
     </div>
   </section>
 
+  <!-- AIRCRAFT LOOKUP -->
+  <section id="view-aircraft" class="view">
+    <div class="card pad">
+      <label for="acSearch" style="margin-top:0">Look up aircraft</label>
+      <input id="acSearch" type="search" inputmode="text" autocomplete="off" placeholder="Ship # or tail # — e.g. 3461 or N37461" />
+      <p class="hint" id="acFleetN" style="margin-bottom:0"></p>
+    </div>
+    <div id="acResults"></div>
+  </section>
+
   <!-- SETTINGS -->
   <section id="view-settings" class="view">
     <h2 class="section">Areas &amp; spots</h2>
@@ -248,6 +258,7 @@
 <nav class="tabbar">
   <button data-tab="equipment" class="active"><span class="ic">📋</span>Equipment</button>
   <button data-tab="inventory"><span class="ic">🧭</span>Inventory</button>
+  <button data-tab="aircraft"><span class="ic">✈️</span>Aircraft</button>
   <button data-tab="audit"><span class="ic">🧾</span>Quick sheet</button>
   <button data-tab="settings"><span class="ic">⚙️</span>Settings</button>
 </nav>
@@ -343,6 +354,33 @@ function lookupShip(s){return byShip.get(String(s).trim());}
 function rememberAircraft(ship,reg,type){ship=String(ship).trim();reg=(reg||"").toUpperCase().trim();if(!ship)return;
   const ex=byShip.get(ship);if(ex){ex.reg=reg||ex.reg;ex.type=type||ex.type;}else FLEET.push({ship,reg,type:type||""});indexFleet();saveFleetCache();}
 function updateFleetStatus(){const el=$("#fleetStatus");if(el)el.textContent=`${FLEET.length.toLocaleString()} aircraft loaded (ship # → tail # + type).`;}
+function acCard(a){return `<li class="item card"><div class="main">
+  <div class="tag">✈️ ${esc(a.reg||"(no tail)")}</div>
+  <div class="meta">${esc(a.type||"Unknown type")}</div>
+  <div style="margin-top:6px"><span class="loc">Ship ${esc(a.ship)}</span></div></div></li>`;}
+function renderAircraftLookup(){
+  const el=$("#acFleetN");if(el)el.textContent=`${FLEET.length.toLocaleString()} United aircraft loaded · works offline`;
+  const q=($("#acSearch").value||"").trim().toUpperCase();
+  const box=$("#acResults");
+  if(!q){box.innerHTML=`<div class="empty"><div class="big">✈️</div><p>Type a ship # or tail # to look it up.</p></div>`;return;}
+  const digits=q.replace(/[^0-9]/g,"");
+  let res=FLEET.filter(a=>{
+    const ship=String(a.ship), reg=(a.reg||"").toUpperCase();
+    return (digits&&ship.startsWith(digits)) || reg.includes(q) || (a.type||"").toUpperCase().includes(q);
+  });
+  // exact ship/tail match first, then by ship number
+  res.sort((a,b)=>{
+    const ax=(String(a.ship)===digits||(a.reg||"").toUpperCase()===q)?0:1;
+    const bx=(String(b.ship)===digits||(b.reg||"").toUpperCase()===q)?0:1;
+    return ax-bx || (parseInt(a.ship)||0)-(parseInt(b.ship)||0);
+  });
+  const shown=res.slice(0,60);
+  box.innerHTML = res.length
+    ? `<p class="count">${res.length} match${res.length===1?"":"es"}${res.length>60?" (showing 60)":""}</p><ul class="list">${shown.map(acCard).join("")}</ul>`
+    : `<div class="empty"><p>No aircraft found for “${esc($("#acSearch").value.trim())}”.</p>
+       <p class="hint">It may be a regional/charter not in the United mainline list. Add it on a spot during inventory and it'll be remembered.</p></div>`;
+}
+$("#acSearch")&&$("#acSearch").addEventListener("input",renderAircraftLookup);
 
 /* ---- tabs ---- */
 let curTab="equipment";
@@ -350,6 +388,7 @@ function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active")
   $$("nav.tabbar button").forEach(b=>b.classList.toggle("active",b.dataset.tab===n));window.scrollTo(0,0);updateBackBtn();}
 $$("nav.tabbar button").forEach(b=>b.addEventListener("click",()=>{const t=b.dataset.tab;showTab(t);
   if(t==="inventory")renderInventory();if(t==="audit")refreshAudit();
+  if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}));
 $("#addBtn").addEventListener("click",()=>openEdit(null));
 function updateBackBtn(){$("#backBtn").hidden = (curTab==="equipment");}
