@@ -89,7 +89,7 @@
   .crow .ctag{font-weight:700;font-size:15px}
   .crow .ctype{font-size:12px;color:var(--muted)}
   .crow .cloc{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
-  .pillgrid{display:flex;flex-wrap:wrap;gap:7px;padding:10px 12px 12px}
+  .pillgrid{display:flex;flex-wrap:wrap;gap:7px;padding:8px 0 4px}
   .selpill{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px 7px 9px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer}
   .selpill:active{transform:scale(.96)}
   .selpill .selc{width:18px;height:18px;border-radius:50%;border:2px solid #c2ccd4;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:0 0 auto}
@@ -230,7 +230,9 @@
   .m-sub{font-size:12px;color:#9aa3ad;margin-top:1px;margin-bottom:6px}
   .m-loc{font-size:30px;font-weight:800;color:#10171f;letter-spacing:-.4px;margin:22px 0 0;display:flex;align-items:baseline;gap:9px}
   .m-loc .m-locn{font-size:14px;font-weight:600;color:#aab2bb}
-  .m-cat{font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#aab2bb;margin:15px 0 3px}
+  .m-cat{font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#aab2bb;margin:15px 0 3px;display:flex;align-items:baseline}
+  .m-cat .m-catn{margin-left:auto;font-size:11px;font-weight:800;color:var(--good);letter-spacing:0;text-transform:none}
+  .card>.m-loc:first-child,.pad>.m-loc:first-child{margin-top:2px}
   .m-row{display:flex;align-items:baseline;gap:9px;padding:7px 0;border-bottom:1px solid #f1f3f5;font-size:15px}
   .m-row:last-child{border-bottom:none}
   .m-ck{width:17px;height:17px;border:1.5px solid #c5ced6;border-radius:4px;flex:none;align-self:center}
@@ -654,7 +656,7 @@ function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active")
   window.scrollTo(0,0);if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
 function goTab(t){showTab(t);
   if(t==="equipment"){renderList();refreshAudit();updateLockBar();}
-  if(t==="inventory")renderInventory();
+  if(t==="inventory"){inv={stage:"loc",loc:null,covered:[]};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();renderInventory();}
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
@@ -847,11 +849,11 @@ function renderInvLoc(r){
 }
 function renderInvSelect(r){
   invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map(); // start fresh — no auto-highlight
-  r.innerHTML=`<div class="card pad" style="padding-bottom:6px">
-    <h3 style="margin:0 0 2px">Equipment at ${esc(inv.loc)}</h3>
-    <p class="hint" style="margin-top:2px">Tap a unit, then confirm it's here or mark it out of service.</p>
-    <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:8px 0" /></div>
-    <div id="invList" style="margin-top:10px;display:flex;flex-direction:column;gap:12px"></div>`;
+  r.innerHTML=`<div class="card pad">
+    <div class="m-loc">${esc(inv.loc)}<span class="m-locn" id="invSelN"></span></div>
+    <p class="hint" style="margin:2px 0 0">Tap a unit, then confirm it's here or mark it out of service.</p>
+    <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:11px 0 2px" />
+    <div id="invList" style="margin-top:6px"></div></div>`;
   function paint(){
     const q=$("#invSearch").value.trim().toLowerCase();
     // hide units already counted at another location THIS session (covered); at base everything shows
@@ -861,11 +863,12 @@ function renderInvSelect(r){
     $("#invList").innerHTML=groups.length?groups.map(g=>{
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
-      return `<div class="card catblock"><div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
+      return `<div class="m-cat">${esc(g.type)}${sel?`<span class="m-catn">${sel} here</span>`:""}</div>`+
         `<div class="pillgrid">`+its.map(e=>{const oos=invOos.has(e.id),on=invSel.has(e.id),det=invDetail(invSpot.get(e.id),invNose.get(e.id));
-          return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${det?`<span class="pillspot">${esc(det)}</span>`:""}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div></div>`;
-    }).join(""):`<p class="hint" style="padding:10px 12px">Nothing left to count here — all units are accounted for at other locations.</p>`;
-    $("#wizNext").textContent=`✓ Save ${invSel.size} ›`;
+          return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${det?`<span class="pillspot">${esc(det)}</span>`:""}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div>`;
+    }).join(""):`<p class="hint" style="padding:10px 2px">Nothing left to count here — all units are accounted for at other locations.</p>`;
+    const n=invSel.size;$("#invSelN").textContent=n?n+" selected":"";
+    $("#wizNext").textContent=`✓ Save ${n} ›`;
   }
   $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
     openInvPop(li,li.dataset.id,paint);});
