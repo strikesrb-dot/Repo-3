@@ -11,7 +11,12 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4;padding-bottom:84px;}
+    background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4;padding-bottom:24px;}
+  #hdrTitle{cursor:pointer}
+  .hubgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:6px 2px}
+  .hubtile{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 2px 10px rgba(20,40,70,.08);padding:26px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:16px;font-weight:700;color:var(--ink);cursor:pointer}
+  .hubtile:active{transform:scale(.97)}
+  .hubtile .hi{font-size:36px;line-height:1}
   header{position:sticky;top:0;z-index:20;background:var(--melon);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;box-shadow:var(--shadow);}
   .hdr-actions{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:12px;display:flex;gap:8px}
   .hdrbtn{background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700}
@@ -98,7 +103,7 @@
   .wiz-stepn{font-size:12px;font-weight:800;color:var(--accent-d);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
   .wiz-prog{height:7px;background:#e3e8ec;border-radius:999px;overflow:hidden;margin-bottom:12px}
   .wiz-prog > i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .25s}
-  .wiz-foot{position:fixed;left:0;right:0;z-index:25;display:flex;gap:10px;padding:10px 14px;background:#fff;border-top:1px solid var(--line)}
+  .wiz-foot{position:fixed;left:0;right:0;z-index:25;display:flex;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line)}
   .wiz-foot button{margin-top:0}
   .spotgrp{margin:10px 0 4px;font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:6px}
   .spotgrp::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -152,13 +157,26 @@
     <button id="backBtn" class="hdrbtn" hidden>‹ Back</button>
     <button id="equipBtn" class="hdrbtn" hidden>📋 Equip. List</button>
   </div>
-  <h1>✈️ Equipment Location Tracker</h1>
+  <h1 id="hdrTitle">✈️ Equipment Location Tracker</h1>
   <p class="sub" id="hdrSub">Ground support equipment · staging &amp; audits</p>
 </header>
 
 <main>
   <!-- EQUIPMENT -->
-  <section id="view-equipment" class="view active">
+  <!-- HUB -->
+  <section id="view-hub" class="view active">
+    <div class="hubgrid">
+      <button class="hubtile" data-go="inventory"><span class="hi">🧭</span>Inventory</button>
+      <button class="hubtile" data-go="park"><span class="hi">🅿️</span>Park</button>
+      <button class="hubtile" data-go="aircraft"><span class="hi">✈️</span>Aircraft</button>
+      <button class="hubtile" data-go="secure"><span class="hi">🔒</span>Secure</button>
+      <button class="hubtile" data-go="equipment"><span class="hi">📋</span>Equipment</button>
+      <button class="hubtile" data-go="audit"><span class="hi">🧾</span>Quick Sheet</button>
+      <button class="hubtile" data-go="settings"><span class="hi">⚙️</span>Settings</button>
+    </div>
+  </section>
+
+  <section id="view-equipment" class="view">
     <div class="btnrow" style="margin-top:0;margin-bottom:12px"><button class="btn navy" id="addBtn">➕ Add equipment</button></div>
     <div class="toolbar">
       <input id="search" type="search" placeholder="Search tag, type, location…" autocomplete="off" />
@@ -300,15 +318,6 @@
     </div>
   </div>
 </div>
-
-<nav class="tabbar">
-  <button data-tab="inventory"><span class="ic">🧭</span>Inv</button>
-  <button data-tab="park"><span class="ic">🅿️</span>Park</button>
-  <button data-tab="aircraft"><span class="ic">✈️</span>AC</button>
-  <button data-tab="secure"><span class="ic">🔒</span>Secure</button>
-  <button data-tab="audit"><span class="ic">🧾</span>Sheet</button>
-  <button data-tab="settings"><span class="ic">⚙️</span>More</button>
-</nav>
 
 <div id="printArea"></div>
 <div class="toast" id="toast"></div>
@@ -456,19 +465,20 @@ function renderAircraftLookup(){
 $("#acSearch")&&$("#acSearch").addEventListener("input",renderAircraftLookup);
 
 /* ---- tabs ---- */
-let curTab="equipment";
+let curTab="hub";
 function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
-  $$("nav.tabbar button").forEach(b=>b.classList.toggle("active",b.dataset.tab===n));window.scrollTo(0,0);
-  if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
-$$("nav.tabbar button").forEach(b=>b.addEventListener("click",()=>{const t=b.dataset.tab;showTab(t);
+  window.scrollTo(0,0);if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
+function goTab(t){showTab(t);
   if(t==="inventory")renderInventory();if(t==="audit")refreshAudit();
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}));
+  if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}
+$$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 $("#addBtn").addEventListener("click",()=>openEdit(null));
-function updateBackBtn(){const eq=curTab==="equipment";$("#backBtn").hidden=eq;$("#equipBtn").hidden=eq;}
-$("#equipBtn").addEventListener("click",()=>showTab("equipment"));
+function updateBackBtn(){const hub=curTab==="hub";$("#backBtn").hidden=hub;$("#equipBtn").hidden=(hub||curTab==="equipment");}
+$("#equipBtn").addEventListener("click",()=>goTab("equipment"));
+$("#hdrTitle")?.addEventListener("click",()=>showTab("hub"));
 function headerBack(){
   if($("#editOverlay").classList.contains("open")){closeEdit();return;}
   if(curTab==="inventory"){const s=inv.stage;
@@ -477,9 +487,9 @@ function headerBack(){
     else if(s==="aircraft")inv.stage="spot";
     else if(s==="select")inv.stage=holdsAircraft(inv.spot)?"aircraft":"spot";
     else if(s==="next"||s==="sheet")inv.stage="region";
-    else{showTab("equipment");return;}
+    else{showTab("hub");return;}
     renderInventory();return;}
-  showTab("equipment");
+  showTab("hub");
 }
 $("#backBtn").addEventListener("click",headerBack);
 
@@ -572,7 +582,7 @@ function setWizFoot(cfg){const f=$("#wizFoot");
   if(cfg.nextHidden){nb.style.display="none";bb.style.flex="1";}
   else{nb.style.display="";bb.style.flex="0 0 38%";nb.textContent=cfg.nextLabel||"Next ›";nb.disabled=!cfg.nextOn;nb.onclick=cfg.nextOn?cfg.next:null;}
   bb.textContent=cfg.backLabel||"‹ Back";bb.onclick=cfg.back;
-  const tb=document.querySelector("nav.tabbar");f.style.bottom=(tb?tb.offsetHeight:64)+"px";
+  f.style.bottom="0px";
   $("#invRoot").style.paddingBottom=(f.offsetHeight+14)+"px";}
 // group spots: split by prefix and whether they carry a letter suffix (A-spots)
 function spotGroup(name){const m=name.match(/^(.*?)(\d+)([A-Za-z].*)?$/);
@@ -978,8 +988,11 @@ function renderParkSpot(r){
 function renderParkAc(r){
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)}</div>
-    <h3 style="margin:2px 0 10px">Aircraft type</h3>
-    ${UNITED_PARK.map(g=>`<div class="spotgrp">${esc(g.mfr)}</div><div class="chips">${g.items.map(([k,l])=>`<button class="chip ${park.acLabel===l?'sel':''}" data-k="${esc(k)}" data-l="${esc(l)}">${esc(l)}</button>`).join("")}</div>`).join("")}
+    <h3 style="margin:2px 0 2px">Aircraft type</h3>
+    <p class="hint" style="margin-top:0">Only aircraft eligible for spot ${esc(park.spot)} are shown.</p>
+    ${(()=>{const groups=UNITED_PARK.map(g=>({mfr:g.mfr,items:g.items.filter(([k])=>parkLookup(park.area,park.spot,k).ok)})).filter(g=>g.items.length);
+      return groups.length?groups.map(g=>`<div class="spotgrp">${esc(g.mfr)}</div><div class="chips">${g.items.map(([k,l])=>`<button class="chip ${park.acLabel===l?'sel':''}" data-k="${esc(k)}" data-l="${esc(l)}">${esc(l)}</button>`).join("")}</div>`).join("")
+        :`<div class="ac-no" style="color:#b3261e"><b>⛔ No aircraft are eligible to park on spot ${esc(park.spot)}.</b></div>`;})()}
     <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
   $$("#parkRoot .chip[data-k]").forEach(c=>c.addEventListener("click",()=>{park.ac=c.dataset.k;park.acLabel=c.dataset.l;park.stage="result";renderPark();}));
   $("#pkBack").addEventListener("click",()=>{park.stage="spot";renderPark();});
