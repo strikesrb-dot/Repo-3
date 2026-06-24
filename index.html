@@ -681,8 +681,8 @@ function renderInvSheet(r){
 
 /* ===================== SECURE LOG ===================== */
 const SECURE_REASONS=["Aircraft Maintenance","UGE","Airways","PrimeFlight","Catering","Ramp","Move Team"];
-let sec={stage:"home",area:null,spot:null,ac:null,reason:null,name:"",time:"",comment:""};
-function newSec(){return {stage:"home",area:null,spot:null,ac:null,reason:null,name:"",time:"",comment:""};}
+let sec={stage:"home",id:null,area:null,spot:null,ac:null,reason:null,name:"",time:"",comment:""};
+function newSec(){return {stage:"home",id:null,area:null,spot:null,ac:null,reason:null,name:"",time:"",comment:""};}
 function nowHHMM(){const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 function renderSecure(){const r=$("#secRoot");
   ({home:renderSecHome,area:renderSecArea,spot:renderSecSpot,aircraft:renderSecAircraft,details:renderSecDetails}[sec.stage]||renderSecHome)(r);}
@@ -691,21 +691,26 @@ function secCard(e){return `<li class="item card" data-id="${esc(e.id)}"><div cl
   <div class="meta">${esc(e.reason||"")}${e.name?` — ${esc(e.name)}`:""} · ${esc(e.time||"")}${e.date?` · ${esc(fmtDate(e.date))}`:""}</div>
   ${e.comment?`<div class="notes">📝 ${esc(e.comment)}</div>`:""}
   <div style="margin-top:4px"><span class="loc">${esc(e.area||"")}</span>${e.ac&&e.ac.reg?` <span class="loc">${esc(e.ac.reg)}</span>`:""}</div>
-  </div><div class="acts"><button class="iconbtn sec-del" title="Delete">🗑️</button></div></li>`;}
+  </div><div class="acts"><button class="iconbtn sec-edit" title="Edit">✏️</button><button class="iconbtn sec-del" title="Delete">🗑️</button></div></li>`;}
 function renderSecHome(r){
   const log=data.secureLog;
   r.innerHTML=`<div class="card pad">
     <h3 style="margin:0 0 6px">🔒 Aircraft Secure Log</h3>
     <p class="hint" style="margin-top:0">Log spots where an aircraft was left open / not secured — who had it and why.</p>
     <button class="btn navy" id="secAdd">➕ Log open aircraft</button>
-    ${log.length?`<div class="btnrow"><button class="btn ghost" id="secPdf">🖨️ PDF</button><button class="btn ghost" id="secTxt">⬇️ Text file</button></div>`:""}
+    ${log.length?`<div class="btnrow"><button class="btn ghost" id="secPdf">🖨️ PDF</button><button class="btn ghost" id="secImg">🖼️ Image</button><button class="btn ghost" id="secTxt">⬇️ Text</button></div>`:""}
   </div>
   ${log.length?`<p class="count">${log.length} entr${log.length===1?"y":"ies"}</p><ul class="list">${log.slice().reverse().map(secCard).join("")}</ul>`:`<div class="empty"><div class="big">🔒</div><p>No entries yet. Tap <b>Log open aircraft</b>.</p></div>`}`;
   $("#secAdd").addEventListener("click",()=>{sec=newSec();sec.stage="area";sec.time=nowHHMM();renderSecure();});
   $("#secPdf")?.addEventListener("click",()=>{$("#printArea").innerHTML=buildSecureSheet();window.print();});
+  $("#secImg")?.addEventListener("click",downloadSecureImage);
   $("#secTxt")?.addEventListener("click",downloadSecureText);
   $$(".sec-del",r).forEach(b=>b.addEventListener("click",e=>{const li=e.target.closest("[data-id]");
     if(confirm("Delete this entry?")){data.secureLog=data.secureLog.filter(x=>x.id!==li.dataset.id);save();renderSecure();}}));
+  $$(".sec-edit",r).forEach(b=>b.addEventListener("click",e=>{const li=e.target.closest("[data-id]");
+    const en=data.secureLog.find(x=>x.id===li.dataset.id);if(!en)return;
+    sec={stage:"details",id:en.id,area:en.area,spot:en.spot,ac:en.ac?{...en.ac}:null,reason:en.reason,name:en.name||"",time:en.time||"",comment:en.comment||""};
+    renderSecure();}));
 }
 function renderSecArea(r){
   r.innerHTML=`<div class="card pad">
@@ -757,7 +762,7 @@ function renderSecAircraft(r){
 function renderSecDetails(r){
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">${esc(sec.spot)}${sec.ac&&sec.ac.ship?` · ✈ Nose ${esc(sec.ac.ship)}`:""}</div>
-    <div class="step">Step 4 — details</div>
+    <div class="step">${sec.id?"Edit entry":"Step 4 — details"}</div>
     <label>Who had the aircraft (not secure)?</label>
     <div class="chips" id="secReasons">${SECURE_REASONS.map(x=>`<button class="chip ${sec.reason===x?'sel':''}" data-x="${esc(x)}">${esc(x)}</button>`).join("")}</div>
     <label for="secName">Name (optional)</label>
@@ -766,7 +771,7 @@ function renderSecDetails(r){
     <input id="secTime" type="time" value="${esc(sec.time||nowHHMM())}" />
     <label for="secComment">Comment (optional)</label>
     <textarea id="secComment" placeholder="Stairs still on, doors open, GPU connected…">${esc(sec.comment)}</textarea>
-    <div class="btnrow"><button class="btn ghost" id="secBack">← Back</button><button class="btn navy" id="secLog" style="flex:2">✓ Log it</button></div></div>`;
+    <div class="btnrow"><button class="btn ghost" id="secBack">← Back</button><button class="btn navy" id="secLog" style="flex:2">${sec.id?"✓ Save changes":"✓ Log it"}</button></div></div>`;
   $$("#secReasons .chip").forEach(c=>c.addEventListener("click",()=>{sec.reason=c.dataset.x;
     $$("#secReasons .chip").forEach(x=>x.classList.toggle("sel",x.dataset.x===sec.reason));}));
   $("#secName").addEventListener("input",e=>sec.name=e.target.value);
@@ -775,9 +780,11 @@ function renderSecDetails(r){
   $("#secBack").addEventListener("click",()=>{sec.stage="aircraft";renderSecure();});
   $("#secLog").addEventListener("click",()=>{
     if(!sec.reason){toast("Pick who had the aircraft");return;}
-    data.secureLog.push({id:uid(),area:sec.area,spot:sec.spot,ac:sec.ac,reason:sec.reason,
-      name:(sec.name||"").trim(),time:sec.time||nowHHMM(),comment:(sec.comment||"").trim(),date:todayISO()});
-    save();sec=newSec();renderSecure();toast("Logged");
+    const fields={area:sec.area,spot:sec.spot,ac:sec.ac,reason:sec.reason,
+      name:(sec.name||"").trim(),time:sec.time||nowHHMM(),comment:(sec.comment||"").trim()};
+    if(sec.id){const en=data.secureLog.find(x=>x.id===sec.id);if(en)Object.assign(en,fields);}
+    else data.secureLog.push({id:uid(),...fields,date:todayISO()});
+    save();const edited=!!sec.id;sec=newSec();renderSecure();toast(edited?"Saved":"Logged");
   });
 }
 function buildSecureSheet(){
@@ -792,6 +799,35 @@ function buildSecureSheet(){
     <table class="audit"><thead><tr><th>#</th><th>Area</th><th>Spot</th><th>Nose</th><th>Tail</th><th>Type</th><th>Responsible / Name</th><th>Time</th><th>Comment</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <p style="font-size:12px;color:#777;margin-top:10px">Generated ${esc(date)}.</p>`;
+}
+function wrapText(ctx,text,maxW){const words=String(text).split(/\s+/),lines=[];let cur="";
+  for(const w of words){const t=cur?cur+" "+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;}else cur=t;}
+  if(cur)lines.push(cur);return lines.length?lines:[""];}
+function downloadSecureImage(){
+  const log=data.secureLog,W=1000,pad=40;
+  const c=document.createElement("canvas"),mx=c.getContext("2d");
+  const items=[{t:"Aircraft Secure Log",b:true,size:30},
+    {t:fmtDate(todayISO())+"   ·   "+log.length+" entr"+(log.length===1?"y":"ies"),size:18,color:"#555"},{gap:14}];
+  log.forEach((e,i)=>{
+    items.push({t:`${i+1}. ${e.area||""} / ${e.spot||""}`,b:true,size:20});
+    if(e.ac&&e.ac.ship)items.push({t:`Aircraft: Nose ${e.ac.ship}${e.ac.reg?" / "+e.ac.reg:""}${e.ac.type?" / "+e.ac.type:""}`,size:18,indent:20});
+    items.push({t:`Responsible: ${e.reason||""}${e.name?" ("+e.name+")":""}     Time: ${e.time||""}`,size:18,indent:20});
+    if(e.comment)items.push({t:`Comment: ${e.comment}`,size:18,indent:20,color:"#333"});
+    items.push({sep:true});});
+  if(!log.length)items.push({t:"(no entries)",size:18});
+  const draws=[];let y=pad;
+  for(const it of items){
+    if(it.gap){y+=it.gap;continue;}
+    if(it.sep){draws.push({sep:true,y:y+6});y+=18;continue;}
+    mx.font=`${it.b?"bold ":""}${it.size}px -apple-system,Arial,sans-serif`;
+    for(const w of wrapText(mx,it.t,W-pad*2-(it.indent||0))){y+=it.size+6;draws.push({t:w,x:pad+(it.indent||0),y,font:mx.font,color:it.color||"#111"});}
+    y+=4;}
+  c.width=W;c.height=y+pad;
+  const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);
+  for(const d of draws){if(d.sep){ctx.strokeStyle="#e0e0e0";ctx.beginPath();ctx.moveTo(pad,d.y);ctx.lineTo(W-pad,d.y);ctx.stroke();}
+    else{ctx.fillStyle=d.color;ctx.font=d.font;ctx.fillText(d.t,d.x,d.y);}}
+  c.toBlob(b=>{const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=`aircraft-secure-${todayISO()}.png`;
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Image downloaded");},"image/png");
 }
 function downloadSecureText(){
   const lines=["AIRCRAFT SECURE LOG — "+fmtDate(todayISO()),"========================================",""];
