@@ -104,6 +104,14 @@
   .sheet{background:#fff;width:100%;max-width:760px;border-radius:18px 18px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);max-height:92vh;overflow:auto}
   .sheet h3{margin:4px 0 2px;font-size:18px}
   .sheet .grab{width:40px;height:4px;background:#d4dae0;border-radius:2px;margin:0 auto 12px}
+  .patpad{position:relative;width:280px;max-width:84vw;aspect-ratio:1;margin:8px auto 4px;touch-action:none}
+  .patpad svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .patdot{position:absolute;width:38px;height:38px;transform:translate(-50%,-50%);border-radius:50%;border:2px solid #c2ccd4;background:#fff;box-sizing:border-box}
+  .patdot.on{border-color:var(--navy);background:var(--navy);box-shadow:0 0 0 6px rgba(11,61,99,.12)}
+  .patpad.err .patdot.on{border-color:var(--danger);background:var(--danger);box-shadow:0 0 0 6px rgba(192,57,43,.14)}
+  .patpad.err #patLine{stroke:var(--danger)}
+  .lockrow{display:flex;justify-content:space-between;align-items:center;background:var(--good-bg);color:#15622f;border:1px solid #bfe0cb;border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:10px;font-weight:700;font-size:14px}
+  .lockmini{background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:700;margin-left:6px;cursor:pointer}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
   .chip{background:#eef2f5;border:1px solid var(--line);padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600}
   .chip:active{background:#e2e8ec}
@@ -223,6 +231,7 @@
   </section>
 
   <section id="view-equipment" class="view">
+    <div id="lockBar"></div>
     <div class="btnrow" style="margin-top:0;margin-bottom:10px"><button class="btn navy" id="addBtn">➕ Add equipment</button></div>
     <details class="card acItem" id="sheetGen" style="margin-bottom:12px">
       <summary><div class="main"><div class="tag"> Generate sheet</div>
@@ -340,6 +349,17 @@
     <p class="hint" style="text-align:center">Equipment Location Tracker · works offline</p>
   </section>
 </main>
+
+<!-- PATTERN LOCK -->
+<div class="overlay" id="lockOverlay">
+  <div class="sheet" style="text-align:center">
+    <div class="grab"></div>
+    <h3 id="lockTitle">Unlock</h3>
+    <p class="hint" id="lockMsg" style="margin-top:0"></p>
+    <div class="patpad" id="patPad"></div>
+    <div class="btnrow"><button class="btn ghost" id="lockCancel">Cancel</button></div>
+  </div>
+</div>
 
 <!-- ADD/EDIT MODAL -->
 <div class="overlay" id="editOverlay">
@@ -515,14 +535,14 @@ let curTab="hub";
 function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
   window.scrollTo(0,0);if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
 function goTab(t){showTab(t);
-  if(t==="equipment"){renderList();refreshAudit();}
+  if(t==="equipment"){renderList();refreshAudit();updateLockBar();}
   if(t==="inventory")renderInventory();
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
   if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
-$("#addBtn").addEventListener("click",()=>openEdit(null));
+$("#addBtn").addEventListener("click",()=>requireUnlock(()=>openEdit(null)));
 function updateBackBtn(){$("#homeBtn").hidden=(curTab==="hub");updateFloatBack();}
 function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&$("#wizFoot").hidden);}
 $("#homeBtn").addEventListener("click",()=>showTab("hub"));
@@ -564,9 +584,45 @@ function renderList(){
   }).join("");
 }
 $("#eqList").addEventListener("click",e=>{const li=e.target.closest(".item");if(!li)return;const id=li.dataset.id;
-  if(e.target.classList.contains("act-del"))delEquip(id);
-  else if(e.target.classList.contains("act-move"))quickMove(id);
-  else openEdit(id);});  // tap anywhere on the row opens the editor
+  const act=e.target.classList.contains("act-del")?"del":e.target.classList.contains("act-move")?"move":"edit";
+  requireUnlock(()=>{if(act==="del")delEquip(id);else if(act==="move")quickMove(id);else openEdit(id);});});
+/* ---- pattern lock ---- */
+let unlocked=false;
+function isLocked(){return !!data.lockPattern && !unlocked;}
+function requireUnlock(cb){if(!isLocked()){cb();return;}
+  openPattern("Unlock equipment","Draw your pattern",p=>{
+    if(p===data.lockPattern){unlocked=true;closePattern();updateLockBar();toast("Unlocked");cb();}
+    else patError("Wrong pattern");});}
+function setPattern(){openPattern("Set a new pattern","Connect at least 4 dots",p1=>{
+  if(p1.length<4){patError("Use at least 4 dots");return;}
+  openPattern("Confirm pattern","Draw it again",p2=>{
+    if(p1===p2){data.lockPattern=p1;unlocked=true;save();closePattern();updateLockBar();toast("Lock pattern set");}
+    else patError("Patterns didn't match");});});}
+function updateLockBar(){const el=$("#lockBar");if(!el)return;
+  if(!data.lockPattern)el.innerHTML=`<button class="btn ghost" id="setLockBtn" style="margin-bottom:10px">🔒 Set lock pattern</button>`;
+  else if(unlocked)el.innerHTML=`<div class="lockrow"><span>🔓 Unlocked — editing enabled</span><span><button class="lockmini" id="changeLockBtn">Change</button><button class="lockmini" id="lockNowBtn">Lock</button></span></div>`;
+  else el.innerHTML=`<button class="btn navy" id="unlockBtn" style="margin-bottom:10px">🔒 Locked — tap to unlock &amp; edit</button>`;
+  $("#setLockBtn")?.addEventListener("click",setPattern);
+  $("#unlockBtn")?.addEventListener("click",()=>requireUnlock(()=>{}));
+  $("#lockNowBtn")?.addEventListener("click",()=>{unlocked=false;updateLockBar();toast("Locked");});
+  $("#changeLockBtn")?.addEventListener("click",setPattern);}
+let patSel=[],patDrawing=false,patDone=null;
+function dotPos(i){const r=Math.floor(i/3),c=i%3;return {x:c*100+40,y:r*100+40};}
+function buildPatPad(){const pad=$("#patPad");patSel=[];patDrawing=false;
+  pad.classList.remove("err");
+  pad.innerHTML=`<svg viewBox="0 0 280 280" preserveAspectRatio="none"><polyline id="patLine" fill="none" stroke="var(--navy)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points=""></polyline></svg>`+
+    Array.from({length:9},(_,i)=>{const p=dotPos(i);return `<div class="patdot" data-i="${i}" style="left:${p.x/280*100}%;top:${p.y/280*100}%"></div>`;}).join("");}
+function openPattern(title,msg,onDone){$("#lockTitle").textContent=title;$("#lockMsg").textContent=msg||"";$("#lockMsg").style.color="";patDone=onDone;buildPatPad();$("#lockOverlay").classList.add("open");}
+function closePattern(){$("#lockOverlay").classList.remove("open");patSel=[];patDrawing=false;patDone=null;}
+function patError(m){$("#lockMsg").textContent=m;$("#lockMsg").style.color="var(--danger)";$("#patPad").classList.add("err");setTimeout(()=>{buildPatPad();$("#lockMsg").style.color="";},650);}
+function patPoint(e){const rc=$("#patPad").getBoundingClientRect();return {x:(e.clientX-rc.left)*280/rc.width,y:(e.clientY-rc.top)*280/rc.height};}
+function patHit(pt){for(let i=0;i<9;i++){if(patSel.includes(i))continue;const p=dotPos(i);if(Math.hypot(p.x-pt.x,p.y-pt.y)<32){patSel.push(i);const d=$(`.patdot[data-i="${i}"]`);if(d)d.classList.add("on");}}}
+function patLine(cur){const pts=patSel.map(i=>{const p=dotPos(i);return p.x+","+p.y;});if(cur)pts.push(cur.x+","+cur.y);const l=$("#patLine");if(l)l.setAttribute("points",pts.join(" "));}
+$("#patPad").addEventListener("pointerdown",e=>{if(!$("#lockOverlay").classList.contains("open"))return;buildPatPad();patDrawing=true;const pt=patPoint(e);patHit(pt);patLine(pt);e.preventDefault();});
+window.addEventListener("pointermove",e=>{if(!patDrawing)return;const pt=patPoint(e);patHit(pt);patLine(pt);});
+window.addEventListener("pointerup",()=>{if(!patDrawing)return;patDrawing=false;patLine(null);if(patSel.length){const p=patSel.join(""),cb=patDone;setTimeout(()=>cb&&cb(p),100);}});
+$("#lockCancel").addEventListener("click",closePattern);
+$("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")closePattern();});
 $("#search").addEventListener("input",renderList);
 $("#filterLoc").addEventListener("change",renderList);
 function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
