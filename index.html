@@ -63,8 +63,8 @@
   .cathdr .catn{float:right;color:var(--good);font-weight:700;font-size:12px;text-transform:none;letter-spacing:0}
   table.audit tr.cat td{background:#dfe7ee;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--navy);font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   nav.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:flex;padding:6px 4px calc(env(safe-area-inset-bottom) + 6px);}
-  nav.tabbar button{flex:1;background:none;color:var(--muted);font-size:11px;font-weight:600;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:10px}
-  nav.tabbar button .ic{font-size:20px}nav.tabbar button.active{color:var(--navy)}
+  nav.tabbar button{flex:1;background:none;color:var(--muted);font-size:10px;font-weight:600;padding:8px 1px;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:10px}
+  nav.tabbar button .ic{font-size:19px}nav.tabbar button.active{color:var(--navy)}
   .overlay{position:fixed;inset:0;background:rgba(10,20,30,.5);z-index:50;display:none;align-items:flex-end;justify-content:center}
   .overlay.open{display:flex}
   .sheet{background:#fff;width:100%;max-width:760px;border-radius:18px 18px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);max-height:92vh;overflow:auto}
@@ -181,6 +181,9 @@
     <div id="acResults"></div>
   </section>
 
+  <!-- SECURE LOG -->
+  <section id="view-secure" class="view"><div id="secRoot"></div></section>
+
   <!-- SETTINGS -->
   <section id="view-settings" class="view">
     <h2 class="section">Areas &amp; spots</h2>
@@ -277,7 +280,8 @@
   <button data-tab="equipment" class="active"><span class="ic">📋</span>Equipment</button>
   <button data-tab="inventory"><span class="ic">🧭</span>Inventory</button>
   <button data-tab="aircraft"><span class="ic">✈️</span>Aircraft</button>
-  <button data-tab="audit"><span class="ic">🧾</span>Quick sheet</button>
+  <button data-tab="secure"><span class="ic">🔒</span>Secure</button>
+  <button data-tab="audit"><span class="ic">🧾</span>Sheet</button>
   <button data-tab="settings"><span class="ic">⚙️</span>Settings</button>
 </nav>
 
@@ -313,7 +317,7 @@ let data=load();
 function load(){
   let d=null; try{d=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){console.warn(e);}
   if(!d)d={};
-  d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={};
+  d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[];
   d.locations=(d.locations&&d.locations.length?d.locations:DEFAULT_LOCATIONS.slice())
     .map(l=>({name:l.name,area:l.area||l.name,holdsAircraft:l.holdsAircraft!=null?!!l.holdsAircraft:l.kind==='spot',region:l.region||"",hidden:!!l.hidden}));
   // one-time merge of seeded spots (keeps any equipment; adds spots not present)
@@ -409,6 +413,7 @@ function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active")
 $$("nav.tabbar button").forEach(b=>b.addEventListener("click",()=>{const t=b.dataset.tab;showTab(t);
   if(t==="inventory")renderInventory();if(t==="audit")refreshAudit();
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
+  if(t==="secure")renderSecure();
   if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}));
 $("#addBtn").addEventListener("click",()=>openEdit(null));
 function updateBackBtn(){$("#backBtn").hidden = (curTab==="equipment");}
@@ -672,6 +677,134 @@ function renderInvSheet(r){
   $("#printInv").addEventListener("click",()=>{$("#printArea").innerHTML=buildSheetHTML(spots,"Equipment Inventory");window.print();});
   $("#newInv").addEventListener("click",()=>{inv=newInv();renderInventory();});
   setWizFoot(null);
+}
+
+/* ===================== SECURE LOG ===================== */
+const SECURE_REASONS=["Aircraft Maintenance","UGE","Airways","PrimeFlight","Catering","Ramp","Move Team"];
+let sec={stage:"home",area:null,spot:null,ac:null,reason:null,name:"",time:"",comment:""};
+function newSec(){return {stage:"home",area:null,spot:null,ac:null,reason:null,name:"",time:"",comment:""};}
+function nowHHMM(){const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function renderSecure(){const r=$("#secRoot");
+  ({home:renderSecHome,area:renderSecArea,spot:renderSecSpot,aircraft:renderSecAircraft,details:renderSecDetails}[sec.stage]||renderSecHome)(r);}
+function secCard(e){return `<li class="item card" data-id="${esc(e.id)}"><div class="main">
+  <div class="tag">${esc(e.spot||"")}${e.ac&&e.ac.ship?` · ✈ Nose ${esc(e.ac.ship)}`:""}</div>
+  <div class="meta">${esc(e.reason||"")}${e.name?` — ${esc(e.name)}`:""} · ${esc(e.time||"")}${e.date?` · ${esc(fmtDate(e.date))}`:""}</div>
+  ${e.comment?`<div class="notes">📝 ${esc(e.comment)}</div>`:""}
+  <div style="margin-top:4px"><span class="loc">${esc(e.area||"")}</span>${e.ac&&e.ac.reg?` <span class="loc">${esc(e.ac.reg)}</span>`:""}</div>
+  </div><div class="acts"><button class="iconbtn sec-del" title="Delete">🗑️</button></div></li>`;}
+function renderSecHome(r){
+  const log=data.secureLog;
+  r.innerHTML=`<div class="card pad">
+    <h3 style="margin:0 0 6px">🔒 Aircraft Secure Log</h3>
+    <p class="hint" style="margin-top:0">Log spots where an aircraft was left open / not secured — who had it and why.</p>
+    <button class="btn navy" id="secAdd">➕ Log open aircraft</button>
+    ${log.length?`<div class="btnrow"><button class="btn ghost" id="secPdf">🖨️ PDF</button><button class="btn ghost" id="secTxt">⬇️ Text file</button></div>`:""}
+  </div>
+  ${log.length?`<p class="count">${log.length} entr${log.length===1?"y":"ies"}</p><ul class="list">${log.slice().reverse().map(secCard).join("")}</ul>`:`<div class="empty"><div class="big">🔒</div><p>No entries yet. Tap <b>Log open aircraft</b>.</p></div>`}`;
+  $("#secAdd").addEventListener("click",()=>{sec=newSec();sec.stage="area";sec.time=nowHHMM();renderSecure();});
+  $("#secPdf")?.addEventListener("click",()=>{$("#printArea").innerHTML=buildSecureSheet();window.print();});
+  $("#secTxt")?.addEventListener("click",downloadSecureText);
+  $$(".sec-del",r).forEach(b=>b.addEventListener("click",e=>{const li=e.target.closest("[data-id]");
+    if(confirm("Delete this entry?")){data.secureLog=data.secureLog.filter(x=>x.id!==li.dataset.id);save();renderSecure();}}));
+}
+function renderSecArea(r){
+  r.innerHTML=`<div class="card pad">
+    <div class="step">Step 1 — area</div>
+    <h3 style="margin:6px 0 8px">What area?</h3>
+    <div id="secAreaChips">${regionsOrdered().map(rg=>{const as=areasInRegion(rg);if(!as.length)return "";
+      return regionHdr(rg)+`<div class="chips">`+as.map(a=>`<button class="chip" data-a="${esc(a)}">${esc(a)}</button>`).join("")+`</div>`;}).join("")}</div>
+    <div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="secBack">← Cancel</button></div></div>`;
+  $$("#secAreaChips .chip").forEach(c=>c.addEventListener("click",()=>{sec.area=c.dataset.a;sec.stage="spot";renderSecure();}));
+  $("#secBack").addEventListener("click",()=>{sec.stage="home";renderSecure();});
+}
+function renderSecSpot(r){
+  const spots=spotsInArea(sec.area),groups=groupSpots(spots),multi=groups.length>1;
+  const body=groups.map(g=>(multi?`<div class="spotgrp">${esc(g.label)}</div>`:"")+
+    `<div class="spotgrid">`+g.items.map(s=>`<button class="chip" data-s="${esc(s.name)}">${esc(s.name)}${s.holdsAircraft?' ✈':''}</button>`).join("")+`</div>`).join("");
+  r.innerHTML=`<div class="card pad">
+    <div class="crumbs">${esc(sec.area)}</div>
+    <div class="step">Step 2 — spot</div>
+    <h3 style="margin:2px 0 8px">Pick a spot</h3>
+    <div id="secSpotChips">${body||'<p class="hint">No spots in this area.</p>'}</div>
+    <div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="secBack">← Back</button></div></div>`;
+  $$("#secSpotChips .chip").forEach(c=>c.addEventListener("click",()=>{sec.spot=c.dataset.s;sec.ac=null;sec.stage="aircraft";renderSecure();}));
+  $("#secBack").addEventListener("click",()=>{sec.stage="area";renderSecure();});
+}
+function renderSecAircraft(r){
+  r.innerHTML=`<div class="card pad">
+    <div class="crumbs">${esc(sec.area)} › ${esc(sec.spot)}</div>
+    <div class="step">Step 3 — aircraft</div>
+    <label for="secShip">Aircraft # (ship / nose number)</label>
+    <input id="secShip" inputmode="numeric" autocomplete="off" placeholder="e.g. 3461" value="${esc(sec.ac?sec.ac.ship:"")}" />
+    <div id="secAcInfo"></div>
+    <div class="btnrow"><button class="btn ghost" id="secBack">← Back</button><button class="btn navy" id="secNext" style="flex:2">Next →</button></div></div>`;
+  const shipIn=$("#secShip");
+  function refresh(){const s=shipIn.value.trim(),box=$("#secAcInfo");
+    if(!s){box.innerHTML="";sec.ac=null;return;}
+    const hit=lookupShip(s);
+    if(hit){sec.ac={ship:s,reg:hit.reg,type:hit.type};box.innerHTML=`<div class="ac-ok">✓ Nose ${esc(s)} · ${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
+    else{sec.ac={ship:s,reg:(sec.ac&&sec.ac.ship===s?sec.ac.reg:""),type:(sec.ac&&sec.ac.ship===s?sec.ac.type:"")};
+      box.innerHTML=`<div class="ac-no"><div style="font-size:13px;color:#8a5b00;font-weight:600;margin-bottom:6px">Ship ${esc(s)} isn't in the fleet list — enter it (it'll be remembered):</div>
+        <div class="row2"><div><label style="margin-top:0">Tail #</label><input id="sReg" placeholder="N12345" autocapitalize="characters" value="${esc(sec.ac.reg)}"></div>
+        <div><label style="margin-top:0">Type</label><input id="sType" placeholder="Boeing 737-800" value="${esc(sec.ac.type)}"></div></div></div>`;
+      $("#sReg").addEventListener("input",e=>sec.ac.reg=e.target.value.toUpperCase());
+      $("#sType").addEventListener("input",e=>sec.ac.type=e.target.value);}
+  }
+  shipIn.addEventListener("input",refresh);refresh();
+  $("#secNext").addEventListener("click",()=>{if(sec.ac&&sec.ac.ship&&sec.ac.reg)rememberAircraft(sec.ac.ship,sec.ac.reg,sec.ac.type);sec.stage="details";renderSecure();});
+  $("#secBack").addEventListener("click",()=>{sec.stage="spot";renderSecure();});
+}
+function renderSecDetails(r){
+  r.innerHTML=`<div class="card pad">
+    <div class="crumbs">${esc(sec.spot)}${sec.ac&&sec.ac.ship?` · ✈ Nose ${esc(sec.ac.ship)}`:""}</div>
+    <div class="step">Step 4 — details</div>
+    <label>Who had the aircraft (not secure)?</label>
+    <div class="chips" id="secReasons">${SECURE_REASONS.map(x=>`<button class="chip ${sec.reason===x?'sel':''}" data-x="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+    <label for="secName">Name (optional)</label>
+    <input id="secName" autocomplete="off" placeholder="Person's name" value="${esc(sec.name)}" />
+    <label for="secTime">Time</label>
+    <input id="secTime" type="time" value="${esc(sec.time||nowHHMM())}" />
+    <label for="secComment">Comment (optional)</label>
+    <textarea id="secComment" placeholder="Stairs still on, doors open, GPU connected…">${esc(sec.comment)}</textarea>
+    <div class="btnrow"><button class="btn ghost" id="secBack">← Back</button><button class="btn navy" id="secLog" style="flex:2">✓ Log it</button></div></div>`;
+  $$("#secReasons .chip").forEach(c=>c.addEventListener("click",()=>{sec.reason=c.dataset.x;
+    $$("#secReasons .chip").forEach(x=>x.classList.toggle("sel",x.dataset.x===sec.reason));}));
+  $("#secName").addEventListener("input",e=>sec.name=e.target.value);
+  $("#secTime").addEventListener("input",e=>sec.time=e.target.value);
+  $("#secComment").addEventListener("input",e=>sec.comment=e.target.value);
+  $("#secBack").addEventListener("click",()=>{sec.stage="aircraft";renderSecure();});
+  $("#secLog").addEventListener("click",()=>{
+    if(!sec.reason){toast("Pick who had the aircraft");return;}
+    data.secureLog.push({id:uid(),area:sec.area,spot:sec.spot,ac:sec.ac,reason:sec.reason,
+      name:(sec.name||"").trim(),time:sec.time||nowHHMM(),comment:(sec.comment||"").trim(),date:todayISO()});
+    save();sec=newSec();renderSecure();toast("Logged");
+  });
+}
+function buildSecureSheet(){
+  const date=fmtDate(todayISO()),log=data.secureLog;
+  const rows=log.length?log.map((e,i)=>`<tr><td class="num">${i+1}</td><td>${esc(e.area||"")}</td><td><b>${esc(e.spot||"")}</b></td>
+    <td>${e.ac&&e.ac.ship?esc(e.ac.ship):"—"}</td><td>${e.ac&&e.ac.reg?esc(e.ac.reg):""}</td><td>${e.ac&&e.ac.type?esc(e.ac.type):""}</td>
+    <td>${esc(e.reason||"")}${e.name?" — "+esc(e.name):""}</td><td>${esc(e.time||"")}</td><td>${esc(e.comment||"")}</td></tr>`).join("")
+    :`<tr><td colspan="9" style="text-align:center;color:#888;padding:14px">No entries.</td></tr>`;
+  return `<div class="sheet-head"><div><div class="title">Aircraft Secure Log</div>
+      <div style="font-size:13px;color:#555">${log.length} entr${log.length===1?"y":"ies"}</div></div>
+      <div class="info">Date: <b>${esc(date)}</b><br>By: <b>____________</b></div></div>
+    <table class="audit"><thead><tr><th>#</th><th>Area</th><th>Spot</th><th>Nose</th><th>Tail</th><th>Type</th><th>Responsible / Name</th><th>Time</th><th>Comment</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <p style="font-size:12px;color:#777;margin-top:10px">Generated ${esc(date)}.</p>`;
+}
+function downloadSecureText(){
+  const lines=["AIRCRAFT SECURE LOG — "+fmtDate(todayISO()),"========================================",""];
+  data.secureLog.forEach((e,i)=>{lines.push(`${i+1}. ${e.area||""} / ${e.spot||""}`);
+    if(e.ac&&e.ac.ship)lines.push(`   Aircraft: Nose ${e.ac.ship}${e.ac.reg?" / "+e.ac.reg:""}${e.ac.type?" / "+e.ac.type:""}`);
+    lines.push(`   Responsible: ${e.reason||""}${e.name?" ("+e.name+")":""}`);
+    lines.push(`   Time: ${e.time||""}`);
+    if(e.comment)lines.push(`   Comment: ${e.comment}`);
+    lines.push("");});
+  if(!data.secureLog.length)lines.push("(no entries)");
+  const blob=new Blob([lines.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=u;a.download=`aircraft-secure-${todayISO()}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);
+  toast("Text file downloaded");
 }
 
 /* ---- sheet builder: area → spot → category ---- */
