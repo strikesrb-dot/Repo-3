@@ -21,6 +21,8 @@
   .view{display:none}.view.active{display:block}
   h2.section{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 4px 8px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .catblock{overflow:hidden;border-radius:16px}
+  .catblock .cathdr{border-radius:16px 16px 0 0}
   .card.pad{padding:14px}
   label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:10px 0 4px}
   input,select,textarea{width:100%;font-size:16px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-family:inherit;}
@@ -39,8 +41,9 @@
   .toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
   .toolbar input,.toolbar select{flex:1;min-width:120px}
   .count{font-size:13px;color:var(--muted);margin:0 4px 8px}
-  ul.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-  .item{display:flex;align-items:center;gap:12px;padding:12px 14px}
+  ul.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+  .item{display:flex;align-items:center;gap:12px;padding:15px 16px;border-radius:18px;box-shadow:0 2px 8px rgba(20,40,70,.07)}
+  .item:active{transform:scale(.992)}
   .item .main{flex:1;min-width:0}
   .item .tag{font-weight:700;font-size:16px;letter-spacing:.2px}
   .item .meta{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -59,6 +62,13 @@
   .crow .ctag{font-weight:700;font-size:15px}
   .crow .ctype{font-size:12px;color:var(--muted)}
   .crow .cloc{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
+  .pillgrid{display:flex;flex-wrap:wrap;gap:7px;padding:10px 12px 12px}
+  .selpill{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px 7px 9px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer}
+  .selpill:active{transform:scale(.96)}
+  .selpill .selc{width:18px;height:18px;border-radius:50%;border:2px solid #c2ccd4;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:0 0 auto}
+  .selpill.on{background:var(--good-bg);border-color:var(--good);color:#15622f}
+  .selpill.on .selc{background:var(--good);border-color:var(--good)}
+  .selpill.away{border-style:dashed}
   .cathdr{background:#eaf0f5;color:var(--navy);font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.5px;padding:9px 12px;border-bottom:1px solid var(--line)}
   .cathdr .catn{float:right;color:var(--good);font-weight:700;font-size:12px;text-transform:none;letter-spacing:0}
   table.audit tr.cat td{background:#dfe7ee;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--navy);font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -649,7 +659,7 @@ function renderInvSelect(r){
     <h3 style="margin:2px 0 2px">Equipment at ${esc(inv.spot)} ${acLine}</h3>
     <p class="hint" style="margin-top:2px">Tap each unit by category. Items already here are pre-checked.</p>
     <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:8px 0" /></div>
-    <div class="card" style="margin-top:10px;overflow:hidden"><div class="crows" id="invList"></div></div>`;
+    <div id="invList" style="margin-top:10px;display:flex;flex-direction:column;gap:12px"></div>`;
   function paint(){
     const q=$("#invSearch").value.trim().toLowerCase();
     let items=data.equipment.slice();
@@ -657,15 +667,15 @@ function renderInvSelect(r){
     const groups=groupByType(items);
     $("#invList").innerHTML=groups.length?groups.map(g=>{
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
-      return `<div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
-        g.items.map(e=>{const on=invSel.has(e.id);
-          const el=e.location&&e.location!==inv.spot?`<span class="cloc">@ ${esc(e.location)}</span>`:(!e.location?`<span class="cloc">—</span>`:"");
-          return `<div class="crow ${on?'on':''}" data-id="${e.id}"><div class="box">${on?'✓':''}</div>
-            <div><div class="ctag">${esc(e.tag)}</div></div>${el}</div>`;}).join("");
-    }).join(""):`<div class="crow"><div class="ctype" style="padding:8px">No equipment. Add some on the Equipment tab.</div></div>`;
+      const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
+      return `<div class="card catblock"><div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
+        `<div class="pillgrid">`+its.map(e=>{const on=invSel.has(e.id);
+          const away=e.location&&e.location!==inv.spot;
+          return `<button class="selpill ${on?'on':''} ${away?'away':''}" data-id="${e.id}" title="${away?'Currently @ '+esc(e.location):''}"><span class="selc">${on?'✓':''}</span>${esc(e.tag)}</button>`;}).join("")+`</div></div>`;
+    }).join(""):`<p class="hint" style="padding:10px 12px">No equipment. Add some on the Equipment tab.</p>`;
     $("#wizNext").textContent=`✓ Nest ${invSel.size} ›`;
   }
-  $("#invList").addEventListener("click",e=>{const li=e.target.closest(".crow[data-id]");if(!li)return;
+  $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
     const id=li.dataset.id;if(invSel.has(id))invSel.delete(id);else invSel.add(id);paint();});
   $("#invSearch").addEventListener("input",paint);
   setWizFoot({back:()=>{inv.stage=holdsAircraft(inv.spot)?"aircraft":"spot";renderInventory();},
