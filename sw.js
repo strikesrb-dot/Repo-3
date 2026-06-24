@@ -1,6 +1,6 @@
 /* ELT service worker — network-first with offline cache fallback */
-const CACHE = 'elt-v1';
-const CORE = ['./', './index.html', './manifest.webmanifest', './aircraft.json',
+const CACHE = 'elt-v2';
+const CORE = ['./', './index.html', './manifest.webmanifest', './aircraft.json', './equipment.json',
               './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {

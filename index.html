@@ -353,9 +353,9 @@
 "use strict";
 const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v2",SEEN_KEY="elt.seenMaster.v1";
 const MASTER_URL="equipment.json",FLEET_URL="aircraft.json";
-const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (AC Cart)","Air Start Unit (ASU)",
-  "Stairs","Stair Truck","Belt Loader","Pushback Tractor / Tug","Baggage Cart","Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
-const LOC_SEED_V=9;
+const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (PCA)","Air Conditioning Unit - Heat (PCA Heat)","Air Start Unit (ASU)",
+  "Air Stairs / Passenger Stairs","Stair Truck","Belt Loader","Pushback Tractor / Tug","Baggage Cart","Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
+const LOC_SEED_V=10;
 function R(pre,a,b){const o=[];for(let i=a;i<=b;i++)o.push(pre+i);return o;}
 const LOC_SEED=[
   ["Staging",false,["Staging Area"]],
@@ -371,7 +371,8 @@ const LOC_SEED=[
   ["Hangar",true,["54C","54R","55L","55R","56C","H52","H54B","H54C","H56C","HB1","HB2","MX1"],"WestPark"],
   ["Sierra",true,["Sierra 1","Sierra 2","Sierra 3"],"WestPark"],
   ["UPS",true,R("UP",1,9),"WestPark"],
-  ["CL",true,["CL1","CL2","CL3"],"WestPark"]];
+  ["CL",true,["CL1","CL2","CL3"],"WestPark"],
+  ["WestPark Staging Area",false,["WestPark Staging Area"],"WestPark"]];
 const DEFAULT_LOCATIONS=LOC_SEED.flatMap(([area,ac,names,region,hidden])=>names.map(name=>({name,area,holdsAircraft:ac,region:region||"",hidden:!!hidden})));
 
 let data=load();
