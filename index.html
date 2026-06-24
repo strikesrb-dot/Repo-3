@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b3d63" />
+<title>Equipment Location Tracker</title>
+<style>
+  :root{
+    --navy:#0b3d63; --navy-d:#08304e; --accent:#f5a623; --accent-d:#d98c0a;
+    --bg:#f4f6f8; --card:#ffffff; --line:#dce1e6; --ink:#1c2530; --muted:#67727e;
+    --good:#1e7d46; --good-bg:#e6f4ec; --danger:#c0392b; --shadow:0 1px 3px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:16px; line-height:1.4;
+    padding-bottom:84px; /* room for bottom nav */
+  }
+  /* ---------- Header ---------- */
+  header{
+    position:sticky; top:0; z-index:20; background:var(--navy); color:#fff;
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+    box-shadow:var(--shadow);
+  }
+  header h1{margin:0; font-size:18px; letter-spacing:.3px; display:flex; align-items:center; gap:8px}
+  header .sub{margin:2px 0 0; font-size:12px; color:#bcd3e6}
+  /* ---------- Layout ---------- */
+  main{max-width:760px; margin:0 auto; padding:14px}
+  .view{display:none}
+  .view.active{display:block}
+  h2.section{font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:18px 4px 8px}
+  /* ---------- Cards ---------- */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow)}
+  .card.pad{padding:14px}
+  /* ---------- Forms ---------- */
+  label{display:block; font-size:13px; font-weight:600; color:var(--muted); margin:10px 0 4px}
+  input,select,textarea{
+    width:100%; font-size:16px; padding:12px; border:1px solid var(--line); border-radius:10px;
+    background:#fff; color:var(--ink); font-family:inherit;
+  }
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(11,61,99,.12)}
+  textarea{min-height:64px; resize:vertical}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  /* ---------- Buttons ---------- */
+  button{font-family:inherit; cursor:pointer; border:none; border-radius:10px; font-size:16px; font-weight:600}
+  .btn{padding:13px 16px; width:100%; background:var(--accent); color:#3a2600}
+  .btn:active{background:var(--accent-d)}
+  .btn.navy{background:var(--navy); color:#fff}
+  .btn.navy:active{background:var(--navy-d)}
+  .btn.ghost{background:#fff; color:var(--navy); border:1px solid var(--line)}
+  .btn.sm{width:auto; padding:9px 13px; font-size:14px}
+  .btn.danger{background:#fff; color:var(--danger); border:1px solid #eccfcb}
+  .btnrow{display:flex; gap:10px; margin-top:12px}
+  /* ---------- Equipment list ---------- */
+  .toolbar{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap}
+  .toolbar input,.toolbar select{flex:1; min-width:120px}
+  .count{font-size:13px; color:var(--muted); margin:0 4px 8px}
+  ul.list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+  .item{display:flex; align-items:center; gap:12px; padding:12px 14px}
+  .item .main{flex:1; min-width:0}
+  .item .tag{font-weight:700; font-size:16px; letter-spacing:.2px}
+  .item .meta{font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .item .notes{font-size:13px; color:var(--muted); margin-top:2px}
+  .loc{display:inline-block; background:#eaf1f7; color:var(--navy); font-size:12px; font-weight:700;
+       padding:4px 9px; border-radius:999px; white-space:nowrap}
+  .loc.none{background:#f7eaea; color:var(--danger)}
+  .item .acts{display:flex; gap:6px}
+  .iconbtn{background:#f1f4f7; border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:15px; color:var(--ink)}
+  .iconbtn:active{background:#e4e9ee}
+  .empty{text-align:center; color:var(--muted); padding:40px 16px}
+  .empty .big{font-size:40px}
+  /* ---------- Bottom nav ---------- */
+  nav.tabbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:30; background:#fff; border-top:1px solid var(--line);
+    display:flex; padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);
+  }
+  nav.tabbar button{flex:1; background:none; color:var(--muted); font-size:11px; font-weight:600;
+    padding:8px 2px; display:flex; flex-direction:column; align-items:center; gap:3px; border-radius:10px}
+  nav.tabbar button .ic{font-size:20px}
+  nav.tabbar button.active{color:var(--navy)}
+  /* ---------- Modal ---------- */
+  .overlay{position:fixed; inset:0; background:rgba(10,20,30,.5); z-index:50; display:none; align-items:flex-end; justify-content:center}
+  .overlay.open{display:flex}
+  .sheet{background:#fff; width:100%; max-width:760px; border-radius:18px 18px 0 0; padding:16px 16px calc(env(safe-area-inset-bottom) + 16px); max-height:92vh; overflow:auto}
+  .sheet h3{margin:4px 0 2px; font-size:18px}
+  .sheet .grab{width:40px; height:4px; background:#d4dae0; border-radius:2px; margin:0 auto 12px}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px}
+  .chip{background:#eef2f5; border:1px solid var(--line); padding:7px 11px; border-radius:999px; font-size:14px; font-weight:600}
+  .chip:active{background:#e2e8ec}
+  .manage-row{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line)}
+  .manage-row span{flex:1}
+  .hint{font-size:12px; color:var(--muted); margin-top:6px}
+  /* ---------- Audit sheet (screen) ---------- */
+  #auditPreview{margin-top:14px}
+  table.audit{width:100%; border-collapse:collapse; font-size:14px}
+  table.audit th,table.audit td{border:1px solid #c7ced4; padding:8px 9px; text-align:left; vertical-align:top}
+  table.audit th{background:#eef2f5; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#3a4855}
+  table.audit td.num{width:34px; text-align:center; color:var(--muted)}
+  table.audit td.chk{width:46px; text-align:center; font-size:18px}
+  .sheet-head{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom:10px}
+  .sheet-head .title{font-size:20px; font-weight:800}
+  .sheet-head .info{font-size:13px; color:var(--muted); text-align:right}
+  .toast{position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
+    padding:11px 18px; border-radius:999px; font-size:14px; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none}
+  .toast.show{opacity:1}
+  /* ---------- Print ---------- */
+  @media print{
+    body{background:#fff; padding:0}
+    header,nav.tabbar,.tabbar,#screenChrome,.no-print{display:none !important}
+    main{max-width:none; padding:0}
+    .view{display:none !important}
+    #printArea{display:block !important; padding:24px}
+    table.audit{font-size:12px}
+    table.audit th{background:#eee !important; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+    .sheet-head .title{font-size:22px}
+    @page{margin:14mm}
+  }
+  #printArea{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>✈️ Equipment Location Tracker</h1>
+  <p class="sub" id="hdrSub">Ground support equipment · staging &amp; audits</p>
+</header>
+
+<main>
+  <!-- ===================== EQUIPMENT VIEW ===================== -->
+  <section id="view-equipment" class="view active">
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Search tag, type, location…" autocomplete="off" />
+      <select id="filterLoc"><option value="">All locations</option></select>
+    </div>
+    <p class="count" id="eqCount"></p>
+    <ul class="list" id="eqList"></ul>
+  </section>
+
+  <!-- ===================== AUDIT VIEW ===================== -->
+  <section id="view-audit" class="view">
+    <div id="screenChrome">
+      <div class="card pad">
+        <label for="auditLoc">Audit location</label>
+        <select id="auditLoc"><option value="__all__">— All equipment —</option></select>
+        <div class="row2">
+          <div><label for="auditBy">Audited by</label><input id="auditBy" placeholder="Your name" /></div>
+          <div><label for="auditDate">Date</label><input id="auditDate" type="date" /></div>
+        </div>
+        <div class="btnrow">
+          <button class="btn navy" id="genAudit">Generate sheet</button>
+        </div>
+      </div>
+      <div id="auditPreview"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SETTINGS VIEW ===================== -->
+  <section id="view-settings" class="view">
+    <h2 class="section">Equipment types</h2>
+    <div class="card pad">
+      <div id="typeManage"></div>
+      <div class="toolbar" style="margin-top:10px;margin-bottom:0">
+        <input id="newType" placeholder="Add a type (e.g. Belt Loader)" />
+        <button class="btn sm navy" id="addTypeBtn" style="width:auto">Add</button>
+      </div>
+    </div>
+
+    <h2 class="section">Backup &amp; restore</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Your data lives only on this device's browser. Export a backup file to keep it safe or move it to another phone/computer.</p>
+      <div class="btnrow">
+        <button class="btn ghost" id="exportBtn">⬇️ Export backup</button>
+        <button class="btn ghost" id="importBtn">⬆️ Import backup</button>
+      </div>
+      <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
+    </div>
+
+    <h2 class="section">Danger zone</h2>
+    <div class="card pad">
+      <button class="btn danger" id="clearBtn">Delete all data</button>
+    </div>
+    <p class="hint" style="text-align:center">Equipment Location Tracker · works offline</p>
+  </section>
+</main>
+
+<!-- ===================== ADD/EDIT MODAL ===================== -->
+<div class="overlay" id="editOverlay">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3 id="editTitle">Add equipment</h3>
+    <label for="fTag">Asset tag / ID</label>
+    <input id="fTag" placeholder="e.g. GP-3081" autocomplete="off" autocapitalize="characters" />
+    <label for="fType">Type</label>
+    <select id="fType"></select>
+    <label for="fLoc">Location</label>
+    <input id="fLoc" list="locList" placeholder="e.g. Staging Area, Parking Spot 6" autocomplete="off" />
+    <datalist id="locList"></datalist>
+    <div class="chips" id="quickLocs"></div>
+    <label for="fNotes">Notes (optional)</label>
+    <textarea id="fNotes" placeholder="Condition, fuel level, tail it's serving…"></textarea>
+    <div class="btnrow">
+      <button class="btn navy" id="saveEq">Save</button>
+      <button class="btn ghost" id="cancelEq" style="flex:0 0 110px">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BOTTOM NAV ===================== -->
+<nav class="tabbar">
+  <button data-tab="equipment" class="active"><span class="ic">📋</span>Equipment</button>
+  <button data-tab="add" id="addTabBtn"><span class="ic">➕</span>Add</button>
+  <button data-tab="audit"><span class="ic">🧾</span>Audit</button>
+  <button data-tab="settings"><span class="ic">⚙️</span>Settings</button>
+</nav>
+
+<!-- Print target -->
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   Equipment Location Tracker — single-file, offline, localStorage
+   ========================================================= */
+const KEY = "elt.data.v1";
+const DEFAULT_TYPES = [
+  "Ground Power Unit (GPU)",
+  "Air Conditioning Unit (PCA)",
+  "Air Start Unit (ASU)",
+  "Air Stairs / Passenger Stairs",
+  "Belt Loader",
+  "Pushback Tractor / Tug",
+  "Baggage Cart",
+  "Lavatory Cart",
+  "Potable Water Cart",
+  "Tow Bar",
+  "Chocks",
+  "Traffic Cones"
+];
+
+/* ---------- Store ---------- */
+let data = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const d = JSON.parse(raw); d.equipment ||= []; d.types ||= DEFAULT_TYPES.slice(); return d; }
+  }catch(e){ console.warn("load failed", e); }
+  return { equipment:[], types: DEFAULT_TYPES.slice() };
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(data)); }
+function uid(){ return "e" + Date.now().toString(36) + Math.floor(Math.random()*1e4).toString(36); }
+
+/* ---------- Helpers ---------- */
+const $ = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
+function esc(s){ return (s??"").toString().replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function knownLocations(){
+  return [...new Set(data.equipment.map(e=>e.location).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+}
+function fmtDate(iso){ if(!iso) return ""; const d=new Date(iso+"T00:00:00"); return isNaN(d)? iso : d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}); }
+function todayISO(){ const d=new Date(); const o=d.getTimezoneOffset(); return new Date(d.getTime()-o*60000).toISOString().slice(0,10); }
+let toastT;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1900); }
+
+/* ---------- Tabs ---------- */
+function showTab(name){
+  $$(".view").forEach(v=>v.classList.remove("active"));
+  $("#view-"+name)?.classList.add("active");
+  $$("nav.tabbar button").forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
+  window.scrollTo(0,0);
+}
+$$("nav.tabbar button").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    const t=b.dataset.tab;
+    if(t==="add"){ openEdit(null); $$("nav.tabbar button").forEach(x=>x.classList.toggle("active", x.dataset.tab==="equipment")); return; }
+    showTab(t);
+    if(t==="audit") refreshAudit();
+    if(t==="settings") renderTypes();
+  });
+});
+
+/* ---------- Equipment list ---------- */
+function renderList(){
+  const q = $("#search").value.trim().toLowerCase();
+  const lf = $("#filterLoc").value;
+  let items = data.equipment.slice().sort((a,b)=>
+    (a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
+  if(lf) items = items.filter(e=> (e.location||"")===lf);
+  if(q) items = items.filter(e=> [e.tag,e.type,e.location,e.notes].some(v=>(v||"").toLowerCase().includes(q)));
+
+  const list = $("#eqList");
+  $("#eqCount").textContent = `${items.length} of ${data.equipment.length} item${data.equipment.length===1?"":"s"}`;
+
+  if(!data.equipment.length){
+    list.innerHTML = `<div class="empty"><div class="big">📋</div><p>No equipment yet.<br>Tap <b>➕ Add</b> to log your first unit.</p></div>`;
+    return;
+  }
+  if(!items.length){ list.innerHTML = `<div class="empty"><p>Nothing matches your filter.</p></div>`; return; }
+
+  list.innerHTML = items.map(e=>{
+    const loc = e.location
+      ? `<span class="loc">📍 ${esc(e.location)}</span>`
+      : `<span class="loc none">No location</span>`;
+    return `<li class="item card" data-id="${e.id}">
+      <div class="main">
+        <div class="tag">${esc(e.tag||"(no tag)")}</div>
+        <div class="meta">${esc(e.type||"")}</div>
+        ${e.notes?`<div class="notes">📝 ${esc(e.notes)}</div>`:""}
+        <div style="margin-top:6px">${loc}</div>
+      </div>
+      <div class="acts">
+        <button class="iconbtn act-move" title="Change location">📍</button>
+        <button class="iconbtn act-edit" title="Edit">✏️</button>
+        <button class="iconbtn act-del" title="Delete">🗑️</button>
+      </div>
+    </li>`;
+  }).join("");
+}
+$("#eqList").addEventListener("click", e=>{
+  const li = e.target.closest(".item"); if(!li) return;
+  const id = li.dataset.id;
+  if(e.target.classList.contains("act-edit")) openEdit(id);
+  else if(e.target.classList.contains("act-del")) delEquip(id);
+  else if(e.target.classList.contains("act-move")) quickMove(id);
+});
+$("#search").addEventListener("input", renderList);
+$("#filterLoc").addEventListener("change", renderList);
+
+function refreshLocationFilter(){
+  const sel = $("#filterLoc"); const cur = sel.value;
+  sel.innerHTML = `<option value="">All locations</option>` +
+    knownLocations().map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+
+/* ---------- Add / Edit ---------- */
+let editingId = null;
+function fillTypeSelect(){
+  $("#fType").innerHTML = data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+}
+function fillQuickLocs(){
+  const locs = knownLocations().slice(0,8);
+  $("#locList").innerHTML = knownLocations().map(l=>`<option value="${esc(l)}">`).join("");
+  $("#quickLocs").innerHTML = locs.map(l=>`<button type="button" class="chip" data-loc="${esc(l)}">📍 ${esc(l)}</button>`).join("");
+}
+$("#quickLocs").addEventListener("click", e=>{
+  const c = e.target.closest(".chip"); if(c){ $("#fLoc").value = c.dataset.loc; }
+});
+function openEdit(id){
+  editingId = id;
+  fillTypeSelect(); fillQuickLocs();
+  const e = id ? data.equipment.find(x=>x.id===id) : null;
+  $("#editTitle").textContent = e ? "Edit equipment" : "Add equipment";
+  $("#fTag").value = e?.tag || "";
+  $("#fType").value = e?.type || data.types[0] || "";
+  $("#fLoc").value = e?.location || "";
+  $("#fNotes").value = e?.notes || "";
+  $("#editOverlay").classList.add("open");
+  if(!e) setTimeout(()=>$("#fTag").focus(),120);
+}
+function closeEdit(){ $("#editOverlay").classList.remove("open"); editingId=null; }
+$("#cancelEq").addEventListener("click", closeEdit);
+$("#editOverlay").addEventListener("click", e=>{ if(e.target.id==="editOverlay") closeEdit(); });
+$("#saveEq").addEventListener("click", ()=>{
+  const tag = $("#fTag").value.trim();
+  if(!tag){ toast("Enter an asset tag / ID"); $("#fTag").focus(); return; }
+  const payload = {
+    tag, type:$("#fType").value, location:$("#fLoc").value.trim(), notes:$("#fNotes").value.trim(),
+    updated: todayISO()
+  };
+  if(editingId){ Object.assign(data.equipment.find(x=>x.id===editingId), payload); toast("Updated"); }
+  else { data.equipment.push({ id:uid(), ...payload }); toast("Added"); }
+  save(); closeEdit(); refreshAll();
+});
+function delEquip(id){
+  const e = data.equipment.find(x=>x.id===id);
+  if(!confirm(`Delete ${e?.tag||"this item"}?`)) return;
+  data.equipment = data.equipment.filter(x=>x.id!==id);
+  save(); refreshAll(); toast("Deleted");
+}
+function quickMove(id){
+  const e = data.equipment.find(x=>x.id===id); if(!e) return;
+  const known = knownLocations();
+  const hint = known.length ? `\nExisting: ${known.join(", ")}` : "";
+  const loc = prompt(`New location for ${e.tag}:`+hint, e.location||"");
+  if(loc===null) return;
+  e.location = loc.trim(); e.updated = todayISO();
+  save(); refreshAll(); toast(loc.trim()?`Moved to ${loc.trim()}`:"Location cleared");
+}
+
+/* ---------- Audit ---------- */
+function refreshAudit(){
+  const sel = $("#auditLoc"); const cur = sel.value;
+  sel.innerHTML = `<option value="__all__">— All equipment —</option>` +
+    `<option value="__none__">⚠️ Unassigned (no location)</option>` +
+    knownLocations().map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+  if(!$("#auditDate").value) $("#auditDate").value = todayISO();
+}
+function auditItems(scope){
+  let items = data.equipment.slice();
+  if(scope==="__none__") items = items.filter(e=>!e.location);
+  else if(scope!=="__all__") items = items.filter(e=>(e.location||"")===scope);
+  return items.sort((a,b)=>
+    (a.location||"").localeCompare(b.location||"",undefined,{numeric:true}) ||
+    (a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
+}
+function buildAuditHTML(scope, forPrint){
+  const items = auditItems(scope);
+  const title = scope==="__all__" ? "All Equipment"
+            : scope==="__none__" ? "Unassigned Equipment"
+            : scope;
+  const by = $("#auditBy").value.trim();
+  const date = fmtDate($("#auditDate").value) || fmtDate(todayISO());
+  const showLocCol = (scope==="__all__");
+
+  const rows = items.length ? items.map((e,i)=>`
+    <tr>
+      <td class="num">${i+1}</td>
+      <td><b>${esc(e.tag||"")}</b></td>
+      <td>${esc(e.type||"")}</td>
+      ${showLocCol?`<td>${esc(e.location||"—")}</td>`:""}
+      <td>${esc(e.notes||"")}</td>
+      <td class="chk">☐</td>
+    </tr>`).join("")
+    : `<tr><td colspan="${showLocCol?6:5}" style="text-align:center;color:#888;padding:18px">No equipment in this area.</td></tr>`;
+
+  return `
+    <div class="sheet-head">
+      <div>
+        <div class="title">Equipment Audit — ${esc(title)}</div>
+        <div style="font-size:13px;color:#555">${items.length} item${items.length===1?"":"s"}</div>
+      </div>
+      <div class="info">
+        Date: <b>${esc(date)}</b><br>
+        Audited by: <b>${esc(by||"____________")}</b>
+      </div>
+    </div>
+    <table class="audit">
+      <thead><tr>
+        <th>#</th><th>Asset Tag</th><th>Type</th>
+        ${showLocCol?"<th>Location</th>":""}
+        <th>Notes</th><th>Verified</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:12px;color:#777;margin-top:14px">
+      Check (✔) each unit as you physically verify it on site.
+      Generated ${esc(fmtDate(todayISO()))}.
+    </p>`;
+}
+$("#genAudit").addEventListener("click", ()=>{
+  const scope = $("#auditLoc").value;
+  const html = buildAuditHTML(scope, false);
+  $("#auditPreview").innerHTML = `
+    <div class="card pad" style="margin-top:14px">${html}
+      <div class="btnrow no-print">
+        <button class="btn navy" id="printAudit">🖨️ Print / Save as PDF</button>
+      </div>
+    </div>`;
+  $("#printAudit").addEventListener("click", ()=>doPrint(scope));
+  $("#auditPreview").scrollIntoView({behavior:"smooth",block:"start"});
+});
+function doPrint(scope){
+  $("#printArea").innerHTML = buildAuditHTML(scope, true);
+  window.print();
+}
+
+/* ---------- Settings: types ---------- */
+function renderTypes(){
+  $("#typeManage").innerHTML = data.types.map((t,i)=>`
+    <div class="manage-row">
+      <span>${esc(t)}</span>
+      <button class="iconbtn type-del" data-i="${i}" title="Remove">🗑️</button>
+    </div>`).join("") || `<p class="hint">No types yet — add one below.</p>`;
+}
+$("#typeManage").addEventListener("click", e=>{
+  const b = e.target.closest(".type-del"); if(!b) return;
+  const i = +b.dataset.i; const t = data.types[i];
+  const inUse = data.equipment.some(eq=>eq.type===t);
+  if(inUse && !confirm(`"${t}" is used by some equipment. Remove the type anyway? (Those items keep their type label.)`)) return;
+  data.types.splice(i,1); save(); renderTypes();
+});
+$("#addTypeBtn").addEventListener("click", ()=>{
+  const v = $("#newType").value.trim(); if(!v) return;
+  if(data.types.some(t=>t.toLowerCase()===v.toLowerCase())){ toast("Type already exists"); return; }
+  data.types.push(v); $("#newType").value=""; save(); renderTypes(); toast("Type added");
+});
+$("#newType").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#addTypeBtn").click(); });
+
+/* ---------- Backup / restore ---------- */
+$("#exportBtn").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `equipment-backup-${todayISO()}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  toast("Backup downloaded");
+});
+$("#importBtn").addEventListener("click", ()=>$("#importFile").click());
+$("#importFile").addEventListener("change", e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const d = JSON.parse(r.result);
+      if(!Array.isArray(d.equipment)) throw new Error("bad file");
+      if(!confirm(`Import ${d.equipment.length} items? This replaces your current data.`)) return;
+      data = { equipment:d.equipment, types: Array.isArray(d.types)&&d.types.length? d.types : DEFAULT_TYPES.slice() };
+      save(); refreshAll(); renderTypes(); toast("Backup imported");
+    }catch(err){ alert("That file isn't a valid backup."); }
+    $("#importFile").value="";
+  };
+  r.readAsText(file);
+});
+$("#clearBtn").addEventListener("click", ()=>{
+  if(!confirm("Delete ALL equipment and reset types? This cannot be undone.")) return;
+  if(!confirm("Really delete everything?")) return;
+  data = { equipment:[], types: DEFAULT_TYPES.slice() };
+  save(); refreshAll(); renderTypes(); toast("All data cleared");
+});
+
+/* ---------- Refresh orchestration ---------- */
+function refreshAll(){ renderList(); refreshLocationFilter(); refreshAudit(); updateHdr(); }
+function updateHdr(){
+  const n = data.equipment.length;
+  const locs = knownLocations().length;
+  $("#hdrSub").textContent = n ? `${n} unit${n===1?"":"s"} · ${locs} location${locs===1?"":"s"}` : "Ground support equipment · staging & audits";
+}
+
+/* ---------- Init ---------- */
+refreshAll();
+</script>
+</body>
+</html>
