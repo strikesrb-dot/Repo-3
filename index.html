@@ -21,6 +21,7 @@
   html{touch-action:manipulation}
   button,a,.chip,.selpill,.hubtile,.iconbtn,summary{touch-action:manipulation}
   #hdrTitle{cursor:pointer}
+  [hidden]{display:none !important}
   .hubgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:6px 2px}
   .hubtile{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 2px 10px rgba(20,40,70,.08);padding:22px 10px;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;text-align:center;line-height:1.2}
   .hubtile:active{transform:scale(.97)}
@@ -29,11 +30,17 @@
   .hubgrid.one{grid-template-columns:1fr}
   .ic{width:1em;height:1em;vertical-align:-.15em;display:inline-block;flex:none}
   .hubtile .hi .ic{width:34px;height:34px;vertical-align:0}
-  header{position:sticky;top:0;z-index:20;background:var(--melon);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;box-shadow:var(--shadow);}
-  .hdrbtn{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:12px;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px}
-  .hdrbtn:active{background:rgba(255,255,255,.30)}
-  header h1{margin:0;font-size:18px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
-  header .sub{margin:2px 0 0;font-size:12px;color:#bcd3e6}
+  header{position:sticky;top:0;z-index:20;color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 13px;
+    background:linear-gradient(135deg,#ff6a5e 0%,#fc4c4e 45%,#e63673 100%);box-shadow:0 6px 18px rgba(230,54,78,.28)}
+  .hdr-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .brand{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+  .brand .logo .ic{width:20px;height:20px;vertical-align:0}
+  .brand .wordmark{font-size:22px;font-weight:800;letter-spacing:1.5px;line-height:1}
+  .homebtn{width:38px;height:38px;border:none;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  .homebtn:active{background:rgba(255,255,255,.3);transform:scale(.94)}
+  .homebtn .ic{width:20px;height:20px;vertical-align:0}
+  header .sub{margin:9px 2px 0;font-size:12px;font-weight:500;color:rgba(255,255,255,.82);letter-spacing:.2px}
   main{max-width:760px;margin:0 auto;padding:14px}
   .view{display:none}.view.active{display:block}
   h2.section{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 4px 8px}
@@ -128,6 +135,7 @@
   .specs>div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #eceff2;font-size:14px}
   .specs>div b{color:var(--muted);font-weight:600}
   .specs>div span{text-align:right}
+  .fr24{display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
   @keyframes zoomIn{from{transform:scale(.88);opacity:.3}to{transform:scale(1);opacity:1}}
   @keyframes zoomOut{from{transform:scale(1.12);opacity:.3}to{transform:scale(1);opacity:1}}
   .zoomin{animation:zoomIn .24s cubic-bezier(.2,.7,.3,1)}
@@ -166,8 +174,13 @@
 </head>
 <body>
 <header>
-  <button id="homeBtn" class="hdrbtn" hidden><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</button>
-  <h1 id="hdrTitle">ELT</h1>
+  <div class="hdr-row">
+    <div class="brand" id="hdrTitle">
+      <span class="logo"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
+      <span class="wordmark">ELT</span>
+    </div>
+    <button id="homeBtn" class="homebtn" hidden aria-label="Home" title="Home"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
+  </div>
   <p class="sub" id="hdrSub">Ground support equipment · staging &amp; audits</p>
 </header>
 
@@ -453,7 +466,8 @@ function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" 
   <div class="main"><div class="tag">✈ ${hasShip?"Nose "+esc(a.ship):esc(a.reg||"(no tail)")}</div>
   <div class="meta">${esc(a.type||"Unknown type")}</div>
   <div style="margin-top:6px">${hasShip?`<span class="loc">${esc(a.reg||"(no tail)")}</span>`:`<span class="loc">Regional · United Express</span>`}${sp?` <span class="hint" style="font-size:11px">▾ tap for specs</span>`:""}</div></div></summary>
-  ${sp?specHtml(sp):'<p class="hint" style="padding:0 14px 12px">No spec sheet for this type yet.</p>'}</details>`;}
+  ${sp?specHtml(sp):'<p class="hint" style="padding:8px 14px 4px">No spec sheet for this type yet.</p>'}
+  ${a.reg?`<div style="padding:4px 14px 14px"><a class="btn ghost fr24" href="https://www.flightradar24.com/data/aircraft/${esc(a.reg.toLowerCase())}" target="_blank" rel="noopener">Track ${esc(a.reg)} on FlightRadar24 <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></div>`:""}</details>`;}
 function renderAircraftLookup(){
   const el=$("#acFleetN");if(el)el.textContent=`${FLEET.length.toLocaleString()} United aircraft loaded · works offline`;
   const q=($("#acSearch").value||"").trim().toUpperCase();
