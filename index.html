@@ -157,6 +157,16 @@
   .lockmini{background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:700;margin-left:6px;cursor:pointer}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
   .chip{background:#eef2f5;border:1px solid var(--line);padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600}
+  /* inventory wizard step indicator */
+  .wiz-steps{display:flex;align-items:center;justify-content:center;gap:3px;margin:2px 0 12px}
+  .wstep{display:flex;align-items:center;gap:6px;border:none;background:transparent;padding:3px 5px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}
+  .wstep .wsn{width:22px;height:22px;border-radius:50%;background:#e7ebef;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none}
+  .wstep.on{color:var(--navy)}
+  .wstep.on .wsn{background:var(--navy);color:#fff}
+  .wstep.done{color:var(--ink)}
+  .wstep.done .wsn{background:var(--good);color:#fff}
+  .wstep:disabled{cursor:default;opacity:.85}
+  .wsep{flex:0 0 18px;height:2px;background:#e2e7eb;border-radius:2px}
   /* inventory location / zone tiles */
   .loc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
   .loc-tile{display:flex;align-items:center;gap:11px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 13px;font-size:16px;font-weight:700;color:var(--ink);cursor:pointer;text-align:left;box-shadow:0 1px 3px rgba(20,40,70,.06)}
@@ -800,7 +810,20 @@ function topLocs(){const out=[],seen=new Set();invLocs().forEach(l=>{if(!seen.ha
 function locCovered(top){return inv.covered.includes(top);}
 function renderInventory(){const r=$("#invRoot");
   ({loc:renderInvLoc,select:renderInvSelect,sheet:renderInvSheet}[inv.stage]||renderInvLoc)(r);
-  const c=r.firstElementChild;if(c)c.classList.add(inv.stage==="select"?"zoomin":"zoomout");}
+  const c=r.firstElementChild;if(c)c.classList.add(inv.stage==="select"?"zoomin":"zoomout");
+  injectWizSteps(r);}
+function injectWizSteps(r){
+  const steps=[["loc","Location"],["select","Count"],["sheet","Sheet"]],order=["loc","select","sheet"],cur=order.indexOf(inv.stage);
+  const html=`<div class="wiz-steps">`+steps.map(([k,label],i)=>{
+    const cls=i===cur?"on":i<cur?"done":"todo";
+    const dis=(k==="select"&&i!==cur)||(k==="sheet"&&!inv.covered.length&&i!==cur);
+    return `<button class="wstep ${cls}" data-step="${k}"${dis?" disabled":""}><span class="wsn">${i<cur?"✓":i+1}</span><span class="wsl">${label}</span></button>`;
+  }).join(`<span class="wsep"></span>`)+`</div>`;
+  r.insertAdjacentHTML("afterbegin",html);
+  $$("#invRoot .wstep").forEach(b=>b.addEventListener("click",()=>{const s=b.dataset.step;if(b.disabled)return;
+    closeInvPop();
+    if(s==="loc"){inv.stage="loc";inv.loc=null;renderInventory();}
+    else if(s==="sheet"&&inv.covered.length){inv.stage="sheet";renderInventory();}}));}
 const PIN_SVG=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
 function locTile(name,attr,done,sub){
   return `<button class="loc-tile ${done?'done':''}" ${attr}>
@@ -825,8 +848,7 @@ function renderInvLoc(r){
 function renderInvSelect(r){
   invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map(); // start fresh — no auto-highlight
   r.innerHTML=`<div class="card pad" style="padding-bottom:6px">
-    <div class="crumbs">Inventory</div>
-    <h3 style="margin:2px 0 2px">Equipment at ${esc(inv.loc)}</h3>
+    <h3 style="margin:0 0 2px">Equipment at ${esc(inv.loc)}</h3>
     <p class="hint" style="margin-top:2px">Tap a unit, then confirm it's here or mark it out of service.</p>
     <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:8px 0" /></div>
     <div id="invList" style="margin-top:10px;display:flex;flex-direction:column;gap:12px"></div>`;
