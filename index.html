@@ -13,6 +13,8 @@
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4;padding-bottom:84px;}
   header{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;box-shadow:var(--shadow);}
+  .backbtn{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:14px;background:rgba(255,255,255,.16);color:#fff;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700}
+  .backbtn:active{background:rgba(255,255,255,.28)}
   header h1{margin:0;font-size:18px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
   header .sub{margin:2px 0 0;font-size:12px;color:#bcd3e6}
   main{max-width:760px;margin:0 auto;padding:14px}
@@ -76,6 +78,7 @@
   .manage-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
   .manage-row span{flex:1}
   .areahdr{font-size:13px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 2px}
+  .regionhdr{font-size:14px;font-weight:800;color:#fff;background:var(--navy);border-radius:8px;padding:5px 10px;letter-spacing:.6px;text-transform:uppercase;margin:16px 0 6px}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
   .ac-ok{background:var(--good-bg);border:1px solid #bfe0cb;color:#15622f;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-top:8px}
   .ac-no{background:#fff7e8;border:1px solid #f0d9a8;border-radius:10px;padding:10px 12px;margin-top:8px}
@@ -113,6 +116,7 @@
 </head>
 <body>
 <header>
+  <button id="backBtn" class="backbtn" hidden>‹ Back</button>
   <h1>✈️ Equipment Location Tracker</h1>
   <p class="sub" id="hdrSub">Ground support equipment · staging &amp; audits</p>
 </header>
@@ -257,21 +261,24 @@ const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v1",SEEN_KEY="elt.seenMaster.v1";
 const MASTER_URL="equipment.json",FLEET_URL="aircraft.json";
 const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (AC Cart)","Air Start Unit (ASU)",
   "Stairs","Stair Truck","Belt Loader","Pushback Tractor / Tug","Baggage Cart","Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
-const LOC_SEED_V=5;
+const LOC_SEED_V=9;
 function R(pre,a,b){const o=[];for(let i=a;i<=b;i++)o.push(pre+i);return o;}
 const LOC_SEED=[
   ["Staging",false,["Staging Area"]],
-  ["Amelia",true,["AML17","AML18","AML19","AML20","AML21","AML22","AML26","AML27","AML28","AML30","AML31","AML32","AML33","AML33A","AML36","AML36A","AML37","AML38","AML38A"]],
-  ["Amelia",false,["Amelia Staging Area"]],
-  ["Lindy",true,R("LIND",1,9)],
-  ["Murphy",true,R("MUR",1,6)],
-  ["Ballpark",true,R("A10-",1,5).concat(R("BP",1,15))],
+  ["Amelia",true,["AML17","AML18","AML19","AML20","AML21","AML22","AML26","AML27","AML28","AML30","AML31","AML32","AML33","AML33A","AML36","AML36A","AML37","AML38","AML38A"],"South"],
+  ["Amelia Staging Area",false,["Amelia Staging Area"],"South"],
+  ["Lindy",true,R("LIND",1,8).concat(["LIND1A","LIND3A","LIND5A","LIND7A"]),"South"],
+  ["Murphy",true,R("MUR",1,6),"Ballpark"],
+  ["Ballpark",true,R("A10-",1,5).concat(R("BP",1,11)),"Ballpark"],
+  ["Ballpark",true,R("BP",12,15),"Ballpark",true],
   ["A12 Parking",true,R("A12-",1,12)],
   ["C4",true,["C71R","C71S","C71T","C71V","C71X"]],
-  ["Turnpike",true,R("TNPK",1,5)],
-  ["WestPark",true,["54C","54R","55L","55R","56C","H52","H54B","H54C","H56C","HB1","HB2","MX1","Sierra 1","Sierra 2","Sierra 3"].concat(R("UP",1,9),["CL1","CL2","CL3"])],
-  ["Remote",true,R("TL",81,86).concat(R("TW",5,18),R("TY",2,8),["OA HOLD 1","OA HOLD 2"])]];
-const DEFAULT_LOCATIONS=LOC_SEED.flatMap(([area,ac,names])=>names.map(name=>({name,area,holdsAircraft:ac})));
+  ["Turnpike",true,R("TNPK",1,5),"",true],
+  ["Hangar",true,["54C","54R","55L","55R","56C","H52","H54B","H54C","H56C","HB1","HB2","MX1"],"WestPark"],
+  ["Sierra",true,["Sierra 1","Sierra 2","Sierra 3"],"WestPark"],
+  ["UPS",true,R("UP",1,9),"WestPark"],
+  ["CL",true,["CL1","CL2","CL3"],"WestPark"]];
+const DEFAULT_LOCATIONS=LOC_SEED.flatMap(([area,ac,names,region,hidden])=>names.map(name=>({name,area,holdsAircraft:ac,region:region||"",hidden:!!hidden})));
 
 let data=load();
 function load(){
@@ -279,13 +286,16 @@ function load(){
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={};
   d.locations=(d.locations&&d.locations.length?d.locations:DEFAULT_LOCATIONS.slice())
-    .map(l=>({name:l.name,area:l.area||l.name,holdsAircraft:l.holdsAircraft!=null?!!l.holdsAircraft:l.kind==='spot'}));
+    .map(l=>({name:l.name,area:l.area||l.name,holdsAircraft:l.holdsAircraft!=null?!!l.holdsAircraft:l.kind==='spot',region:l.region||"",hidden:!!l.hidden}));
   // one-time merge of seeded spots (keeps any equipment; adds spots not present)
   if((d.locSeedV||0)<LOC_SEED_V){
-    const PRUNE=[/^BP HOLD /i,/^B HOLD /i,/^S[123]$/i]; // removed/renamed seeds (S1-3 -> Sierra 1-3)
+    const PRUNE=[/^BP HOLD /i,/^B HOLD /i,/^S[123]$/i,/^LIND9$/i,/^TL\d+$/i,/^TW\d+$/i,/^TY\d+$/i,/^OA HOLD /i]; // removed/renamed seeds
     d.locations=d.locations.filter(l=>!PRUNE.some(rx=>rx.test(l.name)));
     const have=new Set(d.locations.map(l=>l.name.toLowerCase()));
     DEFAULT_LOCATIONS.forEach(dl=>{if(!have.has(dl.name.toLowerCase()))d.locations.push({...dl});});
+    // remap seeded spots to current seed's area/region/hidden (by name)
+    const seedByName={}; DEFAULT_LOCATIONS.forEach(dl=>{seedByName[dl.name.toLowerCase()]=dl;});
+    d.locations.forEach(l=>{const s=seedByName[l.name.toLowerCase()];if(s){l.area=s.area;l.region=s.region;if(s.hidden)l.hidden=true;}});
     d.locSeedV=LOC_SEED_V;
   }
   return d;
@@ -303,8 +313,15 @@ let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add
 function locNames(){return data.locations.map(l=>l.name);}
 function locObj(n){return data.locations.find(l=>l.name===n);}
 function holdsAircraft(n){const l=locObj(n);return l?!!l.holdsAircraft:false;}
-function areasList(){const o=[];data.locations.forEach(l=>{if(!o.includes(l.area))o.push(l.area);});return o.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));}
-function spotsInArea(a){return data.locations.filter(l=>l.area===a).sort((x,y)=>x.name.localeCompare(y.name,undefined,{numeric:true,sensitivity:"base"}));}
+let VIS_ALL=false, showHidden=false;
+function visLocs(){return VIS_ALL?data.locations:data.locations.filter(l=>!l.hidden);}
+function areasList(){const o=[];visLocs().forEach(l=>{if(!o.includes(l.area))o.push(l.area);});return o.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));}
+function regionOfArea(a){const l=data.locations.find(x=>x.area===a);return l&&l.region?l.region:"";}
+function regionsOrdered(){const seen=[];data.locations.forEach(l=>{const r=l.region||"";if(!seen.includes(r))seen.push(r);});return seen.sort((a,b)=>(a===""?1:0)-(b===""?1:0)||a.localeCompare(b));}
+function areasInRegion(r){return areasList().filter(a=>regionOfArea(a)===r);}
+function regionHdr(r){const hasRegions=regionsOrdered().some(x=>x);if(!hasRegions)return "";return `<div class="regionhdr">${esc(r||"Other")}</div>`;}
+function spotsInArea(a){return visLocs().filter(l=>l.area===a).sort((x,y)=>x.name.localeCompare(y.name,undefined,{numeric:true,sensitivity:"base"}));}
+function hiddenCount(){return data.locations.filter(l=>l.hidden).length;}
 function knownLocations(){const s=new Set(locNames());data.equipment.forEach(e=>{if(e.location)s.add(e.location);});
   return [...s].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));}
 function groupByType(items){
@@ -328,12 +345,26 @@ function rememberAircraft(ship,reg,type){ship=String(ship).trim();reg=(reg||"").
 function updateFleetStatus(){const el=$("#fleetStatus");if(el)el.textContent=`${FLEET.length.toLocaleString()} aircraft loaded (ship # → tail # + type).`;}
 
 /* ---- tabs ---- */
-function showTab(n){$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
-  $$("nav.tabbar button").forEach(b=>b.classList.toggle("active",b.dataset.tab===n));window.scrollTo(0,0);}
+let curTab="equipment";
+function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
+  $$("nav.tabbar button").forEach(b=>b.classList.toggle("active",b.dataset.tab===n));window.scrollTo(0,0);updateBackBtn();}
 $$("nav.tabbar button").forEach(b=>b.addEventListener("click",()=>{const t=b.dataset.tab;showTab(t);
   if(t==="inventory")renderInventory();if(t==="audit")refreshAudit();
   if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}));
 $("#addBtn").addEventListener("click",()=>openEdit(null));
+function updateBackBtn(){$("#backBtn").hidden = (curTab==="equipment");}
+function headerBack(){
+  if($("#editOverlay").classList.contains("open")){closeEdit();return;}
+  if(curTab==="inventory"){const s=inv.stage;
+    if(s==="spot")inv.stage="area";
+    else if(s==="aircraft")inv.stage="spot";
+    else if(s==="select")inv.stage=holdsAircraft(inv.spot)?"aircraft":"spot";
+    else if(s==="next"||s==="sheet")inv.stage="area";
+    else{showTab("equipment");return;}
+    renderInventory();return;}
+  showTab("equipment");
+}
+$("#backBtn").addEventListener("click",headerBack);
 
 /* ---- equipment list ---- */
 function renderList(){
@@ -403,7 +434,8 @@ function renderInvArea(r){
     <h3 style="margin:6px 0 2px">Inventory walk-through</h3>
     <p class="hint" style="margin-top:0">Pick the area you're in, then the spot.</p>
     ${coveredChips()}
-    <div class="chips" id="areaChips">${areasList().map(a=>`<button class="chip" data-a="${esc(a)}">${esc(a)}</button>`).join("")}</div>
+    <div id="areaChips">${regionsOrdered().map(rg=>{const as=areasInRegion(rg);if(!as.length)return "";
+      return regionHdr(rg)+`<div class="chips">`+as.map(a=>`<button class="chip" data-a="${esc(a)}">${esc(a)}</button>`).join("")+`</div>`;}).join("")}</div>
     ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">✅ Finish &amp; generate sheet (${inv.covered.length})</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="reset">Start over</button></div>`:""}</div>`;
   $$("#areaChips .chip").forEach(c=>c.addEventListener("click",()=>{inv.area=c.dataset.a;inv.stage="spot";renderInventory();}));
@@ -551,12 +583,12 @@ function buildSheetHTML(spotNames,title){
 function refreshAudit(){const sel=$("#auditLoc"),cur=sel.value;
   sel.innerHTML=`<option value="__all__">— All areas —</option>`+
     areasList().map(a=>`<option value="area:${esc(a)}">Area: ${esc(a)}</option>`).join("")+
-    locNames().map(s=>`<option value="spot:${esc(s)}">Spot: ${esc(s)}</option>`).join("");
+    visLocs().map(l=>`<option value="spot:${esc(l.name)}">Spot: ${esc(l.name)}</option>`).join("");
   if([...sel.options].some(o=>o.value===cur))sel.value=cur;
   if(!$("#auditDate").value)$("#auditDate").value=todayISO();}
 $("#genAudit").addEventListener("click",()=>{
   const v=$("#auditLoc").value;let spots,title;
-  if(v==="__all__"){spots=locNames();title="Equipment Audit — All Areas";}
+  if(v==="__all__"){spots=visLocs().map(l=>l.name);title="Equipment Audit — All Areas";}
   else if(v.startsWith("area:")){const a=v.slice(5);spots=spotsInArea(a).map(s=>s.name);title="Equipment Audit — "+a;}
   else{const s=v.slice(5);spots=[s];title="Equipment Audit — "+s;}
   const html=buildSheetHTML(spots,title);
@@ -567,19 +599,28 @@ $("#genAudit").addEventListener("click",()=>{
 
 /* ---- settings: areas & spots ---- */
 let newSpotAc=false,bulkAc=true;
-function fillAreaList(){$("#areaList").innerHTML=areasList().map(a=>`<option value="${esc(a)}">`).join("");}
+function fillAreaList(){const o=[];data.locations.forEach(l=>{if(!o.includes(l.area))o.push(l.area);});$("#areaList").innerHTML=o.map(a=>`<option value="${esc(a)}">`).join("");}
 $("#acFlag").addEventListener("click",()=>{newSpotAc=!newSpotAc;$("#acFlag").classList.toggle("sel",newSpotAc);});
 $("#bAcFlag").addEventListener("click",()=>{bulkAc=!bulkAc;$("#bAcFlag").classList.toggle("sel",bulkAc);});
 function renderLocs(){
+  const hc=hiddenCount();
+  const toggle=hc?`<button class="btn ghost sm" id="showHiddenBtn" style="width:100%;margin-bottom:10px">${showHidden?'🙈 Hide hidden':'👁 Show hidden ('+hc+')'}</button>`:"";
   if(!data.locations.length){$("#locManage").innerHTML=`<p class="hint">No spots yet.</p>`;return;}
-  $("#locManage").innerHTML=areasList().map(a=>`<div class="areahdr">${esc(a)}</div>`+
+  VIS_ALL=showHidden;
+  const body=regionsOrdered().map(rg=>{const as=areasInRegion(rg);if(!as.length)return "";
+    return regionHdr(rg)+as.map(a=>`<div class="areahdr">${esc(a)}</div>`+
     spotsInArea(a).map(l=>{const i=data.locations.indexOf(l);
-      return `<div class="manage-row"><span>${esc(l.name)} ${l.holdsAircraft?'<span class="pill ac">✈</span>':'<span class="pill st">staging</span>'}</span>
+      return `<div class="manage-row"${l.hidden?' style="opacity:.55"':''}><span>${esc(l.name)} ${l.holdsAircraft?'<span class="pill ac">✈</span>':'<span class="pill st">staging</span>'} ${l.hidden?'<span class="pill st">hidden</span>':''}</span>
+        <button class="iconbtn loc-hide" data-i="${i}" title="${l.hidden?'Unhide':'Hide'}">${l.hidden?'🙈':'👁'}</button>
         <button class="iconbtn loc-ac" data-i="${i}" title="Toggle aircraft">✈</button>
-        <button class="iconbtn loc-del" data-i="${i}" title="Remove">🗑️</button></div>`;}).join("")).join("");
+        <button class="iconbtn loc-del" data-i="${i}" title="Remove">🗑️</button></div>`;}).join("")).join("");}).join("");
+  VIS_ALL=false;
+  $("#locManage").innerHTML=toggle+body;
 }
 $("#locManage").addEventListener("click",e=>{
-  const ac=e.target.closest(".loc-ac"),d=e.target.closest(".loc-del");
+  const sh=e.target.closest("#showHiddenBtn");if(sh){showHidden=!showHidden;renderLocs();return;}
+  const ac=e.target.closest(".loc-ac"),d=e.target.closest(".loc-del"),hd=e.target.closest(".loc-hide");
+  if(hd){const l=data.locations[+hd.dataset.i];l.hidden=!l.hidden;save();renderLocs();fillAreaList();refreshAll();return;}
   if(ac){const l=data.locations[+ac.dataset.i];l.holdsAircraft=!l.holdsAircraft;save();renderLocs();}
   if(d){const l=data.locations[+d.dataset.i];if(!confirm(`Remove "${l.name}"?`))return;
     data.locations.splice(+d.dataset.i,1);save();renderLocs();fillAreaList();refreshAll();}});
@@ -587,14 +628,14 @@ $("#addSpotBtn").addEventListener("click",()=>{
   const name=$("#newSpot").value.trim(),area=$("#newArea").value.trim()||name;
   if(!name)return;
   if(data.locations.some(l=>l.name.toLowerCase()===name.toLowerCase())){toast("That spot exists");return;}
-  data.locations.push({name,area,holdsAircraft:newSpotAc});
+  data.locations.push({name,area,holdsAircraft:newSpotAc,region:regionOfArea(area)});
   $("#newSpot").value="";save();renderLocs();fillAreaList();refreshAll();toast("Spot added");});
 $("#bulkBtn").addEventListener("click",()=>{
   const pre=$("#bPrefix").value.trim(),s=parseInt($("#bStart").value,10),en=parseInt($("#bEnd").value,10),area=$("#bArea").value.trim()||pre;
   if(isNaN(s)||isNaN(en)||en<s){toast("Enter a valid number range");return;}
   if(en-s>500){toast("Range too large");return;}
   let added=0;for(let i=s;i<=en;i++){const name=pre+i;
-    if(!data.locations.some(l=>l.name.toLowerCase()===name.toLowerCase())){data.locations.push({name,area,holdsAircraft:bulkAc});added++;}}
+    if(!data.locations.some(l=>l.name.toLowerCase()===name.toLowerCase())){data.locations.push({name,area,holdsAircraft:bulkAc,region:regionOfArea(area)});added++;}}
   save();renderLocs();fillAreaList();refreshAll();toast(`Added ${added} spot(s)`);
   $("#bPrefix").value=$("#bStart").value=$("#bEnd").value="";});
 
