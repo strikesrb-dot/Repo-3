@@ -84,6 +84,19 @@
   .ac-no{background:#fff7e8;border:1px solid #f0d9a8;border-radius:10px;padding:10px 12px;margin-top:8px}
   .step{font-size:12px;font-weight:700;color:var(--accent-d);letter-spacing:.5px;text-transform:uppercase}
   .crumbs{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .wiz-stepn{font-size:12px;font-weight:800;color:var(--accent-d);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+  .wiz-prog{height:7px;background:#e3e8ec;border-radius:999px;overflow:hidden;margin-bottom:12px}
+  .wiz-prog > i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .25s}
+  .wiz-foot{position:fixed;left:0;right:0;z-index:25;display:flex;gap:10px;padding:10px 14px;background:#fff;border-top:1px solid var(--line)}
+  .wiz-foot button{margin-top:0}
+  .spotgrp{margin:10px 0 4px;font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:6px}
+  .spotgrp::after{content:"";flex:1;height:1px;background:var(--line)}
+  .spotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+  .spotgrid .chip{text-align:center;padding:12px 6px}
+  @keyframes zoomIn{from{transform:scale(.88);opacity:.3}to{transform:scale(1);opacity:1}}
+  @keyframes zoomOut{from{transform:scale(1.12);opacity:.3}to{transform:scale(1);opacity:1}}
+  .zoomin{animation:zoomIn .24s cubic-bezier(.2,.7,.3,1)}
+  .zoomout{animation:zoomOut .24s cubic-bezier(.2,.7,.3,1)}
   .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
   .pill.ac{background:#fff3e0;color:#9a5b00}.pill.st{background:#eef2f5;color:#3a4855}
   table.audit{width:100%;border-collapse:collapse;font-size:14px}
@@ -134,7 +147,12 @@
   </section>
 
   <!-- INVENTORY -->
-  <section id="view-inventory" class="view"><div id="invRoot"></div></section>
+  <section id="view-inventory" class="view"><div id="invRoot"></div>
+    <div id="wizFoot" class="wiz-foot" hidden>
+      <button class="btn ghost" id="wizBack" style="flex:0 0 38%">‹ Back</button>
+      <button class="btn navy" id="wizNext">Next ›</button>
+    </div>
+  </section>
 
   <!-- QUICK SHEET -->
   <section id="view-audit" class="view">
@@ -329,7 +347,8 @@ function visLocs(){return VIS_ALL?data.locations:data.locations.filter(l=>!l.hid
 function areasList(){const o=[];visLocs().forEach(l=>{if(!o.includes(l.area))o.push(l.area);});return o.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));}
 function regionOfArea(a){const l=data.locations.find(x=>x.area===a);return l&&l.region?l.region:"";}
 function regionsOrdered(){const seen=[];data.locations.forEach(l=>{const r=l.region||"";if(!seen.includes(r))seen.push(r);});return seen.sort((a,b)=>(a===""?1:0)-(b===""?1:0)||a.localeCompare(b));}
-function areasInRegion(r){return areasList().filter(a=>regionOfArea(a)===r);}
+function zoneIsStaging(a){const sp=spotsInArea(a);return sp.length>0&&sp.every(s=>!s.holdsAircraft);}
+function areasInRegion(r){return areasList().filter(a=>regionOfArea(a)===r).sort((a,b)=>(zoneIsStaging(a)?0:1)-(zoneIsStaging(b)?0:1));}
 function regionHdr(r){const hasRegions=regionsOrdered().some(x=>x);if(!hasRegions)return "";return `<div class="regionhdr">${esc(r||"Other")}</div>`;}
 function spotsInArea(a){return visLocs().filter(l=>l.area===a).sort((x,y)=>x.name.localeCompare(y.name,undefined,{numeric:true,sensitivity:"base"}));}
 function hiddenCount(){return data.locations.filter(l=>l.hidden).length;}
@@ -385,7 +404,8 @@ $("#acSearch")&&$("#acSearch").addEventListener("input",renderAircraftLookup);
 /* ---- tabs ---- */
 let curTab="equipment";
 function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
-  $$("nav.tabbar button").forEach(b=>b.classList.toggle("active",b.dataset.tab===n));window.scrollTo(0,0);updateBackBtn();}
+  $$("nav.tabbar button").forEach(b=>b.classList.toggle("active",b.dataset.tab===n));window.scrollTo(0,0);
+  if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
 $$("nav.tabbar button").forEach(b=>b.addEventListener("click",()=>{const t=b.dataset.tab;showTab(t);
   if(t==="inventory")renderInventory();if(t==="audit")refreshAudit();
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
@@ -395,10 +415,11 @@ function updateBackBtn(){$("#backBtn").hidden = (curTab==="equipment");}
 function headerBack(){
   if($("#editOverlay").classList.contains("open")){closeEdit();return;}
   if(curTab==="inventory"){const s=inv.stage;
-    if(s==="spot")inv.stage="area";
+    if(s==="area")inv.stage="region";
+    else if(s==="spot")inv.stage=multiArea()?"area":"region";
     else if(s==="aircraft")inv.stage="spot";
     else if(s==="select")inv.stage=holdsAircraft(inv.spot)?"aircraft":"spot";
-    else if(s==="next"||s==="sheet")inv.stage="area";
+    else if(s==="next"||s==="sheet")inv.stage="region";
     else{showTab("equipment");return;}
     renderInventory();return;}
   showTab("equipment");
@@ -461,50 +482,105 @@ function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
   const loc=prompt(`New location for ${e.tag}:`,e.location||"");if(loc===null)return;
   e.location=loc.trim();e.updated=todayISO();save();refreshAll();toast(loc.trim()?`Moved to ${loc.trim()}`:"Location cleared");}
 
-/* ===================== INVENTORY ===================== */
-let inv={stage:"area",area:null,spot:null,ac:null,covered:[]},invSel=new Set();
+/* ===================== INVENTORY (wizard) ===================== */
+let inv={stage:"region",region:null,area:null,spot:null,ac:null,covered:[]},invSel=new Set();
+function newInv(){return {stage:"region",region:null,area:null,spot:null,ac:null,covered:[]};}
+const STAGE_ORDER={region:0,area:1,spot:2,aircraft:3,select:4,next:5,sheet:6};
+let lastStageIdx=0;
 function renderInventory(){const r=$("#invRoot");
-  ({area:renderInvArea,spot:renderInvSpot,aircraft:renderInvAircraft,select:renderInvSelect,next:renderInvNext,sheet:renderInvSheet}[inv.stage]||renderInvArea)(r);}
+  ({region:renderInvRegion,area:renderInvArea,spot:renderInvSpot,aircraft:renderInvAircraft,select:renderInvSelect,next:renderInvNext,sheet:renderInvSheet}[inv.stage]||renderInvRegion)(r);
+  const idx=STAGE_ORDER[inv.stage]??0,dir=idx>=lastStageIdx?"zoomin":"zoomout";lastStageIdx=idx;
+  const c=r.firstElementChild;if(c)c.classList.add(dir);}
+function multiArea(){return inv.region&&areasInRegion(inv.region).length>1;}
+// advance into a chosen area: single-spot zones jump straight to equipment
+function enterArea(){const sp=spotsInArea(inv.area);
+  if(sp.length===1){inv.spot=sp[0].name;inv.ac=data.spotAircraft[inv.spot]||null;inv.stage=holdsAircraft(inv.spot)?"aircraft":"select";}
+  else{inv.spot=null;inv.stage="spot";}
+  renderInventory();}
+function pickRegion(name,isRegion){
+  if(isRegion){inv.region=name;const as=areasInRegion(name);
+    if(as.length===1){inv.area=as[0];enterArea();}else{inv.area=null;inv.stage="area";renderInventory();}}
+  else{inv.region=null;inv.area=name;enterArea();}}
+function auditGroups(){const regions=regionsOrdered().filter(r=>r);
+  const ungrouped=areasList().filter(a=>!regionOfArea(a));
+  return [...regions.map(n=>({name:n,isRegion:true})),...ungrouped.map(n=>({name:n,isRegion:false}))];}
+function wizSeq(){const seq=["region"];if(multiArea())seq.push("area");seq.push("spot");
+  const ac=inv.spot?holdsAircraft(inv.spot):true;if(ac)seq.push("aircraft");seq.push("select");return seq;}
+function wizHeader(){const seq=wizSeq(),i=seq.indexOf(inv.stage);if(i<0)return "";const n=seq.length,pct=Math.round((i+1)/n*100);
+  const nm={region:"Which audit",area:"Pick zone",spot:"Pick spot",aircraft:"Aircraft",select:"Equipment"};
+  return `<div class="wiz-stepn">Step ${i+1} of ${n} — ${nm[inv.stage]||""}</div><div class="wiz-prog"><i style="width:${pct}%"></i></div>`;}
+function setWizFoot(cfg){const f=$("#wizFoot");
+  if(!cfg){f.hidden=true;$("#invRoot").style.paddingBottom="";return;}
+  f.hidden=false;const nb=$("#wizNext"),bb=$("#wizBack");
+  if(cfg.nextHidden){nb.style.display="none";bb.style.flex="1";}
+  else{nb.style.display="";bb.style.flex="0 0 38%";nb.textContent=cfg.nextLabel||"Next ›";nb.disabled=!cfg.nextOn;nb.onclick=cfg.nextOn?cfg.next:null;}
+  bb.textContent=cfg.backLabel||"‹ Back";bb.onclick=cfg.back;
+  const tb=document.querySelector("nav.tabbar");f.style.bottom=(tb?tb.offsetHeight:64)+"px";
+  $("#invRoot").style.paddingBottom=(f.offsetHeight+14)+"px";}
+// group spots: split by prefix and whether they carry a letter suffix (A-spots)
+function spotGroup(name){const m=name.match(/^(.*?)(\d+)([A-Za-z].*)?$/);
+  if(!m)return {key:name,label:name,ord:0,letter:false};
+  const pre=m[1].replace(/[-\s]+$/,""),letter=!!m[3];
+  return {key:pre+"|"+(letter?"A":"N"),label:letter?`${pre} · A-spots`:pre,ord:letter?1:0,pre};}
+function groupSpots(spots){const g={};spots.forEach(s=>{const k=spotGroup(s.name);(g[k.key]=g[k.key]||{...k,items:[]}).items.push(s);});
+  return Object.values(g).sort((a,b)=>(a.pre||a.label).localeCompare(b.pre||b.label,undefined,{numeric:true})||a.ord-b.ord);}
 function coveredChips(){return inv.covered.length?`<div class="chips" style="margin:8px 0">`+inv.covered.map(s=>`<span class="chip done">✓ ${esc(s)}</span>`).join("")+`</div>`:"";}
-function renderInvArea(r){
-  if(!data.locations.length){r.innerHTML=`<div class="empty"><p>Add spots first in <b>⚙️ Settings</b>.</p></div>`;return;}
+function renderInvRegion(r){
+  if(!data.locations.length){r.innerHTML=`<div class="empty"><p>Add spots first in <b>⚙️ Settings</b>.</p></div>`;setWizFoot(null);return;}
+  const groups=auditGroups();
   r.innerHTML=`<div class="card pad">
-    <div class="step">Step 1 — pick an area</div>
-    <h3 style="margin:6px 0 2px">Inventory walk-through</h3>
-    <p class="hint" style="margin-top:0">Pick the area you're in, then the spot.</p>
+    ${wizHeader()}
+    <h3 style="margin:0 0 2px">Which audit are you doing?</h3>
+    <p class="hint" style="margin-top:0">Pick the area you're auditing.</p>
     ${coveredChips()}
-    <div id="areaChips">${regionsOrdered().map(rg=>{const as=areasInRegion(rg);if(!as.length)return "";
-      return regionHdr(rg)+`<div class="chips">`+as.map(a=>`<button class="chip" data-a="${esc(a)}">${esc(a)}</button>`).join("")+`</div>`;}).join("")}</div>
-    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">✅ Finish &amp; generate sheet (${inv.covered.length})</button></div>
+    <div class="chips" id="regChips">${groups.map(g=>{const tch=g.isRegion?regionTouched(g.name):areaTouched(g.name);
+      return `<button class="chip ${tch?'done':''}" data-g="${esc(g.name)}" data-r="${g.isRegion?1:0}">${g.isRegion?'🗺️ ':'📍 '}${esc(g.name)}${tch?' ✓':''}</button>`;}).join("")}</div>
+    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">🧾 Generate sheet (${inv.covered.length})</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="reset">Start over</button></div>`:""}</div>`;
-  $$("#areaChips .chip").forEach(c=>c.addEventListener("click",()=>{inv.area=c.dataset.a;inv.stage="spot";renderInventory();}));
+  $$("#regChips .chip").forEach(c=>c.addEventListener("click",()=>pickRegion(c.dataset.g,c.dataset.r==="1")));
   $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
-  $("#reset")?.addEventListener("click",()=>{inv={stage:"area",area:null,spot:null,ac:null,covered:[]};renderInventory();});
+  $("#reset")?.addEventListener("click",()=>{inv=newInv();renderInventory();});
+  setWizFoot({back:()=>showTab("equipment"),backLabel:"‹ Exit",nextHidden:true});
+}
+function renderInvArea(r){
+  const as=areasInRegion(inv.region);
+  r.innerHTML=`<div class="card pad">
+    ${wizHeader()}
+    <div class="crumbs">${esc(inv.region)}</div>
+    <h3 style="margin:2px 0 8px">Pick a zone in ${esc(inv.region)}</h3>
+    <div class="chips" id="areaChips">${as.map(a=>`<button class="chip ${areaTouched(a)?'done':''}" data-a="${esc(a)}">${esc(a)}${areaTouched(a)?' ✓':''}</button>`).join("")}</div>
+    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">🧾 Generate sheet (${inv.covered.length})</button></div>`:""}</div>`;
+  $$("#areaChips .chip").forEach(c=>c.addEventListener("click",()=>{inv.area=c.dataset.a;enterArea();}));
+  $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
+  setWizFoot({back:()=>{inv.area=null;inv.stage="region";renderInventory();},nextHidden:true});
 }
 function renderInvSpot(r){
-  const spots=spotsInArea(inv.area);
+  const spots=spotsInArea(inv.area),groups=groupSpots(spots),multi=groups.length>1;
+  const body=groups.map(g=>(multi?`<div class="spotgrp">${esc(g.label)}</div>`:"")+
+    `<div class="spotgrid">`+g.items.map(s=>`<button class="chip ${inv.spot===s.name?'sel':''} ${inv.covered.includes(s.name)?'done':''}" data-s="${esc(s.name)}">${esc(s.name)}${s.holdsAircraft?' ✈':''}${inv.covered.includes(s.name)?' ✓':''}</button>`).join("")+`</div>`).join("");
   r.innerHTML=`<div class="card pad">
-    <div class="crumbs">${esc(inv.area)}</div>
-    <div class="step">Step 2 — pick a spot</div>
-    <h3 style="margin:6px 0 8px">${esc(inv.area)}</h3>
-    <div class="chips" id="spotChips">${spots.map(s=>`<button class="chip ${inv.covered.includes(s.name)?'done':''}" data-s="${esc(s.name)}">${esc(s.name)} ${s.holdsAircraft?'✈':''} ${inv.covered.includes(s.name)?'✓':''}</button>`).join("")}</div>
-    <div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="back">← Areas</button></div></div>`;
+    ${wizHeader()}
+    <div class="crumbs">${esc(inv.region?inv.region+" › ":"")}${esc(inv.area)}</div>
+    <h3 style="margin:2px 0 8px">Pick a spot in ${esc(inv.area)}</h3>
+    <div id="spotChips">${body||'<p class="hint">No spots in this area.</p>'}</div>
+    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">✅ Finish &amp; generate (${inv.covered.length})</button></div>`:""}</div>`;
   $$("#spotChips .chip").forEach(c=>c.addEventListener("click",()=>{
     inv.spot=c.dataset.s;inv.ac=data.spotAircraft[inv.spot]||null;
     inv.stage=holdsAircraft(inv.spot)?"aircraft":"select";renderInventory();}));
-  $("#back").addEventListener("click",()=>{inv.stage="area";renderInventory();});
+  $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
+  setWizFoot({back:()=>{inv.spot=null;inv.stage=multiArea()?"area":"region";renderInventory();},nextHidden:true});
 }
 function renderInvAircraft(r){
   const cur=inv.ac||data.spotAircraft[inv.spot]||null;
   r.innerHTML=`<div class="card pad">
+    ${wizHeader()}
     <div class="crumbs">${esc(inv.area)} › ${esc(inv.spot)}</div>
-    <div class="step">Step 3 — aircraft at ${esc(inv.spot)}</div>
-    <h3 style="margin:6px 0 8px">🛫 ${esc(inv.spot)}</h3>
+    <h3 style="margin:2px 0 2px">🛫 Aircraft at ${esc(inv.spot)} <span style="font-size:13px;color:var(--muted);font-weight:600">(optional)</span></h3>
+    <p class="hint" style="margin-top:0">Enter the ship #, or skip if there's no aircraft.</p>
     <label for="invShip">Aircraft # (ship / nose number)</label>
     <input id="invShip" inputmode="numeric" autocomplete="off" placeholder="e.g. 3461" value="${esc(cur?cur.ship:"")}" />
     <div id="invAcInfo"></div>
-    <div class="btnrow"><button class="btn ghost" id="noAc">No aircraft</button><button class="btn navy" id="acNext" style="flex:2">Next →</button></div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="acBack">← Spots</button></div></div>`;
+    <div class="btnrow"><button class="btn ghost" id="noAc">Skip — no aircraft here</button></div></div>`;
   const shipIn=$("#invShip");
   function refreshAc(){const s=shipIn.value.trim(),box=$("#invAcInfo");
     if(!s){box.innerHTML="";inv.ac=null;return;}
@@ -519,21 +595,20 @@ function renderInvAircraft(r){
   }
   shipIn.addEventListener("input",refreshAc);refreshAc();
   $("#noAc").addEventListener("click",()=>{inv.ac=null;inv.stage="select";renderInventory();});
-  $("#acNext").addEventListener("click",()=>{if(inv.ac&&inv.ac.ship&&inv.ac.reg)rememberAircraft(inv.ac.ship,inv.ac.reg,inv.ac.type);inv.stage="select";renderInventory();});
-  $("#acBack").addEventListener("click",()=>{inv.stage="spot";renderInventory();});
+  setWizFoot({back:()=>{inv.stage="spot";renderInventory();},
+    next:()=>{if(inv.ac&&inv.ac.ship&&inv.ac.reg)rememberAircraft(inv.ac.ship,inv.ac.reg,inv.ac.type);inv.stage="select";renderInventory();},
+    nextOn:true,nextLabel:"Equipment ›"});
 }
 function renderInvSelect(r){
   invSel=new Set(data.equipment.filter(e=>e.location===inv.spot).map(e=>e.id));
   const acLine=inv.ac?`<span class="pill ac">✈ ${esc(inv.ac.ship)} · ${esc(inv.ac.reg||"")} ${esc(inv.ac.type||"")}</span>`:"";
   r.innerHTML=`<div class="card pad" style="padding-bottom:6px">
+    ${wizHeader()}
     <div class="crumbs">${esc(inv.area)} › ${esc(inv.spot)}</div>
-    <div class="step">Step ${holdsAircraft(inv.spot)?'4':'3'} — equipment here</div>
-    <h3 style="margin:6px 0 2px">${esc(inv.spot)} ${acLine}</h3>
+    <h3 style="margin:2px 0 2px">Equipment at ${esc(inv.spot)} ${acLine}</h3>
     <p class="hint" style="margin-top:2px">Tap each unit by category. Items already here are pre-checked.</p>
     <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:8px 0" /></div>
-    <div class="card" style="margin-top:10px;overflow:hidden"><div class="crows" id="invList"></div></div>
-    <div class="btnrow"><button class="btn navy" id="assignBtn"></button></div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="selBack">← Back</button></div>`;
+    <div class="card" style="margin-top:10px;overflow:hidden"><div class="crows" id="invList"></div></div>`;
   function paint(){
     const q=$("#invSearch").value.trim().toLowerCase();
     let items=data.equipment.slice();
@@ -547,21 +622,32 @@ function renderInvSelect(r){
           return `<div class="crow ${on?'on':''}" data-id="${e.id}"><div class="box">${on?'✓':''}</div>
             <div><div class="ctag">${esc(e.tag)}</div></div>${el}</div>`;}).join("");
     }).join(""):`<div class="crow"><div class="ctype" style="padding:8px">No equipment. Add some on the Equipment tab.</div></div>`;
-    $("#assignBtn").textContent=`✓ Done — nest ${invSel.size} item${invSel.size===1?"":"s"} under ${inv.spot}`;
+    $("#wizNext").textContent=`✓ Nest ${invSel.size} ›`;
   }
   $("#invList").addEventListener("click",e=>{const li=e.target.closest(".crow[data-id]");if(!li)return;
     const id=li.dataset.id;if(invSel.has(id))invSel.delete(id);else invSel.add(id);paint();});
   $("#invSearch").addEventListener("input",paint);
-  $("#assignBtn").addEventListener("click",commitSpot);
-  $("#selBack").addEventListener("click",()=>{inv.stage=holdsAircraft(inv.spot)?"aircraft":"spot";renderInventory();});
+  setWizFoot({back:()=>{inv.stage=holdsAircraft(inv.spot)?"aircraft":"spot";renderInventory();},
+    next:commitSpot,nextOn:true,nextLabel:"✓ Done ›"});
   paint();
 }
+function areaTouched(a){return spotsInArea(a).some(s=>inv.covered.includes(s.name));}
+function regionTouched(name){return areasInRegion(name).some(a=>areaTouched(a));}
 function commitSpot(){
-  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=inv.spot;e.updated=todayISO();}
-    else if(e.location===inv.spot){e.location="";e.updated=todayISO();}});
-  if(holdsAircraft(inv.spot)){if(inv.ac&&inv.ac.ship)data.spotAircraft[inv.spot]=inv.ac;else delete data.spotAircraft[inv.spot];}
-  if(!inv.covered.includes(inv.spot))inv.covered.push(inv.spot);
-  save();refreshLocationFilter();inv.stage="next";renderInventory();
+  const justSpot=inv.spot,nSel=invSel.size;
+  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=justSpot;e.updated=todayISO();}
+    else if(e.location===justSpot){e.location="";e.updated=todayISO();}});
+  if(holdsAircraft(justSpot)){if(inv.ac&&inv.ac.ship)data.spotAircraft[justSpot]=inv.ac;else delete data.spotAircraft[justSpot];}
+  if(!inv.covered.includes(justSpot))inv.covered.push(justSpot);
+  save();refreshLocationFilter();
+  // zoom back out to the picker, covered areas colored in
+  inv.spot=null;inv.ac=null;
+  const moreSpots=spotsInArea(inv.area).some(s=>!inv.covered.includes(s.name));
+  if(moreSpots){inv.stage="spot";}
+  else{const reg=inv.region;inv.area=null;
+    inv.stage=(reg&&areasInRegion(reg).some(a=>spotsInArea(a).some(s=>!inv.covered.includes(s.name))))?"area":"region";}
+  toast(`✓ ${justSpot}: ${nSel} item${nSel===1?"":"s"} · ${inv.covered.length} spot(s) done`);
+  renderInventory();
 }
 function renderInvNext(r){
   const n=data.equipment.filter(e=>e.location===inv.spot).length;
@@ -574,8 +660,9 @@ function renderInvNext(r){
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="otherArea">↪ Different area</button></div>
     <div class="btnrow" style="margin-top:8px"><button class="btn" id="finish">🧾 Finish &amp; generate sheet</button></div></div>`;
   $("#sameArea")?.addEventListener("click",()=>{inv.spot=null;inv.ac=null;inv.stage="spot";renderInventory();});
-  $("#otherArea").addEventListener("click",()=>{inv.area=null;inv.spot=null;inv.ac=null;inv.stage="area";renderInventory();});
+  $("#otherArea").addEventListener("click",()=>{inv.region=null;inv.area=null;inv.spot=null;inv.ac=null;inv.stage="region";renderInventory();});
   $("#finish").addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
+  setWizFoot(null);
 }
 function renderInvSheet(r){
   const spots=inv.covered.length?inv.covered.slice():locNames();
@@ -583,7 +670,8 @@ function renderInvSheet(r){
     <div class="btnrow no-print"><button class="btn navy" id="printInv">🖨️ Print / Save as PDF</button></div>
     <div class="btnrow no-print" style="margin-top:8px"><button class="btn ghost" id="newInv">Start a new inventory</button></div></div>`;
   $("#printInv").addEventListener("click",()=>{$("#printArea").innerHTML=buildSheetHTML(spots,"Equipment Inventory");window.print();});
-  $("#newInv").addEventListener("click",()=>{inv={stage:"area",area:null,spot:null,ac:null,covered:[]};renderInventory();});
+  $("#newInv").addEventListener("click",()=>{inv=newInv();renderInventory();});
+  setWizFoot(null);
 }
 
 /* ---- sheet builder: area → spot → category ---- */
