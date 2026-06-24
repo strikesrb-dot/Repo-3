@@ -237,7 +237,9 @@
   .inv-banner .ib-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
   .inv-banner .ib-chip{font-size:12px;font-weight:700;background:rgba(255,255,255,.16);border-radius:999px;padding:3px 11px}
   .inv-banner .ib-chip.oos{background:rgba(0,0,0,.22)}
-  .inv-foot{margin-top:6px;text-align:center;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+  .inv-foot{margin-top:10px;text-align:center;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+  .inv-frame{border:2.5px solid var(--navy);border-radius:16px;padding:14px}
+  @media print{.inv-frame{border-color:#0b3d63 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   @media print{.inv-banner{background:#d2353c !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;z-index:80;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
   .floatback{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:40;background:var(--navy);color:#fff;border:none;border-radius:999px;padding:11px 18px 11px 14px;font-size:15px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.28);cursor:pointer}
@@ -737,7 +739,7 @@ function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
 /* ===================== INVENTORY (location -> equipment) ===================== */
 const EQUIP_LOCS_DEFAULT=["South","C4","Ballpark","WestPark"];
 function equipLocs(){return (data.equipLocs&&data.equipLocs.length)?data.equipLocs:EQUIP_LOCS_DEFAULT;}
-let inv={stage:"loc",loc:null,covered:[]},invSel=new Set(),invOos=new Set(),invSpot=new Map();
+let inv={stage:"loc",loc:null,covered:[]},invSel=new Set(),invOos=new Set(),invSpot=new Map(),invNose=new Map();
 function setWizFoot(cfg){const f=$("#wizFoot");
   if(!cfg){f.hidden=true;$("#invRoot").style.paddingBottom="";updateFloatBack();return;}
   f.hidden=false;const nb=$("#wizNext"),bb=$("#wizBack");
@@ -757,6 +759,9 @@ function invLocs(){const s=[...equipLocs()];data.equipment.forEach(e=>{if(e.loca
 // locations whose equipment is placed by area (+ spot) inside the floating menu
 const LOC_ZONES={"South":["Staging Area","Lindy","Amelia"]};
 function zoneSpots(zone){if(zone==="Lindy")return PARK.Lindy.order;if(zone==="Amelia")return PARK.Amelia.order;return null;}
+// aircraft-servicing spots ask for a nose number: C4, plus South's Lindy & Amelia
+function needsNose(loc,zone){return loc==="C4"||(loc==="South"&&(zone==="Lindy"||zone==="Amelia"));}
+function invDetail(spot,nose){return [spot,nose?"#"+nose:""].filter(Boolean).join(" · ");}
 function topLocs(){const out=[],seen=new Set();invLocs().forEach(l=>{if(!seen.has(l)){seen.add(l);out.push(l);}});return out;}
 function locCovered(top){return inv.covered.includes(top);}
 function renderInventory(){const r=$("#invRoot");
@@ -784,7 +789,7 @@ function renderInvLoc(r){
   setWizFoot(null);
 }
 function renderInvSelect(r){
-  invSel=new Set();invOos=new Set();invSpot=new Map(); // start fresh — no auto-highlight
+  invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map(); // start fresh — no auto-highlight
   r.innerHTML=`<div class="card pad" style="padding-bottom:6px">
     <div class="crumbs">Inventory</div>
     <h3 style="margin:2px 0 2px">Equipment at ${esc(inv.loc)}</h3>
@@ -800,8 +805,8 @@ function renderInvSelect(r){
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
       return `<div class="card catblock"><div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
-        `<div class="pillgrid">`+its.map(e=>{const oos=invOos.has(e.id),on=invSel.has(e.id),sp=invSpot.get(e.id);
-          return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${sp?`<span class="pillspot">${esc(sp)}</span>`:""}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div></div>`;
+        `<div class="pillgrid">`+its.map(e=>{const oos=invOos.has(e.id),on=invSel.has(e.id),det=invDetail(invSpot.get(e.id),invNose.get(e.id));
+          return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${det?`<span class="pillspot">${esc(det)}</span>`:""}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div></div>`;
     }).join(""):`<p class="hint" style="padding:10px 12px">No equipment yet. Add some on the Equipment List.</p>`;
     $("#wizNext").textContent=`✓ Save ${invSel.size} ›`;
   }
@@ -816,15 +821,17 @@ function openInvPop(pill,id,after){
   closeInvPop();
   const e=data.equipment.find(x=>x.id===id);if(!e)return;
   const zones=LOC_ZONES[inv.loc]; // South etc. → pick area (+spot) before here/OOS
-  const st={step:zones?"zone":"status",zone:null,spot:null};
+  const st={step:zones?"zone":"status",zone:null,spot:null,nose:""};
   const back=document.createElement("div");back.className="invpop-back";
   back.addEventListener("click",ev=>{if(ev.target===back)closeInvPop();});
   const pop=document.createElement("div");pop.className="invpop";
   back.appendChild(pop);document.body.appendChild(back);
-  const finish=oos=>{invSel.add(id);if(oos)invOos.add(id);else invOos.delete(id);
-    if(zones){const label=st.spot?st.zone+" "+st.spot:st.zone;invSpot.set(id,label);}
+  const finish=oos=>{const ni=pop.querySelector("#invNoseInput");if(ni)st.nose=ni.value.trim();
+    invSel.add(id);if(oos)invOos.add(id);else invOos.delete(id);
+    if(zones){invSpot.set(id,st.spot?st.zone+" "+st.spot:st.zone);}else invSpot.delete(id);
+    if(needsNose(inv.loc,st.zone)&&st.nose)invNose.set(id,st.nose);else invNose.delete(id);
     closeInvPop();after&&after();};
-  const remove=()=>{invSel.delete(id);invOos.delete(id);invSpot.delete(id);closeInvPop();after&&after();};
+  const remove=()=>{invSel.delete(id);invOos.delete(id);invSpot.delete(id);invNose.delete(id);closeInvPop();after&&after();};
   function draw(){
     const on=invSel.has(id),oos=invOos.has(id);
     if(st.step==="zone"){
@@ -841,7 +848,9 @@ function openInvPop(pill,id,after){
       pop.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{st.spot=b.dataset.s;st.step="status";draw();});
     }else{
       const where=zones?(st.spot?st.zone+" "+st.spot:st.zone):null;
+      const nose=needsNose(inv.loc,st.zone);
       pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")}${where?` · ${esc(where)}`:""}</div>`+
+        (nose?`<input id="invNoseInput" inputmode="numeric" autocomplete="off" placeholder="Aircraft nose #" value="${esc(st.nose||"")}" />`:"")+
         `<button class="confirmbtn" data-a="here">✓ It's here</button>`+
         `<button class="oosbtn" data-a="oos">⊘ Out of service</button>`+
         (zones?`<button class="rmbtn" data-a="sback">‹ Back</button>`
@@ -851,13 +860,14 @@ function openInvPop(pill,id,after){
     pop.querySelector('[data-a="oos"]')&&(pop.querySelector('[data-a="oos"]').onclick=()=>finish(true));
     pop.querySelector('[data-a="rm"]')&&(pop.querySelector('[data-a="rm"]').onclick=remove);
     pop.querySelector('[data-a="zback"]')&&(pop.querySelector('[data-a="zback"]').onclick=()=>{st.step="zone";draw();});
-    pop.querySelector('[data-a="sback"]')&&(pop.querySelector('[data-a="sback"]').onclick=()=>{st.step=zoneSpots(st.zone)?"spot":"zone";draw();});
+    pop.querySelector('[data-a="sback"]')&&(pop.querySelector('[data-a="sback"]').onclick=()=>{const ni=pop.querySelector("#invNoseInput");if(ni)st.nose=ni.value.trim();st.step=zoneSpots(st.zone)?"spot":"zone";draw();});
+    pop.querySelector("#invNoseInput")?.focus();
   }
   draw();
 }
 function commitInv(){
   const loc=inv.loc,n=invSel.size;
-  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.updated=todayISO();}else if(e.location===loc){e.location="";e.oos=false;e.spot="";e.updated=todayISO();}});
+  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();}else if(e.location===loc){e.location="";e.oos=false;e.spot="";e.nose="";e.updated=todayISO();}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
   inv.loc=null;inv.stage="loc";renderInventory();
@@ -872,25 +882,28 @@ function buildInvSheet(locs,mode){mode=mode||invSheetMode;
   const blocks=locs.map(loc=>{
     const items=data.equipment.filter(e=>e.location===loc);total+=items.length;
     const body=groupByType(items).map(g=>{const its=sortTags(g.items);
+      const det=e=>invDetail(e.spot,e.nose);
       const list=mode==="checklist"
-        ? `<div class="ck-list">`+its.map(e=>`<div class="ck-row ${e.oos?'oos':''}"><span class="ck-box"></span><span class="ck-tag">${esc(e.tag)}${e.spot?`<span class="pillspot">${esc(e.spot)}</span>`:""}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</span></div>`).join("")+`</div>`
-        : `<div class="li-tags">`+its.map(e=>`<span class="li-pill ${e.oos?'oos':''}">${esc(e.tag)}${e.spot?`<span class="pillspot">${esc(e.spot)}</span>`:""}${e.oos?`<span class="oos-mark">⊘ OOS</span>`:""}</span>`).join("")+`</div>`;
+        ? `<div class="ck-list">`+its.map(e=>`<div class="ck-row ${e.oos?'oos':''}"><span class="ck-box"></span><span class="ck-tag">${esc(e.tag)}${det(e)?`<span class="pillspot">${esc(det(e))}</span>`:""}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</span></div>`).join("")+`</div>`
+        : `<div class="li-tags">`+its.map(e=>`<span class="li-pill ${e.oos?'oos':''}">${esc(e.tag)}${det(e)?`<span class="pillspot">${esc(det(e))}</span>`:""}${e.oos?`<span class="oos-mark">⊘ OOS</span>`:""}</span>`).join("")+`</div>`;
       return `<div class="cat-h"><span>${esc(g.type)}</span><span class="cat-n">${g.items.length}</span></div>${list}`;
     }).join("");
     return `<div class="sh-loc"><div class="sh-loc-h"><span>${esc(loc)}</span><span class="sh-loc-n">${items.length}</span></div>${body}</div>`;
   }).join("");
   const oosN=locs.reduce((a,loc)=>a+data.equipment.filter(e=>e.location===loc&&e.oos).length,0);
+  const single=locs.length===1?locs[0]:null;
+  const title="EWR Move Team "+(single?esc(single)+" ":"")+"Equipment List";
   const header=`<div class="inv-banner">
-    <div class="ib-top"><span class="ib-brand">EWR MT HUB</span><span class="ib-date">${esc(date)}</span></div>
-    <div class="ib-title">Equipment Inventory</div>
+    <div class="ib-top"><span class="ib-brand">EWR MOVE TEAM</span><span class="ib-date">${esc(date)}</span></div>
+    <div class="ib-title">${title}</div>
     <div class="ib-meta">
       <span class="ib-chip">${locs.length} location${locs.length===1?"":"s"}</span>
       <span class="ib-chip">${total} item${total===1?"":"s"}</span>
       ${oosN?`<span class="ib-chip oos">⊘ ${oosN} out of service</span>`:""}
       <span class="ib-chip">${mode==="checklist"?"Checklist":"List"}</span>
     </div></div>`;
-  const foot=`<div class="inv-foot">Generated by EWR MT HUB · ${esc(date)}</div>`;
-  return header+blocks+foot;
+  const foot=`<div class="inv-foot">Generated by EWR Move Team · ${esc(date)}</div>`;
+  return `<div class="inv-frame">`+header+blocks+foot+`</div>`;
 }
 function renderInvSheet(r){
   const locs=sheetLocsWithEquip();
@@ -915,11 +928,13 @@ function downloadInvText(locs){
   const pre=invSheetMode==="checklist"?"[ ] ":"";
   const tot=locs.reduce((a,l)=>a+data.equipment.filter(e=>e.location===l).length,0);
   const oosN=locs.reduce((a,l)=>a+data.equipment.filter(e=>e.location===l&&e.oos).length,0);
-  const lines=["========================================","   EWR MT HUB — EQUIPMENT INVENTORY","========================================",
+  const single=locs.length===1?locs[0]:null;
+  const ttl="EWR MOVE TEAM "+(single?single.toUpperCase()+" ":"")+"EQUIPMENT LIST";
+  const lines=["========================================","   "+ttl,"========================================",
     fmtDate(todayISO())+"  ·  "+locs.length+" location(s)  ·  "+tot+" item(s)"+(oosN?"  ·  "+oosN+" out of service":""),""];
   locs.forEach(loc=>{lines.push(loc.toUpperCase()+" ("+data.equipment.filter(e=>e.location===loc).length+")");
     groupByType(data.equipment.filter(e=>e.location===loc)).forEach(g=>{lines.push("  "+g.type+":");
-      sortTags(g.items).forEach(e=>lines.push("    "+pre+e.tag+(e.spot?"  ["+e.spot+"]":"")+(e.oos?"  ** OUT OF SERVICE **":"")));});
+      sortTags(g.items).forEach(e=>{const d=invDetail(e.spot,e.nose);lines.push("    "+pre+e.tag+(d?"  ["+d+"]":"")+(e.oos?"  ** OUT OF SERVICE **":""));});});
     lines.push("");});
   const blob=new Blob([lines.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-inventory-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
@@ -928,30 +943,32 @@ function downloadInvImage(locs){
   const W=1000,pad=30,cw=W-pad*2,S=2,date=fmtDate(todayISO());
   let y=pad,total=0,oosN=0;const ops=[];
   locs.forEach(l=>{total+=data.equipment.filter(e=>e.location===l).length;oosN+=data.equipment.filter(e=>e.location===l&&e.oos).length;});
+  const single=locs.length===1?locs[0]:null;
+  const title="EWR Move Team "+(single?single+" ":"")+"Equipment List";
   const meta=date+'   ·   '+locs.length+' location(s)   ·   '+total+' items'+(oosN?'   ·   ⊘ '+oosN+' out of service':'')+'   ·   '+(ck?'checklist':'list');
-  ops.push({k:'banner',x:pad,y,w:cw,h:96});y+=96+18;
+  ops.push({k:'banner',x:pad,y,w:cw,h:96,title});y+=96+18;
   for(const loc of locs){
     const items=data.equipment.filter(e=>e.location===loc);
     ops.push({k:'loc',x:pad,y,w:cw,h:48,name:loc,n:items.length});y+=48;
     for(const g of groupByType(items)){
       ops.push({k:'cat',x:pad,y,w:cw,h:34,name:g.type,n:g.items.length});y+=34+8;
       const its=sortTags(g.items);
-      if(ck){its.forEach((e,idx)=>{ops.push({k:'ck',x:pad+14,y,tag:e.tag+(e.spot?'  ·  '+e.spot:''),oos:!!e.oos,line:y+22,lx0:pad+14,lx1:pad+cw-14,last:idx===its.length-1});y+=44;});y+=4;}
+      if(ck){its.forEach((e,idx)=>{const d=invDetail(e.spot,e.nose);ops.push({k:'ck',x:pad+14,y,tag:e.tag+(d?'  ·  '+d:''),oos:!!e.oos,line:y+22,lx0:pad+14,lx1:pad+cw-14,last:idx===its.length-1});y+=44;});y+=4;}
       else{const cols=3,gap=10,pw=(cw-28-gap*(cols-1))/cols,ph=42,sx=pad+14;
-        its.forEach((e,idx)=>{const col=idx%cols;if(col===0&&idx>0)y+=ph+gap;ops.push({k:'pill',x:sx+col*(pw+gap),y,w:pw,h:ph,tag:e.tag+(e.spot?'  ·  '+e.spot:''),oos:!!e.oos});});
+        its.forEach((e,idx)=>{const col=idx%cols;if(col===0&&idx>0)y+=ph+gap;const d=invDetail(e.spot,e.nose);ops.push({k:'pill',x:sx+col*(pw+gap),y,w:pw,h:ph,tag:e.tag+(d?'  ·  '+d:''),oos:!!e.oos});});
         y+=ph+12;}
     }
     y+=14;
   }
-  const H=y+pad,c=document.createElement('canvas');c.width=W*S;c.height=H*S;const ctx=c.getContext('2d');ctx.scale(S,S);
+  const footY=y+2,H=footY+24+14,c=document.createElement('canvas');c.width=W*S;c.height=H*S;const ctx=c.getContext('2d');ctx.scale(S,S);
   ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
   const rr=(x,yy,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,yy);ctx.arcTo(x+w,yy,x+w,yy+h,r);ctx.arcTo(x+w,yy+h,x,yy+h,r);ctx.arcTo(x,yy+h,x,yy,r);ctx.arcTo(x,yy,x+w,yy,r);ctx.closePath();};
   for(const o of ops){
     if(o.k==='t'){ctx.fillStyle=o.c;ctx.font=o.f;ctx.textBaseline='alphabetic';ctx.fillText(o.t,o.x,o.y);}
     else if(o.k==='banner'){const grad=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);grad.addColorStop(0,'#fc4c4e');grad.addColorStop(1,'#d2353c');
       ctx.fillStyle=grad;rr(o.x,o.y,o.w,o.h,16);ctx.fill();
-      ctx.textAlign='left';ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='bold 14px -apple-system,Arial,sans-serif';ctx.textBaseline='alphabetic';ctx.fillText('EWR MT HUB',o.x+20,o.y+30);
-      ctx.fillStyle='#fff';ctx.font='bold 30px -apple-system,Arial,sans-serif';ctx.fillText('Equipment Inventory',o.x+20,o.y+62);
+      ctx.textAlign='left';ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='bold 14px -apple-system,Arial,sans-serif';ctx.textBaseline='alphabetic';ctx.fillText('EWR MOVE TEAM',o.x+20,o.y+30);
+      ctx.fillStyle='#fff';ctx.font='bold 27px -apple-system,Arial,sans-serif';ctx.fillText(o.title,o.x+20,o.y+62);
       ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='600 15px -apple-system,Arial,sans-serif';ctx.fillText(meta,o.x+20,o.y+85);}
     else if(o.k==='loc'){ctx.fillStyle='#0b3d63';rr(o.x,o.y,o.w,o.h,10);ctx.fill();
       ctx.fillStyle='#fff';ctx.font='bold 22px -apple-system,Arial,sans-serif';ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(o.name,o.x+16,o.y+o.h/2+1);
@@ -967,6 +984,9 @@ function downloadInvImage(locs){
       ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font='600 18px -apple-system,Arial,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'   ⊘ OUT OF SERVICE':''),o.x+38,o.y+12);
       if(!o.last){ctx.strokeStyle='#e7ebef';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(o.lx0,o.line);ctx.lineTo(o.lx1,o.line);ctx.stroke();ctx.setLineDash([]);}}
   }
+  ctx.fillStyle='#67727e';ctx.font='600 13px -apple-system,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillText('Generated by EWR Move Team · '+date,W/2,footY+16);
+  const FM=14;ctx.strokeStyle='#0b3d63';ctx.lineWidth=3;rr(FM,FM,W-FM*2,H-FM*2,18);ctx.stroke();
   c.toBlob(b=>showImagePreview(b,'equipment-inventory-'+todayISO()+'.png'),'image/png');
 }
 // show the generated PNG inside the app so we never navigate away from the sheet
