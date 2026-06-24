@@ -1,6 +1,6 @@
 {
-  "name": "ELT — Equipment Location Tracker",
-  "short_name": "ELT",
+  "name": "EWR MT HUB — Equipment Location Tracker",
+  "short_name": "EWR MT HUB",
   "description": "Track ground support equipment locations, run inventory audits, secure logs, aircraft & stop-mark lookups.",
   "start_url": "./index.html",
   "scope": "./",

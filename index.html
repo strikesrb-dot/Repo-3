@@ -8,9 +8,12 @@
 <link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="ELT" />
+<meta name="apple-mobile-web-app-title" content="EWR MT HUB" />
 <meta name="mobile-web-app-capable" content="yes" />
-<title>ELT — Equipment Location Tracker</title>
+<title>EWR MT HUB — Equipment Location Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
 <style>
   :root{--navy:#0b3d63;--navy-d:#08304e;--accent:#f5a623;--accent-d:#d98c0a;--melon:#fc4c4e;--bg:#f4f6f8;--card:#fff;
     --line:#dce1e6;--ink:#1c2530;--muted:#67727e;--good:#1e7d46;--good-bg:#e6f4ec;--danger:#c0392b;--shadow:0 1px 3px rgba(0,0,0,.12);}
@@ -36,7 +39,7 @@
   .brand{display:flex;align-items:center;gap:10px;cursor:pointer}
   .brand .logo{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
   .brand .logo .ic{width:20px;height:20px;vertical-align:0}
-  .brand .wordmark{font-size:22px;font-weight:800;letter-spacing:1.5px;line-height:1}
+  .brand .wordmark{font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:19px;font-weight:800;letter-spacing:.8px;line-height:1;white-space:nowrap}
   .homebtn{width:38px;height:38px;border:none;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
   .homebtn:active{background:rgba(255,255,255,.3);transform:scale(.94)}
   .homebtn .ic{width:20px;height:20px;vertical-align:0}
@@ -224,7 +227,7 @@
   <div class="hdr-row">
     <div class="brand" id="hdrTitle">
       <span class="logo"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
-      <span class="wordmark">ELT</span>
+      <span class="wordmark">EWR MT HUB</span>
     </div>
     <button id="homeBtn" class="homebtn" hidden aria-label="Home" title="Home"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
   </div>
@@ -774,7 +777,7 @@ function renderInvSelect(r){
     const q=$("#invSearch").value.trim().toLowerCase();
     let items=data.equipment.slice();
     if(q)items=items.filter(e=>[e.tag,e.type,e.location].some(v=>(v||"").toLowerCase().includes(q)));
-    const groups=groupByType(items);
+    const groups=groupByType(items).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"",undefined,{numeric:true,sensitivity:"base"}));
     $("#invList").innerHTML=groups.length?groups.map(g=>{
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
