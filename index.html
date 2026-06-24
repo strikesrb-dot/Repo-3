@@ -108,6 +108,8 @@
   .chip{background:#eef2f5;border:1px solid var(--line);padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600}
   .chip:active{background:#e2e8ec}
   .chip.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .chip.noteligible{opacity:.5;border-style:dashed;font-weight:600}
+  .chip.big{font-size:19px;font-weight:800;padding:16px 22px}
   .chip.done{background:var(--good-bg);color:#15622f;border-color:#bfe0cb}
   .manage-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
   .manage-row span{flex:1}
@@ -148,6 +150,21 @@
   table.audit td.chk{width:42px;text-align:center;font-size:18px}
   .area-block{margin:0 0 16px}
   .area-title{font-size:17px;font-weight:800;color:var(--navy);border-bottom:2px solid var(--navy);padding-bottom:3px;margin:14px 0 8px}
+  .seg-wrap{display:flex;background:#eef2f5;border-radius:10px;padding:3px;margin-bottom:14px}
+  .seg-wrap .seg{flex:1;border:none;background:none;padding:9px;border-radius:8px;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer}
+  .seg-wrap .seg.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .sh-loc{margin:0 0 16px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .sh-loc-h{display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;padding:9px 14px;font-size:16px;font-weight:800;letter-spacing:.3px}
+  .sh-loc-h .sh-loc-n{background:rgba(255,255,255,.22);border-radius:999px;padding:1px 10px;font-size:13px}
+  .cat-h{display:flex;justify-content:space-between;align-items:center;background:#eef2f5;color:#33414f;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:7px 14px;border-top:1px solid var(--line)}
+  .cat-h .cat-n{color:var(--muted)}
+  .li-tags{display:flex;flex-wrap:wrap;gap:7px;padding:11px 14px}
+  .li-pill{border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:15px;font-weight:700;background:#fafbfc}
+  .ck-list{padding:6px 14px 10px}
+  .ck-row{display:flex;align-items:center;gap:12px;padding:8px 2px;border-bottom:1px dashed #e7ebef;font-size:16px;font-weight:600}
+  .ck-row:last-child{border-bottom:none}
+  .ck-box{width:22px;height:22px;border:2px solid #9aa7b2;border-radius:5px;flex:none}
+  @media print{.seg-wrap{display:none}.sh-loc-h{background:#0b3d63 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.cat-h{background:#eef2f5 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sh-loc{page-break-inside:avoid}}
   .spot-block{margin:0 0 12px}
   .spot-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;background:#eef3f7;border:1px solid var(--line);border-radius:8px 8px 0 0;padding:6px 10px}
   .spot-h .sn{font-size:15px;font-weight:800}
@@ -334,8 +351,7 @@
     <label for="fType">Type / category</label>
     <select id="fType"></select>
     <label for="fLoc">Location</label>
-    <input id="fLoc" list="locList" placeholder="e.g. Staging Area, AML17" autocomplete="off" />
-    <datalist id="locList"></datalist>
+    <select id="fLoc"></select>
     <label for="fNotes">Notes (optional)</label>
     <textarea id="fNotes" placeholder="Condition, fuel level…"></textarea>
     <div class="btnrow">
@@ -355,7 +371,7 @@ const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v2",SEEN_KEY="elt.seenMaster.v1";
 const MASTER_URL="equipment.json",FLEET_URL="aircraft.json";
 const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (PCA)","Air Conditioning Unit - Heat (PCA Heat)","Air Start Unit (ASU)",
   "Air Stairs / Passenger Stairs","Stair Truck","Belt Loader","Pushback Tractor / Tug","Baggage Cart","Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
-const LOC_SEED_V=10;
+const LOC_SEED_V=11;
 function R(pre,a,b){const o=[];for(let i=a;i<=b;i++)o.push(pre+i);return o;}
 const LOC_SEED=[
   ["Staging",false,["Staging Area"]],
@@ -371,8 +387,7 @@ const LOC_SEED=[
   ["Hangar",true,["54C","54R","55L","55R","56C","H52","H54B","H54C","H56C","HB1","HB2","MX1"],"WestPark"],
   ["Sierra",true,["Sierra 1","Sierra 2","Sierra 3"],"WestPark"],
   ["UPS",true,R("UP",1,9),"WestPark"],
-  ["CL",true,["CL1","CL2","CL3"],"WestPark"],
-  ["WestPark Staging Area",false,["WestPark Staging Area"],"WestPark"]];
+  ["CL",true,["CL1","CL2","CL3"],"WestPark"]];
 const DEFAULT_LOCATIONS=LOC_SEED.flatMap(([area,ac,names,region,hidden])=>names.map(name=>({name,area,holdsAircraft:ac,region:region||"",hidden:!!hidden})));
 
 let data=load();
@@ -380,11 +395,12 @@ function load(){
   let d=null; try{d=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){console.warn(e);}
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[];
+  d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();}); // tags/prefixes always caps
   d.locations=(d.locations&&d.locations.length?d.locations:DEFAULT_LOCATIONS.slice())
     .map(l=>({name:l.name,area:l.area||l.name,holdsAircraft:l.holdsAircraft!=null?!!l.holdsAircraft:l.kind==='spot',region:l.region||"",hidden:!!l.hidden}));
   // one-time merge of seeded spots (keeps any equipment; adds spots not present)
   if((d.locSeedV||0)<LOC_SEED_V){
-    const PRUNE=[/^BP HOLD /i,/^B HOLD /i,/^S[123]$/i,/^LIND9$/i,/^TL\d+$/i,/^TW\d+$/i,/^TY\d+$/i,/^OA HOLD /i]; // removed/renamed seeds
+    const PRUNE=[/^BP HOLD /i,/^B HOLD /i,/^S[123]$/i,/^LIND9$/i,/^TL\d+$/i,/^TW\d+$/i,/^TY\d+$/i,/^OA HOLD /i,/^WestPark Staging Area$/i]; // removed/renamed seeds
     d.locations=d.locations.filter(l=>!PRUNE.some(rx=>rx.test(l.name)));
     const have=new Set(d.locations.map(l=>l.name.toLowerCase()));
     DEFAULT_LOCATIONS.forEach(dl=>{if(!have.has(dl.name.toLowerCase()))d.locations.push({...dl});});
@@ -420,11 +436,12 @@ function spotsInArea(a){return visLocs().filter(l=>l.area===a).sort((x,y)=>x.nam
 function hiddenCount(){return data.locations.filter(l=>l.hidden).length;}
 function knownLocations(){const s=new Set(locNames());data.equipment.forEach(e=>{if(e.location)s.add(e.location);});
   return [...s].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));}
+function catOf(type){return /air conditioning|pca/i.test(type||"")?"PCA / PCA Heat":(type||"(no type)");}
 function groupByType(items){
   const m=new Map();
-  items.forEach(e=>{const t=e.type||"(no type)";if(!m.has(t))m.set(t,[]);m.get(t).push(e);});
-  const order=[...data.types,...[...m.keys()].filter(t=>!data.types.includes(t))];
-  return order.filter(t=>m.has(t)).map(t=>({type:t,items:m.get(t).sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}))}));
+  items.forEach(e=>{const t=catOf(e.type);if(!m.has(t))m.set(t,[]);m.get(t).push(e);});
+  const order=[];[...data.types,...m.keys()].forEach(t=>{const c=catOf(t);if(!order.includes(c))order.push(c);});
+  return order.filter(t=>m.has(t)).map(t=>({type:t,items:m.get(t).slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}))}));
 }
 
 /* ---- fleet ---- */
@@ -511,15 +528,8 @@ function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&$("#wizFoot"
 $("#homeBtn").addEventListener("click",()=>showTab("hub"));
 $("#hdrTitle")?.addEventListener("click",()=>showTab("hub"));
 function invStepBack(){const s=inv.stage;
-  if(s==="region"){showTab("hub");return;}
-  const single=spotsInArea(inv.area).length<=1; // spot step was auto-skipped
-  if(s==="area")inv.stage="region";
-  else if(s==="spot")inv.stage=multiArea()?"area":"region";
-  else if(s==="aircraft")inv.stage=single?(multiArea()?"area":"region"):"spot";
-  else if(s==="select")inv.stage=holdsAircraft(inv.spot)?"aircraft":(single?(multiArea()?"area":"region"):"spot");
-  else if(s==="next"||s==="sheet")inv.stage="region";
-  else{showTab("hub");return;}
-  renderInventory();}
+  if(s==="select"||s==="sheet"){inv.stage="loc";renderInventory();return;}
+  showTab("hub");}
 function parkBack(){const s=park.stage;
   if(s==="spot")park.stage="area";else if(s==="ac")park.stage="spot";else if(s==="result")park.stage="ac";
   else{showTab("hub");return;}renderPark();}
@@ -554,9 +564,9 @@ function renderList(){
   }).join("");
 }
 $("#eqList").addEventListener("click",e=>{const li=e.target.closest(".item");if(!li)return;const id=li.dataset.id;
-  if(e.target.classList.contains("act-edit"))openEdit(id);
-  else if(e.target.classList.contains("act-del"))delEquip(id);
-  else if(e.target.classList.contains("act-move"))quickMove(id);});
+  if(e.target.classList.contains("act-del"))delEquip(id);
+  else if(e.target.classList.contains("act-move"))quickMove(id);
+  else openEdit(id);});  // tap anywhere on the row opens the editor
 $("#search").addEventListener("input",renderList);
 $("#filterLoc").addEventListener("change",renderList);
 function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
@@ -566,21 +576,25 @@ function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
 /* ---- add/edit ---- */
 let editingId=null;
 function fillTypeSelect(sel,val){sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")+`<option value="__new__">➕ Add new type…</option>`;if(val!=null)sel.value=val;}
-function fillLocList(){$("#locList").innerHTML=knownLocations().map(l=>`<option value="${esc(l)}">`).join("");}
+function fillLocSelect(val){const opts=[...EQUIP_LOCS];if(val&&!opts.includes(val))opts.unshift(val);
+  $("#fLoc").innerHTML=`<option value="">— No location —</option>`+opts.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("")+`<option value="__other__">Other…</option>`;
+  $("#fLoc").value=val||"";}
+$("#fLoc").addEventListener("change",function(){if(this.value==="__other__"){const v=(prompt("Location:")||"").trim();fillLocSelect(v);}});
 $("#fType").addEventListener("change",function(){if(this.value==="__new__"){
   const v=(prompt("New equipment type / category:")||"").trim();
   if(v&&!data.types.some(t=>t.toLowerCase()===v.toLowerCase())){data.types.push(v);save();}
   fillTypeSelect(this,v||data.types[0]);}});
-function openEdit(id){editingId=id;fillLocList();
+function openEdit(id){editingId=id;
   const e=id?data.equipment.find(x=>x.id===id):null;
   fillTypeSelect($("#fType"),e?.type||data.types[0]||"");
+  fillLocSelect(e?.location||"");
   $("#editTitle").textContent=e?"Edit equipment":"Add equipment";
-  $("#fTag").value=e?.tag||"";$("#fLoc").value=e?.location||"";$("#fNotes").value=e?.notes||"";
+  $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";
   $("#editOverlay").classList.add("open");if(!e)setTimeout(()=>$("#fTag").focus(),120);}
 function closeEdit(){$("#editOverlay").classList.remove("open");editingId=null;}
 $("#cancelEq").addEventListener("click",closeEdit);
 $("#editOverlay").addEventListener("click",e=>{if(e.target.id==="editOverlay")closeEdit();});
-$("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim();if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
+$("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toUpperCase();if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
   const p={tag,type:$("#fType").value,location:$("#fLoc").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
   if(editingId){Object.assign(data.equipment.find(x=>x.id===editingId),p);toast("Updated");}
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
@@ -590,33 +604,9 @@ function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
   const loc=prompt(`New location for ${e.tag}:`,e.location||"");if(loc===null)return;
   e.location=loc.trim();e.updated=todayISO();save();refreshAll();toast(loc.trim()?`Moved to ${loc.trim()}`:"Location cleared");}
 
-/* ===================== INVENTORY (wizard) ===================== */
-let inv={stage:"region",region:null,area:null,spot:null,ac:null,covered:[]},invSel=new Set();
-function newInv(){return {stage:"region",region:null,area:null,spot:null,ac:null,covered:[]};}
-const STAGE_ORDER={region:0,area:1,spot:2,aircraft:3,select:4,next:5,sheet:6};
-let lastStageIdx=0;
-function renderInventory(){const r=$("#invRoot");
-  ({region:renderInvRegion,area:renderInvArea,spot:renderInvSpot,aircraft:renderInvAircraft,select:renderInvSelect,next:renderInvNext,sheet:renderInvSheet}[inv.stage]||renderInvRegion)(r);
-  const idx=STAGE_ORDER[inv.stage]??0,dir=idx>=lastStageIdx?"zoomin":"zoomout";lastStageIdx=idx;
-  const c=r.firstElementChild;if(c)c.classList.add(dir);}
-function multiArea(){return inv.region&&areasInRegion(inv.region).length>1;}
-// advance into a chosen area: single-spot zones jump straight to equipment
-function enterArea(){const sp=spotsInArea(inv.area);
-  if(sp.length===1){inv.spot=sp[0].name;inv.ac=data.spotAircraft[inv.spot]||null;inv.stage=holdsAircraft(inv.spot)?"aircraft":"select";}
-  else{inv.spot=null;inv.stage="spot";}
-  renderInventory();}
-function pickRegion(name,isRegion){
-  if(isRegion){inv.region=name;const as=areasInRegion(name);
-    if(as.length===1){inv.area=as[0];enterArea();}else{inv.area=null;inv.stage="area";renderInventory();}}
-  else{inv.region=null;inv.area=name;enterArea();}}
-function auditGroups(){const regions=regionsOrdered().filter(r=>r);
-  const ungrouped=areasList().filter(a=>!regionOfArea(a));
-  return [...regions.map(n=>({name:n,isRegion:true})),...ungrouped.map(n=>({name:n,isRegion:false}))];}
-function wizSeq(){const seq=["region"];if(multiArea())seq.push("area");seq.push("spot");
-  const ac=inv.spot?holdsAircraft(inv.spot):true;if(ac)seq.push("aircraft");seq.push("select");return seq;}
-function wizHeader(){const seq=wizSeq(),i=seq.indexOf(inv.stage);if(i<0)return "";const n=seq.length,pct=Math.round((i+1)/n*100);
-  const nm={region:"Which audit",area:"Pick zone",spot:"Pick spot",aircraft:"Aircraft",select:"Equipment"};
-  return `<div class="wiz-stepn">Step ${i+1} of ${n} — ${nm[inv.stage]||""}</div><div class="wiz-prog"><i style="width:${pct}%"></i></div>`;}
+/* ===================== INVENTORY (location -> equipment) ===================== */
+const EQUIP_LOCS=["South","C4","Ballpark","WestPark"];
+let inv={stage:"loc",loc:null,covered:[]},invSel=new Set();
 function setWizFoot(cfg){const f=$("#wizFoot");
   if(!cfg){f.hidden=true;$("#invRoot").style.paddingBottom="";updateFloatBack();return;}
   f.hidden=false;const nb=$("#wizNext"),bb=$("#wizBack");
@@ -625,97 +615,40 @@ function setWizFoot(cfg){const f=$("#wizFoot");
   bb.textContent=cfg.backLabel||"‹ Back";bb.onclick=cfg.back;
   f.style.bottom="0px";
   $("#invRoot").style.paddingBottom=(f.offsetHeight+14)+"px";updateFloatBack();}
-// group spots: split by prefix and whether they carry a letter suffix (A-spots)
+// group spots: split by prefix and whether they carry a letter suffix (A-spots) — used by Secure
 function spotGroup(name){const m=name.match(/^(.*?)(\d+)([A-Za-z].*)?$/);
   if(!m)return {key:name,label:name,ord:0,letter:false};
   const pre=m[1].replace(/[-\s]+$/,""),letter=!!m[3];
   return {key:pre+"|"+(letter?"A":"N"),label:letter?`${pre} · A-spots`:pre,ord:letter?1:0,pre};}
 function groupSpots(spots){const g={};spots.forEach(s=>{const k=spotGroup(s.name);(g[k.key]=g[k.key]||{...k,items:[]}).items.push(s);});
   return Object.values(g).sort((a,b)=>(a.pre||a.label).localeCompare(b.pre||b.label,undefined,{numeric:true})||a.ord-b.ord);}
-function coveredChips(){return inv.covered.length?`<div class="chips" style="margin:8px 0">`+inv.covered.map(s=>`<span class="chip done">✓ ${esc(s)}</span>`).join("")+`</div>`:"";}
-function renderInvRegion(r){
-  if(!data.locations.length){r.innerHTML=`<div class="empty"><p>Add spots first in <b> Settings</b>.</p></div>`;setWizFoot(null);return;}
-  const groups=auditGroups();
+function invLocs(){const s=[...EQUIP_LOCS];data.equipment.forEach(e=>{if(e.location&&!s.includes(e.location))s.push(e.location);});return s;}
+function renderInventory(){const r=$("#invRoot");
+  ({loc:renderInvLoc,select:renderInvSelect,sheet:renderInvSheet}[inv.stage]||renderInvLoc)(r);
+  const c=r.firstElementChild;if(c)c.classList.add(inv.stage==="select"?"zoomin":"zoomout");}
+function renderInvLoc(r){
+  const locs=invLocs();
   r.innerHTML=`<div class="card pad">
-    ${wizHeader()}
-    <h3 style="margin:0 0 2px">Which audit are you doing?</h3>
-    <p class="hint" style="margin-top:0">Pick the area you're auditing.</p>
-    ${coveredChips()}
-    <div class="chips" id="regChips">${groups.map(g=>{const tch=g.isRegion?regionTouched(g.name):areaTouched(g.name);
-      return `<button class="chip ${tch?'done':''}" data-g="${esc(g.name)}" data-r="${g.isRegion?1:0}">${g.isRegion?' ':' '}${esc(g.name)}${tch?' ✓':''}</button>`;}).join("")}</div>
-    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish"> Generate sheet (${inv.covered.length})</button></div>
-      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="reset">Start over</button></div>`:""}</div>`;
-  $$("#regChips .chip").forEach(c=>c.addEventListener("click",()=>pickRegion(c.dataset.g,c.dataset.r==="1")));
-  $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
-  $("#reset")?.addEventListener("click",()=>{inv=newInv();renderInventory();});
-  setWizFoot({back:invStepBack,backLabel:"‹ Exit",nextHidden:true});
-}
-function renderInvArea(r){
-  const as=areasInRegion(inv.region);
-  r.innerHTML=`<div class="card pad">
-    ${wizHeader()}
-    <div class="crumbs">${esc(inv.region)}</div>
-    <h3 style="margin:2px 0 8px">Pick a zone in ${esc(inv.region)}</h3>
-    <div class="chips" id="areaChips">${as.map(a=>`<button class="chip ${areaTouched(a)?'done':''}" data-a="${esc(a)}">${esc(a)}${areaTouched(a)?' ✓':''}</button>`).join("")}</div>
-    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish"> Generate sheet (${inv.covered.length})</button></div>`:""}</div>`;
-  $$("#areaChips .chip").forEach(c=>c.addEventListener("click",()=>{inv.area=c.dataset.a;enterArea();}));
-  $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
-  setWizFoot({back:invStepBack,nextHidden:true});
-}
-function renderInvSpot(r){
-  const spots=spotsInArea(inv.area),groups=groupSpots(spots),multi=groups.length>1;
-  const body=groups.map(g=>(multi?`<div class="spotgrp">${esc(g.label)}</div>`:"")+
-    `<div class="spotgrid">`+g.items.map(s=>`<button class="chip ${inv.spot===s.name?'sel':''} ${inv.covered.includes(s.name)?'done':''}" data-s="${esc(s.name)}">${esc(s.name)}${s.holdsAircraft?' ✈':''}${inv.covered.includes(s.name)?' ✓':''}</button>`).join("")+`</div>`).join("");
-  r.innerHTML=`<div class="card pad">
-    ${wizHeader()}
-    <div class="crumbs">${esc(inv.region?inv.region+" › ":"")}${esc(inv.area)}</div>
-    <h3 style="margin:2px 0 8px">Pick a spot in ${esc(inv.area)}</h3>
-    <div id="spotChips">${body||'<p class="hint">No spots in this area.</p>'}</div>
-    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">✓ Finish &amp; generate (${inv.covered.length})</button></div>`:""}</div>`;
-  $$("#spotChips .chip").forEach(c=>c.addEventListener("click",()=>{
-    inv.spot=c.dataset.s;inv.ac=data.spotAircraft[inv.spot]||null;
-    inv.stage=holdsAircraft(inv.spot)?"aircraft":"select";renderInventory();}));
-  $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
-  setWizFoot({back:invStepBack,nextHidden:true});
-}
-function renderInvAircraft(r){
-  const cur=inv.ac||data.spotAircraft[inv.spot]||null;
-  r.innerHTML=`<div class="card pad">
-    ${wizHeader()}
-    <div class="crumbs">${esc(inv.area)} › ${esc(inv.spot)}</div>
-    <h3 style="margin:2px 0 2px"> Aircraft at ${esc(inv.spot)} <span style="font-size:13px;color:var(--muted);font-weight:600">(optional)</span></h3>
-    <p class="hint" style="margin-top:0">Enter the ship #, or skip if there's no aircraft.</p>
-    <label for="invShip">Aircraft # (ship / nose number)</label>
-    <input id="invShip" inputmode="numeric" autocomplete="off" placeholder="e.g. 3461" value="${esc(cur?cur.ship:"")}" />
-    <div id="invAcInfo"></div>
-    <div class="btnrow" style="margin-top:10px"><button class="btn ghost" id="invAcBack" style="flex:0 0 26%">‹ Back</button><button class="btn ghost" id="noAc" style="flex:0 0 26%">Skip</button><button class="btn navy" id="invAcNext">Equipment ›</button></div></div>`;
-  const shipIn=$("#invShip");
-  function refreshAc(){const s=shipIn.value.trim(),box=$("#invAcInfo"),skip=$("#noAc");
-    if(!s){box.innerHTML="";inv.ac=null;if(skip)skip.style.display="";return;}
-    const hit=lookupShip(s);
-    if(skip)skip.style.display=hit?"none":"";
-    if(hit){inv.ac={ship:hit.ship||"",reg:hit.reg,type:hit.type};box.innerHTML=`<div class="ac-ok">✓ ${hit.ship?`Nose ${esc(hit.ship)} · `:""}${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
-    else{inv.ac={ship:s,reg:(cur&&cur.ship===s?cur.reg:""),type:(cur&&cur.ship===s?cur.type:"")};
-      box.innerHTML=`<div class="ac-no"><div style="font-size:13px;color:#8a5b00;font-weight:600;margin-bottom:6px">Ship ${esc(s)} isn't in the fleet list — enter it (it'll be remembered):</div>
-        <div class="row2"><div><label style="margin-top:0">Tail #</label><input id="mReg" placeholder="N12345" autocapitalize="characters" value="${esc(inv.ac.reg)}"></div>
-        <div><label style="margin-top:0">Type</label><input id="mType" placeholder="Boeing 737-800" value="${esc(inv.ac.type)}"></div></div></div>`;
-      $("#mReg").addEventListener("input",e=>inv.ac.reg=e.target.value.toUpperCase());
-      $("#mType").addEventListener("input",e=>inv.ac.type=e.target.value);}
-  }
-  shipIn.addEventListener("input",refreshAc);refreshAc();
-  $("#noAc").addEventListener("click",()=>{inv.ac=null;inv.stage="select";renderInventory();});
-  $("#invAcBack").addEventListener("click",invStepBack);
-  $("#invAcNext").addEventListener("click",()=>{if(inv.ac&&inv.ac.ship&&inv.ac.reg)rememberAircraft(inv.ac.ship,inv.ac.reg,inv.ac.type);inv.stage="select";renderInventory();});
+    <h3 style="margin:0 0 2px">Inventory</h3>
+    <p class="hint" style="margin-top:0">Pick a location to count its equipment.</p>
+    <div class="chips" id="invLocChips">${locs.map(l=>{const n=data.equipment.filter(e=>e.location===l).length;
+      return `<button class="chip ${inv.covered.includes(l)?'done':''}" data-l="${esc(l)}">${esc(l)} <span style="opacity:.55">${n}</span>${inv.covered.includes(l)?' ✓':''}</button>`;}).join("")}</div>
+    ${inv.covered.length
+      ?`<div class="btnrow"><button class="btn navy" id="invGen">Generate sheet (${inv.covered.length})</button></div>
+        <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="invReset">Start over</button></div>`
+      :`<div class="btnrow"><button class="btn ghost" id="invGenAll">Generate full sheet</button></div>`}</div>`;
+  $$("#invLocChips .chip").forEach(c=>c.addEventListener("click",()=>{inv.loc=c.dataset.l;inv.stage="select";renderInventory();}));
+  $("#invGen")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
+  $("#invGenAll")?.addEventListener("click",()=>{inv.covered=[];inv.stage="sheet";renderInventory();});
+  $("#invReset")?.addEventListener("click",()=>{inv={stage:"loc",loc:null,covered:[]};renderInventory();});
   setWizFoot(null);
 }
 function renderInvSelect(r){
-  invSel=new Set(data.equipment.filter(e=>e.location===inv.spot).map(e=>e.id));
-  const acLine=inv.ac?`<span class="pill ac">✈ Nose ${esc(inv.ac.ship)}${inv.ac.reg?` · ${esc(inv.ac.reg)}`:""}</span>`:"";
+  invSel=new Set(data.equipment.filter(e=>e.location===inv.loc).map(e=>e.id));
   r.innerHTML=`<div class="card pad" style="padding-bottom:6px">
-    ${wizHeader()}
-    <div class="crumbs">${esc(inv.area)} › ${esc(inv.spot)}</div>
-    <h3 style="margin:2px 0 2px">Equipment at ${esc(inv.spot)} ${acLine}</h3>
-    <p class="hint" style="margin-top:2px">Tap each unit by category. Items already here are pre-checked.</p>
+    <div class="crumbs">Inventory</div>
+    <h3 style="margin:2px 0 2px">Equipment at ${esc(inv.loc)}</h3>
+    <p class="hint" style="margin-top:2px">Tap each unit that's here. Items already here are pre-checked.</p>
     <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:8px 0" /></div>
     <div id="invList" style="margin-top:10px;display:flex;flex-direction:column;gap:12px"></div>`;
   function paint(){
@@ -727,61 +660,87 @@ function renderInvSelect(r){
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
       return `<div class="card catblock"><div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
-        `<div class="pillgrid">`+its.map(e=>{const on=invSel.has(e.id);
-          const away=e.location&&e.location!==inv.spot;
-          return `<button class="selpill ${on?'on':''} ${away?'away':''}" data-id="${e.id}" title="${away?'Currently @ '+esc(e.location):''}"><span class="selc">${on?'✓':''}</span>${esc(e.tag)}</button>`;}).join("")+`</div></div>`;
-    }).join(""):`<p class="hint" style="padding:10px 12px">No equipment. Add some on the Equipment tab.</p>`;
-    $("#wizNext").textContent=`✓ Nest ${invSel.size} ›`;
+        `<div class="pillgrid">`+its.map(e=>{const on=invSel.has(e.id);const away=e.location&&e.location!==inv.loc;
+          return `<button class="selpill ${on?'on':''} ${away?'away':''}" data-id="${e.id}" title="${away?'@ '+esc(e.location):''}"><span class="selc">${on?'✓':''}</span>${esc(e.tag)}</button>`;}).join("")+`</div></div>`;
+    }).join(""):`<p class="hint" style="padding:10px 12px">No equipment yet. Add some on the Equipment List.</p>`;
+    $("#wizNext").textContent=`✓ Save ${invSel.size} ›`;
   }
   $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
     const id=li.dataset.id;if(invSel.has(id))invSel.delete(id);else invSel.add(id);paint();});
   $("#invSearch").addEventListener("input",paint);
-  setWizFoot({back:invStepBack,
-    next:commitSpot,nextOn:true,nextLabel:"✓ Done ›"});
+  setWizFoot({back:()=>{inv.stage="loc";renderInventory();},next:commitInv,nextOn:true,nextLabel:"✓ Save ›"});
   paint();
 }
-function areaTouched(a){return spotsInArea(a).some(s=>inv.covered.includes(s.name));}
-function regionTouched(name){return areasInRegion(name).some(a=>areaTouched(a));}
-function commitSpot(){
-  const justSpot=inv.spot,nSel=invSel.size;
-  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=justSpot;e.updated=todayISO();}
-    else if(e.location===justSpot){e.location="";e.updated=todayISO();}});
-  if(holdsAircraft(justSpot)){if(inv.ac&&inv.ac.ship)data.spotAircraft[justSpot]=inv.ac;else delete data.spotAircraft[justSpot];}
-  if(!inv.covered.includes(justSpot))inv.covered.push(justSpot);
+function commitInv(){
+  const loc=inv.loc,n=invSel.size;
+  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=loc;e.updated=todayISO();}else if(e.location===loc){e.location="";e.updated=todayISO();}});
+  if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
-  // zoom back out to the picker, covered areas colored in
-  inv.spot=null;inv.ac=null;
-  const moreSpots=spotsInArea(inv.area).some(s=>!inv.covered.includes(s.name));
-  if(moreSpots){inv.stage="spot";}
-  else{const reg=inv.region;inv.area=null;
-    inv.stage=(reg&&areasInRegion(reg).some(a=>spotsInArea(a).some(s=>!inv.covered.includes(s.name))))?"area":"region";}
-  toast(`✓ ${justSpot}: ${nSel} item${nSel===1?"":"s"} · ${inv.covered.length} spot(s) done`);
-  renderInventory();
+  inv.loc=null;inv.stage="loc";renderInventory();
+  toast(`✓ ${loc}: ${n} item${n===1?"":"s"}`);
 }
-function renderInvNext(r){
-  const n=data.equipment.filter(e=>e.location===inv.spot).length;
-  const moreInArea=spotsInArea(inv.area).some(s=>!inv.covered.includes(s.name));
-  r.innerHTML=`<div class="card pad">
-    <div class="ac-ok" style="margin-top:0">✓ ${esc(inv.spot)} recorded — ${n} item(s).</div>
-    ${coveredChips()}
-    <p class="hint" style="margin-top:6px">Keep going, or finish and generate the sheet.</p>
-    ${moreInArea?`<div class="btnrow"><button class="btn navy" id="sameArea">➕ Another spot in ${esc(inv.area)}</button></div>`:""}
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="otherArea">↪ Different area</button></div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn" id="finish"> Finish &amp; generate sheet</button></div></div>`;
-  $("#sameArea")?.addEventListener("click",()=>{inv.spot=null;inv.ac=null;inv.stage="spot";renderInventory();});
-  $("#otherArea").addEventListener("click",()=>{inv.region=null;inv.area=null;inv.spot=null;inv.ac=null;inv.stage="region";renderInventory();});
-  $("#finish").addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
-  setWizFoot(null);
+let invSheetMode="list"; // "list" | "checklist"
+function sheetLocsWithEquip(){const base=inv.covered.length?inv.covered.slice():invLocs();
+  return base.filter(l=>data.equipment.some(e=>e.location===l));} // skip blank areas
+function sortTags(its){return its.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));}
+function buildInvSheet(locs,mode){mode=mode||invSheetMode;
+  const date=fmtDate(todayISO());let total=0;
+  const blocks=locs.map(loc=>{
+    const items=data.equipment.filter(e=>e.location===loc);total+=items.length;
+    const body=groupByType(items).map(g=>{const its=sortTags(g.items);
+      const list=mode==="checklist"
+        ? `<div class="ck-list">`+its.map(e=>`<div class="ck-row"><span class="ck-box"></span><span class="ck-tag">${esc(e.tag)}</span></div>`).join("")+`</div>`
+        : `<div class="li-tags">`+its.map(e=>`<span class="li-pill">${esc(e.tag)}</span>`).join("")+`</div>`;
+      return `<div class="cat-h"><span>${esc(g.type)}</span><span class="cat-n">${g.items.length}</span></div>${list}`;
+    }).join("");
+    return `<div class="sh-loc"><div class="sh-loc-h"><span>${esc(loc)}</span><span class="sh-loc-n">${items.length}</span></div>${body}</div>`;
+  }).join("");
+  return `<div class="sheet-head"><div><div class="title">Equipment Inventory</div>
+      <div style="font-size:13px;color:#555">${locs.length} location(s) · ${total} item(s) · ${mode==="checklist"?"checklist":"list"}</div></div>
+      <div class="info">Date: <b>${esc(date)}</b></div></div>${blocks}`;
 }
 function renderInvSheet(r){
-  const spots=inv.covered.length?inv.covered.slice():locNames();
-  r.innerHTML=`<div class="card pad">${buildSheetHTML(spots,"Equipment Inventory")}
-    <div class="btnrow no-print"><button class="btn navy" id="printInv"> Print / Save as PDF</button></div>
-    <div class="btnrow no-print" style="margin-top:8px"><button class="btn ghost" id="newInv">Start a new inventory</button></div></div>`;
-  $("#printInv").addEventListener("click",()=>{$("#printArea").innerHTML=buildSheetHTML(spots,"Equipment Inventory");window.print();});
-  $("#newInv").addEventListener("click",()=>{inv=newInv();renderInventory();});
-  setWizFoot(null);
+  const locs=sheetLocsWithEquip();
+  const draw=()=>{
+    $("#invSheetBody").innerHTML=buildInvSheet(locs);
+    $$("#invSheetSeg .seg").forEach(b=>b.classList.toggle("on",b.dataset.m===invSheetMode));
+  };
+  r.innerHTML=`<div class="card pad">
+    <div class="seg-wrap no-print" id="invSheetSeg"><button class="seg" data-m="list">List</button><button class="seg" data-m="checklist">Checklist</button></div>
+    <div id="invSheetBody"></div>
+    <div class="btnrow no-print"><button class="btn navy" id="invPdf">Print / Save as PDF</button></div>
+    <div class="btnrow no-print" style="margin-top:8px"><button class="btn ghost" id="invImg">Image</button><button class="btn ghost" id="invTxt">Text</button></div>
+    <div class="btnrow no-print" style="margin-top:8px"><button class="btn ghost" id="invNew">New inventory</button></div></div>`;
+  $$("#invSheetSeg .seg").forEach(b=>b.addEventListener("click",()=>{invSheetMode=b.dataset.m;draw();}));
+  $("#invPdf").addEventListener("click",()=>{$("#printArea").innerHTML=buildInvSheet(locs);window.print();});
+  $("#invImg").addEventListener("click",()=>downloadInvImage(locs));
+  $("#invTxt").addEventListener("click",()=>downloadInvText(locs));
+  $("#invNew").addEventListener("click",()=>{inv={stage:"loc",loc:null,covered:[]};renderInventory();});
+  draw();setWizFoot(null);
 }
+function downloadInvText(locs){
+  const pre=invSheetMode==="checklist"?"[ ] ":"";
+  const lines=["EQUIPMENT INVENTORY — "+fmtDate(todayISO()),"========================================",""];
+  locs.forEach(loc=>{lines.push(loc.toUpperCase()+" ("+data.equipment.filter(e=>e.location===loc).length+")");
+    groupByType(data.equipment.filter(e=>e.location===loc)).forEach(g=>{lines.push("  "+g.type+":");
+      sortTags(g.items).forEach(e=>lines.push("    "+pre+e.tag));});
+    lines.push("");});
+  const blob=new Blob([lines.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=u;a.download="equipment-inventory-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
+function downloadInvImage(locs){
+  const ck=invSheetMode==="checklist";
+  const items=[{t:"Equipment Inventory",b:true,size:30},{t:fmtDate(todayISO())+"  ·  "+(ck?"checklist":"list"),size:18,color:"#555"},{gap:14}];
+  locs.forEach(loc=>{
+    items.push({t:loc+"  ("+data.equipment.filter(e=>e.location===loc).length+")",b:true,size:22});
+    groupByType(data.equipment.filter(e=>e.location===loc)).forEach(g=>{
+      items.push({t:g.type,b:true,size:18,indent:18,color:"#334"});
+      if(ck)sortTags(g.items).forEach(e=>items.push({t:"☐  "+e.tag,size:18,indent:40}));
+      else items.push({t:sortTags(g.items).map(e=>e.tag).join(",  "),size:18,indent:40,color:"#222"});});
+    items.push({sep:true});
+  });
+  pngFromItems("equipment-inventory-"+todayISO()+".png",items);
+}
+
 
 /* ===================== SECURE LOG ===================== */
 const SECURE_REASONS=["Aircraft Maintenance","UGE","Airways","PrimeFlight","Catering","Ramp","Move Team"];
@@ -907,18 +866,8 @@ function buildSecureSheet(){
 function wrapText(ctx,text,maxW){const words=String(text).split(/\s+/),lines=[];let cur="";
   for(const w of words){const t=cur?cur+" "+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w;}else cur=t;}
   if(cur)lines.push(cur);return lines.length?lines:[""];}
-function downloadSecureImage(){
-  const log=data.secureLog,W=1000,pad=40;
-  const c=document.createElement("canvas"),mx=c.getContext("2d");
-  const items=[{t:"Aircraft Secure Log",b:true,size:30},
-    {t:fmtDate(todayISO())+"   ·   "+log.length+" entr"+(log.length===1?"y":"ies"),size:18,color:"#555"},{gap:14}];
-  log.forEach((e,i)=>{
-    items.push({t:`${i+1}. ${e.area||""} / ${e.spot||""}`,b:true,size:20});
-    if(e.ac&&e.ac.ship)items.push({t:`Aircraft: Nose ${e.ac.ship}${e.ac.reg?" / "+e.ac.reg:""}${e.ac.type?" / "+e.ac.type:""}`,size:18,indent:20});
-    items.push({t:`Responsible: ${e.reason||""}${e.name?" ("+e.name+")":""}     Time: ${e.time||""}`,size:18,indent:20});
-    if(e.comment)items.push({t:`Comment: ${e.comment}`,size:18,indent:20,color:"#333"});
-    items.push({sep:true});});
-  if(!log.length)items.push({t:"(no entries)",size:18});
+function pngFromItems(filename,items){
+  const W=1000,pad=40,c=document.createElement("canvas"),mx=c.getContext("2d");
   const draws=[];let y=pad;
   for(const it of items){
     if(it.gap){y+=it.gap;continue;}
@@ -930,8 +879,20 @@ function downloadSecureImage(){
   const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);
   for(const d of draws){if(d.sep){ctx.strokeStyle="#e0e0e0";ctx.beginPath();ctx.moveTo(pad,d.y);ctx.lineTo(W-pad,d.y);ctx.stroke();}
     else{ctx.fillStyle=d.color;ctx.font=d.font;ctx.fillText(d.t,d.x,d.y);}}
-  c.toBlob(b=>{const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=`aircraft-secure-${todayISO()}.png`;
-    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Image downloaded");},"image/png");
+  c.toBlob(b=>{const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=filename;
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Image downloaded");},"image/png");}
+function downloadSecureImage(){
+  const log=data.secureLog;
+  const items=[{t:"Aircraft Secure Log",b:true,size:30},
+    {t:fmtDate(todayISO())+"   ·   "+log.length+" entr"+(log.length===1?"y":"ies"),size:18,color:"#555"},{gap:14}];
+  log.forEach((e,i)=>{
+    items.push({t:`${i+1}. ${e.area||""} / ${e.spot||""}`,b:true,size:20});
+    if(e.ac&&e.ac.ship)items.push({t:`Aircraft: Nose ${e.ac.ship}${e.ac.reg?" / "+e.ac.reg:""}${e.ac.type?" / "+e.ac.type:""}`,size:18,indent:20});
+    items.push({t:`Responsible: ${e.reason||""}${e.name?" ("+e.name+")":""}     Time: ${e.time||""}`,size:18,indent:20});
+    if(e.comment)items.push({t:`Comment: ${e.comment}`,size:18,indent:20,color:"#333"});
+    items.push({sep:true});});
+  if(!log.length)items.push({t:"(no entries)",size:18});
+  pngFromItems(`aircraft-secure-${todayISO()}.png`,items);
 }
 function downloadSecureText(){
   const lines=["AIRCRAFT SECURE LOG — "+fmtDate(todayISO()),"========================================",""];
@@ -1005,9 +966,9 @@ function renderPark(){const r=$("#parkRoot");
   ({area:renderParkArea,spot:renderParkSpot,ac:renderParkAc,result:renderParkResult}[park.stage]||renderParkArea)(r);}
 function renderParkArea(r){
   r.innerHTML=`<div class="card pad">
-    <h3 style="margin:0 0 2px">P Where are you parking?</h3>
+    <h3 style="margin:0 0 2px">Where are you parking?</h3>
     <p class="hint" style="margin-top:0">Pick the hardstand, then the spot and aircraft — it tells you the stop line &amp; restrictions.</p>
-    <div class="chips" id="pkArea">${Object.keys(PARK).map(a=>`<button class="chip" data-a="${esc(a)}"> ${esc(a)}</button>`).join("")}</div></div>`;
+    <div id="pkArea" style="display:flex;flex-direction:column;gap:12px;margin-top:10px">${Object.keys(PARK).map(a=>`<button class="chip big" data-a="${esc(a)}" style="width:100%;text-align:center;padding:26px 12px">${esc(a)}</button>`).join("")}</div></div>`;
   $$("#pkArea .chip").forEach(c=>c.addEventListener("click",()=>{park.area=c.dataset.a;park.spot=null;park.stage="spot";renderPark();}));
 }
 function renderParkSpot(r){
@@ -1030,10 +991,9 @@ function renderParkAc(r){
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)}</div>
     <h3 style="margin:2px 0 2px">Aircraft type</h3>
-    <p class="hint" style="margin-top:0">Only aircraft eligible for spot ${esc(park.spot)} are shown.</p>
-    ${(()=>{const groups=UNITED_PARK.map(g=>({mfr:g.mfr,items:g.items.filter(([k])=>parkLookup(park.area,park.spot,k).ok)})).filter(g=>g.items.length);
-      return groups.length?groups.map(g=>`<div class="spotgrp">${esc(g.mfr)}</div><div class="chips">${g.items.map(([k,l])=>`<button class="chip ${park.acLabel===l?'sel':''}" data-k="${esc(k)}" data-l="${esc(l)}">${esc(l)}</button>`).join("")}</div>`).join("")
-        :`<div class="ac-no" style="color:#b3261e"><b>⊘ No aircraft are eligible to park on spot ${esc(park.spot)}.</b></div>`;})()}
+    <p class="hint" style="margin-top:0">All United types shown. <b>Dimmed</b> = not allowed on spot ${esc(park.spot)} — tap to see why.</p>
+    ${UNITED_PARK.map(g=>`<div class="spotgrp">${esc(g.mfr)}</div><div class="chips">${g.items.map(([k,l])=>{const ok=parkLookup(park.area,park.spot,k).ok;
+      return `<button class="chip ${park.acLabel===l?'sel':''} ${ok?'':'noteligible'}" data-k="${esc(k)}" data-l="${esc(l)}">${esc(l)}${ok?'':' ⊘'}</button>`;}).join("")}</div>`).join("")}
     <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
   $$("#parkRoot .chip[data-k]").forEach(c=>c.addEventListener("click",()=>{park.ac=c.dataset.k;park.acLabel=c.dataset.l;park.stage="result";renderPark();}));
   $("#pkBack").addEventListener("click",()=>{park.stage="spot";renderPark();});
@@ -1073,9 +1033,10 @@ function renderParkResult(r){
 function buildSheetHTML(spotNames,title){
   const date=fmtDate(todayISO());
   const set=new Set(spotNames);
-  const areas=areasList().filter(a=>spotsInArea(a).some(s=>set.has(s.name)));
+  const hasEquip=n=>data.equipment.some(e=>(e.location||"")===n);
+  const areas=areasList().filter(a=>spotsInArea(a).some(s=>set.has(s.name)&&hasEquip(s.name)));
   // also include spot names that aren't in any area (free-typed locations)
-  const orphan=spotNames.filter(n=>!locObj(n));
+  const orphan=spotNames.filter(n=>!locObj(n)&&hasEquip(n));
   let total=0;
   function spotBlock(name){
     const items=data.equipment.filter(e=>(e.location||"")===name);
@@ -1091,7 +1052,7 @@ function buildSheetHTML(spotNames,title){
     return `<div class="spot-block"><div class="spot-h"><span class="sn">${esc(name)}</span>${acLine}</div>${body}</div>`;
   }
   let blocks=areas.map(a=>`<div class="area-block"><div class="area-title">${esc(a)}</div>${
-    spotsInArea(a).filter(s=>set.has(s.name)).map(s=>spotBlock(s.name)).join("")}</div>`).join("");
+    spotsInArea(a).filter(s=>set.has(s.name)&&hasEquip(s.name)).map(s=>spotBlock(s.name)).join("")}</div>`).join("");
   if(orphan.length)blocks+=`<div class="area-block"><div class="area-title">Other</div>${orphan.map(spotBlock).join("")}</div>`;
   const spotCount=spotNames.length;
   return `<div class="sheet-head">
