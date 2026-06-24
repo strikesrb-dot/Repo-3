@@ -257,11 +257,12 @@ const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v1",SEEN_KEY="elt.seenMaster.v1";
 const MASTER_URL="equipment.json",FLEET_URL="aircraft.json";
 const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (AC Cart)","Air Start Unit (ASU)",
   "Stairs","Stair Truck","Belt Loader","Pushback Tractor / Tug","Baggage Cart","Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
-const LOC_SEED_V=4;
+const LOC_SEED_V=5;
 function R(pre,a,b){const o=[];for(let i=a;i<=b;i++)o.push(pre+i);return o;}
 const LOC_SEED=[
   ["Staging",false,["Staging Area"]],
   ["Amelia",true,["AML17","AML18","AML19","AML20","AML21","AML22","AML26","AML27","AML28","AML30","AML31","AML32","AML33","AML33A","AML36","AML36A","AML37","AML38","AML38A"]],
+  ["Amelia",false,["Amelia Staging Area"]],
   ["Lindy",true,R("LIND",1,9)],
   ["Murphy",true,R("MUR",1,6)],
   ["Ballpark",true,R("A10-",1,5).concat(R("BP",1,15))],
