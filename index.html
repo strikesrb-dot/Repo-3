@@ -257,16 +257,20 @@ const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v1",SEEN_KEY="elt.seenMaster.v1";
 const MASTER_URL="equipment.json",FLEET_URL="aircraft.json";
 const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (AC Cart)","Air Start Unit (ASU)",
   "Stairs","Stair Truck","Belt Loader","Pushback Tractor / Tug","Baggage Cart","Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
-const DEFAULT_LOCATIONS=[
-  {name:"Staging Area",area:"Staging",holdsAircraft:false},
-  {name:"AML17",area:"Amelia",holdsAircraft:true},
-  {name:"LIND1",area:"Lindy",holdsAircraft:true},
-  {name:"MUR1",area:"Murphy",holdsAircraft:true},
-  {name:"BP1",area:"Ballpark",holdsAircraft:true},
-  {name:"C71R",area:"C4",holdsAircraft:true},
-  {name:"A12-1",area:"A12 Parking",holdsAircraft:true},
-  {name:"TNPK1",area:"Turnpike",holdsAircraft:true},
-  {name:"54C",area:"WestPark",holdsAircraft:true}];
+const LOC_SEED_V=2;
+function R(pre,a,b){const o=[];for(let i=a;i<=b;i++)o.push(pre+i);return o;}
+const LOC_SEED=[
+  ["Staging",false,["Staging Area"]],
+  ["Amelia",true,["AML17","AML18","AML19","AML20","AML21","AML22","AML26","AML27","AML28","AML30","AML31","AML32","AML33","AML33A","AML36","AML36A","AML37","AML38","AML38A"]],
+  ["Lindy",true,R("LIND",1,9)],
+  ["Murphy",true,R("MUR",1,6)],
+  ["Ballpark",true,R("A10-",1,5).concat(R("BP",1,15),R("BP HOLD ",1,15),R("B HOLD ",1,10))],
+  ["A12 Parking",true,R("A12-",1,12)],
+  ["C4",true,["C71R","C71S","C71T","C71V","C71X"]],
+  ["Turnpike",true,R("TNPK",1,5)],
+  ["WestPark",true,["54C","54R","55L","55R","56C","H52","H54B","H54C","H56C","HB1","HB2","MX1","S1","S2","S3"].concat(R("UP",1,9),["CL1","CL2","CL3"])],
+  ["Remote",true,R("TL",81,86).concat(R("TW",5,18),R("TY",2,8),["OA HOLD 1","OA HOLD 2"])]];
+const DEFAULT_LOCATIONS=LOC_SEED.flatMap(([area,ac,names])=>names.map(name=>({name,area,holdsAircraft:ac})));
 
 let data=load();
 function load(){
@@ -275,6 +279,12 @@ function load(){
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={};
   d.locations=(d.locations&&d.locations.length?d.locations:DEFAULT_LOCATIONS.slice())
     .map(l=>({name:l.name,area:l.area||l.name,holdsAircraft:l.holdsAircraft!=null?!!l.holdsAircraft:l.kind==='spot'}));
+  // one-time merge of seeded spots (keeps any equipment; adds spots not present)
+  if((d.locSeedV||0)<LOC_SEED_V){
+    const have=new Set(d.locations.map(l=>l.name.toLowerCase()));
+    DEFAULT_LOCATIONS.forEach(dl=>{if(!have.has(dl.name.toLowerCase()))d.locations.push({...dl});});
+    d.locSeedV=LOC_SEED_V;
+  }
   return d;
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(data));}
@@ -639,7 +649,7 @@ function updateHdr(){const n=data.equipment.length,locs=knownLocations().length;
   $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} · ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
 
 /* ---- init ---- */
-(async function(){if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();autoLoadMaster();})();
+(async function(){save();if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();autoLoadMaster();})();
 </script>
 </body>
 </html>
