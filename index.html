@@ -379,11 +379,12 @@
       </details>
     </div>
 
-    <h2 class="section">Equipment types (categories)</h2>
+    <h2 class="section">Equipment categories</h2>
     <div class="card pad">
+      <p class="hint" style="margin:0 0 8px">Tap a name to rename it (updates every unit). Use ▲▼ to reorder.</p>
       <div id="typeManage"></div>
       <div class="toolbar" style="margin-top:10px;margin-bottom:0">
-        <input id="newType" placeholder="Add a type (e.g. Belt Loader)" />
+        <input id="newType" placeholder="Add a category (e.g. Belt Loader)" />
         <button class="btn sm navy" id="addTypeBtn" style="width:auto">Add</button>
       </div>
     </div>
@@ -460,8 +461,15 @@
 "use strict";
 const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v2",SEEN_KEY="elt.seenMaster.v1";
 const MASTER_URL="equipment.json",FLEET_URL="aircraft.json";
-const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (PCA)","Air Conditioning Unit - Heat (PCA Heat)","Air Start Unit (ASU)",
-  "Air Stairs / Passenger Stairs","Stair Truck","Belt Loader","Pushback Tractor / Tug","Baggage Cart","Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
+const DEFAULT_TYPES=["Stairs","GPUs","PCA/AC/HEAT Unit","Stair Truck"];
+const TYPE_SEED_V=1;
+// map any legacy equipment type into the four move-team categories
+function mapType(t){t=t||"";
+  if(/stair\s*truck/i.test(t))return "Stair Truck";
+  if(/stair/i.test(t))return "Stairs";
+  if(/ground power|gpu|\bgp\b/i.test(t))return "GPUs";
+  if(/pca|air condition|heat|\bac\b|\bah\b/i.test(t))return "PCA/AC/HEAT Unit";
+  return t;}
 const LOC_SEED_V=11;
 function R(pre,a,b){const o=[];for(let i=a;i<=b;i++)o.push(pre+i);return o;}
 const LOC_SEED=[
@@ -489,6 +497,14 @@ function load(){
   d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();
     if(/^westpark staging area$/i.test(e.location||""))e.location="WestPark";
     if(/^amelia staging area$/i.test(e.location||"")){e.location="South";e.spot="Staging Area";}}); // caps + location migration
+  // one-time remap of equipment types into the four move-team categories
+  if((d.typeSeedV||0)<TYPE_SEED_V){
+    d.equipment.forEach(e=>{e.type=mapType(e.type);});
+    const seen=new Set(),merged=[];
+    DEFAULT_TYPES.forEach(t=>{if(!seen.has(t)){seen.add(t);merged.push(t);}});
+    (d.types||[]).forEach(t=>{const m=mapType(t);if(!seen.has(m)){seen.add(m);merged.push(m);}});
+    d.types=merged; d.typeSeedV=TYPE_SEED_V;
+  }
   d.equipLocs=Array.isArray(d.equipLocs)&&d.equipLocs.length?d.equipLocs:["South","C4","Ballpark","WestPark"];
   d.locations=(d.locations&&d.locations.length?d.locations:DEFAULT_LOCATIONS.slice())
     .map(l=>({name:l.name,area:l.area||l.name,holdsAircraft:l.holdsAircraft!=null?!!l.holdsAircraft:l.kind==='spot',region:l.region||"",hidden:!!l.hidden}));
@@ -530,7 +546,7 @@ function spotsInArea(a){return visLocs().filter(l=>l.area===a).sort((x,y)=>x.nam
 function hiddenCount(){return data.locations.filter(l=>l.hidden).length;}
 function knownLocations(){const s=new Set(locNames());data.equipment.forEach(e=>{if(e.location)s.add(e.location);});
   return [...s].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));}
-function catOf(type){return /air conditioning|pca/i.test(type||"")?"PCA / PCA Heat":(type||"(no type)");}
+function catOf(type){return type||"(no type)";}
 function groupByType(items){
   const m=new Map();
   items.forEach(e=>{const t=catOf(e.type);if(!m.has(t))m.set(t,[]);m.get(t).push(e);});
@@ -1393,14 +1409,24 @@ $("#bulkBtn").addEventListener("click",()=>{
   $("#bPrefix").value=$("#bStart").value=$("#bEnd").value="";});
 
 /* ---- settings: types ---- */
-function renderTypes(){$("#typeManage").innerHTML=data.types.map((t,i)=>`<div class="manage-row"><span>${esc(t)}</span>
-  <button class="iconbtn type-del" data-i="${i}" title="Remove">✕</button></div>`).join("")||`<p class="hint">No types yet.</p>`;}
-$("#typeManage").addEventListener("click",e=>{const b=e.target.closest(".type-del");if(!b)return;const i=+b.dataset.i,t=data.types[i];
-  if(data.equipment.some(eq=>eq.type===t)&&!confirm(`"${t}" is in use. Remove anyway?`))return;
-  data.types.splice(i,1);save();renderTypes();});
+function renderTypes(){$("#typeManage").innerHTML=data.types.map((t,i)=>`<div class="manage-row"><span class="ty-name" data-i="${i}">${esc(t)}</span>
+  <button class="iconbtn ty-up" data-i="${i}" title="Up"${i===0?" disabled":""}>▲</button>
+  <button class="iconbtn ty-down" data-i="${i}" title="Down"${i===data.types.length-1?" disabled":""}>▼</button>
+  <button class="iconbtn ty-del" data-i="${i}" title="Remove">✕</button></div>`).join("")||`<p class="hint">No categories yet.</p>`;}
+$("#typeManage").addEventListener("click",e=>{const t=e.target.closest("button,.ty-name");if(!t)return;
+  const i=+t.dataset.i,T=data.types;
+  if(t.classList.contains("ty-del")){const old=T[i];
+    if(data.equipment.some(eq=>eq.type===old)&&!confirm(`"${old}" is in use. Remove anyway? (equipment keeps its label)`))return;T.splice(i,1);}
+  else if(t.classList.contains("ty-up")&&i>0){[T[i-1],T[i]]=[T[i],T[i-1]];}
+  else if(t.classList.contains("ty-down")&&i<T.length-1){[T[i+1],T[i]]=[T[i],T[i+1]];}
+  else if(t.classList.contains("ty-name")){const v=(prompt("Rename category:",T[i])||"").trim();if(!v||v===T[i])return;
+    if(T.some((x,j)=>j!==i&&x.toLowerCase()===v.toLowerCase())){toast("Category already exists");return;}
+    const old=T[i];T[i]=v;data.equipment.forEach(eq=>{if(eq.type===old)eq.type=v;});}
+  else return;
+  save();renderTypes();refreshAll();});
 $("#addTypeBtn").addEventListener("click",()=>{const v=$("#newType").value.trim();if(!v)return;
-  if(data.types.some(t=>t.toLowerCase()===v.toLowerCase())){toast("Type already exists");return;}
-  data.types.push(v);$("#newType").value="";save();renderTypes();toast("Type added");});
+  if(data.types.some(t=>t.toLowerCase()===v.toLowerCase())){toast("Category already exists");return;}
+  data.types.push(v);$("#newType").value="";save();renderTypes();toast("Category added");});
 $("#newType").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addTypeBtn").click();});
 function renderEquipLocs(){const ls=equipLocs();
   $("#equipLocManage").innerHTML=ls.map((l,i)=>`<div class="manage-row"><span class="el-name" data-i="${i}">${esc(l)}</span>

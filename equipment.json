@@ -3,7 +3,7 @@
     {
       "id": "emqrk29ju61f",
       "tag": "GP3081",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -12,7 +12,7 @@
     {
       "id": "emqrk2sr639k",
       "tag": "GP1081",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -21,7 +21,7 @@
     {
       "id": "emqrk3ap2ad",
       "tag": "GP1042",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -30,7 +30,7 @@
     {
       "id": "emqrk3o7x1oo",
       "tag": "GP1079",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "",
       "notes": "",
       "updated": "2026-06-24"
@@ -38,7 +38,7 @@
     {
       "id": "emqrk4bdaku",
       "tag": "GP1080",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "",
       "notes": "",
       "updated": "2026-06-24"
@@ -46,7 +46,7 @@
     {
       "id": "emqrkoneu4l0",
       "tag": "GP3080",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -55,7 +55,7 @@
     {
       "id": "emqrkrhq139v",
       "tag": "GP1083",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "",
       "notes": "",
       "updated": "2026-06-24"
@@ -63,7 +63,7 @@
     {
       "id": "emqrksb3u6uk",
       "tag": "AC5405",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -72,7 +72,7 @@
     {
       "id": "emqrkswdy43v",
       "tag": "AC5315",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -81,7 +81,7 @@
     {
       "id": "emqrktap32l5",
       "tag": "AC5266",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -90,7 +90,7 @@
     {
       "id": "emqrku8oo2ov",
       "tag": "AC5401",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -99,7 +99,7 @@
     {
       "id": "emqrkup2711m",
       "tag": "AC5266",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -108,7 +108,7 @@
     {
       "id": "emqrkve9f2zg",
       "tag": "AC5090",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -117,7 +117,7 @@
     {
       "id": "emqrkvz5y6s0",
       "tag": "PC#4763514",
-      "type": "Air Stairs / Passenger Stairs",
+      "type": "Stairs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -126,7 +126,7 @@
     {
       "id": "emqrkwnlb20m",
       "tag": "PC#4763513",
-      "type": "Air Stairs / Passenger Stairs",
+      "type": "Stairs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -135,7 +135,7 @@
     {
       "id": "emqrkxn0xob",
       "tag": "WS023681",
-      "type": "Air Stairs / Passenger Stairs",
+      "type": "Stairs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -144,7 +144,7 @@
     {
       "id": "emqrky8u22te",
       "tag": "PC#4763516",
-      "type": "Air Stairs / Passenger Stairs",
+      "type": "Stairs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -153,7 +153,7 @@
     {
       "id": "emqrkysot5jl",
       "tag": "PC#4763515",
-      "type": "Air Stairs / Passenger Stairs",
+      "type": "Stairs",
       "location": "South",
       "notes": "",
       "updated": "2026-06-24",
@@ -162,7 +162,7 @@
     {
       "id": "wpk00",
       "tag": "AC2737",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -170,7 +170,7 @@
     {
       "id": "wpk01",
       "tag": "AC5237",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -178,7 +178,7 @@
     {
       "id": "wpk02",
       "tag": "AC5341",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -186,7 +186,7 @@
     {
       "id": "wpk03",
       "tag": "AC5343",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -194,7 +194,7 @@
     {
       "id": "wpk04",
       "tag": "AH0058",
-      "type": "Air Conditioning Unit - Heat (PCA Heat)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -202,7 +202,7 @@
     {
       "id": "wpk05",
       "tag": "AH0090",
-      "type": "Air Conditioning Unit - Heat (PCA Heat)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -210,7 +210,7 @@
     {
       "id": "wpk06",
       "tag": "AH0040",
-      "type": "Air Conditioning Unit - Heat (PCA Heat)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -218,7 +218,7 @@
     {
       "id": "wpk07",
       "tag": "AH0073",
-      "type": "Air Conditioning Unit - Heat (PCA Heat)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -226,7 +226,7 @@
     {
       "id": "wpk08",
       "tag": "AH0091",
-      "type": "Air Conditioning Unit - Heat (PCA Heat)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -234,7 +234,7 @@
     {
       "id": "wpk09",
       "tag": "AH0099",
-      "type": "Air Conditioning Unit - Heat (PCA Heat)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -242,7 +242,7 @@
     {
       "id": "wpk10",
       "tag": "AH0072",
-      "type": "Air Conditioning Unit - Heat (PCA Heat)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -250,7 +250,7 @@
     {
       "id": "wpk11",
       "tag": "AH0089",
-      "type": "Air Conditioning Unit - Heat (PCA Heat)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -258,7 +258,7 @@
     {
       "id": "wpk12",
       "tag": "GP2043",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -266,7 +266,7 @@
     {
       "id": "wpk13",
       "tag": "GP2026",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -274,7 +274,7 @@
     {
       "id": "wpk14",
       "tag": "GP0368",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -282,7 +282,7 @@
     {
       "id": "wpk15",
       "tag": "GP2003",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -290,7 +290,7 @@
     {
       "id": "wpk16",
       "tag": "GP0367",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -298,7 +298,7 @@
     {
       "id": "wpk17",
       "tag": "GP1745",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -306,7 +306,7 @@
     {
       "id": "wpk18",
       "tag": "GP3050",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -314,7 +314,7 @@
     {
       "id": "wpk19",
       "tag": "GP1938",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -322,7 +322,7 @@
     {
       "id": "wpk20",
       "tag": "GP9737",
-      "type": "Ground Power Unit (GPU)",
+      "type": "GPUs",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -330,7 +330,7 @@
     {
       "id": "wpkAC2708",
       "tag": "AC2708",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
@@ -338,26 +338,17 @@
     {
       "id": "wpkAC5321",
       "tag": "AC5321",
-      "type": "Air Conditioning Unit (PCA)",
+      "type": "PCA/AC/HEAT Unit",
       "location": "WestPark",
       "notes": "",
       "updated": "2026-06-24"
     }
   ],
   "types": [
-    "Ground Power Unit (GPU)",
-    "Air Conditioning Unit (PCA)",
-    "Air Conditioning Unit - Heat (PCA Heat)",
-    "Air Start Unit (ASU)",
-    "Air Stairs / Passenger Stairs",
-    "Belt Loader",
-    "Pushback Tractor / Tug",
-    "Baggage Cart",
-    "Lavatory Cart",
-    "Potable Water Cart",
-    "Tow Bar",
-    "Chocks",
-    "Traffic Cones"
+    "Stairs",
+    "GPUs",
+    "PCA/AC/HEAT Unit",
+    "Stair Truck"
   ],
   "spotAircraft": {
     "LIND4": {
@@ -1161,5 +1152,6 @@
       "comment": "",
       "date": "2026-06-24"
     }
-  ]
+  ],
+  "typeSeedV": 1
 }
