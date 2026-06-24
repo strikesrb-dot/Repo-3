@@ -315,7 +315,7 @@
 
 <script>
 "use strict";
-const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v1",SEEN_KEY="elt.seenMaster.v1";
+const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v2",SEEN_KEY="elt.seenMaster.v1";
 const MASTER_URL="equipment.json",FLEET_URL="aircraft.json";
 const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (AC Cart)","Air Start Unit (ASU)",
   "Stairs","Stair Truck","Belt Loader","Pushback Tractor / Tug","Baggage Cart","Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
@@ -398,7 +398,7 @@ function saveFleetCache(){localStorage.setItem(FLEET_KEY,JSON.stringify({aircraf
 async function fetchFleet(){try{const r=await fetch(FLEET_URL+"?t="+todayISO(),{cache:"no-store"});if(!r.ok)return false;
   const d=await r.json();if(!d||!Array.isArray(d.aircraft))return false;
   FLEET=d.aircraft.map(a=>({ship:String(a.ship),reg:(a.reg||"").toUpperCase(),type:a.type||""}));indexFleet();saveFleetCache();return true;}catch(e){return false;}}
-function lookupShip(s){return byShip.get(String(s).trim());}
+function lookupShip(s){s=String(s).trim();return byShip.get(s)||byReg.get(s.toUpperCase());}
 function rememberAircraft(ship,reg,type){ship=String(ship).trim();reg=(reg||"").toUpperCase().trim();if(!ship)return;
   const ex=byShip.get(ship);if(ex){ex.reg=reg||ex.reg;ex.type=type||ex.type;}else FLEET.push({ship,reg,type:type||""});indexFleet();saveFleetCache();}
 function updateFleetStatus(){const el=$("#fleetStatus");if(el)el.textContent=`${FLEET.length.toLocaleString()} aircraft loaded (ship # → tail # + type).`;}
@@ -418,15 +418,18 @@ const TYPE_SPECS={
  "Boeing 777-300ER":{united:"2016",seats:"350 (60 Polaris · 24PP · …)",len:"242 ft 4 in",span:"212 ft 7 in",range:"7,370 nm (~13,650 km)",speed:"Mach 0.84 (~482 kn)",engines:"2× GE90-115B",first:"2003",mtow:"775,000 lb",notes:"Largest twinjet at United; GE90 = biggest jet engine."},
  "Boeing 787-8":{united:"2012",seats:"243 (28 Polaris · 21PP · …)",len:"186 ft 1 in",span:"197 ft 3 in",range:"7,305 nm (~13,530 km)",speed:"Mach 0.85 (~488 kn)",engines:"2× GEnx-1B",first:"2009",mtow:"502,500 lb",notes:"First Dreamliner; carbon-composite fuselage."},
  "Boeing 787-9":{united:"2014",seats:"257 (48 Polaris · 21PP · …)",len:"206 ft 1 in",span:"197 ft 3 in",range:"7,635 nm (~14,140 km)",speed:"Mach 0.85 (~488 kn)",engines:"2× GEnx-1B",first:"2013",mtow:"560,000 lb",notes:"Stretched, longer-range Dreamliner."},
- "Boeing 787-10":{united:"2019",seats:"318 (44 Polaris · 21PP · …)",len:"224 ft 0 in",span:"197 ft 3 in",range:"6,330 nm (~11,730 km)",speed:"Mach 0.85 (~488 kn)",engines:"2× GEnx-1B",first:"2017",mtow:"560,000 lb",notes:"Longest Dreamliner; highest-density 787."}
+ "Boeing 787-10":{united:"2019",seats:"318 (44 Polaris · 21PP · …)",len:"224 ft 0 in",span:"197 ft 3 in",range:"6,330 nm (~11,730 km)",speed:"Mach 0.85 (~488 kn)",engines:"2× GEnx-1B",first:"2017",mtow:"560,000 lb",notes:"Longest Dreamliner; highest-density 787."},
+ "Embraer E175":{united:"2014 (United Express)",seats:"76 (12F · 16E+ · 48Y)",len:"103 ft 11 in",span:"93 ft 11 in",range:"2,200 nm (~4,074 km)",speed:"Mach 0.82 (~470 kn)",engines:"2× GE CF34-8E",first:"2003",mtow:"89,000 lb",notes:"United Express; flown by Republic, SkyWest & Mesa."},
+ "Bombardier CRJ-550":{united:"2019 (United Express)",seats:"50 (10F · 20E+ · 20Y)",len:"106 ft 8 in",span:"76 ft 3 in",range:"1,500 nm (~2,778 km)",speed:"Mach 0.78 (~447 kn)",engines:"2× GE CF34-3B1",first:"2019 (CRJ-700 conversion)",mtow:"75,000 lb",notes:"United-exclusive 50-seat premium config; flown by GoJet."},
+ "Bombardier CRJ-700":{united:"2004 (United Express)",seats:"70 (6F · 16E+ · 48Y)",len:"106 ft 8 in",span:"76 ft 3 in",range:"1,600 nm (~2,963 km)",speed:"Mach 0.78 (~447 kn)",engines:"2× GE CF34-8C5",first:"1999",mtow:"75,000 lb",notes:"United Express regional jet; flown by GoJet."}
 };
 function specHtml(s){const row=(l,v)=>v?`<div><b>${l}</b><span>${esc(v)}</span></div>`:"";
   return `<div class="specs">${row("First @ United",s.united)}${row("Seats (United)",s.seats)}${row("Length",s.len)}${row("Wingspan",s.span)}${row("Range",s.range)}${row("Cruise",s.speed)}${row("Engines",s.engines)}${row("MTOW",s.mtow)}${row("Type first flew",s.first)}${s.notes?`<p class="hint" style="margin-top:6px">${esc(s.notes)}</p>`:""}<p class="hint" style="margin-top:4px;font-size:11px">Type-level facts; United configs/specs are approximate.</p></div>`;}
-function acCard(a){const sp=TYPE_SPECS[a.type];
+function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" (")[0]];const hasShip=!!a.ship;
   return `<details class="item card acItem"><summary>
-  <div class="main"><div class="tag">✈️ Nose ${esc(a.ship)}</div>
+  <div class="main"><div class="tag">✈️ ${hasShip?"Nose "+esc(a.ship):esc(a.reg||"(no tail)")}</div>
   <div class="meta">${esc(a.type||"Unknown type")}</div>
-  <div style="margin-top:6px"><span class="loc">${esc(a.reg||"(no tail)")}</span>${sp?` <span class="hint" style="font-size:11px">▾ tap for specs</span>`:""}</div></div></summary>
+  <div style="margin-top:6px">${hasShip?`<span class="loc">${esc(a.reg||"(no tail)")}</span>`:`<span class="loc">Regional · United Express</span>`}${sp?` <span class="hint" style="font-size:11px">▾ tap for specs</span>`:""}</div></div></summary>
   ${sp?specHtml(sp):'<p class="hint" style="padding:0 14px 12px">No spec sheet for this type yet.</p>'}</details>`;}
 function renderAircraftLookup(){
   const el=$("#acFleetN");if(el)el.textContent=`${FLEET.length.toLocaleString()} United aircraft loaded · works offline`;
@@ -640,7 +643,7 @@ function renderInvAircraft(r){
     if(!s){box.innerHTML="";inv.ac=null;if(skip)skip.style.display="";return;}
     const hit=lookupShip(s);
     if(skip)skip.style.display=hit?"none":"";
-    if(hit){inv.ac={ship:s,reg:hit.reg,type:hit.type};box.innerHTML=`<div class="ac-ok">✓ Nose ${esc(s)} · ${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
+    if(hit){inv.ac={ship:hit.ship||"",reg:hit.reg,type:hit.type};box.innerHTML=`<div class="ac-ok">✓ ${hit.ship?`Nose ${esc(hit.ship)} · `:""}${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
     else{inv.ac={ship:s,reg:(cur&&cur.ship===s?cur.reg:""),type:(cur&&cur.ship===s?cur.type:"")};
       box.innerHTML=`<div class="ac-no"><div style="font-size:13px;color:#8a5b00;font-weight:600;margin-bottom:6px">Ship ${esc(s)} isn't in the fleet list — enter it (it'll be remembered):</div>
         <div class="row2"><div><label style="margin-top:0">Tail #</label><input id="mReg" placeholder="N12345" autocapitalize="characters" value="${esc(inv.ac.reg)}"></div>
@@ -797,7 +800,7 @@ function renderSecAircraft(r){
   function refresh(){const s=shipIn.value.trim(),box=$("#secAcInfo");
     if(!s){box.innerHTML="";sec.ac=null;return;}
     const hit=lookupShip(s);
-    if(hit){sec.ac={ship:s,reg:hit.reg,type:hit.type};box.innerHTML=`<div class="ac-ok">✓ Nose ${esc(s)} · ${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
+    if(hit){sec.ac={ship:hit.ship||"",reg:hit.reg,type:hit.type};box.innerHTML=`<div class="ac-ok">✓ ${hit.ship?`Nose ${esc(hit.ship)} · `:""}${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
     else{sec.ac={ship:s,reg:(sec.ac&&sec.ac.ship===s?sec.ac.reg:""),type:(sec.ac&&sec.ac.ship===s?sec.ac.type:"")};
       box.innerHTML=`<div class="ac-no"><div style="font-size:13px;color:#8a5b00;font-weight:600;margin-bottom:6px">Ship ${esc(s)} isn't in the fleet list — enter it (it'll be remembered):</div>
         <div class="row2"><div><label style="margin-top:0">Tail #</label><input id="sReg" placeholder="N12345" autocapitalize="characters" value="${esc(sec.ac.reg)}"></div>
@@ -915,7 +918,7 @@ const UNITED_PARK=[
 const LIN_A3={A:["md80"],B:["a319","a220","a320","a321","b737","b717","b727","crj","dc9","e70","erj"],C:["dash","q"]};
 const LIN_WBB=["a300","a310","b757","b767","md11"];
 const AME_A3={A:["a321","a320","a220","b737","b717","b727","crj","e70","dc9","erj","md80"],B:["a318","a319","dash","q"]};
-const AME_WB={A:["a346","a3510","b773","b7779"],B:["a330","a340","a359","b772","b7778"],C:LIN_WBB};
+const AME_WB={A:["a346","a3510","b773","b7779"],B:["a330","a340","a359","b747","b772","b787","b7778","a300","a310","b757","b767","md11"]};
 function a3SpotsLindy(){const o={};["1","2","3","4","5","6","7","8"].forEach(s=>o[s]={adg:3,lines:LIN_A3});
   o["1A"]={adg:5,lines:{A:["a330","a340","a346","a359","a3510","b747","b787","b772","b773","b7778","b7779"],B:LIN_WBB}};
   o["3A"]={adg:5,lines:{A:["a330","a340","a346","a359","a3510","b747","b787","b772","b773","b7778"],B:LIN_WBB}};
@@ -925,7 +928,7 @@ function a3SpotsLindy(){const o={};["1","2","3","4","5","6","7","8"].forEach(s=>
 function a3SpotsAmelia(){const o={};["26","27","28","29","30","31","32","33","34","35","36","37","38","39"].forEach(s=>o[s]={adg:3,lines:AME_A3});
   o["32"]={adg:3,lines:{A:AME_A3.A.concat("md90"),B:AME_A3.B}};o["38"]=o["32"]; // MD-90 only on 32 & 38
   ["26A","28A","31A","33A","36A","38A"].forEach(s=>o[s]={adg:5,lines:AME_WB});
-  o["36A"]={adg:5,lines:{A:AME_WB.A.concat("b748"),B:AME_WB.B,C:AME_WB.C}}; // B747-8 only on 36A
+  o["36A"]={adg:5,lines:{A:AME_WB.A.concat("b748"),B:AME_WB.B}}; // B747-8 only on 36A
   return o;}
 const PARK={
   Lindy:{spots:a3SpotsLindy(),
