@@ -1228,8 +1228,8 @@ async function autoLoadMaster(){if(data.equipment.length||localStorage.getItem(S
 
 /* ---- refresh ---- */
 function refreshAll(){renderList();refreshLocationFilter();updateHdr();}
-function updateHdr(){const n=data.equipment.length,locs=knownLocations().length;
-  $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} · ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
+function updateHdr(){const n=data.equipment.length,locs=new Set(data.equipment.map(e=>e.location).filter(Boolean)).size;
+  $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} across ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
 
 /* ---- init ---- */
 (async function(){save();if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();autoLoadMaster();})();
