@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="staffing.css" />
 <style>
   :root{--navy:#0b3d63;--navy-d:#08304e;--accent:#f5a623;--accent-d:#d98c0a;--melon:#fc4c4e;--bg:#f4f6f8;--card:#fff;
     --line:#dce1e6;--ink:#1c2530;--muted:#67727e;--good:#1e7d46;--good-bg:#e6f4ec;--danger:#c0392b;--shadow:0 1px 3px rgba(0,0,0,.12);}
@@ -304,6 +305,10 @@
   <!-- EQUIPMENT -->
   <!-- HUB -->
   <section id="view-hub" class="view active">
+    <div class="hubsec">Operations</div>
+    <div class="hubgrid">
+      <button class="hubtile" data-go="staffing"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Manpower / Staffing</button>
+    </div>
     <div class="hubsec">Field Logging</div>
     <div class="hubgrid">
       <button class="hubtile" data-go="inventory"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg></span>Do Inventory</button>
@@ -353,6 +358,9 @@
       <button class="btn navy" id="wizNext">Next ›</button>
     </div>
   </section>
+
+  <!-- MANPOWER / STAFFING -->
+  <section id="view-staffing" class="view"><div id="staffRoot"></div></section>
 
   <!-- AIRCRAFT LOOKUP -->
   <section id="view-aircraft" class="view">
@@ -657,6 +665,7 @@ function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active")
 function goTab(t){showTab(t);
   if(t==="equipment"){renderList();refreshAudit();updateLockBar();}
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[]};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();renderInventory();}
+  if(t==="staffing"){window.STAFF&&window.STAFF.open();}
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
@@ -1522,5 +1531,6 @@ function updateHdr(){const n=data.equipment.length,locs=new Set(data.equipment.m
 (async function(){save();if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();autoLoadMaster();})();
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
 </script>
+<script src="staffing.js"></script>
 </body>
 </html>
