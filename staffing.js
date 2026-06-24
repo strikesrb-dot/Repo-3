@@ -376,8 +376,11 @@ function rAssign(){
 function rSheet(){
   ROOT.innerHTML=`<div class="sheet-scroll"><div id="staffSheet">${buildSheet()}</div></div>
     <div class="card pad no-print"><div class="btnrow"><button class="btn navy" id="shPrint">Print / Save as PDF</button></div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shImg">Image</button><button class="btn ghost" id="shTxt">Text</button></div>
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button><button class="btn ghost" id="shNew">New sheet</button></div></div>`;
   $("#shPrint").onclick=()=>{ $("#printArea").innerHTML=`<div class="sb-print">${buildSheet()}</div>`; window.print(); };
+  $("#shImg").onclick=exportSheetImage;
+  $("#shTxt").onclick=exportSheetText;
   $("#shNew")?.addEventListener("click",()=>{ ST.step="upload"; ST.bodies=null; ST.assign=null; render(); });
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
@@ -404,6 +407,82 @@ function buildSheet(){
       <div class="sb-tugs">${cols.map(c=>`<div class="sb-tcol">${tugCol(c)}</div>`).join("")}</div>
       <div class="sb-rail">ALWAYS FOLLOW SOP</div></div>
   </div>`;
+}
+
+/* ---- exporters (canvas-drawn — works in Safari/WebKit) ---- */
+function exportSheetImage(){
+  const a=ST.assign,S=2,W=1360,M=26,gap=8,F=s=>s+" -apple-system,Arial,sans-serif";
+  // area boxes
+  const boxes=[];
+  AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:x.key,n:list.map(p=>p.name),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
+  boxes.push({t:"DISPATCHER",n:[a.dispatch?a.dispatch.name:"OPEN"],navy:true,open:!a.dispatch});
+  boxes.push({t:"SUPERVISORS",n:ST.supers.slice()});
+  boxes.push({t:"MANAGERS",n:[ST.manager,...ST.asst].filter(Boolean)});
+  const cols=5,brows=Math.ceil(boxes.length/cols),bandW=W-2*M,bw=(bandW-(cols-1)*gap)/cols;
+  const maxN=Math.max(2,...boxes.map(b=>b.n.length)),bh=22+maxN*16+6;
+  const railW=24,tcols=3,trows=Math.ceil(TUGS.length/tcols);
+  const tgW=W-2*M-2*(railW+gap),tw=(tgW-(tcols-1)*gap)/tcols,th=58;
+  const titleH=44,tugTop=M+titleH+10+brows*(bh+gap)+10;
+  const H=tugTop+trows*(th+gap)-gap+M;
+  const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
+  const clip=(t,mw,font)=>{ctx.font=font;t=t||"";if(ctx.measureText(t).width<=mw)return t;while(t.length&&ctx.measureText(t+"…").width>mw)t=t.slice(0,-1);return t+"…";};
+  // title + shift
+  ctx.fillStyle="#10171f";ctx.font=F("900 30px");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("EWR AMT STAFFING",W/2,M+titleH/2);
+  ctx.font=F("800 13px");ctx.fillStyle="#5a6772";ctx.textAlign="right";ctx.fillText("SHIFT",W-M-52,M+titleH/2);
+  ctx.fillStyle="#0b3d63";ctx.fillRect(W-M-46,M+titleH/2-13,46,26);ctx.fillStyle="#fff";ctx.font=F("800 14px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-23,M+titleH/2+1);
+  // area band
+  const bandY=M+titleH+10;
+  boxes.forEach((bx,i)=>{const col=i%cols,row=Math.floor(i/cols),x=M+col*(bw+gap),by=bandY+row*(bh+gap);
+    ctx.fillStyle="#fff";ctx.fillRect(x,by,bw,bh);
+    ctx.fillStyle=bx.navy?"#0b3d63":"#f5a623";ctx.fillRect(x,by,bw,20);
+    ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(x+.5,by+.5,bw-1,bh-1);
+    ctx.fillStyle=bx.navy?"#fff":"#3a2500";ctx.font=F("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";ctx.fillText(clip(bx.t.toUpperCase(),bw-40,F("900 11px")),x+6,by+10);
+    if(bx.sub){ctx.textAlign="right";ctx.fillText(bx.sub,x+bw-6,by+10);}
+    ctx.font=F("600 12px");ctx.textAlign="left";
+    (bx.n.length?bx.n:["—"]).forEach((nm,j)=>{ctx.fillStyle=bx.open?"#c0271e":(bx.n.length?"#1c2530":"#c2ccd4");ctx.fillText(clip(nm,bw-12,F("600 12px")),x+6,by+20+12+j*16);});
+  });
+  // SOP rails
+  const tugGridH=trows*(th+gap)-gap;
+  [M,W-M-railW].forEach(rx=>{ctx.fillStyle="#0b3d63";ctx.fillRect(rx,tugTop,railW,tugGridH);
+    ctx.save();ctx.translate(rx+railW/2,tugTop+tugGridH/2);ctx.rotate(-Math.PI/2);ctx.fillStyle="#fff";ctx.font=F("900 12px");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("ALWAYS FOLLOW SOP",0,0);ctx.restore();});
+  // tug grid
+  const gx0=M+railW+gap;
+  TUGS.forEach((id,i)=>{const col=i%tcols,row=Math.floor(i/tcols),x=gx0+col*(tw+gap),ty=tugTop+row*(th+gap);
+    const oos=!!ST.oos[id],t=a.tugs[id]||{};
+    ctx.fillStyle=oos?"#fbeceb":"#fff";ctx.fillRect(x,ty,tw,th);
+    ctx.fillStyle="#eef2f5";ctx.fillRect(x,ty,tw,20);
+    ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(x+.5,ty+.5,tw-1,th-1);
+    ctx.fillStyle="#0b3d63";ctx.font=F("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";ctx.fillText("STUG "+id+(ELECTRIC.has(id)?" (E)":""),x+6,ty+10);
+    if(oos){ctx.fillStyle="#c0271e";ctx.font=F("800 10px");ctx.textAlign="right";ctx.fillText("OUT OF SERVICE",x+tw-6,ty+10);}
+    else{
+      ctx.font=F("800 9px");ctx.textAlign="left";ctx.fillStyle="#90a0ad";ctx.fillText("DRIVER",x+6,ty+32);ctx.fillText("OBSERVR",x+6,ty+48);
+      ctx.font=F("600 12px");ctx.fillStyle="#1c2530";
+      ctx.fillText(clip((t.DRIVER&&t.DRIVER.name)||"",tw-58,F("600 12px")),x+54,ty+32);
+      ctx.fillText(clip((t.OBSERVR&&t.OBSERVR.name)||"",tw-58,F("600 12px")),x+54,ty+48);
+    }
+  });
+  ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
+  c.toBlob(b=>{ if(!b){alert("Image export failed — use Print / Save as PDF.");return;}
+    const name="EWR-AMT-Staffing-"+ST.shift+".png";
+    if(window.showImagePreview)window.showImagePreview(b,name);
+    else{const u=URL.createObjectURL(b),el=document.createElement("a");el.href=u;el.download=name;document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(u);}
+  },"image/png");
+}
+function exportSheetText(){
+  const a=ST.assign,L=[];
+  L.push("EWR AMT STAFFING — "+ST.shift);
+  L.push("=".repeat(30));
+  L.push("DISPATCHER: "+(a.dispatch?a.dispatch.name:"OPEN"));
+  if(ST.supers.length)L.push("SUPERVISORS: "+ST.supers.join(", "));
+  const mgr=[ST.manager,...ST.asst].filter(Boolean);if(mgr.length)L.push("MANAGERS: "+mgr.join(", "));
+  L.push("");L.push("AREAS:");
+  AREAS.forEach(ar=>{const list=a.areas[ar.key]||[];if(list.length||ar.min)L.push("  "+ar.key+(ar.min?" ("+list.length+"/"+ar.min[ST.shift]+")":"")+": "+(list.map(p=>p.name).join(", ")||"—"));});
+  L.push("");L.push("TUGS:");
+  TUGS.forEach(id=>{ if(ST.oos[id]){L.push("  STUG "+id+": OUT OF SERVICE");return;}
+    const t=a.tugs[id]||{};L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+": DRIVER "+(t.DRIVER?t.DRIVER.name:"—")+" / OBSERVR "+(t.OBSERVR?t.OBSERVR.name:"—"));});
+  const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),el=document.createElement("a");
+  el.href=u;el.download="EWR-AMT-Staffing-"+ST.shift+".txt";document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(u);
 }
 
 /* expose entry point */
