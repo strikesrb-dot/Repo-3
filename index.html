@@ -17,9 +17,10 @@
   .hubtile{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 2px 10px rgba(20,40,70,.08);padding:22px 10px;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;text-align:center;line-height:1.2}
   .hubtile:active{transform:scale(.97)}
   .hubtile .hi{font-size:34px;line-height:1}
+  .ic{width:1em;height:1em;vertical-align:-.15em;display:inline-block;flex:none}
+  .hubtile .hi .ic{width:34px;height:34px;vertical-align:0}
   header{position:sticky;top:0;z-index:20;background:var(--melon);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;box-shadow:var(--shadow);}
-  .hdr-actions{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:12px;display:flex;gap:8px}
-  .hdrbtn{background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700}
+  .hdrbtn{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:12px;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px}
   .hdrbtn:active{background:rgba(255,255,255,.30)}
   header h1{margin:0;font-size:18px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
   header .sub{margin:2px 0 0;font-size:12px;color:#bcd3e6}
@@ -153,11 +154,8 @@
 </head>
 <body>
 <header>
-  <div class="hdr-actions">
-    <button id="backBtn" class="hdrbtn" hidden>‹ Back</button>
-    <button id="equipBtn" class="hdrbtn" hidden>📋 Equip. List</button>
-  </div>
-  <h1 id="hdrTitle">✈️ Equipment Location Tracker</h1>
+  <button id="homeBtn" class="hdrbtn" hidden><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</button>
+  <h1 id="hdrTitle">ELT</h1>
   <p class="sub" id="hdrSub">Ground support equipment · staging &amp; audits</p>
 </header>
 
@@ -166,19 +164,19 @@
   <!-- HUB -->
   <section id="view-hub" class="view active">
     <div class="hubgrid">
-      <button class="hubtile" data-go="inventory"><span class="hi">🧭</span>Equipment Audit Sheet</button>
-      <button class="hubtile" data-go="park"><span class="hi">🅿️</span>Stop Mark Lookup</button>
-      <button class="hubtile" data-go="aircraft"><span class="hi">✈️</span>Aircraft Lookup</button>
-      <button class="hubtile" data-go="secure"><span class="hi">🔒</span>Aircraft Secure Log</button>
-      <button class="hubtile" data-go="equipment"><span class="hi">📋</span>Equipment List</button>
-      <button class="hubtile" data-go="settings"><span class="hi">⚙️</span>Settings</button>
+      <button class="hubtile" data-go="inventory"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg></span>Equipment Audit Sheet</button>
+      <button class="hubtile" data-go="park"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg></span>Stop Mark Lookup</button>
+      <button class="hubtile" data-go="aircraft"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg></span>Aircraft Lookup</button>
+      <button class="hubtile" data-go="secure"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>Aircraft Secure Log</button>
+      <button class="hubtile" data-go="equipment"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></span>Equipment List</button>
+      <button class="hubtile" data-go="settings"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>Settings</button>
     </div>
   </section>
 
   <section id="view-equipment" class="view">
     <div class="btnrow" style="margin-top:0;margin-bottom:10px"><button class="btn navy" id="addBtn">➕ Add equipment</button></div>
     <details class="card acItem" id="sheetGen" style="margin-bottom:12px">
-      <summary><div class="main"><div class="tag">🧾 Generate sheet</div>
+      <summary><div class="main"><div class="tag"> Generate sheet</div>
         <div class="meta">Quick audit sheet for an area or everything</div></div></summary>
       <div style="padding:0 14px 12px">
         <label for="auditLoc">Scope</label>
@@ -237,7 +235,7 @@
       <datalist id="areaList"></datalist>
       <button class="btn sm navy" id="addSpotBtn" style="width:100%;margin-top:8px">Add spot</button>
       <details style="margin-top:12px">
-        <summary style="font-weight:700;color:var(--navy);cursor:pointer">⚡ Bulk add a range of spots</summary>
+        <summary style="font-weight:700;color:var(--navy);cursor:pointer"> Bulk add a range of spots</summary>
         <p class="hint" style="margin-top:6px">Generate many spots at once, e.g. prefix <b>AML</b>, 17 → 38 makes AML17…AML38.</p>
         <div class="row3" style="margin-top:6px">
           <input id="bPrefix" placeholder="Prefix AML" />
@@ -266,7 +264,7 @@
       <p class="hint" id="fleetStatus" style="margin-top:0"></p>
       <div class="btnrow">
         <button class="btn ghost" id="reloadFleet">↻ Reload fleet</button>
-        <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1ZlYgN_IZmd6CSx_nXnuP0L0PiodapDRx3RmNkIpxXAo/htmlview" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;line-height:1.2">🔎 Look up ship #</a>
+        <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1ZlYgN_IZmd6CSx_nXnuP0L0PiodapDRx3RmNkIpxXAo/htmlview" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;line-height:1.2"> Look up ship #</a>
       </div>
       <p class="hint">Type a ship number and the tail # + type fill in. Unknown ones you enter are remembered.</p>
     </div>
@@ -275,8 +273,8 @@
     <div class="card pad">
       <p class="hint" style="margin-top:0">Export everything (equipment, areas/spots, types, aircraft) as one file — send it to update the shared page, back it up, or load on another phone.</p>
       <div class="btnrow">
-        <button class="btn ghost" id="exportMaster">⬇️ Export all data</button>
-        <button class="btn ghost" id="importBtn">⬆️ Import</button>
+        <button class="btn ghost" id="exportMaster">↓ Export all data</button>
+        <button class="btn ghost" id="importBtn">↑ Import</button>
       </div>
       <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
     </div>
@@ -432,7 +430,7 @@ function specHtml(s){const row=(l,v)=>v?`<div><b>${l}</b><span>${esc(v)}</span><
   return `<div class="specs">${row("First @ United",s.united)}${row("Seats (United)",s.seats)}${row("Length",s.len)}${row("Wingspan",s.span)}${row("Range",s.range)}${row("Cruise",s.speed)}${row("Engines",s.engines)}${row("MTOW",s.mtow)}${row("Type first flew",s.first)}${s.notes?`<p class="hint" style="margin-top:6px">${esc(s.notes)}</p>`:""}<p class="hint" style="margin-top:4px;font-size:11px">Type-level facts; United configs/specs are approximate.</p></div>`;}
 function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" (")[0]];const hasShip=!!a.ship;
   return `<details class="item card acItem"><summary>
-  <div class="main"><div class="tag">✈️ ${hasShip?"Nose "+esc(a.ship):esc(a.reg||"(no tail)")}</div>
+  <div class="main"><div class="tag">✈ ${hasShip?"Nose "+esc(a.ship):esc(a.reg||"(no tail)")}</div>
   <div class="meta">${esc(a.type||"Unknown type")}</div>
   <div style="margin-top:6px">${hasShip?`<span class="loc">${esc(a.reg||"(no tail)")}</span>`:`<span class="loc">Regional · United Express</span>`}${sp?` <span class="hint" style="font-size:11px">▾ tap for specs</span>`:""}</div></div></summary>
   ${sp?specHtml(sp):'<p class="hint" style="padding:0 14px 12px">No spec sheet for this type yet.</p>'}</details>`;}
@@ -440,7 +438,7 @@ function renderAircraftLookup(){
   const el=$("#acFleetN");if(el)el.textContent=`${FLEET.length.toLocaleString()} United aircraft loaded · works offline`;
   const q=($("#acSearch").value||"").trim().toUpperCase();
   const box=$("#acResults");
-  if(!q){box.innerHTML=`<div class="empty"><div class="big">✈️</div><p>Type a ship # or tail # to look it up.</p></div>`;return;}
+  if(!q){box.innerHTML=`<div class="empty"><div class="big">✈</div><p>Type a ship # or tail # to look it up.</p></div>`;return;}
   const digits=q.replace(/[^0-9]/g,"");
   let res=FLEET.filter(a=>{
     const ship=String(a.ship), reg=(a.reg||"").toUpperCase();
@@ -473,22 +471,9 @@ function goTab(t){showTab(t);
   if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 $("#addBtn").addEventListener("click",()=>openEdit(null));
-function updateBackBtn(){const hub=curTab==="hub";$("#backBtn").hidden=hub;$("#equipBtn").hidden=(hub||curTab==="equipment");}
-$("#equipBtn").addEventListener("click",()=>goTab("equipment"));
+function updateBackBtn(){$("#homeBtn").hidden=(curTab==="hub");}
+$("#homeBtn").addEventListener("click",()=>showTab("hub"));
 $("#hdrTitle")?.addEventListener("click",()=>showTab("hub"));
-function headerBack(){
-  if($("#editOverlay").classList.contains("open")){closeEdit();return;}
-  if(curTab==="inventory"){const s=inv.stage;
-    if(s==="area")inv.stage="region";
-    else if(s==="spot")inv.stage=multiArea()?"area":"region";
-    else if(s==="aircraft")inv.stage="spot";
-    else if(s==="select")inv.stage=holdsAircraft(inv.spot)?"aircraft":"spot";
-    else if(s==="next"||s==="sheet")inv.stage="region";
-    else{showTab("hub");return;}
-    renderInventory();return;}
-  showTab("hub");
-}
-$("#backBtn").addEventListener("click",headerBack);
 
 /* ---- equipment list ---- */
 function renderList(){
@@ -498,15 +483,15 @@ function renderList(){
   if(q)items=items.filter(e=>[e.tag,e.type,e.location,e.notes].some(v=>(v||"").toLowerCase().includes(q)));
   const list=$("#eqList");
   $("#eqCount").textContent=`${items.length} of ${data.equipment.length} item${data.equipment.length===1?"":"s"}`;
-  if(!data.equipment.length){list.innerHTML=`<div class="empty"><div class="big">📋</div><p>No equipment yet.<br>Tap <b>➕ Add equipment</b>.</p></div>`;return;}
+  if(!data.equipment.length){list.innerHTML=`<div class="empty"><div class="big"></div><p>No equipment yet.<br>Tap <b>➕ Add equipment</b>.</p></div>`;return;}
   if(!items.length){list.innerHTML=`<div class="empty"><p>Nothing matches your filter.</p></div>`;return;}
   list.innerHTML=items.map(e=>{
-    const loc=e.location?`<span class="loc">📍 ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
+    const loc=e.location?`<span class="loc"> ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
     return `<li class="item card" data-id="${e.id}"><div class="main">
       <div class="tag">${esc(e.tag||"(no tag)")}</div><div class="meta">${esc(e.type||"")}</div>
-      ${e.notes?`<div class="notes">📝 ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
-      <div class="acts"><button class="iconbtn act-move" title="Move">📍</button>
-      <button class="iconbtn act-edit" title="Edit">✏️</button><button class="iconbtn act-del" title="Delete">🗑️</button></div></li>`;
+      ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
+      <div class="acts"><button class="iconbtn act-move" title="Move">⇄</button>
+      <button class="iconbtn act-edit" title="Edit">✎</button><button class="iconbtn act-del" title="Delete">✕</button></div></li>`;
   }).join("");
 }
 $("#eqList").addEventListener("click",e=>{const li=e.target.closest(".item");if(!li)return;const id=li.dataset.id;
@@ -590,7 +575,7 @@ function groupSpots(spots){const g={};spots.forEach(s=>{const k=spotGroup(s.name
   return Object.values(g).sort((a,b)=>(a.pre||a.label).localeCompare(b.pre||b.label,undefined,{numeric:true})||a.ord-b.ord);}
 function coveredChips(){return inv.covered.length?`<div class="chips" style="margin:8px 0">`+inv.covered.map(s=>`<span class="chip done">✓ ${esc(s)}</span>`).join("")+`</div>`:"";}
 function renderInvRegion(r){
-  if(!data.locations.length){r.innerHTML=`<div class="empty"><p>Add spots first in <b>⚙️ Settings</b>.</p></div>`;setWizFoot(null);return;}
+  if(!data.locations.length){r.innerHTML=`<div class="empty"><p>Add spots first in <b> Settings</b>.</p></div>`;setWizFoot(null);return;}
   const groups=auditGroups();
   r.innerHTML=`<div class="card pad">
     ${wizHeader()}
@@ -598,8 +583,8 @@ function renderInvRegion(r){
     <p class="hint" style="margin-top:0">Pick the area you're auditing.</p>
     ${coveredChips()}
     <div class="chips" id="regChips">${groups.map(g=>{const tch=g.isRegion?regionTouched(g.name):areaTouched(g.name);
-      return `<button class="chip ${tch?'done':''}" data-g="${esc(g.name)}" data-r="${g.isRegion?1:0}">${g.isRegion?'🗺️ ':'📍 '}${esc(g.name)}${tch?' ✓':''}</button>`;}).join("")}</div>
-    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">🧾 Generate sheet (${inv.covered.length})</button></div>
+      return `<button class="chip ${tch?'done':''}" data-g="${esc(g.name)}" data-r="${g.isRegion?1:0}">${g.isRegion?' ':' '}${esc(g.name)}${tch?' ✓':''}</button>`;}).join("")}</div>
+    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish"> Generate sheet (${inv.covered.length})</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="reset">Start over</button></div>`:""}</div>`;
   $$("#regChips .chip").forEach(c=>c.addEventListener("click",()=>pickRegion(c.dataset.g,c.dataset.r==="1")));
   $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
@@ -613,7 +598,7 @@ function renderInvArea(r){
     <div class="crumbs">${esc(inv.region)}</div>
     <h3 style="margin:2px 0 8px">Pick a zone in ${esc(inv.region)}</h3>
     <div class="chips" id="areaChips">${as.map(a=>`<button class="chip ${areaTouched(a)?'done':''}" data-a="${esc(a)}">${esc(a)}${areaTouched(a)?' ✓':''}</button>`).join("")}</div>
-    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">🧾 Generate sheet (${inv.covered.length})</button></div>`:""}</div>`;
+    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish"> Generate sheet (${inv.covered.length})</button></div>`:""}</div>`;
   $$("#areaChips .chip").forEach(c=>c.addEventListener("click",()=>{inv.area=c.dataset.a;enterArea();}));
   $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
   setWizFoot({back:()=>{inv.area=null;inv.stage="region";renderInventory();},nextHidden:true});
@@ -627,7 +612,7 @@ function renderInvSpot(r){
     <div class="crumbs">${esc(inv.region?inv.region+" › ":"")}${esc(inv.area)}</div>
     <h3 style="margin:2px 0 8px">Pick a spot in ${esc(inv.area)}</h3>
     <div id="spotChips">${body||'<p class="hint">No spots in this area.</p>'}</div>
-    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">✅ Finish &amp; generate (${inv.covered.length})</button></div>`:""}</div>`;
+    ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish">✓ Finish &amp; generate (${inv.covered.length})</button></div>`:""}</div>`;
   $$("#spotChips .chip").forEach(c=>c.addEventListener("click",()=>{
     inv.spot=c.dataset.s;inv.ac=data.spotAircraft[inv.spot]||null;
     inv.stage=holdsAircraft(inv.spot)?"aircraft":"select";renderInventory();}));
@@ -639,7 +624,7 @@ function renderInvAircraft(r){
   r.innerHTML=`<div class="card pad">
     ${wizHeader()}
     <div class="crumbs">${esc(inv.area)} › ${esc(inv.spot)}</div>
-    <h3 style="margin:2px 0 2px">🛫 Aircraft at ${esc(inv.spot)} <span style="font-size:13px;color:var(--muted);font-weight:600">(optional)</span></h3>
+    <h3 style="margin:2px 0 2px"> Aircraft at ${esc(inv.spot)} <span style="font-size:13px;color:var(--muted);font-weight:600">(optional)</span></h3>
     <p class="hint" style="margin-top:0">Enter the ship #, or skip if there's no aircraft.</p>
     <label for="invShip">Aircraft # (ship / nose number)</label>
     <input id="invShip" inputmode="numeric" autocomplete="off" placeholder="e.g. 3461" value="${esc(cur?cur.ship:"")}" />
@@ -723,7 +708,7 @@ function renderInvNext(r){
     <p class="hint" style="margin-top:6px">Keep going, or finish and generate the sheet.</p>
     ${moreInArea?`<div class="btnrow"><button class="btn navy" id="sameArea">➕ Another spot in ${esc(inv.area)}</button></div>`:""}
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="otherArea">↪ Different area</button></div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn" id="finish">🧾 Finish &amp; generate sheet</button></div></div>`;
+    <div class="btnrow" style="margin-top:8px"><button class="btn" id="finish"> Finish &amp; generate sheet</button></div></div>`;
   $("#sameArea")?.addEventListener("click",()=>{inv.spot=null;inv.ac=null;inv.stage="spot";renderInventory();});
   $("#otherArea").addEventListener("click",()=>{inv.region=null;inv.area=null;inv.spot=null;inv.ac=null;inv.stage="region";renderInventory();});
   $("#finish").addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
@@ -732,7 +717,7 @@ function renderInvNext(r){
 function renderInvSheet(r){
   const spots=inv.covered.length?inv.covered.slice():locNames();
   r.innerHTML=`<div class="card pad">${buildSheetHTML(spots,"Equipment Inventory")}
-    <div class="btnrow no-print"><button class="btn navy" id="printInv">🖨️ Print / Save as PDF</button></div>
+    <div class="btnrow no-print"><button class="btn navy" id="printInv"> Print / Save as PDF</button></div>
     <div class="btnrow no-print" style="margin-top:8px"><button class="btn ghost" id="newInv">Start a new inventory</button></div></div>`;
   $("#printInv").addEventListener("click",()=>{$("#printArea").innerHTML=buildSheetHTML(spots,"Equipment Inventory");window.print();});
   $("#newInv").addEventListener("click",()=>{inv=newInv();renderInventory();});
@@ -749,18 +734,18 @@ function renderSecure(){const r=$("#secRoot");
 function secCard(e){return `<li class="item card" data-id="${esc(e.id)}"><div class="main">
   <div class="tag">${esc(e.spot||"")}${e.ac&&e.ac.ship?` · ✈ Nose ${esc(e.ac.ship)}`:""}</div>
   <div class="meta">${esc(e.reason||"")}${e.name?` — ${esc(e.name)}`:""} · ${esc(e.time||"")}${e.date?` · ${esc(fmtDate(e.date))}`:""}</div>
-  ${e.comment?`<div class="notes">📝 ${esc(e.comment)}</div>`:""}
+  ${e.comment?`<div class="notes"> ${esc(e.comment)}</div>`:""}
   <div style="margin-top:4px"><span class="loc">${esc(e.area||"")}</span>${e.ac&&e.ac.reg?` <span class="loc">${esc(e.ac.reg)}</span>`:""}</div>
-  </div><div class="acts"><button class="iconbtn sec-edit" title="Edit">✏️</button><button class="iconbtn sec-del" title="Delete">🗑️</button></div></li>`;}
+  </div><div class="acts"><button class="iconbtn sec-edit" title="Edit">✎</button><button class="iconbtn sec-del" title="Delete">✕</button></div></li>`;}
 function renderSecHome(r){
   const log=data.secureLog;
   r.innerHTML=`<div class="card pad">
-    <h3 style="margin:0 0 6px">🔒 Aircraft Secure Log</h3>
+    <h3 style="margin:0 0 6px"> Aircraft Secure Log</h3>
     <p class="hint" style="margin-top:0">Log spots where an aircraft was left open / not secured — who had it and why.</p>
     <button class="btn navy" id="secAdd">➕ Log open aircraft</button>
-    ${log.length?`<div class="btnrow"><button class="btn ghost" id="secPdf">🖨️ PDF</button><button class="btn ghost" id="secImg">🖼️ Image</button><button class="btn ghost" id="secTxt">⬇️ Text</button></div>`:""}
+    ${log.length?`<div class="btnrow"><button class="btn ghost" id="secPdf"> PDF</button><button class="btn ghost" id="secImg"> Image</button><button class="btn ghost" id="secTxt">↓ Text</button></div>`:""}
   </div>
-  ${log.length?`<p class="count">${log.length} entr${log.length===1?"y":"ies"}</p><ul class="list">${log.slice().reverse().map(secCard).join("")}</ul>`:`<div class="empty"><div class="big">🔒</div><p>No entries yet. Tap <b>Log open aircraft</b>.</p></div>`}`;
+  ${log.length?`<p class="count">${log.length} entr${log.length===1?"y":"ies"}</p><ul class="list">${log.slice().reverse().map(secCard).join("")}</ul>`:`<div class="empty"><div class="big"></div><p>No entries yet. Tap <b>Log open aircraft</b>.</p></div>`}`;
   $("#secAdd").addEventListener("click",()=>{sec=newSec();sec.stage="area";sec.time=nowHHMM();renderSecure();});
   $("#secPdf")?.addEventListener("click",()=>{$("#printArea").innerHTML=buildSecureSheet();window.print();});
   $("#secImg")?.addEventListener("click",downloadSecureImage);
@@ -961,9 +946,9 @@ function renderPark(){const r=$("#parkRoot");
   ({area:renderParkArea,spot:renderParkSpot,ac:renderParkAc,result:renderParkResult}[park.stage]||renderParkArea)(r);}
 function renderParkArea(r){
   r.innerHTML=`<div class="card pad">
-    <h3 style="margin:0 0 2px">🅿️ Where are you parking?</h3>
+    <h3 style="margin:0 0 2px">P Where are you parking?</h3>
     <p class="hint" style="margin-top:0">Pick the hardstand, then the spot and aircraft — it tells you the stop line &amp; restrictions.</p>
-    <div class="chips" id="pkArea">${Object.keys(PARK).map(a=>`<button class="chip" data-a="${esc(a)}">🛬 ${esc(a)}</button>`).join("")}</div></div>`;
+    <div class="chips" id="pkArea">${Object.keys(PARK).map(a=>`<button class="chip" data-a="${esc(a)}"> ${esc(a)}</button>`).join("")}</div></div>`;
   $$("#pkArea .chip").forEach(c=>c.addEventListener("click",()=>{park.area=c.dataset.a;park.spot=null;park.stage="spot";renderPark();}));
 }
 function renderParkSpot(r){
@@ -989,38 +974,38 @@ function renderParkAc(r){
     <p class="hint" style="margin-top:0">Only aircraft eligible for spot ${esc(park.spot)} are shown.</p>
     ${(()=>{const groups=UNITED_PARK.map(g=>({mfr:g.mfr,items:g.items.filter(([k])=>parkLookup(park.area,park.spot,k).ok)})).filter(g=>g.items.length);
       return groups.length?groups.map(g=>`<div class="spotgrp">${esc(g.mfr)}</div><div class="chips">${g.items.map(([k,l])=>`<button class="chip ${park.acLabel===l?'sel':''}" data-k="${esc(k)}" data-l="${esc(l)}">${esc(l)}</button>`).join("")}</div>`).join("")
-        :`<div class="ac-no" style="color:#b3261e"><b>⛔ No aircraft are eligible to park on spot ${esc(park.spot)}.</b></div>`;})()}
+        :`<div class="ac-no" style="color:#b3261e"><b>⊘ No aircraft are eligible to park on spot ${esc(park.spot)}.</b></div>`;})()}
     <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
   $$("#parkRoot .chip[data-k]").forEach(c=>c.addEventListener("click",()=>{park.ac=c.dataset.k;park.acLabel=c.dataset.l;park.stage="result";renderPark();}));
   $("#pkBack").addEventListener("click",()=>{park.stage="spot";renderPark();});
 }
 function renderParkResult(r){
   const res=parkLookup(park.area,park.spot,park.ac),rc=PARK[park.area].ramp[park.spot],cross=crossFor(park.area,park.spot);
-  const rampHtml=rc?`<div class="ac-ok" style="background:#eef2f5;color:#234;border-color:#cfd8e0">📻 Contact <b>${esc(rc[0])}</b> · ${esc(rc[1])} · Enter/exit via ${esc(rc[2])}</div>`
-    :`<div class="ac-ok" style="background:#eef2f5;color:#234;border-color:#cfd8e0">📻 Coordinate with Ramp Control (verify frequency on the chart)</div>`;
+  const rampHtml=rc?`<div class="ac-ok" style="background:#eef2f5;color:#234;border-color:#cfd8e0"> Contact <b>${esc(rc[0])}</b> · ${esc(rc[1])} · Enter/exit via ${esc(rc[2])}</div>`
+    :`<div class="ac-ok" style="background:#eef2f5;color:#234;border-color:#cfd8e0"> Coordinate with Ramp Control (verify frequency on the chart)</div>`;
   let body;
   if(res.ok){
-    body=`<div class="ac-ok" style="font-size:18px">✅ Park on <b>STOP LINE ${res.line}</b></div>
+    body=`<div class="ac-ok" style="font-size:18px">✓ Park on <b>STOP LINE ${res.line}</b></div>
       <p class="hint">Spot ${esc(park.spot)} · ${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} · ADG ${res.adg}</p>${rampHtml}`;
     if(cross.length){
-      const ask=cross.map((c,i)=>`<div class="ac-no" style="margin-top:8px"><b>⚠️ Restriction:</b> Spot ${esc(park.spot)} can't be used if a widebody is on ${c.wb.map(esc).join(" or ")}.
+      const ask=cross.map((c,i)=>`<div class="ac-no" style="margin-top:8px"><b>⚠ Restriction:</b> Spot ${esc(park.spot)} can't be used if a widebody is on ${c.wb.map(esc).join(" or ")}.
         <div class="btnrow" style="margin-top:8px"><button class="btn ghost pk-cross" data-i="${i}" data-v="1">Yes, occupied</button><button class="btn ghost pk-cross" data-i="${i}" data-v="0">No, clear</button></div>
         <div id="pkCrossR${i}"></div></div>`).join("");
       body+=ask;
     }
   } else if(res.excluded){
-    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⛔ Aircraft not allowed to be parked</b><br>${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} is specifically restricted from spot ${esc(park.spot)}.</div>`;
+    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⊘ Aircraft not allowed to be parked</b><br>${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} is specifically restricted from spot ${esc(park.spot)}.</div>`;
   } else {
-    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⛔ Aircraft not allowed to be parked</b><br>${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} doesn't have a stop line on spot ${esc(park.spot)}${res.adg?` (ADG ${res.adg} spot)`:""}.</div>`;
+    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⊘ Aircraft not allowed to be parked</b><br>${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} doesn't have a stop line on spot ${esc(park.spot)}${res.adg?` (ADG ${res.adg} spot)`:""}.</div>`;
   }
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)} › ${esc(park.acLabel||ACLABEL[park.ac]||park.ac)}</div>
     ${body}
-    <p class="hint" style="margin-top:10px">⚠️ Always verify against the official Hardstand ${esc(park.area)} chart before parking.</p>
+    <p class="hint" style="margin-top:10px">⚠ Always verify against the official Hardstand ${esc(park.area)} chart before parking.</p>
     <div class="btnrow"><button class="btn ghost" id="pkAgain">↻ New lookup</button><button class="btn navy" id="pkBack" style="flex:2">Change aircraft</button></div></div>`;
   $$(".pk-cross",r).forEach(b=>b.addEventListener("click",e=>{const i=b.dataset.i,occ=b.dataset.v==="1";
-    $("#pkCrossR"+i).innerHTML=occ?`<div class="ac-no" style="margin-top:8px;color:#b3261e"><b>⛔ Spot ${esc(park.spot)} cannot be used</b> while that widebody is parked.</div>`
-      :`<div class="ac-ok" style="margin-top:8px">✅ Clear — spot ${esc(park.spot)} is usable.</div>`;}));
+    $("#pkCrossR"+i).innerHTML=occ?`<div class="ac-no" style="margin-top:8px;color:#b3261e"><b>⊘ Spot ${esc(park.spot)} cannot be used</b> while that widebody is parked.</div>`
+      :`<div class="ac-ok" style="margin-top:8px">✓ Clear — spot ${esc(park.spot)} is usable.</div>`;}));
   $("#pkAgain").addEventListener("click",()=>{park=newPark();renderPark();});
   $("#pkBack").addEventListener("click",()=>{park.stage="ac";renderPark();});
 }
@@ -1071,7 +1056,7 @@ $("#genAudit").addEventListener("click",()=>{
   else{const s=v.slice(5);spots=[s];title="Equipment Audit — "+s;}
   const html=buildSheetHTML(spots,title);
   $("#auditPreview").innerHTML=`<div class="card pad" style="margin-top:14px">${html}
-    <div class="btnrow no-print"><button class="btn navy" id="printAudit">🖨️ Print / Save as PDF</button></div></div>`;
+    <div class="btnrow no-print"><button class="btn navy" id="printAudit"> Print / Save as PDF</button></div></div>`;
   $("#printAudit").addEventListener("click",()=>{$("#printArea").innerHTML=buildSheetHTML(spots,title);window.print();});
   $("#auditPreview").scrollIntoView({behavior:"smooth",block:"start"});});
 
@@ -1082,16 +1067,16 @@ $("#acFlag").addEventListener("click",()=>{newSpotAc=!newSpotAc;$("#acFlag").cla
 $("#bAcFlag").addEventListener("click",()=>{bulkAc=!bulkAc;$("#bAcFlag").classList.toggle("sel",bulkAc);});
 function renderLocs(){
   const hc=hiddenCount();
-  const toggle=hc?`<button class="btn ghost sm" id="showHiddenBtn" style="width:100%;margin-bottom:10px">${showHidden?'🙈 Hide hidden':'👁 Show hidden ('+hc+')'}</button>`:"";
+  const toggle=hc?`<button class="btn ghost sm" id="showHiddenBtn" style="width:100%;margin-bottom:10px">${showHidden?'⦸ Hide hidden':'○ Show hidden ('+hc+')'}</button>`:"";
   if(!data.locations.length){$("#locManage").innerHTML=`<p class="hint">No spots yet.</p>`;return;}
   VIS_ALL=showHidden;
   const body=regionsOrdered().map(rg=>{const as=areasInRegion(rg);if(!as.length)return "";
     return regionHdr(rg)+as.map(a=>`<div class="areahdr">${esc(a)}</div>`+
     spotsInArea(a).map(l=>{const i=data.locations.indexOf(l);
       return `<div class="manage-row"${l.hidden?' style="opacity:.55"':''}><span>${esc(l.name)} ${l.holdsAircraft?'<span class="pill ac">✈</span>':'<span class="pill st">staging</span>'} ${l.hidden?'<span class="pill st">hidden</span>':''}</span>
-        <button class="iconbtn loc-hide" data-i="${i}" title="${l.hidden?'Unhide':'Hide'}">${l.hidden?'🙈':'👁'}</button>
+        <button class="iconbtn loc-hide" data-i="${i}" title="${l.hidden?'Unhide':'Hide'}">${l.hidden?'⦸':'○'}</button>
         <button class="iconbtn loc-ac" data-i="${i}" title="Toggle aircraft">✈</button>
-        <button class="iconbtn loc-del" data-i="${i}" title="Remove">🗑️</button></div>`;}).join("")).join("");}).join("");
+        <button class="iconbtn loc-del" data-i="${i}" title="Remove">✕</button></div>`;}).join("")).join("");}).join("");
   VIS_ALL=false;
   $("#locManage").innerHTML=toggle+body;
 }
@@ -1119,7 +1104,7 @@ $("#bulkBtn").addEventListener("click",()=>{
 
 /* ---- settings: types ---- */
 function renderTypes(){$("#typeManage").innerHTML=data.types.map((t,i)=>`<div class="manage-row"><span>${esc(t)}</span>
-  <button class="iconbtn type-del" data-i="${i}" title="Remove">🗑️</button></div>`).join("")||`<p class="hint">No types yet.</p>`;}
+  <button class="iconbtn type-del" data-i="${i}" title="Remove">✕</button></div>`).join("")||`<p class="hint">No types yet.</p>`;}
 $("#typeManage").addEventListener("click",e=>{const b=e.target.closest(".type-del");if(!b)return;const i=+b.dataset.i,t=data.types[i];
   if(data.equipment.some(eq=>eq.type===t)&&!confirm(`"${t}" is in use. Remove anyway?`))return;
   data.types.splice(i,1);save();renderTypes();});
