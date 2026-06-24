@@ -96,13 +96,15 @@
   .selpill.oos .selc{background:#d9342b;border-color:#d9342b}
   .selpill .oostag{font-size:9px;font-weight:800;letter-spacing:.04em;color:#fff;background:#d9342b;border-radius:6px;padding:2px 5px;margin-left:1px}
   .selpill.away{border-style:dashed}
-  /* tiny tap menu when picking equipment in inventory */
-  .invpop-back{position:fixed;inset:0;z-index:300}
-  .invpop{position:fixed;z-index:301;background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 10px 30px rgba(10,25,45,.22);padding:7px;display:flex;flex-direction:column;gap:5px;min-width:178px}
-  .invpop .pophead{font-size:12px;font-weight:800;color:var(--muted);padding:3px 8px 1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
-  .invpop button{border:none;border-radius:9px;padding:11px 13px;font-size:14.5px;font-weight:700;text-align:left;cursor:pointer;color:var(--ink);background:#f1f4f7}
-  .invpop button.confirmbtn{background:var(--good-bg);color:#15622f}
-  .invpop button.oosbtn{background:#fdecec;color:#c0271e}
+  /* floating tap menu when picking equipment in inventory */
+  .invpop-back{position:fixed;inset:0;z-index:300;background:rgba(12,24,40,.45);display:flex;align-items:center;justify-content:center;padding:24px;animation:invFade .15s ease}
+  .invpop{z-index:301;width:100%;max-width:330px;background:#fff;border-radius:18px;box-shadow:0 18px 50px rgba(10,25,45,.35);padding:14px;display:flex;flex-direction:column;gap:9px;animation:invPop .16s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes invFade{from{opacity:0}to{opacity:1}}
+  @keyframes invPop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+  .invpop .pophead{font-size:17px;font-weight:800;color:var(--ink);text-align:center;padding:2px 4px 4px}
+  .invpop button{border:none;border-radius:12px;padding:15px 14px;font-size:16px;font-weight:800;text-align:center;cursor:pointer;color:var(--ink);background:#f1f4f7}
+  .invpop button.confirmbtn{background:var(--good);color:#fff}
+  .invpop button.oosbtn{background:#d9342b;color:#fff}
   .invpop button.rmbtn{background:#f1f4f7;color:#5a6772}
   /* out-of-service marker on inventory sheets / equipment list */
   .oos-mark{color:#d9342b;font-weight:800;font-size:11px;letter-spacing:.03em;margin-left:6px;white-space:nowrap}
@@ -129,6 +131,10 @@
   .lockmini{background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:700;margin-left:6px;cursor:pointer}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
   .chip{background:#eef2f5;border:1px solid var(--line);padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600}
+  .loc-az{margin-bottom:14px}
+  .loc-az .az-h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:0 0 7px}
+  .loc-az .az-h::after{content:"";flex:1;height:1px;background:var(--line)}
+  .loc-az .chips{margin-top:0}
   .chip:active{background:#e2e8ec}
   .chip.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
   .chip.noteligible{opacity:.5;border-style:dashed;font-weight:600}
@@ -576,7 +582,8 @@ function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&$("#wizFoot"
 $("#homeBtn").addEventListener("click",()=>showTab("hub"));
 $("#hdrTitle")?.addEventListener("click",()=>showTab("hub"));
 function invStepBack(){const s=inv.stage;
-  if(s==="select"||s==="sheet"){inv.stage="loc";renderInventory();return;}
+  if(s==="select"){closeInvPop();inv.stage=inv.parent?"zone":"loc";renderInventory();return;}
+  if(s==="zone"||s==="sheet"){inv.stage="loc";renderInventory();return;}
   showTab("hub");}
 function parkBack(){const s=park.stage;
   if(s==="spot")park.stage="area";else if(s==="ac")park.stage="spot";else if(s==="result")park.stage="ac";
@@ -710,19 +717,46 @@ function spotGroup(name){const m=name.match(/^(.*?)(\d+)([A-Za-z].*)?$/);
 function groupSpots(spots){const g={};spots.forEach(s=>{const k=spotGroup(s.name);(g[k.key]=g[k.key]||{...k,items:[]}).items.push(s);});
   return Object.values(g).sort((a,b)=>(a.pre||a.label).localeCompare(b.pre||b.label,undefined,{numeric:true})||a.ord-b.ord);}
 function invLocs(){const s=[...equipLocs()];data.equipment.forEach(e=>{if(e.location&&!s.includes(e.location))s.push(e.location);});return s;}
+// locations that open a sub-menu of zones instead of going straight to equipment
+const ZONE_PARENTS={"Amelia":["Staging Area"]};
+function locParent(loc){for(const p in ZONE_PARENTS){if(loc===p||loc.startsWith(p+" "))return p;}return null;}
+// top-level location entries: zoned locations collapse to their parent
+function topLocs(){const out=[],seen=new Set();
+  Object.keys(ZONE_PARENTS).forEach(p=>{if(!seen.has(p)){seen.add(p);out.push(p);}});
+  invLocs().forEach(l=>{const k=locParent(l)||l;if(!seen.has(k)){seen.add(k);out.push(k);}});
+  return out;}
+function locCovered(top){return inv.covered.some(c=>(locParent(c)||c)===top);}
 function renderInventory(){const r=$("#invRoot");
-  ({loc:renderInvLoc,select:renderInvSelect,sheet:renderInvSheet}[inv.stage]||renderInvLoc)(r);
+  ({loc:renderInvLoc,zone:renderInvZone,select:renderInvSelect,sheet:renderInvSheet}[inv.stage]||renderInvLoc)(r);
   const c=r.firstElementChild;if(c)c.classList.add(inv.stage==="select"?"zoomin":"zoomout");}
-function renderInvLoc(r){
-  const locs=invLocs();
+function renderInvZone(r){
+  const p=inv.parent,zones=ZONE_PARENTS[p]||[];
+  const chip=z=>{const full=p+" "+z,done=inv.covered.includes(full);
+    return `<button class="chip ${done?'done':''}" data-z="${esc(z)}">${esc(z)}${done?' ✓':''}</button>`;};
   r.innerHTML=`<div class="card pad">
-    <h3 style="margin:0 0 6px">What location are you doing inventory for?</h3>
-    <div class="chips" id="invLocChips">${locs.map(l=>`<button class="chip ${inv.covered.includes(l)?'done':''}" data-l="${esc(l)}">${esc(l)}${inv.covered.includes(l)?' ✓':''}</button>`).join("")}</div>
+    <div class="crumbs">Inventory · ${esc(p)}</div>
+    <h3 style="margin:2px 0 8px">${esc(p)} — which area?</h3>
+    <div class="chips">${zones.map(chip).join("")}</div></div>`;
+  $$("#invRoot .chip[data-z]").forEach(c=>c.addEventListener("click",()=>{inv.loc=p+" "+c.dataset.z;inv.stage="select";renderInventory();}));
+  setWizFoot(null);
+}
+function renderInvLoc(r){
+  const locs=topLocs().slice().sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+  const groups={};locs.forEach(l=>{const k=(l.trim()[0]||"#").toUpperCase();(groups[k]=groups[k]||[]).push(l);});
+  const chip=l=>{const done=locCovered(l),sub=!!ZONE_PARENTS[l];
+    return `<button class="chip ${done?'done':''}" data-l="${esc(l)}">${esc(l)}${sub?' ›':''}${done?' ✓':''}</button>`;};
+  const sections=Object.keys(groups).sort().map(k=>
+    `<div class="loc-az"><div class="az-h">${k}</div><div class="chips">${groups[k].map(chip).join("")}</div></div>`).join("");
+  r.innerHTML=`<div class="card pad">
+    <h3 style="margin:0 0 8px">What location are you doing inventory for?</h3>
+    <div id="invLocChips">${sections}</div>
     ${inv.covered.length
       ?`<div class="btnrow"><button class="btn navy" id="invGen">Generate sheet (${inv.covered.length})</button></div>
         <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="invReset">Start over</button></div>`
       :`<div class="btnrow"><button class="btn ghost" id="invGenAll">Generate full sheet</button></div>`}</div>`;
-  $$("#invLocChips .chip").forEach(c=>c.addEventListener("click",()=>{inv.loc=c.dataset.l;inv.stage="select";renderInventory();}));
+  $$("#invLocChips .chip").forEach(c=>c.addEventListener("click",()=>{const l=c.dataset.l;
+    if(ZONE_PARENTS[l]){inv.parent=l;inv.stage="zone";}else{inv.parent=null;inv.loc=l;inv.stage="select";}
+    renderInventory();}));
   $("#invGen")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
   $("#invGenAll")?.addEventListener("click",()=>{inv.covered=[];inv.stage="sheet";renderInventory();});
   $("#invReset")?.addEventListener("click",()=>{inv={stage:"loc",loc:null,covered:[]};renderInventory();});
@@ -753,7 +787,7 @@ function renderInvSelect(r){
   $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
     openInvPop(li,li.dataset.id,paint);});
   $("#invSearch").addEventListener("input",()=>{closeInvPop();paint();});
-  setWizFoot({back:()=>{closeInvPop();inv.stage="loc";renderInventory();},next:commitInv,nextOn:true,nextLabel:"✓ Save ›"});
+  setWizFoot({back:()=>{closeInvPop();inv.stage=inv.parent?"zone":"loc";renderInventory();},next:commitInv,nextOn:true,nextLabel:"✓ Save ›"});
   paint();
 }
 function closeInvPop(){$$(".invpop,.invpop-back").forEach(n=>n.remove());}
@@ -761,18 +795,14 @@ function openInvPop(pill,id,after){
   closeInvPop();
   const e=data.equipment.find(x=>x.id===id);if(!e)return;
   const on=invSel.has(id),oos=invOos.has(id);
-  const back=document.createElement("div");back.className="invpop-back";back.addEventListener("click",closeInvPop);
+  const back=document.createElement("div");back.className="invpop-back";
+  back.addEventListener("click",ev=>{if(ev.target===back)closeInvPop();});
   const pop=document.createElement("div");pop.className="invpop";
   pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")}</div>
     <button class="confirmbtn" data-a="ok">${on&&!oos?"✓ Here (confirmed)":"Confirm — it's here"}</button>
     <button class="oosbtn" data-a="oos">⊘ Out of service</button>
     ${on||oos?`<button class="rmbtn" data-a="rm">Remove</button>`:""}`;
-  document.body.appendChild(back);document.body.appendChild(pop);
-  // position under the pill, clamped to viewport
-  const rc=pill.getBoundingClientRect(),pw=Math.max(pop.offsetWidth,178),vw=window.innerWidth;
-  let left=rc.left;if(left+pw>vw-8)left=vw-8-pw;if(left<8)left=8;
-  let top=rc.bottom+6;if(top+pop.offsetHeight>window.innerHeight-8)top=Math.max(8,rc.top-pop.offsetHeight-6);
-  pop.style.left=left+"px";pop.style.top=top+"px";
+  back.appendChild(pop);document.body.appendChild(back);
   pop.addEventListener("click",ev=>{const b=ev.target.closest("button[data-a]");if(!b)return;
     const a=b.dataset.a;
     if(a==="ok"){invSel.add(id);invOos.delete(id);}
@@ -785,7 +815,7 @@ function commitInv(){
   data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=loc;e.oos=invOos.has(e.id);e.updated=todayISO();}else if(e.location===loc){e.location="";e.oos=false;e.updated=todayISO();}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
-  inv.loc=null;inv.stage="loc";renderInventory();
+  inv.loc=null;inv.parent=null;inv.stage="loc";renderInventory();
   toast(`✓ ${loc}: ${n} item${n===1?"":"s"}`);
 }
 let invSheetMode="list"; // "list" | "checklist"
@@ -870,7 +900,7 @@ function downloadInvImage(locs){
       ctx.fillStyle='#33414f';ctx.font='bold 13px -apple-system,Arial,sans-serif';ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(o.name.toUpperCase(),o.x+16,o.y+o.h/2+1);
       ctx.fillStyle='#67727e';ctx.textAlign='right';ctx.fillText(String(o.n),o.x+o.w-16,o.y+o.h/2+1);}
     else if(o.k==='pill'){ctx.fillStyle=o.oos?'#fdecec':'#fafbfc';ctx.strokeStyle=o.oos?'#d9342b':'#dce1e6';ctx.lineWidth=1.5;rr(o.x,o.y,o.w,o.h,9);ctx.fill();ctx.stroke();
-      ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font='bold 17px -apple-system,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'  ⊘OOS':''),o.x+o.w/2,o.y+o.h/2+1);}
+      ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font=(o.oos?'bold 13px':'bold 17px')+' -apple-system,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'  ⊘ OUT OF SERVICE':''),o.x+o.w/2,o.y+o.h/2+1);}
     else if(o.k==='ck'){ctx.strokeStyle=o.oos?'#d9342b':'#9aa7b2';ctx.lineWidth=2;rr(o.x,o.y,22,22,5);ctx.stroke();
       ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font='600 18px -apple-system,Arial,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'   ⊘ OUT OF SERVICE':''),o.x+38,o.y+12);
       if(!o.last){ctx.strokeStyle='#e7ebef';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(o.lx0,o.line);ctx.lineTo(o.lx1,o.line);ctx.stroke();ctx.setLineDash([]);}}
