@@ -109,6 +109,15 @@
   .invpop button.confirmbtn{background:var(--good);color:#fff}
   .invpop button.oosbtn{background:#d9342b;color:#fff}
   .invpop button.rmbtn{background:#f1f4f7;color:#5a6772}
+  /* in-app image preview (keeps you on the sheet, no navigation away) */
+  .imgprev-back{position:fixed;inset:0;z-index:400;background:rgba(12,24,40,.6);display:flex;align-items:center;justify-content:center;padding:16px;animation:invFade .15s ease}
+  .imgprev{width:100%;max-width:520px;max-height:92vh;background:#fff;border-radius:18px;box-shadow:0 18px 50px rgba(10,25,45,.4);display:flex;flex-direction:column;overflow:hidden}
+  .imgprev-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-size:15px;font-weight:800;border-bottom:1px solid var(--line)}
+  .imgprev-x{border:none;background:#f1f4f7;border-radius:9px;width:34px;height:34px;font-size:16px;font-weight:800;color:#5a6772;cursor:pointer}
+  .imgprev-scroll{overflow:auto;padding:14px;background:#f4f6f8}
+  .imgprev-scroll img{width:100%;height:auto;border-radius:10px;box-shadow:0 2px 10px rgba(20,40,70,.12)}
+  .imgprev-acts{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line)}
+  .imgprev-acts .btn{flex:1;text-align:center;text-decoration:none}
   /* out-of-service marker on inventory sheets / equipment list */
   .oos-mark{color:#d9342b;font-weight:800;font-size:11px;letter-spacing:.03em;margin-left:6px;white-space:nowrap}
   .li-pill.oos,.ck-row.oos .ck-tag{color:#c0271e}
@@ -134,10 +143,16 @@
   .lockmini{background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:700;margin-left:6px;cursor:pointer}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
   .chip{background:#eef2f5;border:1px solid var(--line);padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600}
-  .loc-az{margin-bottom:14px}
-  .loc-az .az-h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:0 0 7px}
-  .loc-az .az-h::after{content:"";flex:1;height:1px;background:var(--line)}
-  .loc-az .chips{margin-top:0}
+  /* inventory location / zone tiles */
+  .loc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  .loc-tile{display:flex;align-items:center;gap:11px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 13px;font-size:16px;font-weight:700;color:var(--ink);cursor:pointer;text-align:left;box-shadow:0 1px 3px rgba(20,40,70,.06)}
+  .loc-tile:active{transform:scale(.97)}
+  .loc-tile .lt-ic{width:32px;height:32px;border-radius:9px;background:#eef2f5;color:var(--navy);display:flex;align-items:center;justify-content:center;flex:none}
+  .loc-tile .lt-name{flex:1;min-width:0;line-height:1.15;overflow:hidden;text-overflow:ellipsis}
+  .loc-tile .lt-arrow{color:var(--muted);font-weight:800;font-size:18px;flex:none}
+  .loc-tile.done{border-color:var(--good);background:var(--good-bg);color:#15622f}
+  .loc-tile.done .lt-ic{background:rgba(30,125,70,.16);color:var(--good)}
+  .loc-tile.done .lt-arrow{color:var(--good)}
   .chip:active{background:#e2e8ec}
   .chip.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
   .chip.noteligible{opacity:.5;border-style:dashed;font-weight:600}
@@ -745,31 +760,31 @@ function renderInventory(){const r=$("#invRoot");
   const c=r.firstElementChild;if(c)c.classList.add(inv.stage==="select"?"zoomin":"zoomout");}
 function renderInvZone(r){
   const p=inv.parent,zones=ZONE_PARENTS[p]||[];
-  const chip=z=>{const full=p+" "+z,done=inv.covered.includes(full);
-    return `<button class="chip ${done?'done':''}" data-z="${esc(z)}">${esc(z)}${done?' ✓':''}</button>`;};
+  const tiles=zones.map(z=>locTile(z,`data-z="${esc(z)}"`,inv.covered.includes(p+" "+z),false)).join("");
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">Inventory · ${esc(p)}</div>
-    <h3 style="margin:2px 0 8px">${esc(p)} — which area?</h3>
-    <div class="chips">${zones.map(chip).join("")}</div></div>`;
-  $$("#invRoot .chip[data-z]").forEach(c=>c.addEventListener("click",()=>{inv.loc=p+" "+c.dataset.z;inv.stage="select";renderInventory();}));
+    <h3 style="margin:2px 0 4px">${esc(p)} — which area?</h3>
+    <div class="loc-grid">${tiles}</div></div>`;
+  $$("#invRoot .loc-tile[data-z]").forEach(c=>c.addEventListener("click",()=>{inv.loc=p+" "+c.dataset.z;inv.stage="select";renderInventory();}));
   setWizFoot(null);
 }
+const PIN_SVG=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+function locTile(name,attr,done,sub){
+  return `<button class="loc-tile ${done?'done':''}" ${attr}>
+    <span class="lt-ic">${PIN_SVG}</span><span class="lt-name">${esc(name)}</span>
+    <span class="lt-arrow">${done?'✓':sub?'›':''}</span></button>`;}
 function renderInvLoc(r){
   const locs=topLocs().slice().sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
-  const groups={};locs.forEach(l=>{const k=(l.trim()[0]||"#").toUpperCase();(groups[k]=groups[k]||[]).push(l);});
-  const chip=l=>{const done=locCovered(l),sub=!!ZONE_PARENTS[l];
-    return `<button class="chip ${done?'done':''}" data-l="${esc(l)}">${esc(l)}${sub?' ›':''}${done?' ✓':''}</button>`;};
-  const sections=Object.keys(groups).sort().map(k=>
-    `<div class="loc-az"><div class="az-h">${k}</div><div class="chips">${groups[k].map(chip).join("")}</div></div>`).join("");
+  const tiles=locs.map(l=>locTile(l,`data-l="${esc(l)}"`,locCovered(l),!!ZONE_PARENTS[l])).join("");
   r.innerHTML=`<div class="card pad">
-    <h3 style="margin:0 0 8px">What location are you doing inventory for?</h3>
-    <div id="invLocChips">${sections}</div>
+    <h3 style="margin:0 0 4px">What location are you doing inventory for?</h3>
+    <div class="loc-grid" id="invLocChips">${tiles}</div>
     ${inv.covered.length
-      ?`<p class="hint" style="margin:14px 0 6px">Counted: ${esc(inv.covered.join(", "))}</p>
+      ?`<p class="hint" style="margin:16px 0 6px">Counted: ${esc(inv.covered.join(", "))}</p>
         <div class="btnrow"><button class="btn navy" id="invGen">Generate sheet (${inv.covered.length})</button></div>
         <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="invReset">Start over</button></div>`
-      :`<p class="hint" style="margin:14px 2px 0">Pick a location and count its equipment first — your sheet builds from what you select.</p>`}</div>`;
-  $$("#invLocChips .chip").forEach(c=>c.addEventListener("click",()=>{const l=c.dataset.l;
+      :`<p class="hint" style="margin:16px 2px 0">Pick a location and count its equipment first — your sheet builds from what you select.</p>`}</div>`;
+  $$("#invLocChips .loc-tile").forEach(c=>c.addEventListener("click",()=>{const l=c.dataset.l;
     if(ZONE_PARENTS[l]){inv.parent=l;inv.stage="zone";}else{inv.parent=null;inv.loc=l;inv.stage="select";}
     renderInventory();}));
   $("#invGen")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
@@ -936,7 +951,28 @@ function downloadInvImage(locs){
       ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font='600 18px -apple-system,Arial,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'   ⊘ OUT OF SERVICE':''),o.x+38,o.y+12);
       if(!o.last){ctx.strokeStyle='#e7ebef';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(o.lx0,o.line);ctx.lineTo(o.lx1,o.line);ctx.stroke();ctx.setLineDash([]);}}
   }
-  c.toBlob(b=>{const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='equipment-inventory-'+todayISO()+'.png';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast('Image downloaded');},'image/png');
+  c.toBlob(b=>showImagePreview(b,'equipment-inventory-'+todayISO()+'.png'),'image/png');
+}
+// show the generated PNG inside the app so we never navigate away from the sheet
+function showImagePreview(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const back=document.createElement('div');back.className='imgprev-back';
+  const canShare=navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:'image/png'})]});
+  back.innerHTML=`<div class="imgprev">
+    <div class="imgprev-bar"><span>Inventory image</span><button class="imgprev-x" aria-label="Close">✕</button></div>
+    <div class="imgprev-scroll"><img src="${url}" alt="Inventory sheet" /></div>
+    <div class="imgprev-acts">
+      ${canShare?`<button class="btn navy" data-a="share">Share / Save</button>`:`<a class="btn navy" href="${url}" download="${esc(filename)}">Save image</a>`}
+      <button class="btn ghost" data-a="done">Done</button>
+    </div></div>`;
+  document.body.appendChild(back);
+  const close=()=>{back.remove();URL.revokeObjectURL(url);};
+  back.querySelector('.imgprev-x').onclick=close;
+  back.querySelector('[data-a="done"]').onclick=close;
+  back.addEventListener('click',e=>{if(e.target===back)close();});
+  back.querySelector('[data-a="share"]')?.addEventListener('click',async()=>{
+    try{await navigator.share({files:[new File([blob],filename,{type:'image/png'})],title:'Equipment Inventory'});}
+    catch(_){}});
 }
 
 
