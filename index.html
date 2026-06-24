@@ -701,10 +701,8 @@ function renderInventory(){const r=$("#invRoot");
 function renderInvLoc(r){
   const locs=invLocs();
   r.innerHTML=`<div class="card pad">
-    <h3 style="margin:0 0 2px">Inventory</h3>
-    <p class="hint" style="margin-top:0">Pick a location to count its equipment.</p>
-    <div class="chips" id="invLocChips">${locs.map(l=>{const n=data.equipment.filter(e=>e.location===l).length;
-      return `<button class="chip ${inv.covered.includes(l)?'done':''}" data-l="${esc(l)}">${esc(l)} <span style="opacity:.55">${n}</span>${inv.covered.includes(l)?' ✓':''}</button>`;}).join("")}</div>
+    <h3 style="margin:0 0 6px">What location are you doing inventory for?</h3>
+    <div class="chips" id="invLocChips">${locs.map(l=>`<button class="chip ${inv.covered.includes(l)?'done':''}" data-l="${esc(l)}">${esc(l)}${inv.covered.includes(l)?' ✓':''}</button>`).join("")}</div>
     ${inv.covered.length
       ?`<div class="btnrow"><button class="btn navy" id="invGen">Generate sheet (${inv.covered.length})</button></div>
         <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="invReset">Start over</button></div>`
@@ -716,11 +714,11 @@ function renderInvLoc(r){
   setWizFoot(null);
 }
 function renderInvSelect(r){
-  invSel=new Set(data.equipment.filter(e=>e.location===inv.loc).map(e=>e.id));
+  invSel=new Set(); // start fresh — no auto-highlight
   r.innerHTML=`<div class="card pad" style="padding-bottom:6px">
     <div class="crumbs">Inventory</div>
     <h3 style="margin:2px 0 2px">Equipment at ${esc(inv.loc)}</h3>
-    <p class="hint" style="margin-top:2px">Tap each unit that's here. Items already here are pre-checked.</p>
+    <p class="hint" style="margin-top:2px">Tap each unit that's physically here.</p>
     <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:8px 0" /></div>
     <div id="invList" style="margin-top:10px;display:flex;flex-direction:column;gap:12px"></div>`;
   function paint(){
@@ -732,8 +730,8 @@ function renderInvSelect(r){
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
       return `<div class="card catblock"><div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
-        `<div class="pillgrid">`+its.map(e=>{const on=invSel.has(e.id);const away=e.location&&e.location!==inv.loc;
-          return `<button class="selpill ${on?'on':''} ${away?'away':''}" data-id="${e.id}" title="${away?'@ '+esc(e.location):''}"><span class="selc">${on?'✓':''}</span>${esc(e.tag)}</button>`;}).join("")+`</div></div>`;
+        `<div class="pillgrid">`+its.map(e=>{const on=invSel.has(e.id);
+          return `<button class="selpill ${on?'on':''}" data-id="${e.id}"><span class="selc">${on?'✓':''}</span>${esc(e.tag)}</button>`;}).join("")+`</div></div>`;
     }).join(""):`<p class="hint" style="padding:10px 12px">No equipment yet. Add some on the Equipment List.</p>`;
     $("#wizNext").textContent=`✓ Save ${invSel.size} ›`;
   }
