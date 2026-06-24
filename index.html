@@ -946,21 +946,28 @@ function renderParkArea(r){
   $$("#pkArea .chip").forEach(c=>c.addEventListener("click",()=>{park.area=c.dataset.a;park.spot=null;park.stage="spot";renderPark();}));
 }
 function renderParkSpot(r){
-  const ord=PARK[park.area].order;
+  const sp=PARK[park.area].spots,ord=PARK[park.area].order;
+  const sortN=a=>a.slice().sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
+  const std=sortN(ord.filter(s=>sp[s].adg===3)),wb=sortN(ord.filter(s=>sp[s].adg!==3));
+  const grid=arr=>`<div class="spotgrid">${arr.map(s=>`<button class="chip" data-s="${esc(s)}">${esc(s)}</button>`).join("")}</div>`;
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">${esc(park.area)}</div>
-    <h3 style="margin:2px 0 8px">Pick a spot</h3>
-    <div class="spotgrid" id="pkSpot">${ord.map(s=>`<button class="chip" data-s="${esc(s)}">${esc(s)}</button>`).join("")}</div>
-    <div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
+    <h3 style="margin:2px 0 10px">Pick a spot</h3>
+    <div id="pkSpot">
+      ${std.length?`<div class="spotgrp">Standard spots (ADG III)</div>${grid(std)}`:""}
+      ${wb.length?`<div class="spotgrp">Widebody spots · A (ADG IV/V)</div>${grid(wb)}`:""}
+    </div>
+    <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
   $$("#pkSpot .chip").forEach(c=>c.addEventListener("click",()=>{park.spot=c.dataset.s;park.ac=null;park.parkedOn=null;park.stage="ac";renderPark();}));
   $("#pkBack").addEventListener("click",()=>{park.stage="area";renderPark();});
 }
 function renderParkAc(r){
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)}</div>
-    <h3 style="margin:2px 0 8px">Aircraft type</h3>
-    ${PARK_AIRCRAFT.map(g=>`<div class="spotgrp">${esc(g.g)}</div><div class="chips">${g.items.map(([k,l])=>`<button class="chip ${park.ac===k?'sel':''}" data-k="${esc(k)}">${esc(l)}</button>`).join("")}</div>`).join("")}
-    <div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
+    <h3 style="margin:2px 0 10px">Aircraft type</h3>
+    ${PARK_AIRCRAFT.map(g=>{const items=g.items.slice().sort((a,b)=>a[1].localeCompare(b[1],undefined,{numeric:true}));
+      return `<div class="spotgrp">${esc(g.g)}</div><div class="chips">${items.map(([k,l])=>`<button class="chip ${park.ac===k?'sel':''}" data-k="${esc(k)}">${esc(l)}</button>`).join("")}</div>`;}).join("")}
+    <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
   $$("#parkRoot .chip[data-k]").forEach(c=>c.addEventListener("click",()=>{park.ac=c.dataset.k;park.stage="result";renderPark();}));
   $("#pkBack").addEventListener("click",()=>{park.stage="spot";renderPark();});
 }
