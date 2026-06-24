@@ -99,6 +99,8 @@
   .selpill.oos .selc{background:#d9342b;border-color:#d9342b}
   .selpill .oostag{font-size:9px;font-weight:800;letter-spacing:.04em;color:#fff;background:#d9342b;border-radius:6px;padding:2px 5px;margin-left:1px}
   .selpill.away{border-style:dashed}
+  .selpill.locked{opacity:.5;cursor:not-allowed;border-style:dashed;background:#f6f7f9}
+  .selpill.locked .pillspot{background:transparent;color:var(--muted)}
   /* floating tap menu when picking equipment in inventory */
   .invpop-back{position:fixed;inset:0;z-index:300;background:rgba(12,24,40,.45);display:flex;align-items:center;justify-content:center;padding:24px;animation:invFade .15s ease}
   .invpop{z-index:301;width:100%;max-width:330px;background:#fff;border-radius:18px;box-shadow:0 18px 50px rgba(10,25,45,.35);padding:14px;display:flex;flex-direction:column;gap:9px;animation:invPop .16s cubic-bezier(.2,.9,.3,1.2)}
@@ -114,6 +116,10 @@
   .invpop .spotwrap{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:46vh;overflow:auto;padding:2px}
   .invpop .spotbtn{border:1.5px solid var(--line);border-radius:10px;padding:12px 3px;font-size:14px;font-weight:800;text-align:center;cursor:pointer;color:var(--ink);background:#fff}
   .invpop .spotbtn:active{transform:scale(.95)}
+  .invpop #invNoseInput{margin:2px 0}
+  .invpop .nosesug{display:flex;flex-direction:column;gap:4px;max-height:34vh;overflow:auto}
+  .invpop .nosehit{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 11px;font-size:14px;font-weight:700;text-align:left;cursor:pointer;color:var(--ink)}
+  .invpop .nosehit span{font-weight:600;color:var(--muted);font-size:12px}
   .selpill .pillspot{font-size:10px;font-weight:700;color:var(--muted);background:#eef2f5;border-radius:6px;padding:2px 5px;margin-left:1px}
   .selpill.on .pillspot{color:#15622f;background:rgba(30,125,70,.14)}
   .selpill.oos .pillspot{color:#b3251d;background:rgba(217,52,43,.12)}
@@ -209,6 +215,18 @@
   .seg-wrap{display:flex;background:#eef2f5;border-radius:10px;padding:3px;margin-bottom:14px}
   .seg-wrap .seg{flex:1;border:none;background:none;padding:9px;border-radius:8px;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer}
   .seg-wrap .seg.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  /* minimal generated-sheet layout: big location, equipment under it by category */
+  .m-top{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#9aa3ad}
+  .m-sub{font-size:12px;color:#9aa3ad;margin-top:1px;margin-bottom:6px}
+  .m-loc{font-size:30px;font-weight:800;color:#10171f;letter-spacing:-.4px;margin:22px 0 0;display:flex;align-items:baseline;gap:9px}
+  .m-loc .m-locn{font-size:14px;font-weight:600;color:#aab2bb}
+  .m-cat{font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#aab2bb;margin:15px 0 3px}
+  .m-row{display:flex;align-items:baseline;gap:9px;padding:7px 0;border-bottom:1px solid #f1f3f5;font-size:15px}
+  .m-row:last-child{border-bottom:none}
+  .m-ck{width:17px;height:17px;border:1.5px solid #c5ced6;border-radius:4px;flex:none;align-self:center}
+  .m-tag{font-weight:700;color:#1c2530}
+  .m-det{font-size:12px;font-weight:600;color:#8a939c}
+  .m-oos{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.04em;color:#c0271e}
   .sh-loc{margin:0 0 16px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .sh-loc-h{display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;padding:9px 14px;font-size:16px;font-weight:800;letter-spacing:.3px}
   .sh-loc-h .sh-loc-n{background:rgba(255,255,255,.22);border-radius:999px;padding:1px 10px;font-size:13px}
@@ -238,8 +256,8 @@
   .inv-banner .ib-chip{font-size:12px;font-weight:700;background:rgba(255,255,255,.16);border-radius:999px;padding:3px 11px}
   .inv-banner .ib-chip.oos{background:rgba(0,0,0,.22)}
   .inv-foot{margin-top:10px;text-align:center;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px}
-  .inv-frame{border:2.5px solid var(--navy);border-radius:16px;padding:14px}
-  @media print{.inv-frame{border-color:#0b3d63 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  .inv-frame{border:1.5px solid #d7dce1;border-radius:12px;padding:22px 20px;background:#fff}
+  @media print{.inv-frame{border-color:#cfd6dd !important}}
   @media print{.inv-banner{background:#d2353c !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;z-index:80;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
   .floatback{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:40;background:var(--navy);color:#fff;border:none;border-radius:999px;padding:11px 18px 11px 14px;font-size:15px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.28);cursor:pointer}
@@ -821,7 +839,9 @@ function renderInvSelect(r){
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
       return `<div class="card catblock"><div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
-        `<div class="pillgrid">`+its.map(e=>{const oos=invOos.has(e.id),on=invSel.has(e.id),det=invDetail(invSpot.get(e.id),invNose.get(e.id));
+        `<div class="pillgrid">`+its.map(e=>{const locked=e.location&&e.location!==inv.loc;
+          if(locked)return `<button class="selpill locked" disabled><span class="selc"></span>${esc(e.tag)}<span class="pillspot">@ ${esc(e.location)}</span></button>`;
+          const oos=invOos.has(e.id),on=invSel.has(e.id),det=invDetail(invSpot.get(e.id),invNose.get(e.id));
           return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${det?`<span class="pillspot">${esc(det)}</span>`:""}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div></div>`;
     }).join(""):`<p class="hint" style="padding:10px 12px">No equipment yet. Add some on the Equipment List.</p>`;
     $("#wizNext").textContent=`✓ Save ${invSel.size} ›`;
@@ -833,6 +853,13 @@ function renderInvSelect(r){
   paint();
 }
 function closeInvPop(){$$(".invpop,.invpop-back").forEach(n=>n.remove());}
+// suggest aircraft from the fleet master list as you type a nose number
+function paintNoseSug(pop,q){const box=pop.querySelector("#invNoseSug");if(!box)return;
+  const digits=(q||"").replace(/[^0-9]/g,"");
+  if(!digits||!FLEET.length){box.innerHTML="";return;}
+  const res=FLEET.filter(a=>String(a.ship).startsWith(digits)).slice(0,6);
+  box.innerHTML=res.map(a=>`<button class="nosehit" data-ship="${esc(String(a.ship))}"><b>${esc(String(a.ship))}</b> <span>${esc(a.type||"")}${a.reg?" · "+esc(a.reg):""}</span></button>`).join("");
+  box.querySelectorAll(".nosehit").forEach(b=>b.onclick=()=>{const ni=pop.querySelector("#invNoseInput");if(ni)ni.value=b.dataset.ship;box.innerHTML="";});}
 function openInvPop(pill,id,after){
   closeInvPop();
   const e=data.equipment.find(x=>x.id===id);if(!e)return;
@@ -866,11 +893,13 @@ function openInvPop(pill,id,after){
       const where=zones?(st.spot?st.zone+" "+st.spot:st.zone):null;
       const nose=needsNose(inv.loc,st.zone);
       pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")}${where?` · ${esc(where)}`:""}</div>`+
-        (nose?`<input id="invNoseInput" inputmode="numeric" autocomplete="off" placeholder="Aircraft nose #" value="${esc(st.nose||"")}" />`:"")+
+        (nose?`<input id="invNoseInput" inputmode="numeric" autocomplete="off" placeholder="Aircraft nose # (from fleet)" value="${esc(st.nose||"")}" /><div id="invNoseSug" class="nosesug"></div>`:"")+
         `<button class="confirmbtn" data-a="here">✓ It's here</button>`+
         `<button class="oosbtn" data-a="oos">⊘ Out of service</button>`+
         (zones?`<button class="rmbtn" data-a="sback">‹ Back</button>`
               :(on||oos?`<button class="rmbtn" data-a="rm">Remove</button>`:""));
+      const ni=pop.querySelector("#invNoseInput");
+      if(ni)ni.oninput=()=>{st.nose=ni.value.trim();paintNoseSug(pop,ni.value);};
     }
     pop.querySelector('[data-a="here"]')&&(pop.querySelector('[data-a="here"]').onclick=()=>finish(false));
     pop.querySelector('[data-a="oos"]')&&(pop.querySelector('[data-a="oos"]').onclick=()=>finish(true));
@@ -894,32 +923,18 @@ function sheetLocsWithEquip(){const base=inv.covered.length?inv.covered.slice():
   return base.filter(l=>data.equipment.some(e=>e.location===l));} // skip blank areas
 function sortTags(its){return its.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));}
 function buildInvSheet(locs,mode){mode=mode||invSheetMode;
-  const date=fmtDate(todayISO());let total=0;
+  const date=fmtDate(todayISO()),ck=mode==="checklist";
   const blocks=locs.map(loc=>{
-    const items=data.equipment.filter(e=>e.location===loc);total+=items.length;
-    const body=groupByType(items).map(g=>{const its=sortTags(g.items);
-      const det=e=>invDetail(e.spot,e.nose);
-      const list=mode==="checklist"
-        ? `<div class="ck-list">`+its.map(e=>`<div class="ck-row ${e.oos?'oos':''}"><span class="ck-box"></span><span class="ck-tag">${esc(e.tag)}${det(e)?`<span class="pillspot">${esc(det(e))}</span>`:""}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</span></div>`).join("")+`</div>`
-        : `<div class="li-tags">`+its.map(e=>`<span class="li-pill ${e.oos?'oos':''}">${esc(e.tag)}${det(e)?`<span class="pillspot">${esc(det(e))}</span>`:""}${e.oos?`<span class="oos-mark">⊘ OOS</span>`:""}</span>`).join("")+`</div>`;
-      return `<div class="cat-h"><span>${esc(g.type)}</span><span class="cat-n">${g.items.length}</span></div>${list}`;
+    const items=data.equipment.filter(e=>e.location===loc);
+    const cats=groupByType(items).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"",undefined,{numeric:true,sensitivity:"base"}));
+    const body=cats.map(g=>{
+      const rows=sortTags(g.items).map(e=>{const d=invDetail(e.spot,e.nose);
+        return `<div class="m-row">${ck?'<span class="m-ck"></span>':""}<span class="m-tag">${esc(e.tag)}</span>${d?`<span class="m-det">${esc(d)}</span>`:""}${e.oos?'<span class="m-oos">OUT OF SERVICE</span>':""}</div>`;}).join("");
+      return `<div class="m-cat">${esc(g.type)}</div>${rows}`;
     }).join("");
-    return `<div class="sh-loc"><div class="sh-loc-h"><span>${esc(loc)}</span><span class="sh-loc-n">${items.length}</span></div>${body}</div>`;
+    return `<div class="m-loc">${esc(loc)}<span class="m-locn">${items.length} unit${items.length===1?"":"s"}</span></div>${body}`;
   }).join("");
-  const oosN=locs.reduce((a,loc)=>a+data.equipment.filter(e=>e.location===loc&&e.oos).length,0);
-  const single=locs.length===1?locs[0]:null;
-  const title="EWR Move Team "+(single?esc(single)+" ":"")+"Equipment List";
-  const header=`<div class="inv-banner">
-    <div class="ib-top"><span class="ib-brand">EWR MOVE TEAM</span><span class="ib-date">${esc(date)}</span></div>
-    <div class="ib-title">${title}</div>
-    <div class="ib-meta">
-      <span class="ib-chip">${locs.length} location${locs.length===1?"":"s"}</span>
-      <span class="ib-chip">${total} item${total===1?"":"s"}</span>
-      ${oosN?`<span class="ib-chip oos">⊘ ${oosN} out of service</span>`:""}
-      <span class="ib-chip">${mode==="checklist"?"Checklist":"List"}</span>
-    </div></div>`;
-  const foot=`<div class="inv-foot">Generated by EWR Move Team · ${esc(date)}</div>`;
-  return `<div class="inv-frame">`+header+blocks+foot+`</div>`;
+  return `<div class="inv-frame"><div class="m-top">EWR Move Team · Equipment List</div><div class="m-sub">${esc(date)}</div>${blocks}</div>`;
 }
 function renderInvSheet(r){
   const locs=sheetLocsWithEquip();
@@ -955,55 +970,44 @@ function downloadInvText(locs){
   const blob=new Blob([lines.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-inventory-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
 function downloadInvImage(locs){
-  const ck=invSheetMode==="checklist";
-  const W=1000,pad=30,cw=W-pad*2,S=2,date=fmtDate(todayISO());
-  let y=pad,total=0,oosN=0;const ops=[];
-  locs.forEach(l=>{total+=data.equipment.filter(e=>e.location===l).length;oosN+=data.equipment.filter(e=>e.location===l&&e.oos).length;});
-  const single=locs.length===1?locs[0]:null;
-  const title="EWR Move Team "+(single?single+" ":"")+"Equipment List";
-  const meta=date+'   ·   '+locs.length+' location(s)   ·   '+total+' items'+(oosN?'   ·   ⊘ '+oosN+' out of service':'')+'   ·   '+(ck?'checklist':'list');
-  ops.push({k:'banner',x:pad,y,w:cw,h:96,title});y+=96+18;
+  const ck=invSheetMode==="checklist",S=2,W=900,M=46,FM=18,cR=W-M,date=fmtDate(todayISO());
+  const F=s=>s+" -apple-system,Arial,sans-serif";
+  const topF=F("800 14px"),dateF=F("600 13px"),locF=F("800 38px"),locnF=F("600 15px"),catF=F("800 13px"),tagF=F("700 17px"),detF=F("600 13px"),oosF=F("800 12px");
+  const muted="#9aa3ad",muted2="#aab2bb",ink="#10171f",tagc="#1c2530",detc="#8a939c",oosc="#c0271e",divc="#eef1f4";
+  const mc=document.createElement("canvas").getContext("2d");const tw=(t,f)=>{mc.font=f;return mc.measureText(t).width;};
+  const ops=[];let y=FM+24;
+  ops.push({k:'tx',x:M,y,t:"EWR MOVE TEAM · EQUIPMENT LIST",f:topF,c:muted,ls:1.4});y+=20;
+  ops.push({k:'tx',x:M,y,t:date,f:dateF,c:muted});y+=20;
   for(const loc of locs){
-    const items=data.equipment.filter(e=>e.location===loc);
-    ops.push({k:'loc',x:pad,y,w:cw,h:48,name:loc,n:items.length});y+=48;
-    for(const g of groupByType(items)){
-      ops.push({k:'cat',x:pad,y,w:cw,h:34,name:g.type,n:g.items.length});y+=34+8;
+    const eq=data.equipment.filter(e=>e.location===loc);
+    y+=28;ops.push({k:'tx',x:M,y,t:loc,f:locF,c:ink});
+    ops.push({k:'tx',x:M+tw(loc,locF)+13,y:y+18,t:eq.length+" unit"+(eq.length===1?"":"s"),f:locnF,c:muted2});y+=44;
+    const cats=groupByType(eq).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"",undefined,{numeric:true,sensitivity:"base"}));
+    for(const g of cats){
+      y+=10;ops.push({k:'tx',x:M,y,t:(g.type||"").toUpperCase(),f:catF,c:muted2,ls:.9});y+=22;
       const its=sortTags(g.items);
-      if(ck){its.forEach((e,idx)=>{const d=invDetail(e.spot,e.nose);ops.push({k:'ck',x:pad+14,y,tag:e.tag+(d?'  ·  '+d:''),oos:!!e.oos,line:y+22,lx0:pad+14,lx1:pad+cw-14,last:idx===its.length-1});y+=44;});y+=4;}
-      else{const cols=3,gap=10,pw=(cw-28-gap*(cols-1))/cols,ph=42,sx=pad+14;
-        its.forEach((e,idx)=>{const col=idx%cols;if(col===0&&idx>0)y+=ph+gap;const d=invDetail(e.spot,e.nose);ops.push({k:'pill',x:sx+col*(pw+gap),y,w:pw,h:ph,tag:e.tag+(d?'  ·  '+d:''),oos:!!e.oos});});
-        y+=ph+12;}
+      its.forEach((e,idx)=>{const textX=ck?M+28:M;
+        if(ck)ops.push({k:'box',x:M,y:y});
+        ops.push({k:'tx',x:textX,y,t:e.tag,f:tagF,c:tagc});
+        const d=invDetail(e.spot,e.nose);
+        if(d)ops.push({k:'tx',x:textX+tw(e.tag,tagF)+10,y:y+3,t:d,f:detF,c:detc});
+        if(e.oos)ops.push({k:'tx',x:cR,y:y+3,t:"OUT OF SERVICE",f:oosF,c:oosc,align:"right"});
+        y+=24;if(idx<its.length-1)ops.push({k:'ln',x0:M,x1:cR,y,c:divc});y+=6;
+      });
     }
-    y+=14;
   }
-  const footY=y+2,H=footY+24+14,c=document.createElement('canvas');c.width=W*S;c.height=H*S;const ctx=c.getContext('2d');ctx.scale(S,S);
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  y+=28;const H=y+FM;
+  const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
   const rr=(x,yy,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,yy);ctx.arcTo(x+w,yy,x+w,yy+h,r);ctx.arcTo(x+w,yy+h,x,yy+h,r);ctx.arcTo(x,yy+h,x,yy,r);ctx.arcTo(x,yy,x+w,yy,r);ctx.closePath();};
+  ctx.textBaseline="top";
   for(const o of ops){
-    if(o.k==='t'){ctx.fillStyle=o.c;ctx.font=o.f;ctx.textBaseline='alphabetic';ctx.fillText(o.t,o.x,o.y);}
-    else if(o.k==='banner'){const grad=ctx.createLinearGradient(o.x,o.y,o.x+o.w,o.y+o.h);grad.addColorStop(0,'#fc4c4e');grad.addColorStop(1,'#d2353c');
-      ctx.fillStyle=grad;rr(o.x,o.y,o.w,o.h,16);ctx.fill();
-      ctx.textAlign='left';ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='bold 14px -apple-system,Arial,sans-serif';ctx.textBaseline='alphabetic';ctx.fillText('EWR MOVE TEAM',o.x+20,o.y+30);
-      ctx.fillStyle='#fff';ctx.font='bold 27px -apple-system,Arial,sans-serif';ctx.fillText(o.title,o.x+20,o.y+62);
-      ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='600 15px -apple-system,Arial,sans-serif';ctx.fillText(meta,o.x+20,o.y+85);}
-    else if(o.k==='loc'){ctx.fillStyle='#0b3d63';rr(o.x,o.y,o.w,o.h,10);ctx.fill();
-      ctx.fillStyle='#fff';ctx.font='bold 22px -apple-system,Arial,sans-serif';ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(o.name,o.x+16,o.y+o.h/2+1);
-      const bt=String(o.n);ctx.font='bold 15px -apple-system,Arial,sans-serif';const bw=ctx.measureText(bt).width+26;
-      ctx.fillStyle='rgba(255,255,255,.22)';rr(o.x+o.w-bw-12,o.y+o.h/2-15,bw,30,15);ctx.fill();
-      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(bt,o.x+o.w-bw/2-12,o.y+o.h/2+1);}
-    else if(o.k==='cat'){ctx.fillStyle='#eef2f5';ctx.fillRect(o.x,o.y,o.w,o.h);
-      ctx.fillStyle='#33414f';ctx.font='bold 13px -apple-system,Arial,sans-serif';ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(o.name.toUpperCase(),o.x+16,o.y+o.h/2+1);
-      ctx.fillStyle='#67727e';ctx.textAlign='right';ctx.fillText(String(o.n),o.x+o.w-16,o.y+o.h/2+1);}
-    else if(o.k==='pill'){ctx.fillStyle=o.oos?'#fdecec':'#fafbfc';ctx.strokeStyle=o.oos?'#d9342b':'#dce1e6';ctx.lineWidth=1.5;rr(o.x,o.y,o.w,o.h,9);ctx.fill();ctx.stroke();
-      ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font=(o.oos?'bold 13px':'bold 17px')+' -apple-system,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'  ⊘ OUT OF SERVICE':''),o.x+o.w/2,o.y+o.h/2+1);}
-    else if(o.k==='ck'){ctx.strokeStyle=o.oos?'#d9342b':'#9aa7b2';ctx.lineWidth=2;rr(o.x,o.y,22,22,5);ctx.stroke();
-      ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font='600 18px -apple-system,Arial,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'   ⊘ OUT OF SERVICE':''),o.x+38,o.y+12);
-      if(!o.last){ctx.strokeStyle='#e7ebef';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(o.lx0,o.line);ctx.lineTo(o.lx1,o.line);ctx.stroke();ctx.setLineDash([]);}}
+    if(o.k==='tx'){ctx.font=o.f;ctx.fillStyle=o.c;ctx.textAlign=o.align||"left";try{ctx.letterSpacing=(o.ls||0)+"px";}catch(_){}ctx.fillText(o.t,o.x,o.y);try{ctx.letterSpacing="0px";}catch(_){}}
+    else if(o.k==='box'){ctx.strokeStyle="#c5ced6";ctx.lineWidth=1.5;rr(o.x,o.y+1,16,16,4);ctx.stroke();}
+    else if(o.k==='ln'){ctx.strokeStyle=o.c;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(o.x0,o.y);ctx.lineTo(o.x1,o.y);ctx.stroke();}
   }
-  ctx.fillStyle='#67727e';ctx.font='600 13px -apple-system,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
-  ctx.fillText('Generated by EWR Move Team · '+date,W/2,footY+16);
-  const FM=14;ctx.strokeStyle='#0b3d63';ctx.lineWidth=3;rr(FM,FM,W-FM*2,H-FM*2,18);ctx.stroke();
-  c.toBlob(b=>showImagePreview(b,'equipment-inventory-'+todayISO()+'.png'),'image/png');
+  ctx.strokeStyle="#d7dce1";ctx.lineWidth=2;rr(FM,FM,W-FM*2,H-FM*2,12);ctx.stroke();
+  c.toBlob(b=>showImagePreview(b,"equipment-list-"+todayISO()+".png"),"image/png");
 }
 // show the generated PNG inside the app so we never navigate away from the sheet
 function showImagePreview(blob,filename){
