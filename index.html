@@ -14,9 +14,9 @@
     background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4;padding-bottom:24px;}
   #hdrTitle{cursor:pointer}
   .hubgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:6px 2px}
-  .hubtile{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 2px 10px rgba(20,40,70,.08);padding:26px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:16px;font-weight:700;color:var(--ink);cursor:pointer}
+  .hubtile{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 2px 10px rgba(20,40,70,.08);padding:22px 10px;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;text-align:center;line-height:1.2}
   .hubtile:active{transform:scale(.97)}
-  .hubtile .hi{font-size:36px;line-height:1}
+  .hubtile .hi{font-size:34px;line-height:1}
   header{position:sticky;top:0;z-index:20;background:var(--melon);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;box-shadow:var(--shadow);}
   .hdr-actions{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:12px;display:flex;gap:8px}
   .hdrbtn{background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700}
@@ -166,18 +166,31 @@
   <!-- HUB -->
   <section id="view-hub" class="view active">
     <div class="hubgrid">
-      <button class="hubtile" data-go="inventory"><span class="hi">🧭</span>Inventory</button>
-      <button class="hubtile" data-go="park"><span class="hi">🅿️</span>Park</button>
-      <button class="hubtile" data-go="aircraft"><span class="hi">✈️</span>Aircraft</button>
-      <button class="hubtile" data-go="secure"><span class="hi">🔒</span>Secure</button>
-      <button class="hubtile" data-go="equipment"><span class="hi">📋</span>Equipment</button>
-      <button class="hubtile" data-go="audit"><span class="hi">🧾</span>Quick Sheet</button>
+      <button class="hubtile" data-go="inventory"><span class="hi">🧭</span>Equipment Audit Sheet</button>
+      <button class="hubtile" data-go="park"><span class="hi">🅿️</span>Stop Mark Lookup</button>
+      <button class="hubtile" data-go="aircraft"><span class="hi">✈️</span>Aircraft Lookup</button>
+      <button class="hubtile" data-go="secure"><span class="hi">🔒</span>Aircraft Secure Log</button>
+      <button class="hubtile" data-go="equipment"><span class="hi">📋</span>Equipment List</button>
       <button class="hubtile" data-go="settings"><span class="hi">⚙️</span>Settings</button>
     </div>
   </section>
 
   <section id="view-equipment" class="view">
-    <div class="btnrow" style="margin-top:0;margin-bottom:12px"><button class="btn navy" id="addBtn">➕ Add equipment</button></div>
+    <div class="btnrow" style="margin-top:0;margin-bottom:10px"><button class="btn navy" id="addBtn">➕ Add equipment</button></div>
+    <details class="card acItem" id="sheetGen" style="margin-bottom:12px">
+      <summary><div class="main"><div class="tag">🧾 Generate sheet</div>
+        <div class="meta">Quick audit sheet for an area or everything</div></div></summary>
+      <div style="padding:0 14px 12px">
+        <label for="auditLoc">Scope</label>
+        <select id="auditLoc"></select>
+        <div class="row2">
+          <div><label for="auditBy">By</label><input id="auditBy" placeholder="Your name" /></div>
+          <div><label for="auditDate">Date</label><input id="auditDate" type="date" /></div>
+        </div>
+        <div class="btnrow"><button class="btn navy" id="genAudit">Generate sheet</button></div>
+        <div id="auditPreview"></div>
+      </div>
+    </details>
     <div class="toolbar">
       <input id="search" type="search" placeholder="Search tag, type, location…" autocomplete="off" />
       <select id="filterLoc"><option value="">All locations</option></select>
@@ -191,23 +204,6 @@
     <div id="wizFoot" class="wiz-foot" hidden>
       <button class="btn ghost" id="wizBack" style="flex:0 0 38%">‹ Back</button>
       <button class="btn navy" id="wizNext">Next ›</button>
-    </div>
-  </section>
-
-  <!-- QUICK SHEET -->
-  <section id="view-audit" class="view">
-    <div id="screenChrome">
-      <div class="card pad">
-        <p class="hint" style="margin-top:0">Quick sheet for one area or everything. For a full walk-through, use <b>Inventory</b>.</p>
-        <label for="auditLoc">Scope</label>
-        <select id="auditLoc"></select>
-        <div class="row2">
-          <div><label for="auditBy">By</label><input id="auditBy" placeholder="Your name" /></div>
-          <div><label for="auditDate">Date</label><input id="auditDate" type="date" /></div>
-        </div>
-        <div class="btnrow"><button class="btn navy" id="genAudit">Generate sheet</button></div>
-      </div>
-      <div id="auditPreview"></div>
     </div>
   </section>
 
@@ -469,7 +465,8 @@ let curTab="hub";
 function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
   window.scrollTo(0,0);if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
 function goTab(t){showTab(t);
-  if(t==="inventory")renderInventory();if(t==="audit")refreshAudit();
+  if(t==="equipment"){renderList();refreshAudit();}
+  if(t==="inventory")renderInventory();
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
