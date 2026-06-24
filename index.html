@@ -901,6 +901,13 @@ const PARK_AIRCRAFT=[
     ["b772","B777-200"],["b773","B777-300ER"],["b7778","B777-8 (folded)"],["b7779","B777-9"],["b787","B787"],["md11","MD-11"]]}
 ];
 const ACLABEL={};PARK_AIRCRAFT.forEach(g=>g.items.forEach(([k,l])=>ACLABEL[k]=l));
+// Park picker — United mainline fleet only, grouped by manufacturer. [chartKey, label]
+const UNITED_PARK=[
+  {mfr:"Airbus",items:[["a319","Airbus A319"],["a320","Airbus A320"],["a321","Airbus A321 / A321neo"]]},
+  {mfr:"Boeing",items:[["b737","Boeing 737-700"],["b737","Boeing 737-800"],["b737","Boeing 737 MAX 8"],["b737","Boeing 737 MAX 9"],
+    ["b757","Boeing 757-200"],["b757","Boeing 757-300"],["b767","Boeing 767-300ER"],["b767","Boeing 767-400ER"],
+    ["b772","Boeing 777-200ER"],["b773","Boeing 777-300ER"],["b787","Boeing 787-8"],["b787","Boeing 787-9"],["b787","Boeing 787-10"]]}
+];
 const LIN_A3={A:["md80"],B:["a319","a220","a320","a321","b737","b717","b727","crj","dc9","e70","erj"],C:["dash","q"]};
 const LIN_WBB=["a300","a310","b757","b767","md11"];
 const AME_A3={A:["a321","a320","a220","b737","b717","b727","crj","e70","dc9","erj","md80"],B:["a318","a319","dash","q"]};
@@ -934,8 +941,8 @@ function parkLookup(area,spot,key){const sp=PARK[area].spots[spot];if(!sp)return
   for(const ln of["A","B","C"])if(sp.lines[ln]&&sp.lines[ln].includes(key))return{ok:true,line:ln,adg:sp.adg};
   return{ok:false,adg:sp.adg};}
 function crossFor(area,spot){return (PARK[area].cross||[]).filter(c=>c.blocks.includes(spot));}
-let park={stage:"area",area:null,spot:null,ac:null,parkedOn:null};
-function newPark(){return{stage:"area",area:null,spot:null,ac:null,parkedOn:null};}
+let park={stage:"area",area:null,spot:null,ac:null,acLabel:null,parkedOn:null};
+function newPark(){return{stage:"area",area:null,spot:null,ac:null,acLabel:null,parkedOn:null};}
 function renderPark(){const r=$("#parkRoot");
   ({area:renderParkArea,spot:renderParkSpot,ac:renderParkAc,result:renderParkResult}[park.stage]||renderParkArea)(r);}
 function renderParkArea(r){
@@ -965,10 +972,9 @@ function renderParkAc(r){
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)}</div>
     <h3 style="margin:2px 0 10px">Aircraft type</h3>
-    ${PARK_AIRCRAFT.map(g=>{const items=g.items.slice().sort((a,b)=>a[1].localeCompare(b[1],undefined,{numeric:true}));
-      return `<div class="spotgrp">${esc(g.g)}</div><div class="chips">${items.map(([k,l])=>`<button class="chip ${park.ac===k?'sel':''}" data-k="${esc(k)}">${esc(l)}</button>`).join("")}</div>`;}).join("")}
+    ${UNITED_PARK.map(g=>`<div class="spotgrp">${esc(g.mfr)}</div><div class="chips">${g.items.map(([k,l])=>`<button class="chip ${park.acLabel===l?'sel':''}" data-k="${esc(k)}" data-l="${esc(l)}">${esc(l)}</button>`).join("")}</div>`).join("")}
     <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
-  $$("#parkRoot .chip[data-k]").forEach(c=>c.addEventListener("click",()=>{park.ac=c.dataset.k;park.stage="result";renderPark();}));
+  $$("#parkRoot .chip[data-k]").forEach(c=>c.addEventListener("click",()=>{park.ac=c.dataset.k;park.acLabel=c.dataset.l;park.stage="result";renderPark();}));
   $("#pkBack").addEventListener("click",()=>{park.stage="spot";renderPark();});
 }
 function renderParkResult(r){
@@ -978,7 +984,7 @@ function renderParkResult(r){
   let body;
   if(res.ok){
     body=`<div class="ac-ok" style="font-size:18px">✅ Park on <b>STOP LINE ${res.line}</b></div>
-      <p class="hint">Spot ${esc(park.spot)} · ${esc(ACLABEL[park.ac]||park.ac)} · ADG ${res.adg}</p>${rampHtml}`;
+      <p class="hint">Spot ${esc(park.spot)} · ${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} · ADG ${res.adg}</p>${rampHtml}`;
     if(cross.length){
       const ask=cross.map((c,i)=>`<div class="ac-no" style="margin-top:8px"><b>⚠️ Restriction:</b> Spot ${esc(park.spot)} can't be used if a widebody is on ${c.wb.map(esc).join(" or ")}.
         <div class="btnrow" style="margin-top:8px"><button class="btn ghost pk-cross" data-i="${i}" data-v="1">Yes, occupied</button><button class="btn ghost pk-cross" data-i="${i}" data-v="0">No, clear</button></div>
@@ -986,12 +992,12 @@ function renderParkResult(r){
       body+=ask;
     }
   } else if(res.excluded){
-    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⛔ Aircraft not allowed to be parked</b><br>${esc(ACLABEL[park.ac]||park.ac)} is specifically restricted from spot ${esc(park.spot)}.</div>`;
+    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⛔ Aircraft not allowed to be parked</b><br>${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} is specifically restricted from spot ${esc(park.spot)}.</div>`;
   } else {
-    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⛔ Aircraft not allowed to be parked</b><br>${esc(ACLABEL[park.ac]||park.ac)} doesn't have a stop line on spot ${esc(park.spot)}${res.adg?` (ADG ${res.adg} spot)`:""}.</div>`;
+    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⛔ Aircraft not allowed to be parked</b><br>${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} doesn't have a stop line on spot ${esc(park.spot)}${res.adg?` (ADG ${res.adg} spot)`:""}.</div>`;
   }
   r.innerHTML=`<div class="card pad">
-    <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)} › ${esc(ACLABEL[park.ac]||park.ac)}</div>
+    <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)} › ${esc(park.acLabel||ACLABEL[park.ac]||park.ac)}</div>
     ${body}
     <p class="hint" style="margin-top:10px">⚠️ Always verify against the official Hardstand ${esc(park.area)} chart before parking.</p>
     <div class="btnrow"><button class="btn ghost" id="pkAgain">↻ New lookup</button><button class="btn navy" id="pkBack" style="flex:2">Change aircraft</button></div></div>`;
