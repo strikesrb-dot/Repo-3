@@ -93,6 +93,14 @@
   .spotgrp::after{content:"";flex:1;height:1px;background:var(--line)}
   .spotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
   .spotgrid .chip{text-align:center;padding:12px 6px}
+  details.acItem{padding:0;overflow:hidden}
+  details.acItem>summary{list-style:none;padding:12px 14px;cursor:pointer;display:flex}
+  details.acItem>summary::-webkit-details-marker{display:none}
+  details.acItem[open]>summary{border-bottom:1px solid var(--line)}
+  .specs{padding:10px 14px}
+  .specs>div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #eceff2;font-size:14px}
+  .specs>div b{color:var(--muted);font-weight:600}
+  .specs>div span{text-align:right}
   @keyframes zoomIn{from{transform:scale(.88);opacity:.3}to{transform:scale(1);opacity:1}}
   @keyframes zoomOut{from{transform:scale(1.12);opacity:.3}to{transform:scale(1);opacity:1}}
   .zoomin{animation:zoomIn .24s cubic-bezier(.2,.7,.3,1)}
@@ -381,10 +389,32 @@ function lookupShip(s){return byShip.get(String(s).trim());}
 function rememberAircraft(ship,reg,type){ship=String(ship).trim();reg=(reg||"").toUpperCase().trim();if(!ship)return;
   const ex=byShip.get(ship);if(ex){ex.reg=reg||ex.reg;ex.type=type||ex.type;}else FLEET.push({ship,reg,type:type||""});indexFleet();saveFleetCache();}
 function updateFleetStatus(){const el=$("#fleetStatus");if(el)el.textContent=`${FLEET.length.toLocaleString()} aircraft loaded (ship # → tail # + type).`;}
-function acCard(a){return `<li class="item card"><div class="main">
-  <div class="tag">✈️ Nose ${esc(a.ship)}</div>
+const TYPE_SPECS={
+ "Boeing 737-700":{united:"1998",seats:"126 (12F · 36E+ · 78Y)",len:"110 ft 4 in",span:"117 ft 5 in",range:"3,010 nm (~5,570 km)",speed:"Mach 0.785 (~453 kn)",engines:"2× CFM56-7B",first:"1997",mtow:"154,500 lb",notes:"Shortest 737NG in the fleet."},
+ "Boeing 737-800":{united:"1998",seats:"166 (16F · 54E+ · 96Y)",len:"129 ft 6 in",span:"117 ft 5 in",range:"2,935 nm (~5,436 km)",speed:"Mach 0.785 (~453 kn)",engines:"2× CFM56-7B",first:"1997",mtow:"174,200 lb",notes:"Workhorse narrowbody — largest type by count."},
+ "Boeing 737 MAX 8":{united:"2017",seats:"166 (16F · 54E+ · 96Y)",len:"129 ft 8 in",span:"117 ft 10 in",range:"3,550 nm (~6,570 km)",speed:"Mach 0.79 (~453 kn)",engines:"2× CFM LEAP-1B",first:"2016",mtow:"181,200 lb",notes:"Split-tip winglets; ~14% more efficient than NG."},
+ "Boeing 737 MAX 9":{united:"2018",seats:"179 (20F · 48E+ · 111Y)",len:"138 ft 4 in",span:"117 ft 10 in",range:"3,300 nm (~6,110 km)",speed:"Mach 0.79 (~453 kn)",engines:"2× CFM LEAP-1B",first:"2017",mtow:"194,700 lb",notes:"Stretched MAX; United's largest 737."},
+ "Airbus A319":{united:"1998",seats:"128 (8F · 42E+ · 78Y)",len:"111 ft 0 in",span:"111 ft 10 in",range:"3,700 nm (~6,850 km)",speed:"Mach 0.78 (~447 kn)",engines:"2× IAE V2500",first:"1995",mtow:"166,400 lb",notes:"Shortest A320-family jet at United."},
+ "Airbus A320":{united:"1990s",seats:"150 (12F · 42E+ · 96Y)",len:"123 ft 3 in",span:"111 ft 10 in",range:"3,300 nm (~6,110 km)",speed:"Mach 0.78 (~447 kn)",engines:"2× IAE V2500",first:"1987",mtow:"169,800 lb",notes:"Classic A320ceo."},
+ "Airbus A321neo":{united:"2024",seats:"200 (20F · 57E+ · 123Y)",len:"146 ft 0 in",span:"117 ft 5 in",range:"4,000 nm (~7,400 km)",speed:"Mach 0.78 (~447 kn)",engines:"2× CFM LEAP-1A / PW1100G",first:"2016",mtow:"205,000 lb",notes:"Newest narrowbody; replacing 757-200s."},
+ "Boeing 757-200":{united:"1989",seats:"169–176 (16F · 45E+ · …)",len:"155 ft 3 in",span:"124 ft 10 in",range:"3,915 nm (~7,250 km)",speed:"Mach 0.80 (~458 kn)",engines:"2× PW2037 / RB211",first:"1982",mtow:"255,000 lb",notes:"Transcon / thin long-haul narrowbody."},
+ "Boeing 757-300":{united:"2011 (ex-CO)",seats:"234 (24F · 54E+ · 156Y)",len:"178 ft 7 in",span:"124 ft 10 in",range:"3,400 nm (~6,300 km)",speed:"Mach 0.80 (~458 kn)",engines:"2× RB211-535",first:"1998",mtow:"272,500 lb",notes:"Longest single-aisle jet ever built."},
+ "Boeing 767-300ER":{united:"1991",seats:"214 (30 Polaris · 46E+ · …)",len:"180 ft 3 in",span:"156 ft 1 in",range:"5,980 nm (~11,070 km)",speed:"Mach 0.80 (~459 kn)",engines:"2× PW4000 / CF6",first:"1986",mtow:"412,000 lb",notes:"Mid-size widebody, Atlantic routes."},
+ "Boeing 767-400ER":{united:"2011 (ex-CO)",seats:"242 (34 Polaris · 70E+ · …)",len:"201 ft 4 in",span:"170 ft 4 in",range:"5,625 nm (~10,415 km)",speed:"Mach 0.80 (~459 kn)",engines:"2× CF6-80C2",first:"1999",mtow:"450,000 lb",notes:"Stretched 767 with raked wingtips."},
+ "Boeing 777-200ER":{united:"1995",seats:"276–292 (50 Polaris · …)",len:"209 ft 1 in",span:"199 ft 11 in",range:"7,065 nm (~13,080 km)",speed:"Mach 0.84 (~482 kn)",engines:"2× PW4090",first:"1994",mtow:"656,000 lb",notes:"United was the 777 launch customer (1995)."},
+ "Boeing 777-300ER":{united:"2016",seats:"350 (60 Polaris · 24PP · …)",len:"242 ft 4 in",span:"212 ft 7 in",range:"7,370 nm (~13,650 km)",speed:"Mach 0.84 (~482 kn)",engines:"2× GE90-115B",first:"2003",mtow:"775,000 lb",notes:"Largest twinjet at United; GE90 = biggest jet engine."},
+ "Boeing 787-8":{united:"2012",seats:"243 (28 Polaris · 21PP · …)",len:"186 ft 1 in",span:"197 ft 3 in",range:"7,305 nm (~13,530 km)",speed:"Mach 0.85 (~488 kn)",engines:"2× GEnx-1B",first:"2009",mtow:"502,500 lb",notes:"First Dreamliner; carbon-composite fuselage."},
+ "Boeing 787-9":{united:"2014",seats:"257 (48 Polaris · 21PP · …)",len:"206 ft 1 in",span:"197 ft 3 in",range:"7,635 nm (~14,140 km)",speed:"Mach 0.85 (~488 kn)",engines:"2× GEnx-1B",first:"2013",mtow:"560,000 lb",notes:"Stretched, longer-range Dreamliner."},
+ "Boeing 787-10":{united:"2019",seats:"318 (44 Polaris · 21PP · …)",len:"224 ft 0 in",span:"197 ft 3 in",range:"6,330 nm (~11,730 km)",speed:"Mach 0.85 (~488 kn)",engines:"2× GEnx-1B",first:"2017",mtow:"560,000 lb",notes:"Longest Dreamliner; highest-density 787."}
+};
+function specHtml(s){const row=(l,v)=>v?`<div><b>${l}</b><span>${esc(v)}</span></div>`:"";
+  return `<div class="specs">${row("First @ United",s.united)}${row("Seats (United)",s.seats)}${row("Length",s.len)}${row("Wingspan",s.span)}${row("Range",s.range)}${row("Cruise",s.speed)}${row("Engines",s.engines)}${row("MTOW",s.mtow)}${row("Type first flew",s.first)}${s.notes?`<p class="hint" style="margin-top:6px">${esc(s.notes)}</p>`:""}<p class="hint" style="margin-top:4px;font-size:11px">Type-level facts; United configs/specs are approximate.</p></div>`;}
+function acCard(a){const sp=TYPE_SPECS[a.type];
+  return `<details class="item card acItem"><summary>
+  <div class="main"><div class="tag">✈️ Nose ${esc(a.ship)}</div>
   <div class="meta">${esc(a.type||"Unknown type")}</div>
-  <div style="margin-top:6px"><span class="loc">${esc(a.reg||"(no tail)")}</span></div></div></li>`;}
+  <div style="margin-top:6px"><span class="loc">${esc(a.reg||"(no tail)")}</span>${sp?` <span class="hint" style="font-size:11px">▾ tap for specs</span>`:""}</div></div></summary>
+  ${sp?specHtml(sp):'<p class="hint" style="padding:0 14px 12px">No spec sheet for this type yet.</p>'}</details>`;}
 function renderAircraftLookup(){
   const el=$("#acFleetN");if(el)el.textContent=`${FLEET.length.toLocaleString()} United aircraft loaded · works offline`;
   const q=($("#acSearch").value||"").trim().toUpperCase();
@@ -403,7 +433,7 @@ function renderAircraftLookup(){
   });
   const shown=res.slice(0,60);
   box.innerHTML = res.length
-    ? `<p class="count">${res.length} match${res.length===1?"":"es"}${res.length>60?" (showing 60)":""}</p><ul class="list">${shown.map(acCard).join("")}</ul>`
+    ? `<p class="count">${res.length} match${res.length===1?"":"es"}${res.length>60?" (showing 60)":""}</p><div class="list">${shown.map(acCard).join("")}</div>`
     : `<div class="empty"><p>No aircraft found for “${esc($("#acSearch").value.trim())}”.</p>
        <p class="hint">It may be a regional/charter not in the United mainline list. Add it on a spot during inventory and it'll be remembered.</p></div>`;
 }
@@ -590,7 +620,7 @@ function renderInvAircraft(r){
     <label for="invShip">Aircraft # (ship / nose number)</label>
     <input id="invShip" inputmode="numeric" autocomplete="off" placeholder="e.g. 3461" value="${esc(cur?cur.ship:"")}" />
     <div id="invAcInfo"></div>
-    <div class="btnrow"><button class="btn ghost" id="noAc">Skip — no aircraft here</button></div></div>`;
+    <div class="btnrow" style="margin-top:10px"><button class="btn ghost" id="invAcBack" style="flex:0 0 26%">‹ Back</button><button class="btn ghost" id="noAc" style="flex:0 0 26%">Skip</button><button class="btn navy" id="invAcNext">Equipment ›</button></div></div>`;
   const shipIn=$("#invShip");
   function refreshAc(){const s=shipIn.value.trim(),box=$("#invAcInfo"),skip=$("#noAc");
     if(!s){box.innerHTML="";inv.ac=null;if(skip)skip.style.display="";return;}
@@ -606,9 +636,9 @@ function renderInvAircraft(r){
   }
   shipIn.addEventListener("input",refreshAc);refreshAc();
   $("#noAc").addEventListener("click",()=>{inv.ac=null;inv.stage="select";renderInventory();});
-  setWizFoot({back:()=>{inv.stage="spot";renderInventory();},
-    next:()=>{if(inv.ac&&inv.ac.ship&&inv.ac.reg)rememberAircraft(inv.ac.ship,inv.ac.reg,inv.ac.type);inv.stage="select";renderInventory();},
-    nextOn:true,nextLabel:"Equipment ›"});
+  $("#invAcBack").addEventListener("click",()=>{inv.stage="spot";renderInventory();});
+  $("#invAcNext").addEventListener("click",()=>{if(inv.ac&&inv.ac.ship&&inv.ac.reg)rememberAircraft(inv.ac.ship,inv.ac.reg,inv.ac.type);inv.stage="select";renderInventory();});
+  setWizFoot(null);
 }
 function renderInvSelect(r){
   invSel=new Set(data.equipment.filter(e=>e.location===inv.spot).map(e=>e.id));
