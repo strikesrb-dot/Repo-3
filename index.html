@@ -854,18 +854,17 @@ function renderInvSelect(r){
     <div id="invList" style="margin-top:10px;display:flex;flex-direction:column;gap:12px"></div>`;
   function paint(){
     const q=$("#invSearch").value.trim().toLowerCase();
-    let items=data.equipment.slice();
+    // hide units already counted at another location THIS session (covered); at base everything shows
+    let items=data.equipment.filter(e=>!(e.location&&e.location!==inv.loc&&inv.covered.includes(e.location)));
     if(q)items=items.filter(e=>[e.tag,e.type,e.location].some(v=>(v||"").toLowerCase().includes(q)));
     const groups=groupByType(items).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"",undefined,{numeric:true,sensitivity:"base"}));
     $("#invList").innerHTML=groups.length?groups.map(g=>{
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
       return `<div class="card catblock"><div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
-        `<div class="pillgrid">`+its.map(e=>{const locked=e.location&&e.location!==inv.loc;
-          if(locked)return `<button class="selpill locked" disabled><span class="selc"></span>${esc(e.tag)}<span class="pillspot">@ ${esc(e.location)}</span></button>`;
-          const oos=invOos.has(e.id),on=invSel.has(e.id),det=invDetail(invSpot.get(e.id),invNose.get(e.id));
+        `<div class="pillgrid">`+its.map(e=>{const oos=invOos.has(e.id),on=invSel.has(e.id),det=invDetail(invSpot.get(e.id),invNose.get(e.id));
           return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${det?`<span class="pillspot">${esc(det)}</span>`:""}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div></div>`;
-    }).join(""):`<p class="hint" style="padding:10px 12px">No equipment yet. Add some on the Equipment List.</p>`;
+    }).join(""):`<p class="hint" style="padding:10px 12px">Nothing left to count here — all units are accounted for at other locations.</p>`;
     $("#wizNext").textContent=`✓ Save ${invSel.size} ›`;
   }
   $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
