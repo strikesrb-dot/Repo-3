@@ -92,7 +92,22 @@
   .selpill .selc{width:18px;height:18px;border-radius:50%;border:2px solid #c2ccd4;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:0 0 auto}
   .selpill.on{background:var(--good-bg);border-color:var(--good);color:#15622f}
   .selpill.on .selc{background:var(--good);border-color:var(--good)}
+  .selpill.oos{background:#fdecec;border-color:#d9342b;color:#b3251d}
+  .selpill.oos .selc{background:#d9342b;border-color:#d9342b}
+  .selpill .oostag{font-size:9px;font-weight:800;letter-spacing:.04em;color:#fff;background:#d9342b;border-radius:6px;padding:2px 5px;margin-left:1px}
   .selpill.away{border-style:dashed}
+  /* tiny tap menu when picking equipment in inventory */
+  .invpop-back{position:fixed;inset:0;z-index:300}
+  .invpop{position:fixed;z-index:301;background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 10px 30px rgba(10,25,45,.22);padding:7px;display:flex;flex-direction:column;gap:5px;min-width:178px}
+  .invpop .pophead{font-size:12px;font-weight:800;color:var(--muted);padding:3px 8px 1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+  .invpop button{border:none;border-radius:9px;padding:11px 13px;font-size:14.5px;font-weight:700;text-align:left;cursor:pointer;color:var(--ink);background:#f1f4f7}
+  .invpop button.confirmbtn{background:var(--good-bg);color:#15622f}
+  .invpop button.oosbtn{background:#fdecec;color:#c0271e}
+  .invpop button.rmbtn{background:#f1f4f7;color:#5a6772}
+  /* out-of-service marker on inventory sheets / equipment list */
+  .oos-mark{color:#d9342b;font-weight:800;font-size:11px;letter-spacing:.03em;margin-left:6px;white-space:nowrap}
+  .li-pill.oos,.ck-row.oos .ck-tag{color:#c0271e}
+  .li-pill.oos{border-color:#e7a39d;background:#fdf2f1}
   .cathdr{background:#eaf0f5;color:var(--navy);font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.5px;padding:9px 12px;border-bottom:1px solid var(--line)}
   .cathdr .catn{float:right;color:var(--good);font-weight:700;font-size:12px;text-transform:none;letter-spacing:0}
   table.audit tr.cat td{background:#dfe7ee;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--navy);font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -590,7 +605,7 @@ function renderList(){
   list.innerHTML=items.map(e=>{
     const loc=e.location?`<span class="loc"> ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
     return `<li class="item card" data-id="${e.id}"><div class="main">
-      <div class="tag">${esc(e.tag||"(no tag)")}</div><div class="meta">${esc(e.type||"")}</div>
+      <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}</div>
       ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
       <div class="acts"><button class="iconbtn act-move" title="Move">⇄</button>
       <button class="iconbtn act-edit" title="Edit">✎</button><button class="iconbtn act-del" title="Delete">✕</button></div></li>`;
@@ -678,7 +693,7 @@ function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
 /* ===================== INVENTORY (location -> equipment) ===================== */
 const EQUIP_LOCS_DEFAULT=["South","C4","Ballpark","WestPark"];
 function equipLocs(){return (data.equipLocs&&data.equipLocs.length)?data.equipLocs:EQUIP_LOCS_DEFAULT;}
-let inv={stage:"loc",loc:null,covered:[]},invSel=new Set();
+let inv={stage:"loc",loc:null,covered:[]},invSel=new Set(),invOos=new Set();
 function setWizFoot(cfg){const f=$("#wizFoot");
   if(!cfg){f.hidden=true;$("#invRoot").style.paddingBottom="";updateFloatBack();return;}
   f.hidden=false;const nb=$("#wizNext"),bb=$("#wizBack");
@@ -714,11 +729,11 @@ function renderInvLoc(r){
   setWizFoot(null);
 }
 function renderInvSelect(r){
-  invSel=new Set(); // start fresh — no auto-highlight
+  invSel=new Set();invOos=new Set(); // start fresh — no auto-highlight
   r.innerHTML=`<div class="card pad" style="padding-bottom:6px">
     <div class="crumbs">Inventory</div>
     <h3 style="margin:2px 0 2px">Equipment at ${esc(inv.loc)}</h3>
-    <p class="hint" style="margin-top:2px">Tap each unit that's physically here.</p>
+    <p class="hint" style="margin-top:2px">Tap a unit, then confirm it's here or mark it out of service.</p>
     <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:8px 0" /></div>
     <div id="invList" style="margin-top:10px;display:flex;flex-direction:column;gap:12px"></div>`;
   function paint(){
@@ -730,20 +745,44 @@ function renderInvSelect(r){
       const sel=g.items.filter(e=>invSel.has(e.id)).length;
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
       return `<div class="card catblock"><div class="cathdr">${esc(g.type)}<span class="catn">${sel?sel+" ✓":""}</span></div>`+
-        `<div class="pillgrid">`+its.map(e=>{const on=invSel.has(e.id);
-          return `<button class="selpill ${on?'on':''}" data-id="${e.id}"><span class="selc">${on?'✓':''}</span>${esc(e.tag)}</button>`;}).join("")+`</div></div>`;
+        `<div class="pillgrid">`+its.map(e=>{const oos=invOos.has(e.id),on=invSel.has(e.id);
+          return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div></div>`;
     }).join(""):`<p class="hint" style="padding:10px 12px">No equipment yet. Add some on the Equipment List.</p>`;
     $("#wizNext").textContent=`✓ Save ${invSel.size} ›`;
   }
   $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
-    const id=li.dataset.id;if(invSel.has(id))invSel.delete(id);else invSel.add(id);paint();});
-  $("#invSearch").addEventListener("input",paint);
-  setWizFoot({back:()=>{inv.stage="loc";renderInventory();},next:commitInv,nextOn:true,nextLabel:"✓ Save ›"});
+    openInvPop(li,li.dataset.id,paint);});
+  $("#invSearch").addEventListener("input",()=>{closeInvPop();paint();});
+  setWizFoot({back:()=>{closeInvPop();inv.stage="loc";renderInventory();},next:commitInv,nextOn:true,nextLabel:"✓ Save ›"});
   paint();
+}
+function closeInvPop(){$$(".invpop,.invpop-back").forEach(n=>n.remove());}
+function openInvPop(pill,id,after){
+  closeInvPop();
+  const e=data.equipment.find(x=>x.id===id);if(!e)return;
+  const on=invSel.has(id),oos=invOos.has(id);
+  const back=document.createElement("div");back.className="invpop-back";back.addEventListener("click",closeInvPop);
+  const pop=document.createElement("div");pop.className="invpop";
+  pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")}</div>
+    <button class="confirmbtn" data-a="ok">${on&&!oos?"✓ Here (confirmed)":"Confirm — it's here"}</button>
+    <button class="oosbtn" data-a="oos">⊘ Out of service</button>
+    ${on||oos?`<button class="rmbtn" data-a="rm">Remove</button>`:""}`;
+  document.body.appendChild(back);document.body.appendChild(pop);
+  // position under the pill, clamped to viewport
+  const rc=pill.getBoundingClientRect(),pw=Math.max(pop.offsetWidth,178),vw=window.innerWidth;
+  let left=rc.left;if(left+pw>vw-8)left=vw-8-pw;if(left<8)left=8;
+  let top=rc.bottom+6;if(top+pop.offsetHeight>window.innerHeight-8)top=Math.max(8,rc.top-pop.offsetHeight-6);
+  pop.style.left=left+"px";pop.style.top=top+"px";
+  pop.addEventListener("click",ev=>{const b=ev.target.closest("button[data-a]");if(!b)return;
+    const a=b.dataset.a;
+    if(a==="ok"){invSel.add(id);invOos.delete(id);}
+    else if(a==="oos"){invSel.add(id);invOos.add(id);}
+    else{invSel.delete(id);invOos.delete(id);}
+    closeInvPop();after&&after();});
 }
 function commitInv(){
   const loc=inv.loc,n=invSel.size;
-  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=loc;e.updated=todayISO();}else if(e.location===loc){e.location="";e.updated=todayISO();}});
+  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=loc;e.oos=invOos.has(e.id);e.updated=todayISO();}else if(e.location===loc){e.location="";e.oos=false;e.updated=todayISO();}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
   inv.loc=null;inv.stage="loc";renderInventory();
@@ -759,8 +798,8 @@ function buildInvSheet(locs,mode){mode=mode||invSheetMode;
     const items=data.equipment.filter(e=>e.location===loc);total+=items.length;
     const body=groupByType(items).map(g=>{const its=sortTags(g.items);
       const list=mode==="checklist"
-        ? `<div class="ck-list">`+its.map(e=>`<div class="ck-row"><span class="ck-box"></span><span class="ck-tag">${esc(e.tag)}</span></div>`).join("")+`</div>`
-        : `<div class="li-tags">`+its.map(e=>`<span class="li-pill">${esc(e.tag)}</span>`).join("")+`</div>`;
+        ? `<div class="ck-list">`+its.map(e=>`<div class="ck-row ${e.oos?'oos':''}"><span class="ck-box"></span><span class="ck-tag">${esc(e.tag)}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</span></div>`).join("")+`</div>`
+        : `<div class="li-tags">`+its.map(e=>`<span class="li-pill ${e.oos?'oos':''}">${esc(e.tag)}${e.oos?`<span class="oos-mark">⊘ OOS</span>`:""}</span>`).join("")+`</div>`;
       return `<div class="cat-h"><span>${esc(g.type)}</span><span class="cat-n">${g.items.length}</span></div>${list}`;
     }).join("");
     return `<div class="sh-loc"><div class="sh-loc-h"><span>${esc(loc)}</span><span class="sh-loc-n">${items.length}</span></div>${body}</div>`;
@@ -793,7 +832,7 @@ function downloadInvText(locs){
   const lines=["EQUIPMENT INVENTORY — "+fmtDate(todayISO()),"========================================",""];
   locs.forEach(loc=>{lines.push(loc.toUpperCase()+" ("+data.equipment.filter(e=>e.location===loc).length+")");
     groupByType(data.equipment.filter(e=>e.location===loc)).forEach(g=>{lines.push("  "+g.type+":");
-      sortTags(g.items).forEach(e=>lines.push("    "+pre+e.tag));});
+      sortTags(g.items).forEach(e=>lines.push("    "+pre+e.tag+(e.oos?"  ** OUT OF SERVICE **":"")));});
     lines.push("");});
   const blob=new Blob([lines.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-inventory-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
@@ -810,9 +849,9 @@ function downloadInvImage(locs){
     for(const g of groupByType(items)){
       ops.push({k:'cat',x:pad,y,w:cw,h:34,name:g.type,n:g.items.length});y+=34+8;
       const its=sortTags(g.items);
-      if(ck){its.forEach((e,idx)=>{ops.push({k:'ck',x:pad+14,y,tag:e.tag,line:y+22,lx0:pad+14,lx1:pad+cw-14,last:idx===its.length-1});y+=44;});y+=4;}
+      if(ck){its.forEach((e,idx)=>{ops.push({k:'ck',x:pad+14,y,tag:e.tag,oos:!!e.oos,line:y+22,lx0:pad+14,lx1:pad+cw-14,last:idx===its.length-1});y+=44;});y+=4;}
       else{const cols=3,gap=10,pw=(cw-28-gap*(cols-1))/cols,ph=42,sx=pad+14;
-        its.forEach((e,idx)=>{const col=idx%cols;if(col===0&&idx>0)y+=ph+gap;ops.push({k:'pill',x:sx+col*(pw+gap),y,w:pw,h:ph,tag:e.tag});});
+        its.forEach((e,idx)=>{const col=idx%cols;if(col===0&&idx>0)y+=ph+gap;ops.push({k:'pill',x:sx+col*(pw+gap),y,w:pw,h:ph,tag:e.tag,oos:!!e.oos});});
         y+=ph+12;}
     }
     y+=14;
@@ -830,10 +869,10 @@ function downloadInvImage(locs){
     else if(o.k==='cat'){ctx.fillStyle='#eef2f5';ctx.fillRect(o.x,o.y,o.w,o.h);
       ctx.fillStyle='#33414f';ctx.font='bold 13px -apple-system,Arial,sans-serif';ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(o.name.toUpperCase(),o.x+16,o.y+o.h/2+1);
       ctx.fillStyle='#67727e';ctx.textAlign='right';ctx.fillText(String(o.n),o.x+o.w-16,o.y+o.h/2+1);}
-    else if(o.k==='pill'){ctx.fillStyle='#fafbfc';ctx.strokeStyle='#dce1e6';ctx.lineWidth=1.5;rr(o.x,o.y,o.w,o.h,9);ctx.fill();ctx.stroke();
-      ctx.fillStyle='#1c2530';ctx.font='bold 17px -apple-system,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.tag,o.x+o.w/2,o.y+o.h/2+1);}
-    else if(o.k==='ck'){ctx.strokeStyle='#9aa7b2';ctx.lineWidth=2;rr(o.x,o.y,22,22,5);ctx.stroke();
-      ctx.fillStyle='#1c2530';ctx.font='600 18px -apple-system,Arial,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(o.tag,o.x+38,o.y+12);
+    else if(o.k==='pill'){ctx.fillStyle=o.oos?'#fdecec':'#fafbfc';ctx.strokeStyle=o.oos?'#d9342b':'#dce1e6';ctx.lineWidth=1.5;rr(o.x,o.y,o.w,o.h,9);ctx.fill();ctx.stroke();
+      ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font='bold 17px -apple-system,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'  ⊘OOS':''),o.x+o.w/2,o.y+o.h/2+1);}
+    else if(o.k==='ck'){ctx.strokeStyle=o.oos?'#d9342b':'#9aa7b2';ctx.lineWidth=2;rr(o.x,o.y,22,22,5);ctx.stroke();
+      ctx.fillStyle=o.oos?'#b3251d':'#1c2530';ctx.font='600 18px -apple-system,Arial,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(o.tag+(o.oos?'   ⊘ OUT OF SERVICE':''),o.x+38,o.y+12);
       if(!o.last){ctx.strokeStyle='#e7ebef';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(o.lx0,o.line);ctx.lineTo(o.lx1,o.line);ctx.stroke();ctx.setLineDash([]);}}
   }
   c.toBlob(b=>{const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='equipment-inventory-'+todayISO()+'.png';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast('Image downloaded');},'image/png');
