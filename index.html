@@ -374,9 +374,9 @@ function rememberAircraft(ship,reg,type){ship=String(ship).trim();reg=(reg||"").
   const ex=byShip.get(ship);if(ex){ex.reg=reg||ex.reg;ex.type=type||ex.type;}else FLEET.push({ship,reg,type:type||""});indexFleet();saveFleetCache();}
 function updateFleetStatus(){const el=$("#fleetStatus");if(el)el.textContent=`${FLEET.length.toLocaleString()} aircraft loaded (ship # → tail # + type).`;}
 function acCard(a){return `<li class="item card"><div class="main">
-  <div class="tag">✈️ ${esc(a.reg||"(no tail)")}</div>
+  <div class="tag">✈️ Nose ${esc(a.ship)}</div>
   <div class="meta">${esc(a.type||"Unknown type")}</div>
-  <div style="margin-top:6px"><span class="loc">Ship ${esc(a.ship)}</span></div></div></li>`;}
+  <div style="margin-top:6px"><span class="loc">${esc(a.reg||"(no tail)")}</span></div></div></li>`;}
 function renderAircraftLookup(){
   const el=$("#acFleetN");if(el)el.textContent=`${FLEET.length.toLocaleString()} United aircraft loaded · works offline`;
   const q=($("#acSearch").value||"").trim().toUpperCase();
@@ -585,7 +585,7 @@ function renderInvAircraft(r){
   function refreshAc(){const s=shipIn.value.trim(),box=$("#invAcInfo");
     if(!s){box.innerHTML="";inv.ac=null;return;}
     const hit=lookupShip(s);
-    if(hit){inv.ac={ship:s,reg:hit.reg,type:hit.type};box.innerHTML=`<div class="ac-ok">✓ ${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
+    if(hit){inv.ac={ship:s,reg:hit.reg,type:hit.type};box.innerHTML=`<div class="ac-ok">✓ Nose ${esc(s)} · ${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
     else{inv.ac={ship:s,reg:(cur&&cur.ship===s?cur.reg:""),type:(cur&&cur.ship===s?cur.type:"")};
       box.innerHTML=`<div class="ac-no"><div style="font-size:13px;color:#8a5b00;font-weight:600;margin-bottom:6px">Ship ${esc(s)} isn't in the fleet list — enter it (it'll be remembered):</div>
         <div class="row2"><div><label style="margin-top:0">Tail #</label><input id="mReg" placeholder="N12345" autocapitalize="characters" value="${esc(inv.ac.reg)}"></div>
@@ -601,7 +601,7 @@ function renderInvAircraft(r){
 }
 function renderInvSelect(r){
   invSel=new Set(data.equipment.filter(e=>e.location===inv.spot).map(e=>e.id));
-  const acLine=inv.ac?`<span class="pill ac">✈ ${esc(inv.ac.ship)} · ${esc(inv.ac.reg||"")} ${esc(inv.ac.type||"")}</span>`:"";
+  const acLine=inv.ac?`<span class="pill ac">✈ Nose ${esc(inv.ac.ship)}${inv.ac.reg?` · ${esc(inv.ac.reg)}`:""}</span>`:"";
   r.innerHTML=`<div class="card pad" style="padding-bottom:6px">
     ${wizHeader()}
     <div class="crumbs">${esc(inv.area)} › ${esc(inv.spot)}</div>
@@ -686,7 +686,7 @@ function buildSheetHTML(spotNames,title){
     const items=data.equipment.filter(e=>(e.location||"")===name);
     total+=items.length;
     const lo=locObj(name),ac=data.spotAircraft[name];
-    const acLine=(lo&&lo.holdsAircraft)?`<span class="sa">${ac?`✈ Ship ${esc(ac.ship)} · ${esc(ac.reg||"")} · ${esc(ac.type||"")}`:"✈ No aircraft"}</span>`:"";
+    const acLine=(lo&&lo.holdsAircraft)?`<span class="sa">${ac?`✈ Nose ${esc(ac.ship)} · ${esc(ac.reg||"")} · ${esc(ac.type||"")}`:"✈ No aircraft"}</span>`:"";
     let body="";
     if(!items.length){body=`<table class="audit"><tbody><tr><td style="text-align:center;color:#888;padding:12px">No equipment recorded.</td></tr></tbody></table>`;}
     else{const rows=groupByType(items).map(g=>
