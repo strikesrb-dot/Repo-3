@@ -177,6 +177,18 @@
       <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
     </div>
 
+    <h2 class="section">Master list (shared on the page)</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">When your list is ready, make it the <b>global master list</b> everyone sees on the page:
+      tap <b>Export master file</b> below, then add that <code>equipment.json</code> to the repo.
+      After that, every phone that opens the page loads the master list automatically.</p>
+      <div class="btnrow">
+        <button class="btn ghost" id="exportMaster">⬇️ Export master file</button>
+        <button class="btn ghost" id="syncMaster">↻ Load master list</button>
+      </div>
+      <p class="hint" id="masterStatus"></p>
+    </div>
+
     <h2 class="section">Danger zone</h2>
     <div class="card pad">
       <button class="btn danger" id="clearBtn">Delete all data</button>
@@ -492,14 +504,15 @@ $("#addTypeBtn").addEventListener("click", ()=>{
 $("#newType").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#addTypeBtn").click(); });
 
 /* ---------- Backup / restore ---------- */
-$("#exportBtn").addEventListener("click", ()=>{
+function downloadJSON(filename, msg){
   const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = `equipment-backup-${todayISO()}.json`;
+  a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  toast("Backup downloaded");
-});
+  toast(msg);
+}
+$("#exportBtn").addEventListener("click", ()=> downloadJSON(`equipment-backup-${todayISO()}.json`, "Backup downloaded"));
 $("#importBtn").addEventListener("click", ()=>$("#importFile").click());
 $("#importFile").addEventListener("change", e=>{
   const file = e.target.files[0]; if(!file) return;
@@ -520,8 +533,87 @@ $("#clearBtn").addEventListener("click", ()=>{
   if(!confirm("Delete ALL equipment and reset types? This cannot be undone.")) return;
   if(!confirm("Really delete everything?")) return;
   data = { equipment:[], types: DEFAULT_TYPES.slice() };
+  localStorage.setItem(SEEN_KEY,"1"); // don't auto-reload the master after an intentional wipe
   save(); refreshAll(); renderTypes(); toast("All data cleared");
 });
+
+/* ---------- Master list (shared on the page) ----------
+   The master list is a committed `equipment.json` at the site root.
+   - First-ever visit with no local data: auto-load it as the baseline.
+   - "Load master list" button: pull it on demand and merge or replace.
+   - "Export master file": save current data AS equipment.json to commit. */
+const MASTER_URL = "equipment.json";
+const SEEN_KEY = "elt.seenMaster.v1";
+
+async function fetchMaster(){
+  try{
+    const res = await fetch(MASTER_URL + "?t=" + todayISO(), {cache:"no-store"});
+    if(!res.ok) return null;
+    const d = await res.json();
+    if(!d || !Array.isArray(d.equipment)) return null;
+    return d;
+  }catch(e){ return null; }
+}
+function normalize(items){
+  // re-id incoming items and keep only known fields
+  return items.map(e=>({
+    id: uid(), tag:(e.tag||"").toString(), type:(e.type||"").toString(),
+    location:(e.location||"").toString(), notes:(e.notes||"").toString(),
+    updated: e.updated || todayISO()
+  }));
+}
+function mergeMaster(master){
+  // add items whose tag isn't already on this device; local edits always win
+  const have = new Set(data.equipment.map(e=>(e.tag||"").trim().toLowerCase()));
+  const fresh = normalize(master.equipment).filter(e=> e.tag && !have.has(e.tag.trim().toLowerCase()));
+  data.equipment.push(...fresh);
+  if(Array.isArray(master.types)) for(const t of master.types)
+    if(!data.types.some(x=>x.toLowerCase()===t.toLowerCase())) data.types.push(t);
+  return fresh.length;
+}
+
+$("#exportMaster").addEventListener("click", ()=>{
+  if(!data.equipment.length){ toast("Add some equipment first"); return; }
+  downloadJSON("equipment.json", "Saved equipment.json — commit it to the repo");
+});
+
+$("#syncMaster").addEventListener("click", async ()=>{
+  $("#masterStatus").textContent = "Checking the page for a master list…";
+  const master = await fetchMaster();
+  if(!master){ $("#masterStatus").textContent = "No master list found on the page yet. Use “Export master file”, add it to the repo, then it’ll load here."; return; }
+  const n = master.equipment.length;
+  if(!data.equipment.length){
+    data.equipment = normalize(master.equipment);
+    if(Array.isArray(master.types)&&master.types.length) data.types = master.types.slice();
+    localStorage.setItem(SEEN_KEY,"1"); save(); refreshAll(); renderTypes();
+    $("#masterStatus").textContent = `Loaded ${n} item${n===1?"":"s"} from the master list.`;
+    return;
+  }
+  const merge = confirm(`The master list has ${n} item(s).\n\nOK = merge new items into your current list (your edits are kept).\nCancel = choose to replace everything instead.`);
+  if(merge){
+    const added = mergeMaster(master);
+    localStorage.setItem(SEEN_KEY,"1"); save(); refreshAll(); renderTypes();
+    $("#masterStatus").textContent = added ? `Merged in ${added} new item${added===1?"":"s"}.` : "Already up to date — nothing new to add.";
+  } else if(confirm(`Replace ALL your current data with the ${n}-item master list?`)){
+    data.equipment = normalize(master.equipment);
+    if(Array.isArray(master.types)&&master.types.length) data.types = master.types.slice();
+    localStorage.setItem(SEEN_KEY,"1"); save(); refreshAll(); renderTypes();
+    $("#masterStatus").textContent = `Replaced with ${n} item${n===1?"":"s"} from the master list.`;
+  }
+});
+
+async function autoLoadMaster(){
+  // only on a fresh device that has never loaded data or the master
+  if(data.equipment.length || localStorage.getItem(SEEN_KEY)) return;
+  const master = await fetchMaster();
+  localStorage.setItem(SEEN_KEY,"1");
+  if(master && master.equipment.length){
+    data.equipment = normalize(master.equipment);
+    if(Array.isArray(master.types)&&master.types.length) data.types = master.types.slice();
+    save(); refreshAll();
+    toast(`Loaded ${master.equipment.length} items from master list`);
+  }
+}
 
 /* ---------- Refresh orchestration ---------- */
 function refreshAll(){ renderList(); refreshLocationFilter(); refreshAudit(); updateHdr(); }
@@ -533,6 +625,7 @@ function updateHdr(){
 
 /* ---------- Init ---------- */
 refreshAll();
+autoLoadMaster();
 </script>
 </body>
 </html>
