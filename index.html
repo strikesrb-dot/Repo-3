@@ -13,47 +13,33 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg); color:var(--ink); font-size:16px; line-height:1.4;
-    padding-bottom:84px; /* room for bottom nav */
-  }
-  /* ---------- Header ---------- */
-  header{
-    position:sticky; top:0; z-index:20; background:var(--navy); color:#fff;
-    padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
-    box-shadow:var(--shadow);
-  }
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:16px; line-height:1.4; padding-bottom:84px;}
+  header{position:sticky; top:0; z-index:20; background:var(--navy); color:#fff;
+    padding:calc(env(safe-area-inset-top) + 12px) 16px 12px; box-shadow:var(--shadow);}
   header h1{margin:0; font-size:18px; letter-spacing:.3px; display:flex; align-items:center; gap:8px}
   header .sub{margin:2px 0 0; font-size:12px; color:#bcd3e6}
-  /* ---------- Layout ---------- */
   main{max-width:760px; margin:0 auto; padding:14px}
   .view{display:none}
   .view.active{display:block}
   h2.section{font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:18px 4px 8px}
-  /* ---------- Cards ---------- */
   .card{background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow)}
   .card.pad{padding:14px}
-  /* ---------- Forms ---------- */
   label{display:block; font-size:13px; font-weight:600; color:var(--muted); margin:10px 0 4px}
-  input,select,textarea{
-    width:100%; font-size:16px; padding:12px; border:1px solid var(--line); border-radius:10px;
-    background:#fff; color:var(--ink); font-family:inherit;
-  }
+  input,select,textarea{width:100%; font-size:16px; padding:12px; border:1px solid var(--line); border-radius:10px;
+    background:#fff; color:var(--ink); font-family:inherit;}
   input:focus,select:focus,textarea:focus{outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(11,61,99,.12)}
   textarea{min-height:64px; resize:vertical}
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-  /* ---------- Buttons ---------- */
   button{font-family:inherit; cursor:pointer; border:none; border-radius:10px; font-size:16px; font-weight:600}
   .btn{padding:13px 16px; width:100%; background:var(--accent); color:#3a2600}
   .btn:active{background:var(--accent-d)}
-  .btn.navy{background:var(--navy); color:#fff}
-  .btn.navy:active{background:var(--navy-d)}
+  .btn.navy{background:var(--navy); color:#fff}.btn.navy:active{background:var(--navy-d)}
   .btn.ghost{background:#fff; color:var(--navy); border:1px solid var(--line)}
   .btn.sm{width:auto; padding:9px 13px; font-size:14px}
   .btn.danger{background:#fff; color:var(--danger); border:1px solid #eccfcb}
+  .btn[disabled]{opacity:.5}
   .btnrow{display:flex; gap:10px; margin-top:12px}
-  /* ---------- Equipment list ---------- */
   .toolbar{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap}
   .toolbar input,.toolbar select{flex:1; min-width:120px}
   .count{font-size:13px; color:var(--muted); margin:0 4px 8px}
@@ -63,24 +49,32 @@
   .item .tag{font-weight:700; font-size:16px; letter-spacing:.2px}
   .item .meta{font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .item .notes{font-size:13px; color:var(--muted); margin-top:2px}
-  .loc{display:inline-block; background:#eaf1f7; color:var(--navy); font-size:12px; font-weight:700;
-       padding:4px 9px; border-radius:999px; white-space:nowrap}
+  .loc{display:inline-block; background:#eaf1f7; color:var(--navy); font-size:12px; font-weight:700; padding:4px 9px; border-radius:999px; white-space:nowrap}
   .loc.none{background:#f7eaea; color:var(--danger)}
   .item .acts{display:flex; gap:6px}
   .iconbtn{background:#f1f4f7; border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:15px; color:var(--ink)}
   .iconbtn:active{background:#e4e9ee}
   .empty{text-align:center; color:var(--muted); padding:40px 16px}
   .empty .big{font-size:40px}
-  /* ---------- Bottom nav ---------- */
-  nav.tabbar{
-    position:fixed; left:0; right:0; bottom:0; z-index:30; background:#fff; border-top:1px solid var(--line);
-    display:flex; padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);
-  }
+  /* condensed multi-select rows for inventory */
+  ul.crows{list-style:none;margin:0;padding:0}
+  .crow{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .crow:active{background:#f0f4f7}
+  .crow.on{background:#eaf4ec}
+  .crow .box{width:22px;height:22px;border:2px solid #b8c2cc;border-radius:6px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff}
+  .crow.on .box{background:var(--good);border-color:var(--good)}
+  .crow .ctag{font-weight:700;font-size:15px}
+  .crow .ctype{font-size:12px;color:var(--muted)}
+  .crow .cloc{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+  .pill.staging{background:#eef2f5;color:#3a4855}
+  .pill.spot{background:#fff3e0;color:#9a5b00}
+  nav.tabbar{position:fixed; left:0; right:0; bottom:0; z-index:30; background:#fff; border-top:1px solid var(--line);
+    display:flex; padding:6px 4px calc(env(safe-area-inset-bottom) + 6px);}
   nav.tabbar button{flex:1; background:none; color:var(--muted); font-size:11px; font-weight:600;
     padding:8px 2px; display:flex; flex-direction:column; align-items:center; gap:3px; border-radius:10px}
   nav.tabbar button .ic{font-size:20px}
   nav.tabbar button.active{color:var(--navy)}
-  /* ---------- Modal ---------- */
   .overlay{position:fixed; inset:0; background:rgba(10,20,30,.5); z-index:50; display:none; align-items:flex-end; justify-content:center}
   .overlay.open{display:flex}
   .sheet{background:#fff; width:100%; max-width:760px; border-radius:18px 18px 0 0; padding:16px 16px calc(env(safe-area-inset-bottom) + 16px); max-height:92vh; overflow:auto}
@@ -89,32 +83,39 @@
   .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px}
   .chip{background:#eef2f5; border:1px solid var(--line); padding:7px 11px; border-radius:999px; font-size:14px; font-weight:600}
   .chip:active{background:#e2e8ec}
+  .chip.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
   .manage-row{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line)}
   .manage-row span{flex:1}
   .hint{font-size:12px; color:var(--muted); margin-top:6px}
-  /* ---------- Audit sheet (screen) ---------- */
-  #auditPreview{margin-top:14px}
+  .ac-ok{background:var(--good-bg);border:1px solid #bfe0cb;color:#15622f;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-top:8px}
+  .ac-no{background:#fff7e8;border:1px solid #f0d9a8;border-radius:10px;padding:10px 12px;margin-top:8px}
+  .step{font-size:12px;font-weight:700;color:var(--accent-d);letter-spacing:.5px;text-transform:uppercase}
+  .doneareas{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .doneareas .da{background:var(--good-bg);color:#15622f;border:1px solid #bfe0cb;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}
   table.audit{width:100%; border-collapse:collapse; font-size:14px}
   table.audit th,table.audit td{border:1px solid #c7ced4; padding:8px 9px; text-align:left; vertical-align:top}
   table.audit th{background:#eef2f5; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#3a4855}
   table.audit td.num{width:34px; text-align:center; color:var(--muted)}
   table.audit td.chk{width:46px; text-align:center; font-size:18px}
-  .sheet-head{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom:10px}
+  .area-block{margin:0 0 18px}
+  .area-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;border-bottom:2px solid var(--navy);padding-bottom:4px;margin-bottom:8px}
+  .area-h .an{font-size:18px;font-weight:800;color:var(--navy)}
+  .area-h .ac{font-size:13px;color:#333}
+  .sheet-head{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px; margin-bottom:14px}
   .sheet-head .title{font-size:20px; font-weight:800}
   .sheet-head .info{font-size:13px; color:var(--muted); text-align:right}
   .toast{position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
-    padding:11px 18px; border-radius:999px; font-size:14px; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none}
+    padding:11px 18px; border-radius:999px; font-size:14px; z-index:80; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90%; text-align:center}
   .toast.show{opacity:1}
-  /* ---------- Print ---------- */
   @media print{
     body{background:#fff; padding:0}
-    header,nav.tabbar,.tabbar,#screenChrome,.no-print{display:none !important}
+    header,nav.tabbar,#screenChrome,.no-print{display:none !important}
     main{max-width:none; padding:0}
     .view{display:none !important}
     #printArea{display:block !important; padding:24px}
     table.audit{font-size:12px}
     table.audit th{background:#eee !important; -webkit-print-color-adjust:exact; print-color-adjust:exact}
-    .sheet-head .title{font-size:22px}
+    .area-block{page-break-inside:avoid}
     @page{margin:14mm}
   }
   #printArea{display:none}
@@ -128,8 +129,11 @@
 </header>
 
 <main>
-  <!-- ===================== EQUIPMENT VIEW ===================== -->
+  <!-- ===================== EQUIPMENT ===================== -->
   <section id="view-equipment" class="view active">
+    <div class="btnrow" style="margin-top:0;margin-bottom:12px">
+      <button class="btn navy" id="addBtn">➕ Add equipment</button>
+    </div>
     <div class="toolbar">
       <input id="search" type="search" placeholder="Search tag, type, location…" autocomplete="off" />
       <select id="filterLoc"><option value="">All locations</option></select>
@@ -138,26 +142,43 @@
     <ul class="list" id="eqList"></ul>
   </section>
 
-  <!-- ===================== AUDIT VIEW ===================== -->
+  <!-- ===================== INVENTORY (guided) ===================== -->
+  <section id="view-inventory" class="view">
+    <div id="invRoot"></div>
+  </section>
+
+  <!-- ===================== AUDIT (quick single area) ===================== -->
   <section id="view-audit" class="view">
     <div id="screenChrome">
       <div class="card pad">
-        <label for="auditLoc">Audit location</label>
-        <select id="auditLoc"><option value="__all__">— All equipment —</option></select>
+        <p class="hint" style="margin-top:0">Quick sheet for one area. For a full walk-through of several areas, use the <b>Inventory</b> tab.</p>
+        <label for="auditLoc">Area</label>
+        <select id="auditLoc"></select>
         <div class="row2">
           <div><label for="auditBy">Audited by</label><input id="auditBy" placeholder="Your name" /></div>
           <div><label for="auditDate">Date</label><input id="auditDate" type="date" /></div>
         </div>
-        <div class="btnrow">
-          <button class="btn navy" id="genAudit">Generate sheet</button>
-        </div>
+        <div class="btnrow"><button class="btn navy" id="genAudit">Generate sheet</button></div>
       </div>
       <div id="auditPreview"></div>
     </div>
   </section>
 
-  <!-- ===================== SETTINGS VIEW ===================== -->
+  <!-- ===================== SETTINGS ===================== -->
   <section id="view-settings" class="view">
+    <h2 class="section">Locations / areas</h2>
+    <div class="card pad">
+      <div id="locManage"></div>
+      <label for="newLoc">Add a location</label>
+      <input id="newLoc" placeholder="e.g. Amelia, Staging Area, C4" />
+      <div class="chips" style="margin-top:8px">
+        <button type="button" class="chip sel" id="kStaging" data-kind="staging">Staging area (equipment only)</button>
+        <button type="button" class="chip" id="kSpot" data-kind="spot">Spot (needs aircraft #)</button>
+      </div>
+      <p class="hint">Staging areas just hold equipment. Spots (Amelia, Lindy, Ballpark…) record the aircraft parked there too.</p>
+      <button class="btn sm navy" id="addLocBtn" style="width:100%;margin-top:8px">Add location</button>
+    </div>
+
     <h2 class="section">Equipment types</h2>
     <div class="card pad">
       <div id="typeManage"></div>
@@ -167,31 +188,36 @@
       </div>
     </div>
 
-    <h2 class="section">Backup &amp; restore</h2>
+    <h2 class="section">Aircraft fleet</h2>
     <div class="card pad">
-      <p class="hint" style="margin-top:0">Your data lives only on this device's browser. Export a backup file to keep it safe or move it to another phone/computer.</p>
+      <p class="hint" id="fleetStatus" style="margin-top:0"></p>
       <div class="btnrow">
-        <button class="btn ghost" id="exportBtn">⬇️ Export backup</button>
-        <button class="btn ghost" id="importBtn">⬆️ Import backup</button>
+        <button class="btn ghost" id="reloadFleet">↻ Reload fleet</button>
+        <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1ZlYgN_IZmd6CSx_nXnuP0L0PiodapDRx3RmNkIpxXAo/htmlview" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;line-height:1.2">🔎 Look up a ship #</a>
+      </div>
+      <p class="hint">Type a ship number anywhere and the tail # + aircraft type fill in automatically. Unknown ones you enter are remembered.</p>
+    </div>
+
+    <h2 class="section">Output &amp; backup</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Export everything (equipment, locations, types, aircraft at spots) as one file — send it to update the shared page, back it up, or load it on another phone.</p>
+      <div class="btnrow">
+        <button class="btn ghost" id="exportMaster">⬇️ Export all data</button>
+        <button class="btn ghost" id="importBtn">⬆️ Import</button>
       </div>
       <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
     </div>
 
     <h2 class="section">Master list (shared on the page)</h2>
     <div class="card pad">
-      <p class="hint" style="margin-top:0">When your list is ready, make it the <b>global master list</b> everyone sees on the page:
-      tap <b>Export master file</b> below, then add that <code>equipment.json</code> to the repo.
-      After that, every phone that opens the page loads the master list automatically.</p>
-      <div class="btnrow">
-        <button class="btn ghost" id="exportMaster">⬇️ Export master file</button>
-        <button class="btn ghost" id="syncMaster">↻ Load master list</button>
-      </div>
+      <p class="hint" style="margin-top:0">To make your list global for everyone on the page: <b>Export all data</b>, save it as <code>equipment.json</code>, and add it to the repo. New phones auto-load it.</p>
+      <button class="btn ghost" id="syncMaster">↻ Load master list</button>
       <p class="hint" id="masterStatus"></p>
     </div>
 
     <h2 class="section">Danger zone</h2>
     <div class="card pad">
-      <button class="btn danger" id="clearBtn">Delete all data</button>
+      <button class="btn danger" id="clearBtn">Delete all my data</button>
     </div>
     <p class="hint" style="text-align:center">Equipment Location Tracker · works offline</p>
   </section>
@@ -207,11 +233,11 @@
     <label for="fType">Type</label>
     <select id="fType"></select>
     <label for="fLoc">Location</label>
-    <input id="fLoc" list="locList" placeholder="e.g. Staging Area, Parking Spot 6" autocomplete="off" />
+    <input id="fLoc" list="locList" placeholder="e.g. Staging Area, Amelia" autocomplete="off" />
     <datalist id="locList"></datalist>
     <div class="chips" id="quickLocs"></div>
     <label for="fNotes">Notes (optional)</label>
-    <textarea id="fNotes" placeholder="Condition, fuel level, tail it's serving…"></textarea>
+    <textarea id="fNotes" placeholder="Condition, fuel level…"></textarea>
     <div class="btnrow">
       <button class="btn navy" id="saveEq">Save</button>
       <button class="btn ghost" id="cancelEq" style="flex:0 0 110px">Cancel</button>
@@ -219,103 +245,110 @@
   </div>
 </div>
 
-<!-- ===================== BOTTOM NAV ===================== -->
 <nav class="tabbar">
   <button data-tab="equipment" class="active"><span class="ic">📋</span>Equipment</button>
-  <button data-tab="add" id="addTabBtn"><span class="ic">➕</span>Add</button>
-  <button data-tab="audit"><span class="ic">🧾</span>Audit</button>
+  <button data-tab="inventory"><span class="ic">🧭</span>Inventory</button>
+  <button data-tab="audit"><span class="ic">🧾</span>Quick sheet</button>
   <button data-tab="settings"><span class="ic">⚙️</span>Settings</button>
 </nav>
 
-<!-- Print target -->
 <div id="printArea"></div>
 <div class="toast" id="toast"></div>
 
 <script>
 "use strict";
-/* =========================================================
-   Equipment Location Tracker — single-file, offline, localStorage
-   ========================================================= */
-const KEY = "elt.data.v1";
-const DEFAULT_TYPES = [
-  "Ground Power Unit (GPU)",
-  "Air Conditioning Unit (PCA)",
-  "Air Start Unit (ASU)",
-  "Air Stairs / Passenger Stairs",
-  "Belt Loader",
-  "Pushback Tractor / Tug",
-  "Baggage Cart",
-  "Lavatory Cart",
-  "Potable Water Cart",
-  "Tow Bar",
-  "Chocks",
-  "Traffic Cones"
-];
+/* ========================================================= */
+const KEY="elt.data.v1", FLEET_KEY="elt.fleet.v1", SEEN_KEY="elt.seenMaster.v1";
+const MASTER_URL="equipment.json", FLEET_URL="aircraft.json";
+const DEFAULT_TYPES=["Ground Power Unit (GPU)","Air Conditioning Unit (AC Cart)","Air Start Unit (ASU)",
+  "Air Stairs / Passenger Stairs","Belt Loader","Pushback Tractor / Tug","Baggage Cart",
+  "Lavatory Cart","Potable Water Cart","Tow Bar","Chocks"];
+const DEFAULT_LOCATIONS=[
+  {name:"Staging Area",kind:"staging"},
+  {name:"Lindy",kind:"spot"},{name:"Amelia",kind:"spot"},{name:"Wilbur",kind:"spot"},
+  {name:"Ballpark",kind:"spot"},{name:"Westpark",kind:"spot"},{name:"C4",kind:"spot"}];
 
 /* ---------- Store ---------- */
-let data = load();
+let data=load();
 function load(){
-  try{
-    const raw = localStorage.getItem(KEY);
-    if(raw){ const d = JSON.parse(raw); d.equipment ||= []; d.types ||= DEFAULT_TYPES.slice(); return d; }
-  }catch(e){ console.warn("load failed", e); }
-  return { equipment:[], types: DEFAULT_TYPES.slice() };
+  try{const d=JSON.parse(localStorage.getItem(KEY)||"null");
+    if(d){d.equipment||=[]; d.types||=DEFAULT_TYPES.slice();
+      d.locations||=DEFAULT_LOCATIONS.slice(); d.spotAircraft||={}; return d;}
+  }catch(e){console.warn(e);}
+  return {equipment:[],types:DEFAULT_TYPES.slice(),locations:DEFAULT_LOCATIONS.slice(),spotAircraft:{}};
 }
-function save(){ localStorage.setItem(KEY, JSON.stringify(data)); }
-function uid(){ return "e" + Date.now().toString(36) + Math.floor(Math.random()*1e4).toString(36); }
+function save(){localStorage.setItem(KEY,JSON.stringify(data));}
+function uid(){return "e"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);}
 
-/* ---------- Helpers ---------- */
-const $ = (s,el=document)=>el.querySelector(s);
-const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
-function esc(s){ return (s??"").toString().replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+function esc(s){return (s??"").toString().replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function todayISO(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}
+function fmtDate(iso){if(!iso)return "";const d=new Date(iso+"T00:00:00");return isNaN(d)?iso:d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});}
+let toastT; function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2200);}
+
+function locNames(){return data.locations.map(l=>l.name);}
+function locKind(name){return (data.locations.find(l=>l.name===name)||{}).kind || "staging";}
 function knownLocations(){
-  return [...new Set(data.equipment.map(e=>e.location).filter(Boolean))]
-    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+  const set=new Set(locNames());
+  data.equipment.forEach(e=>{if(e.location)set.add(e.location);});
+  return [...set].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
 }
-function fmtDate(iso){ if(!iso) return ""; const d=new Date(iso+"T00:00:00"); return isNaN(d)? iso : d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}); }
-function todayISO(){ const d=new Date(); const o=d.getTimezoneOffset(); return new Date(d.getTime()-o*60000).toISOString().slice(0,10); }
-let toastT;
-function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1900); }
+
+/* ---------- Fleet (aircraft) ---------- */
+let FLEET=[]; let byShip=new Map(), byReg=new Map();
+function indexFleet(){
+  byShip=new Map(); byReg=new Map();
+  FLEET.forEach(a=>{ if(a.ship)byShip.set(String(a.ship),a); if(a.reg)byReg.set(a.reg.toUpperCase(),a); });
+}
+function loadFleetCache(){
+  try{const d=JSON.parse(localStorage.getItem(FLEET_KEY)||"null"); if(d&&Array.isArray(d.aircraft)){FLEET=d.aircraft; indexFleet(); return true;}}catch(e){}
+  return false;
+}
+function saveFleetCache(){localStorage.setItem(FLEET_KEY,JSON.stringify({aircraft:FLEET}));}
+async function fetchFleet(){
+  try{const r=await fetch(FLEET_URL+"?t="+todayISO(),{cache:"no-store"}); if(!r.ok)return false;
+    const d=await r.json(); if(!d||!Array.isArray(d.aircraft))return false;
+    FLEET=d.aircraft.map(a=>({ship:String(a.ship),reg:(a.reg||"").toUpperCase(),type:a.type||""}));
+    indexFleet(); saveFleetCache(); return true;
+  }catch(e){return false;}
+}
+function lookupShip(ship){return byShip.get(String(ship).trim());}
+function rememberAircraft(ship,reg,type){
+  ship=String(ship).trim(); reg=(reg||"").toUpperCase().trim();
+  if(!ship)return; const ex=byShip.get(ship);
+  if(ex){ex.reg=reg||ex.reg; ex.type=type||ex.type;} else {const a={ship,reg,type:type||""}; FLEET.push(a);}
+  indexFleet(); saveFleetCache();
+}
+function updateFleetStatus(){const el=$("#fleetStatus"); if(el)el.textContent=`${FLEET.length.toLocaleString()} aircraft loaded (ship # → tail # + type).`;}
 
 /* ---------- Tabs ---------- */
 function showTab(name){
   $$(".view").forEach(v=>v.classList.remove("active"));
   $("#view-"+name)?.classList.add("active");
-  $$("nav.tabbar button").forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
+  $$("nav.tabbar button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
   window.scrollTo(0,0);
 }
-$$("nav.tabbar button").forEach(b=>{
-  b.addEventListener("click", ()=>{
-    const t=b.dataset.tab;
-    if(t==="add"){ openEdit(null); $$("nav.tabbar button").forEach(x=>x.classList.toggle("active", x.dataset.tab==="equipment")); return; }
-    showTab(t);
-    if(t==="audit") refreshAudit();
-    if(t==="settings") renderTypes();
-  });
-});
+$$("nav.tabbar button").forEach(b=>b.addEventListener("click",()=>{
+  const t=b.dataset.tab; showTab(t);
+  if(t==="inventory")renderInventory();
+  if(t==="audit")refreshAudit();
+  if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();}
+}));
+$("#addBtn").addEventListener("click",()=>openEdit(null));
 
 /* ---------- Equipment list ---------- */
 function renderList(){
-  const q = $("#search").value.trim().toLowerCase();
-  const lf = $("#filterLoc").value;
-  let items = data.equipment.slice().sort((a,b)=>
-    (a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
-  if(lf) items = items.filter(e=> (e.location||"")===lf);
-  if(q) items = items.filter(e=> [e.tag,e.type,e.location,e.notes].some(v=>(v||"").toLowerCase().includes(q)));
-
-  const list = $("#eqList");
-  $("#eqCount").textContent = `${items.length} of ${data.equipment.length} item${data.equipment.length===1?"":"s"}`;
-
-  if(!data.equipment.length){
-    list.innerHTML = `<div class="empty"><div class="big">📋</div><p>No equipment yet.<br>Tap <b>➕ Add</b> to log your first unit.</p></div>`;
-    return;
-  }
-  if(!items.length){ list.innerHTML = `<div class="empty"><p>Nothing matches your filter.</p></div>`; return; }
-
-  list.innerHTML = items.map(e=>{
-    const loc = e.location
-      ? `<span class="loc">📍 ${esc(e.location)}</span>`
-      : `<span class="loc none">No location</span>`;
+  const q=$("#search").value.trim().toLowerCase(), lf=$("#filterLoc").value;
+  let items=data.equipment.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
+  if(lf)items=items.filter(e=>(e.location||"")===lf);
+  if(q)items=items.filter(e=>[e.tag,e.type,e.location,e.notes].some(v=>(v||"").toLowerCase().includes(q)));
+  const list=$("#eqList");
+  $("#eqCount").textContent=`${items.length} of ${data.equipment.length} item${data.equipment.length===1?"":"s"}`;
+  if(!data.equipment.length){list.innerHTML=`<div class="empty"><div class="big">📋</div><p>No equipment yet.<br>Tap <b>➕ Add equipment</b>.</p></div>`;return;}
+  if(!items.length){list.innerHTML=`<div class="empty"><p>Nothing matches your filter.</p></div>`;return;}
+  list.innerHTML=items.map(e=>{
+    const loc=e.location?`<span class="loc">📍 ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
     return `<li class="item card" data-id="${e.id}">
       <div class="main">
         <div class="tag">${esc(e.tag||"(no tag)")}</div>
@@ -324,308 +357,364 @@ function renderList(){
         <div style="margin-top:6px">${loc}</div>
       </div>
       <div class="acts">
-        <button class="iconbtn act-move" title="Change location">📍</button>
+        <button class="iconbtn act-move" title="Move">📍</button>
         <button class="iconbtn act-edit" title="Edit">✏️</button>
         <button class="iconbtn act-del" title="Delete">🗑️</button>
-      </div>
-    </li>`;
+      </div></li>`;
   }).join("");
 }
-$("#eqList").addEventListener("click", e=>{
-  const li = e.target.closest(".item"); if(!li) return;
-  const id = li.dataset.id;
-  if(e.target.classList.contains("act-edit")) openEdit(id);
-  else if(e.target.classList.contains("act-del")) delEquip(id);
-  else if(e.target.classList.contains("act-move")) quickMove(id);
+$("#eqList").addEventListener("click",e=>{
+  const li=e.target.closest(".item"); if(!li)return; const id=li.dataset.id;
+  if(e.target.classList.contains("act-edit"))openEdit(id);
+  else if(e.target.classList.contains("act-del"))delEquip(id);
+  else if(e.target.classList.contains("act-move"))quickMove(id);
 });
-$("#search").addEventListener("input", renderList);
-$("#filterLoc").addEventListener("change", renderList);
-
+$("#search").addEventListener("input",renderList);
+$("#filterLoc").addEventListener("change",renderList);
 function refreshLocationFilter(){
-  const sel = $("#filterLoc"); const cur = sel.value;
-  sel.innerHTML = `<option value="">All locations</option>` +
-    knownLocations().map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
-  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+  const sel=$("#filterLoc"),cur=sel.value;
+  sel.innerHTML=`<option value="">All locations</option>`+knownLocations().map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur;
 }
 
 /* ---------- Add / Edit ---------- */
-let editingId = null;
-function fillTypeSelect(){
-  $("#fType").innerHTML = data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+let editingId=null;
+function fillTypeSelect(sel,val){
+  sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")+`<option value="__new__">➕ Add new type…</option>`;
+  if(val!=null)sel.value=val;
 }
-function fillQuickLocs(){
-  const locs = knownLocations().slice(0,8);
-  $("#locList").innerHTML = knownLocations().map(l=>`<option value="${esc(l)}">`).join("");
-  $("#quickLocs").innerHTML = locs.map(l=>`<button type="button" class="chip" data-loc="${esc(l)}">📍 ${esc(l)}</button>`).join("");
+function fillLocPickers(){
+  $("#locList").innerHTML=knownLocations().map(l=>`<option value="${esc(l)}">`).join("");
+  $("#quickLocs").innerHTML=locNames().map(l=>`<button type="button" class="chip" data-loc="${esc(l)}">📍 ${esc(l)}</button>`).join("");
 }
-$("#quickLocs").addEventListener("click", e=>{
-  const c = e.target.closest(".chip"); if(c){ $("#fLoc").value = c.dataset.loc; }
+$("#quickLocs").addEventListener("click",e=>{const c=e.target.closest(".chip"); if(c)$("#fLoc").value=c.dataset.loc;});
+$("#fType").addEventListener("change",function(){
+  if(this.value==="__new__"){
+    const v=(prompt("New equipment type:")||"").trim();
+    if(v&&!data.types.some(t=>t.toLowerCase()===v.toLowerCase())){data.types.push(v);save();}
+    fillTypeSelect(this, v||data.types[0]);
+  }
 });
 function openEdit(id){
-  editingId = id;
-  fillTypeSelect(); fillQuickLocs();
-  const e = id ? data.equipment.find(x=>x.id===id) : null;
-  $("#editTitle").textContent = e ? "Edit equipment" : "Add equipment";
-  $("#fTag").value = e?.tag || "";
-  $("#fType").value = e?.type || data.types[0] || "";
-  $("#fLoc").value = e?.location || "";
-  $("#fNotes").value = e?.notes || "";
+  editingId=id; fillLocPickers();
+  const e=id?data.equipment.find(x=>x.id===id):null;
+  fillTypeSelect($("#fType"), e?.type||data.types[0]||"");
+  $("#editTitle").textContent=e?"Edit equipment":"Add equipment";
+  $("#fTag").value=e?.tag||""; $("#fLoc").value=e?.location||""; $("#fNotes").value=e?.notes||"";
   $("#editOverlay").classList.add("open");
-  if(!e) setTimeout(()=>$("#fTag").focus(),120);
+  if(!e)setTimeout(()=>$("#fTag").focus(),120);
 }
-function closeEdit(){ $("#editOverlay").classList.remove("open"); editingId=null; }
-$("#cancelEq").addEventListener("click", closeEdit);
-$("#editOverlay").addEventListener("click", e=>{ if(e.target.id==="editOverlay") closeEdit(); });
-$("#saveEq").addEventListener("click", ()=>{
-  const tag = $("#fTag").value.trim();
-  if(!tag){ toast("Enter an asset tag / ID"); $("#fTag").focus(); return; }
-  const payload = {
-    tag, type:$("#fType").value, location:$("#fLoc").value.trim(), notes:$("#fNotes").value.trim(),
-    updated: todayISO()
-  };
-  if(editingId){ Object.assign(data.equipment.find(x=>x.id===editingId), payload); toast("Updated"); }
-  else { data.equipment.push({ id:uid(), ...payload }); toast("Added"); }
-  save(); closeEdit(); refreshAll();
+function closeEdit(){$("#editOverlay").classList.remove("open");editingId=null;}
+$("#cancelEq").addEventListener("click",closeEdit);
+$("#editOverlay").addEventListener("click",e=>{if(e.target.id==="editOverlay")closeEdit();});
+$("#saveEq").addEventListener("click",()=>{
+  const tag=$("#fTag").value.trim(); if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
+  const payload={tag,type:$("#fType").value,location:$("#fLoc").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
+  if(editingId){Object.assign(data.equipment.find(x=>x.id===editingId),payload);toast("Updated");}
+  else{data.equipment.push({id:uid(),...payload});toast("Added");}
+  save();closeEdit();refreshAll();
 });
-function delEquip(id){
-  const e = data.equipment.find(x=>x.id===id);
-  if(!confirm(`Delete ${e?.tag||"this item"}?`)) return;
-  data.equipment = data.equipment.filter(x=>x.id!==id);
-  save(); refreshAll(); toast("Deleted");
-}
-function quickMove(id){
-  const e = data.equipment.find(x=>x.id===id); if(!e) return;
-  const known = knownLocations();
-  const hint = known.length ? `\nExisting: ${known.join(", ")}` : "";
-  const loc = prompt(`New location for ${e.tag}:`+hint, e.location||"");
-  if(loc===null) return;
-  e.location = loc.trim(); e.updated = todayISO();
-  save(); refreshAll(); toast(loc.trim()?`Moved to ${loc.trim()}`:"Location cleared");
-}
+function delEquip(id){const e=data.equipment.find(x=>x.id===id);
+  if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
+  data.equipment=data.equipment.filter(x=>x.id!==id);save();refreshAll();toast("Deleted");}
+function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
+  const known=knownLocations();const hint=known.length?`\nExisting: ${known.join(", ")}`:"";
+  const loc=prompt(`New location for ${e.tag}:`+hint,e.location||"");if(loc===null)return;
+  e.location=loc.trim();e.updated=todayISO();save();refreshAll();toast(loc.trim()?`Moved to ${loc.trim()}`:"Location cleared");}
 
-/* ---------- Audit ---------- */
-function refreshAudit(){
-  const sel = $("#auditLoc"); const cur = sel.value;
-  sel.innerHTML = `<option value="__all__">— All equipment —</option>` +
-    `<option value="__none__">⚠️ Unassigned (no location)</option>` +
-    knownLocations().map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
-  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
-  if(!$("#auditDate").value) $("#auditDate").value = todayISO();
+/* ===================== INVENTORY (guided) ===================== */
+let inv={stage:"pick",area:null,covered:[],ac:null};
+function renderInventory(){
+  const r=$("#invRoot");
+  if(inv.stage==="pick")return renderInvPick(r);
+  if(inv.stage==="aircraft")return renderInvAircraft(r);
+  if(inv.stage==="select")return renderInvSelect(r);
+  if(inv.stage==="next")return renderInvNext(r);
+  if(inv.stage==="sheet")return renderInvSheet(r);
 }
-function auditItems(scope){
-  let items = data.equipment.slice();
-  if(scope==="__none__") items = items.filter(e=>!e.location);
-  else if(scope!=="__all__") items = items.filter(e=>(e.location||"")===scope);
-  return items.sort((a,b)=>
-    (a.location||"").localeCompare(b.location||"",undefined,{numeric:true}) ||
-    (a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
+function coveredBadges(){
+  if(!inv.covered.length)return "";
+  return `<div class="doneareas">`+inv.covered.map(a=>`<span class="da">✓ ${esc(a)}</span>`).join("")+`</div>`;
 }
-function buildAuditHTML(scope, forPrint){
-  const items = auditItems(scope);
-  const title = scope==="__all__" ? "All Equipment"
-            : scope==="__none__" ? "Unassigned Equipment"
-            : scope;
-  const by = $("#auditBy").value.trim();
-  const date = fmtDate($("#auditDate").value) || fmtDate(todayISO());
-  const showLocCol = (scope==="__all__");
-
-  const rows = items.length ? items.map((e,i)=>`
-    <tr>
-      <td class="num">${i+1}</td>
-      <td><b>${esc(e.tag||"")}</b></td>
-      <td>${esc(e.type||"")}</td>
-      ${showLocCol?`<td>${esc(e.location||"—")}</td>`:""}
-      <td>${esc(e.notes||"")}</td>
-      <td class="chk">☐</td>
-    </tr>`).join("")
-    : `<tr><td colspan="${showLocCol?6:5}" style="text-align:center;color:#888;padding:18px">No equipment in this area.</td></tr>`;
-
-  return `
-    <div class="sheet-head">
-      <div>
-        <div class="title">Equipment Audit — ${esc(title)}</div>
-        <div style="font-size:13px;color:#555">${items.length} item${items.length===1?"":"s"}</div>
+function renderInvPick(r){
+  if(!data.locations.length){r.innerHTML=`<div class="empty"><p>Add some locations first in <b>⚙️ Settings</b>.</p></div>`;return;}
+  const remaining=data.locations.filter(l=>!inv.covered.includes(l.name));
+  r.innerHTML=`
+    <div class="card pad">
+      <div class="step">Step 1 — pick an area</div>
+      <h3 style="margin:6px 0 2px">Inventory walk-through</h3>
+      <p class="hint" style="margin-top:0">Pick the area you're standing in. Staging areas record equipment; spots also record the aircraft.</p>
+      ${coveredBadges()}
+      <div class="chips" id="areaChips">
+        ${data.locations.map(l=>`<button class="chip ${inv.covered.includes(l.name)?'':''}" data-area="${esc(l.name)}">
+          ${l.kind==='spot'?'🛫':'🏟️'} ${esc(l.name)} ${inv.covered.includes(l.name)?'✓':''}</button>`).join("")}
       </div>
-      <div class="info">
-        Date: <b>${esc(date)}</b><br>
-        Audited by: <b>${esc(by||"____________")}</b>
-      </div>
-    </div>
-    <table class="audit">
-      <thead><tr>
-        <th>#</th><th>Asset Tag</th><th>Type</th>
-        ${showLocCol?"<th>Location</th>":""}
-        <th>Notes</th><th>Verified</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <p style="font-size:12px;color:#777;margin-top:14px">
-      Check (✔) each unit as you physically verify it on site.
-      Generated ${esc(fmtDate(todayISO()))}.
-    </p>`;
-}
-$("#genAudit").addEventListener("click", ()=>{
-  const scope = $("#auditLoc").value;
-  const html = buildAuditHTML(scope, false);
-  $("#auditPreview").innerHTML = `
-    <div class="card pad" style="margin-top:14px">${html}
-      <div class="btnrow no-print">
-        <button class="btn navy" id="printAudit">🖨️ Print / Save as PDF</button>
-      </div>
+      ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finishInv">✅ Finish &amp; generate sheet (${inv.covered.length})</button></div>
+        <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="resetInv">Start over</button></div>`:``}
     </div>`;
-  $("#printAudit").addEventListener("click", ()=>doPrint(scope));
+  $$("#areaChips .chip").forEach(c=>c.addEventListener("click",()=>{
+    inv.area=c.dataset.area; inv.ac=data.spotAircraft[inv.area]||null;
+    inv.stage = locKind(inv.area)==="spot" ? "aircraft" : "select";
+    renderInventory();
+  }));
+  $("#finishInv")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
+  $("#resetInv")?.addEventListener("click",()=>{inv={stage:"pick",area:null,covered:[],ac:null};renderInventory();});
+}
+function renderInvAircraft(r){
+  const cur=inv.ac||data.spotAircraft[inv.area]||null;
+  r.innerHTML=`
+    <div class="card pad">
+      <div class="step">Step 2 — aircraft at ${esc(inv.area)}</div>
+      <h3 style="margin:6px 0 8px">🛫 ${esc(inv.area)}</h3>
+      <label for="invShip">Aircraft # (ship number)</label>
+      <input id="invShip" inputmode="numeric" autocomplete="off" placeholder="e.g. 3461" value="${esc(cur?cur.ship:"")}" />
+      <div id="invAcInfo"></div>
+      <div class="btnrow"><button class="btn ghost" id="noAc">No aircraft here</button>
+        <button class="btn navy" id="acNext" style="flex:2">Next →</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="acBack">← Back</button></div>
+    </div>`;
+  const shipIn=$("#invShip");
+  function refreshAc(){
+    const s=shipIn.value.trim(); const box=$("#invAcInfo");
+    if(!s){box.innerHTML="";inv.ac=null;return;}
+    const hit=lookupShip(s);
+    if(hit){inv.ac={ship:s,reg:hit.reg,type:hit.type};
+      box.innerHTML=`<div class="ac-ok">✓ ${esc(hit.reg||"(no tail)")} · ${esc(hit.type||"")}</div>`;}
+    else{inv.ac={ship:s,reg:(cur&&cur.ship===s?cur.reg:""),type:(cur&&cur.ship===s?cur.type:"")};
+      box.innerHTML=`<div class="ac-no"><div style="font-size:13px;color:#8a5b00;font-weight:600;margin-bottom:6px">Ship ${esc(s)} isn't in the fleet list — enter it (it'll be remembered):</div>
+        <div class="row2"><div><label style="margin-top:0">Tail #</label><input id="mReg" placeholder="N12345" autocapitalize="characters" value="${esc(inv.ac.reg)}"></div>
+        <div><label style="margin-top:0">Type</label><input id="mType" placeholder="Boeing 737-800" value="${esc(inv.ac.type)}"></div></div>
+        <a class="hint" href="https://docs.google.com/spreadsheets/d/1ZlYgN_IZmd6CSx_nXnuP0L0PiodapDRx3RmNkIpxXAo/htmlview" target="_blank" rel="noopener">🔎 Look up ship # on the fleet sheet ↗</a></div>`;
+      $("#mReg").addEventListener("input",e=>inv.ac.reg=e.target.value.toUpperCase());
+      $("#mType").addEventListener("input",e=>inv.ac.type=e.target.value);
+    }
+  }
+  shipIn.addEventListener("input",refreshAc); refreshAc();
+  $("#noAc").addEventListener("click",()=>{inv.ac=null;inv.stage="select";renderInventory();});
+  $("#acNext").addEventListener("click",()=>{
+    if(inv.ac&&inv.ac.ship&&inv.ac.reg)rememberAircraft(inv.ac.ship,inv.ac.reg,inv.ac.type);
+    inv.stage="select";renderInventory();});
+  $("#acBack").addEventListener("click",()=>{inv.stage="pick";renderInventory();});
+}
+let invSel=new Set();
+function renderInvSelect(r){
+  invSel=new Set(data.equipment.filter(e=>e.location===inv.area).map(e=>e.id));
+  const kind=locKind(inv.area);
+  const acLine=inv.ac?`<span class="ac">${esc(inv.ac.ship)} · ${esc(inv.ac.reg||"")} ${esc(inv.ac.type||"")}</span>`:"";
+  r.innerHTML=`
+    <div class="card pad" style="padding-bottom:6px">
+      <div class="step">Step ${kind==='spot'?'3':'2'} — equipment at ${esc(inv.area)}</div>
+      <h3 style="margin:6px 0 2px">${kind==='spot'?'🛫':'🏟️'} ${esc(inv.area)} ${acLine}</h3>
+      <p class="hint" style="margin-top:2px">Tap every unit that's here, then assign. Items already here are pre-checked.</p>
+      <input id="invSearch" type="search" placeholder="Filter list…" autocomplete="off" style="margin:8px 0" />
+    </div>
+    <div class="card" style="margin-top:10px;overflow:hidden"><ul class="crows" id="invList"></ul></div>
+    <div class="btnrow"><button class="btn navy" id="assignBtn"></button></div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="selBack">← Back</button></div>`;
+  function paint(){
+    const q=$("#invSearch").value.trim().toLowerCase();
+    let items=data.equipment.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
+    if(q)items=items.filter(e=>[e.tag,e.type,e.location].some(v=>(v||"").toLowerCase().includes(q)));
+    $("#invList").innerHTML=items.length?items.map(e=>{
+      const on=invSel.has(e.id);
+      const elsewhere=e.location&&e.location!==inv.area?`<span class="cloc">@ ${esc(e.location)}</span>`:(!e.location?`<span class="cloc">—</span>`:"");
+      return `<li class="crow ${on?'on':''}" data-id="${e.id}">
+        <div class="box">${on?'✓':''}</div>
+        <div><div class="ctag">${esc(e.tag)}</div><div class="ctype">${esc(e.type||"")}</div></div>
+        ${elsewhere}</li>`;
+    }).join(""):`<li class="crow"><div class="ctype" style="padding:8px">No equipment. Add some on the Equipment tab.</div></li>`;
+    $("#assignBtn").textContent=`Assign ${invSel.size} item${invSel.size===1?"":"s"} to ${inv.area}`;
+  }
+  $("#invList").addEventListener("click",e=>{const li=e.target.closest(".crow[data-id]");if(!li)return;
+    const id=li.dataset.id; if(invSel.has(id))invSel.delete(id);else invSel.add(id); paint();});
+  $("#invSearch").addEventListener("input",paint);
+  $("#assignBtn").addEventListener("click",()=>commitArea());
+  $("#selBack").addEventListener("click",()=>{inv.stage=locKind(inv.area)==="spot"?"aircraft":"pick";renderInventory();});
+  paint();
+}
+function commitArea(){
+  // selected -> this area; items previously here but now unselected -> unassigned
+  data.equipment.forEach(e=>{
+    if(invSel.has(e.id)){e.location=inv.area;e.updated=todayISO();}
+    else if(e.location===inv.area){e.location="";e.updated=todayISO();}
+  });
+  if(locKind(inv.area)==="spot"){
+    if(inv.ac&&inv.ac.ship)data.spotAircraft[inv.area]=inv.ac; else delete data.spotAircraft[inv.area];
+  }
+  if(!inv.covered.includes(inv.area))inv.covered.push(inv.area);
+  save(); refreshLocationFilter();
+  inv.stage="next"; renderInventory();
+}
+function renderInvNext(r){
+  const remaining=data.locations.filter(l=>!inv.covered.includes(l.name));
+  r.innerHTML=`
+    <div class="card pad">
+      <div class="ac-ok" style="margin-top:0">✓ ${esc(inv.area)} recorded — ${data.equipment.filter(e=>e.location===inv.area).length} item(s).</div>
+      ${coveredBadges()}
+      <p class="hint" style="margin-top:6px">Inventory another area, or finish and generate the sheet.</p>
+      ${remaining.length?`<div class="btnrow"><button class="btn navy" id="another">➕ Inventory another area</button></div>`:`<p class="hint">All areas covered.</p>`}
+      <div class="btnrow" style="margin-top:8px"><button class="btn" id="finish">🧾 Finish &amp; generate sheet</button></div>
+    </div>`;
+  $("#another")?.addEventListener("click",()=>{inv.stage="pick";inv.area=null;inv.ac=null;renderInventory();});
+  $("#finish").addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
+}
+function renderInvSheet(r){
+  const areas=inv.covered.length?inv.covered:locNames();
+  const html=buildSheetHTML(areas,"Equipment Inventory");
+  r.innerHTML=`<div class="card pad">${html}
+    <div class="btnrow no-print"><button class="btn navy" id="printInv">🖨️ Print / Save as PDF</button></div>
+    <div class="btnrow no-print" style="margin-top:8px"><button class="btn ghost" id="newInv">Start a new inventory</button></div></div>`;
+  $("#printInv").addEventListener("click",()=>{$("#printArea").innerHTML=buildSheetHTML(areas,"Equipment Inventory");window.print();});
+  $("#newInv").addEventListener("click",()=>{inv={stage:"pick",area:null,covered:[],ac:null};renderInventory();});
+}
+
+/* ---------- Sheet builder (used by Inventory + Quick sheet) ---------- */
+function buildSheetHTML(areas,title){
+  const date=fmtDate(todayISO());
+  let total=0;
+  const blocks=areas.map(area=>{
+    const items=data.equipment.filter(e=>(e.location||"")===area)
+      .sort((a,b)=>(a.type||"").localeCompare(b.type||"")||(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true}));
+    total+=items.length;
+    const ac=data.spotAircraft[area];
+    const acHtml=(locKind(area)==="spot")
+      ? `<span class="ac">${ac?`✈ Ship ${esc(ac.ship)} · ${esc(ac.reg||"")} · ${esc(ac.type||"")}`:"✈ No aircraft"}</span>`
+      : `<span class="ac">Staging</span>`;
+    const rows=items.length?items.map((e,i)=>`<tr><td class="num">${i+1}</td><td><b>${esc(e.tag)}</b></td><td>${esc(e.type||"")}</td><td>${esc(e.notes||"")}</td><td class="chk">☐</td></tr>`).join("")
+      :`<tr><td colspan="5" style="text-align:center;color:#888;padding:14px">No equipment recorded.</td></tr>`;
+    return `<div class="area-block">
+      <div class="area-h"><span class="an">${esc(area)}</span>${acHtml}</div>
+      <table class="audit"><thead><tr><th>#</th><th>Asset Tag</th><th>Type</th><th>Notes</th><th>✓</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  }).join("");
+  return `<div class="sheet-head">
+      <div><div class="title">${esc(title)}</div><div style="font-size:13px;color:#555">${areas.length} area(s) · ${total} item(s)</div></div>
+      <div class="info">Date: <b>${esc(date)}</b><br>By: <b>${esc($("#auditBy")?.value.trim()||"____________")}</b></div>
+    </div>${blocks}
+    <p style="font-size:12px;color:#777;margin-top:10px">Check (✔) each unit as you verify it on site. Generated ${esc(date)}.</p>`;
+}
+
+/* ---------- Quick sheet (Audit tab) ---------- */
+function refreshAudit(){
+  const sel=$("#auditLoc"),cur=sel.value;
+  sel.innerHTML=`<option value="__all__">— All areas —</option>`+locNames().map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur;
+  if(!$("#auditDate").value)$("#auditDate").value=todayISO();
+}
+$("#genAudit").addEventListener("click",()=>{
+  const scope=$("#auditLoc").value;
+  const areas=scope==="__all__"?locNames():[scope];
+  const title=scope==="__all__"?"Equipment Audit — All Areas":"Equipment Audit — "+scope;
+  const html=buildSheetHTML(areas,title);
+  $("#auditPreview").innerHTML=`<div class="card pad" style="margin-top:14px">${html}
+    <div class="btnrow no-print"><button class="btn navy" id="printAudit">🖨️ Print / Save as PDF</button></div></div>`;
+  $("#printAudit").addEventListener("click",()=>{$("#printArea").innerHTML=buildSheetHTML(areas,title);window.print();});
   $("#auditPreview").scrollIntoView({behavior:"smooth",block:"start"});
 });
-function doPrint(scope){
-  $("#printArea").innerHTML = buildAuditHTML(scope, true);
-  window.print();
+
+/* ---------- Settings: locations ---------- */
+let newLocKind="staging";
+$("#kStaging").addEventListener("click",()=>{newLocKind="staging";$("#kStaging").classList.add("sel");$("#kSpot").classList.remove("sel");});
+$("#kSpot").addEventListener("click",()=>{newLocKind="spot";$("#kSpot").classList.add("sel");$("#kStaging").classList.remove("sel");});
+function renderLocs(){
+  $("#locManage").innerHTML=data.locations.length?data.locations.map((l,i)=>`
+    <div class="manage-row"><span>${esc(l.name)} <span class="pill ${l.kind}">${l.kind==='spot'?'spot ✈':'staging'}</span></span>
+      <button class="iconbtn loc-toggle" data-i="${i}" title="Toggle type">↔</button>
+      <button class="iconbtn loc-del" data-i="${i}" title="Remove">🗑️</button></div>`).join("")
+    :`<p class="hint">No locations yet.</p>`;
 }
+$("#locManage").addEventListener("click",e=>{
+  const t=e.target.closest(".loc-toggle"),d=e.target.closest(".loc-del");
+  if(t){const l=data.locations[+t.dataset.i];l.kind=l.kind==="spot"?"staging":"spot";save();renderLocs();}
+  if(d){const l=data.locations[+d.dataset.i];if(!confirm(`Remove location "${l.name}"? (Equipment keeps its label.)`))return;
+    data.locations.splice(+d.dataset.i,1);save();renderLocs();refreshAll();}
+});
+$("#addLocBtn").addEventListener("click",()=>{
+  const v=$("#newLoc").value.trim();if(!v)return;
+  if(data.locations.some(l=>l.name.toLowerCase()===v.toLowerCase())){toast("That location exists");return;}
+  data.locations.push({name:v,kind:newLocKind});$("#newLoc").value="";save();renderLocs();refreshAll();toast("Location added");
+});
+$("#newLoc").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addLocBtn").click();});
 
 /* ---------- Settings: types ---------- */
 function renderTypes(){
-  $("#typeManage").innerHTML = data.types.map((t,i)=>`
-    <div class="manage-row">
-      <span>${esc(t)}</span>
-      <button class="iconbtn type-del" data-i="${i}" title="Remove">🗑️</button>
-    </div>`).join("") || `<p class="hint">No types yet — add one below.</p>`;
+  $("#typeManage").innerHTML=data.types.map((t,i)=>`<div class="manage-row"><span>${esc(t)}</span>
+    <button class="iconbtn type-del" data-i="${i}" title="Remove">🗑️</button></div>`).join("")||`<p class="hint">No types yet.</p>`;
 }
-$("#typeManage").addEventListener("click", e=>{
-  const b = e.target.closest(".type-del"); if(!b) return;
-  const i = +b.dataset.i; const t = data.types[i];
-  const inUse = data.equipment.some(eq=>eq.type===t);
-  if(inUse && !confirm(`"${t}" is used by some equipment. Remove the type anyway? (Those items keep their type label.)`)) return;
-  data.types.splice(i,1); save(); renderTypes();
-});
-$("#addTypeBtn").addEventListener("click", ()=>{
-  const v = $("#newType").value.trim(); if(!v) return;
-  if(data.types.some(t=>t.toLowerCase()===v.toLowerCase())){ toast("Type already exists"); return; }
-  data.types.push(v); $("#newType").value=""; save(); renderTypes(); toast("Type added");
-});
-$("#newType").addEventListener("keydown", e=>{ if(e.key==="Enter") $("#addTypeBtn").click(); });
+$("#typeManage").addEventListener("click",e=>{const b=e.target.closest(".type-del");if(!b)return;
+  const i=+b.dataset.i,t=data.types[i];
+  if(data.equipment.some(eq=>eq.type===t)&&!confirm(`"${t}" is in use. Remove anyway?`))return;
+  data.types.splice(i,1);save();renderTypes();});
+$("#addTypeBtn").addEventListener("click",()=>{const v=$("#newType").value.trim();if(!v)return;
+  if(data.types.some(t=>t.toLowerCase()===v.toLowerCase())){toast("Type already exists");return;}
+  data.types.push(v);$("#newType").value="";save();renderTypes();toast("Type added");});
+$("#newType").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addTypeBtn").click();});
 
-/* ---------- Backup / restore ---------- */
-function downloadJSON(filename, msg){
-  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  toast(msg);
-}
-$("#exportBtn").addEventListener("click", ()=> downloadJSON(`equipment-backup-${todayISO()}.json`, "Backup downloaded"));
-$("#importBtn").addEventListener("click", ()=>$("#importFile").click());
-$("#importFile").addEventListener("change", e=>{
-  const file = e.target.files[0]; if(!file) return;
-  const r = new FileReader();
-  r.onload = ()=>{
-    try{
-      const d = JSON.parse(r.result);
-      if(!Array.isArray(d.equipment)) throw new Error("bad file");
-      if(!confirm(`Import ${d.equipment.length} items? This replaces your current data.`)) return;
-      data = { equipment:d.equipment, types: Array.isArray(d.types)&&d.types.length? d.types : DEFAULT_TYPES.slice() };
-      save(); refreshAll(); renderTypes(); toast("Backup imported");
-    }catch(err){ alert("That file isn't a valid backup."); }
-    $("#importFile").value="";
-  };
-  r.readAsText(file);
-});
-$("#clearBtn").addEventListener("click", ()=>{
-  if(!confirm("Delete ALL equipment and reset types? This cannot be undone.")) return;
-  if(!confirm("Really delete everything?")) return;
-  data = { equipment:[], types: DEFAULT_TYPES.slice() };
-  localStorage.setItem(SEEN_KEY,"1"); // don't auto-reload the master after an intentional wipe
-  save(); refreshAll(); renderTypes(); toast("All data cleared");
-});
+/* ---------- Fleet controls ---------- */
+$("#reloadFleet").addEventListener("click",async()=>{$("#fleetStatus").textContent="Reloading fleet…";
+  const ok=await fetchFleet();updateFleetStatus();toast(ok?"Fleet reloaded":"Couldn't reach fleet file");});
 
-/* ---------- Master list (shared on the page) ----------
-   The master list is a committed `equipment.json` at the site root.
-   - First-ever visit with no local data: auto-load it as the baseline.
-   - "Load master list" button: pull it on demand and merge or replace.
-   - "Export master file": save current data AS equipment.json to commit. */
-const MASTER_URL = "equipment.json";
-const SEEN_KEY = "elt.seenMaster.v1";
+/* ---------- Output / backup ---------- */
+function downloadJSON(name,msg){const b=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast(msg);}
+$("#exportMaster").addEventListener("click",()=>{if(!data.equipment.length){toast("Add some equipment first");return;}
+  downloadJSON("equipment.json","Saved equipment.json — send it or commit it");});
+$("#importBtn").addEventListener("click",()=>$("#importFile").click());
+$("#importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.equipment))throw 0;
+    if(!confirm(`Import ${d.equipment.length} items? This replaces your current data.`))return;
+    data={equipment:d.equipment,types:Array.isArray(d.types)&&d.types.length?d.types:DEFAULT_TYPES.slice(),
+      locations:Array.isArray(d.locations)&&d.locations.length?d.locations:DEFAULT_LOCATIONS.slice(),
+      spotAircraft:d.spotAircraft||{}};
+    save();refreshAll();renderTypes();renderLocs();toast("Imported");
+  }catch(err){alert("That file isn't a valid backup.");}$("#importFile").value="";};
+  r.readAsText(f);});
+$("#clearBtn").addEventListener("click",()=>{if(!confirm("Delete ALL your data? This cannot be undone."))return;
+  if(!confirm("Really delete everything?"))return;
+  data={equipment:[],types:DEFAULT_TYPES.slice(),locations:DEFAULT_LOCATIONS.slice(),spotAircraft:{}};
+  localStorage.setItem(SEEN_KEY,"1");save();refreshAll();renderTypes();renderLocs();toast("All data cleared");});
 
-async function fetchMaster(){
-  try{
-    const res = await fetch(MASTER_URL + "?t=" + todayISO(), {cache:"no-store"});
-    if(!res.ok) return null;
-    const d = await res.json();
-    if(!d || !Array.isArray(d.equipment)) return null;
-    return d;
-  }catch(e){ return null; }
-}
-function normalize(items){
-  // re-id incoming items and keep only known fields
-  return items.map(e=>({
-    id: uid(), tag:(e.tag||"").toString(), type:(e.type||"").toString(),
-    location:(e.location||"").toString(), notes:(e.notes||"").toString(),
-    updated: e.updated || todayISO()
-  }));
-}
-function mergeMaster(master){
-  // add items whose tag isn't already on this device; local edits always win
-  const have = new Set(data.equipment.map(e=>(e.tag||"").trim().toLowerCase()));
-  const fresh = normalize(master.equipment).filter(e=> e.tag && !have.has(e.tag.trim().toLowerCase()));
-  data.equipment.push(...fresh);
-  if(Array.isArray(master.types)) for(const t of master.types)
-    if(!data.types.some(x=>x.toLowerCase()===t.toLowerCase())) data.types.push(t);
-  return fresh.length;
-}
-
-$("#exportMaster").addEventListener("click", ()=>{
-  if(!data.equipment.length){ toast("Add some equipment first"); return; }
-  downloadJSON("equipment.json", "Saved equipment.json — commit it to the repo");
-});
-
-$("#syncMaster").addEventListener("click", async ()=>{
-  $("#masterStatus").textContent = "Checking the page for a master list…";
-  const master = await fetchMaster();
-  if(!master){ $("#masterStatus").textContent = "No master list found on the page yet. Use “Export master file”, add it to the repo, then it’ll load here."; return; }
-  const n = master.equipment.length;
-  if(!data.equipment.length){
-    data.equipment = normalize(master.equipment);
-    if(Array.isArray(master.types)&&master.types.length) data.types = master.types.slice();
-    localStorage.setItem(SEEN_KEY,"1"); save(); refreshAll(); renderTypes();
-    $("#masterStatus").textContent = `Loaded ${n} item${n===1?"":"s"} from the master list.`;
-    return;
-  }
-  const merge = confirm(`The master list has ${n} item(s).\n\nOK = merge new items into your current list (your edits are kept).\nCancel = choose to replace everything instead.`);
-  if(merge){
-    const added = mergeMaster(master);
-    localStorage.setItem(SEEN_KEY,"1"); save(); refreshAll(); renderTypes();
-    $("#masterStatus").textContent = added ? `Merged in ${added} new item${added===1?"":"s"}.` : "Already up to date — nothing new to add.";
-  } else if(confirm(`Replace ALL your current data with the ${n}-item master list?`)){
-    data.equipment = normalize(master.equipment);
-    if(Array.isArray(master.types)&&master.types.length) data.types = master.types.slice();
-    localStorage.setItem(SEEN_KEY,"1"); save(); refreshAll(); renderTypes();
-    $("#masterStatus").textContent = `Replaced with ${n} item${n===1?"":"s"} from the master list.`;
+/* ---------- Master list ---------- */
+async function fetchMaster(){try{const r=await fetch(MASTER_URL+"?t="+todayISO(),{cache:"no-store"});
+  if(!r.ok)return null;const d=await r.json();return d&&Array.isArray(d.equipment)?d:null;}catch(e){return null;}}
+function normalize(items){return items.map(e=>({id:uid(),tag:(e.tag||"")+"",type:(e.type||"")+"",location:(e.location||"")+"",notes:(e.notes||"")+"",updated:e.updated||todayISO()}));}
+$("#syncMaster").addEventListener("click",async()=>{
+  $("#masterStatus").textContent="Checking the page for a master list…";
+  const m=await fetchMaster();
+  if(!m){$("#masterStatus").textContent="No master list on the page yet. Export your data, add it as equipment.json, then it loads here.";return;}
+  const n=m.equipment.length;
+  if(!data.equipment.length||confirm(`Master list has ${n} item(s). Replace your current data with it?`)){
+    data.equipment=normalize(m.equipment);
+    if(Array.isArray(m.types)&&m.types.length)data.types=m.types.slice();
+    if(Array.isArray(m.locations)&&m.locations.length)data.locations=m.locations.slice();
+    if(m.spotAircraft)data.spotAircraft=m.spotAircraft;
+    localStorage.setItem(SEEN_KEY,"1");save();refreshAll();renderTypes();renderLocs();
+    $("#masterStatus").textContent=`Loaded ${n} item(s) from the master list.`;
   }
 });
-
 async function autoLoadMaster(){
-  // only on a fresh device that has never loaded data or the master
-  if(data.equipment.length || localStorage.getItem(SEEN_KEY)) return;
-  const master = await fetchMaster();
-  localStorage.setItem(SEEN_KEY,"1");
-  if(master && master.equipment.length){
-    data.equipment = normalize(master.equipment);
-    if(Array.isArray(master.types)&&master.types.length) data.types = master.types.slice();
-    save(); refreshAll();
-    toast(`Loaded ${master.equipment.length} items from master list`);
-  }
+  if(data.equipment.length||localStorage.getItem(SEEN_KEY))return;
+  const m=await fetchMaster();localStorage.setItem(SEEN_KEY,"1");
+  if(m&&m.equipment.length){data.equipment=normalize(m.equipment);
+    if(Array.isArray(m.types)&&m.types.length)data.types=m.types.slice();
+    if(Array.isArray(m.locations)&&m.locations.length)data.locations=m.locations.slice();
+    if(m.spotAircraft)data.spotAircraft=m.spotAircraft;
+    save();refreshAll();toast(`Loaded ${m.equipment.length} items from master list`);}
 }
 
-/* ---------- Refresh orchestration ---------- */
-function refreshAll(){ renderList(); refreshLocationFilter(); refreshAudit(); updateHdr(); }
-function updateHdr(){
-  const n = data.equipment.length;
-  const locs = knownLocations().length;
-  $("#hdrSub").textContent = n ? `${n} unit${n===1?"":"s"} · ${locs} location${locs===1?"":"s"}` : "Ground support equipment · staging & audits";
-}
+/* ---------- Refresh ---------- */
+function refreshAll(){renderList();refreshLocationFilter();updateHdr();}
+function updateHdr(){const n=data.equipment.length,locs=knownLocations().length;
+  $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} · ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
 
 /* ---------- Init ---------- */
-refreshAll();
-autoLoadMaster();
+(async function init(){
+  if(!loadFleetCache()){await fetchFleet();}
+  updateFleetStatus();
+  refreshAll();
+  autoLoadMaster();
+})();
 </script>
 </body>
 </html>
