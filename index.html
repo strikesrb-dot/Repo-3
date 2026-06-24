@@ -121,6 +121,7 @@
   .chip.done{background:var(--good-bg);color:#15622f;border-color:#bfe0cb}
   .manage-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
   .manage-row span{flex:1}
+  .manage-row .el-name{cursor:pointer}
   .areahdr{font-size:13px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 2px}
   .regionhdr{font-size:14px;font-weight:800;color:#fff;background:var(--navy);border-radius:8px;padding:5px 10px;letter-spacing:.6px;text-transform:uppercase;margin:16px 0 6px}
   .hint{font-size:12px;color:var(--muted);margin-top:6px}
@@ -281,6 +282,16 @@
 
   <!-- SETTINGS -->
   <section id="view-settings" class="view">
+    <h2 class="section">Inventory locations &amp; zones</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">The locations you pick in <b>Do Inventory</b> and when adding equipment. Drag order with ▲▼.</p>
+      <div id="equipLocManage"></div>
+      <div class="toolbar" style="margin-top:10px;margin-bottom:0">
+        <input id="newEquipLoc" placeholder="Add a location / zone" />
+        <button class="btn sm navy" id="addEquipLocBtn" style="width:auto">Add</button>
+      </div>
+    </div>
+
     <h2 class="section">Areas &amp; spots</h2>
     <div class="card pad">
       <div id="locManage" style="max-height:280px;overflow:auto"></div>
@@ -415,7 +426,9 @@ function load(){
   let d=null; try{d=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){console.warn(e);}
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[];
-  d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();}); // tags/prefixes always caps
+  d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();
+    if(/^westpark staging area$/i.test(e.location||""))e.location="WestPark";}); // caps + WestPark migration
+  d.equipLocs=Array.isArray(d.equipLocs)&&d.equipLocs.length?d.equipLocs:["South","C4","Ballpark","WestPark"];
   d.locations=(d.locations&&d.locations.length?d.locations:DEFAULT_LOCATIONS.slice())
     .map(l=>({name:l.name,area:l.area||l.name,holdsAircraft:l.holdsAircraft!=null?!!l.holdsAircraft:l.kind==='spot',region:l.region||"",hidden:!!l.hidden}));
   // one-time merge of seeded spots (keeps any equipment; adds spots not present)
@@ -540,7 +553,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}
+  if(t==="settings"){renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 $("#addBtn").addEventListener("click",()=>requireUnlock(()=>openEdit(null)));
 function updateBackBtn(){$("#homeBtn").hidden=(curTab==="hub");updateFloatBack();}
@@ -626,13 +639,15 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
 $("#search").addEventListener("input",renderList);
 $("#filterLoc").addEventListener("change",renderList);
 function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
-  sel.innerHTML=`<option value="">All locations</option>`+knownLocations().map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
+  // only locations you actually have equipment at
+  const locs=[...new Set(data.equipment.map(e=>e.location).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+  sel.innerHTML=`<option value="">All locations</option>`+locs.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
   if([...sel.options].some(o=>o.value===cur))sel.value=cur;}
 
 /* ---- add/edit ---- */
 let editingId=null;
 function fillTypeSelect(sel,val){sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")+`<option value="__new__">➕ Add new type…</option>`;if(val!=null)sel.value=val;}
-function fillLocSelect(val){const opts=[...EQUIP_LOCS];if(val&&!opts.includes(val))opts.unshift(val);
+function fillLocSelect(val){const opts=[...equipLocs()];if(val&&!opts.includes(val))opts.unshift(val);
   $("#fLoc").innerHTML=`<option value="">— No location —</option>`+opts.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("")+`<option value="__other__">Other…</option>`;
   $("#fLoc").value=val||"";}
 $("#fLoc").addEventListener("change",function(){if(this.value==="__other__"){const v=(prompt("Location:")||"").trim();fillLocSelect(v);}});
@@ -661,7 +676,8 @@ function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
   e.location=loc.trim();e.updated=todayISO();save();refreshAll();toast(loc.trim()?`Moved to ${loc.trim()}`:"Location cleared");}
 
 /* ===================== INVENTORY (location -> equipment) ===================== */
-const EQUIP_LOCS=["South","C4","Ballpark","WestPark"];
+const EQUIP_LOCS_DEFAULT=["South","C4","Ballpark","WestPark"];
+function equipLocs(){return (data.equipLocs&&data.equipLocs.length)?data.equipLocs:EQUIP_LOCS_DEFAULT;}
 let inv={stage:"loc",loc:null,covered:[]},invSel=new Set();
 function setWizFoot(cfg){const f=$("#wizFoot");
   if(!cfg){f.hidden=true;$("#invRoot").style.paddingBottom="";updateFloatBack();return;}
@@ -678,7 +694,7 @@ function spotGroup(name){const m=name.match(/^(.*?)(\d+)([A-Za-z].*)?$/);
   return {key:pre+"|"+(letter?"A":"N"),label:letter?`${pre} · A-spots`:pre,ord:letter?1:0,pre};}
 function groupSpots(spots){const g={};spots.forEach(s=>{const k=spotGroup(s.name);(g[k.key]=g[k.key]||{...k,items:[]}).items.push(s);});
   return Object.values(g).sort((a,b)=>(a.pre||a.label).localeCompare(b.pre||b.label,undefined,{numeric:true})||a.ord-b.ord);}
-function invLocs(){const s=[...EQUIP_LOCS];data.equipment.forEach(e=>{if(e.location&&!s.includes(e.location))s.push(e.location);});return s;}
+function invLocs(){const s=[...equipLocs()];data.equipment.forEach(e=>{if(e.location&&!s.includes(e.location))s.push(e.location);});return s;}
 function renderInventory(){const r=$("#invRoot");
   ({loc:renderInvLoc,select:renderInvSelect,sheet:renderInvSheet}[inv.stage]||renderInvLoc)(r);
   const c=r.firstElementChild;if(c)c.classList.add(inv.stage==="select"?"zoomin":"zoomout");}
@@ -1188,6 +1204,25 @@ $("#addTypeBtn").addEventListener("click",()=>{const v=$("#newType").value.trim(
   if(data.types.some(t=>t.toLowerCase()===v.toLowerCase())){toast("Type already exists");return;}
   data.types.push(v);$("#newType").value="";save();renderTypes();toast("Type added");});
 $("#newType").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addTypeBtn").click();});
+function renderEquipLocs(){const ls=equipLocs();
+  $("#equipLocManage").innerHTML=ls.map((l,i)=>`<div class="manage-row"><span class="el-name" data-i="${i}">${esc(l)}</span>
+    <button class="iconbtn el-up" data-i="${i}" title="Up"${i===0?" disabled":""}>▲</button>
+    <button class="iconbtn el-down" data-i="${i}" title="Down"${i===ls.length-1?" disabled":""}>▼</button>
+    <button class="iconbtn el-del" data-i="${i}" title="Remove">✕</button></div>`).join("")||`<p class="hint">No locations yet.</p>`;}
+$("#equipLocManage").addEventListener("click",e=>{const t=e.target.closest("button,.el-name");if(!t)return;
+  const i=+t.dataset.i;data.equipLocs=equipLocs().slice();const L=data.equipLocs;
+  if(t.classList.contains("el-del")){const inUse=data.equipment.some(eq=>eq.location===L[i]);
+    if(inUse&&!confirm(`"${L[i]}" has equipment assigned. Remove from the list anyway? (equipment keeps its label)`))return;L.splice(i,1);}
+  else if(t.classList.contains("el-up")&&i>0){[L[i-1],L[i]]=[L[i],L[i-1]];}
+  else if(t.classList.contains("el-down")&&i<L.length-1){[L[i+1],L[i]]=[L[i],L[i+1]];}
+  else if(t.classList.contains("el-name")){const v=(prompt("Rename location:",L[i])||"").trim();if(!v)return;
+    const old=L[i];L[i]=v;data.equipment.forEach(eq=>{if(eq.location===old)eq.location=v;});}
+  else return;
+  save();renderEquipLocs();refreshAll();});
+$("#addEquipLocBtn").addEventListener("click",()=>{const v=$("#newEquipLoc").value.trim();if(!v)return;
+  const L=equipLocs().slice();if(L.some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already in the list");return;}
+  L.push(v);data.equipLocs=L;$("#newEquipLoc").value="";save();renderEquipLocs();toast("Location added");});
+$("#newEquipLoc").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addEquipLocBtn").click();});
 
 /* ---- fleet ---- */
 $("#reloadFleet").addEventListener("click",async()=>{$("#fleetStatus").textContent="Reloading fleet…";
