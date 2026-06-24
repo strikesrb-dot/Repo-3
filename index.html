@@ -4,7 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#fc4c4e" />
-<title>Equipment Location Tracker</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ELT" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>ELT — Equipment Location Tracker</title>
 <style>
   :root{--navy:#0b3d63;--navy-d:#08304e;--accent:#f5a623;--accent-d:#d98c0a;--melon:#fc4c4e;--bg:#f4f6f8;--card:#fff;
     --line:#dce1e6;--ink:#1c2530;--muted:#67727e;--good:#1e7d46;--good-bg:#e6f4ec;--danger:#c0392b;--shadow:0 1px 3px rgba(0,0,0,.12);}
@@ -19,6 +25,8 @@
   .hubtile{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 2px 10px rgba(20,40,70,.08);padding:22px 10px;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;text-align:center;line-height:1.2}
   .hubtile:active{transform:scale(.97)}
   .hubtile .hi{font-size:34px;line-height:1}
+  .hubsec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:16px 4px 8px}
+  .hubgrid.one{grid-template-columns:1fr}
   .ic{width:1em;height:1em;vertical-align:-.15em;display:inline-block;flex:none}
   .hubtile .hi .ic{width:34px;height:34px;vertical-align:0}
   header{position:sticky;top:0;z-index:20;background:var(--melon);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;box-shadow:var(--shadow);}
@@ -140,6 +148,8 @@
   .sheet-head .title{font-size:20px;font-weight:800}
   .sheet-head .info{font-size:13px;color:var(--muted);text-align:right}
   .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;z-index:80;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
+  .floatback{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:40;background:var(--navy);color:#fff;border:none;border-radius:999px;padding:11px 18px 11px 14px;font-size:15px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.28);cursor:pointer}
+  .floatback:active{transform:scale(.95)}
   .toast.show{opacity:1}
   @media print{
     body{background:#fff;padding:0}
@@ -165,12 +175,19 @@
   <!-- EQUIPMENT -->
   <!-- HUB -->
   <section id="view-hub" class="view active">
+    <div class="hubsec">Field Logging</div>
     <div class="hubgrid">
-      <button class="hubtile" data-go="inventory"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg></span>Inventory</button>
-      <button class="hubtile" data-go="park"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg></span>Stop Mark Lookup</button>
-      <button class="hubtile" data-go="aircraft"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg></span>Aircraft Lookup</button>
+      <button class="hubtile" data-go="inventory"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg></span>Do Inventory</button>
       <button class="hubtile" data-go="secure"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>Aircraft Secure Log</button>
+    </div>
+    <div class="hubsec">Lookups &amp; Lists</div>
+    <div class="hubgrid">
+      <button class="hubtile" data-go="aircraft"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg></span>Aircraft Lookup</button>
+      <button class="hubtile" data-go="park"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg></span>Stop Mark Lookup</button>
       <button class="hubtile" data-go="equipment"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></span>Equipment List</button>
+    </div>
+    <div class="hubsec">App</div>
+    <div class="hubgrid one">
       <button class="hubtile" data-go="settings"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>Settings</button>
     </div>
   </section>
@@ -315,6 +332,7 @@
   </div>
 </div>
 
+<button id="floatBack" class="floatback" hidden>‹ Back</button>
 <div id="printArea"></div>
 <div class="toast" id="toast"></div>
 
@@ -473,9 +491,33 @@ function goTab(t){showTab(t);
   if(t==="settings"){renderTypes();renderLocs();updateFleetStatus();fillAreaList();}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 $("#addBtn").addEventListener("click",()=>openEdit(null));
-function updateBackBtn(){$("#homeBtn").hidden=(curTab==="hub");}
+function updateBackBtn(){$("#homeBtn").hidden=(curTab==="hub");updateFloatBack();}
+function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&$("#wizFoot").hidden);}
 $("#homeBtn").addEventListener("click",()=>showTab("hub"));
 $("#hdrTitle")?.addEventListener("click",()=>showTab("hub"));
+function invStepBack(){const s=inv.stage;
+  if(s==="region"){showTab("hub");return;}
+  const single=spotsInArea(inv.area).length<=1; // spot step was auto-skipped
+  if(s==="area")inv.stage="region";
+  else if(s==="spot")inv.stage=multiArea()?"area":"region";
+  else if(s==="aircraft")inv.stage=single?(multiArea()?"area":"region"):"spot";
+  else if(s==="select")inv.stage=holdsAircraft(inv.spot)?"aircraft":(single?(multiArea()?"area":"region"):"spot");
+  else if(s==="next"||s==="sheet")inv.stage="region";
+  else{showTab("hub");return;}
+  renderInventory();}
+function parkBack(){const s=park.stage;
+  if(s==="spot")park.stage="area";else if(s==="ac")park.stage="spot";else if(s==="result")park.stage="ac";
+  else{showTab("hub");return;}renderPark();}
+function secBack(){const s=sec.stage;
+  if(s==="area")sec.stage="home";else if(s==="spot")sec.stage="area";else if(s==="aircraft")sec.stage="spot";else if(s==="details")sec.stage="aircraft";
+  else{showTab("hub");return;}renderSecure();}
+function goBack(){
+  if($("#editOverlay").classList.contains("open")){closeEdit();return;}
+  if(curTab==="inventory")return invStepBack();
+  if(curTab==="park")return parkBack();
+  if(curTab==="secure")return secBack();
+  showTab("hub");}
+$("#floatBack").addEventListener("click",goBack);
 
 /* ---- equipment list ---- */
 function renderList(){
@@ -561,13 +603,13 @@ function wizHeader(){const seq=wizSeq(),i=seq.indexOf(inv.stage);if(i<0)return "
   const nm={region:"Which audit",area:"Pick zone",spot:"Pick spot",aircraft:"Aircraft",select:"Equipment"};
   return `<div class="wiz-stepn">Step ${i+1} of ${n} — ${nm[inv.stage]||""}</div><div class="wiz-prog"><i style="width:${pct}%"></i></div>`;}
 function setWizFoot(cfg){const f=$("#wizFoot");
-  if(!cfg){f.hidden=true;$("#invRoot").style.paddingBottom="";return;}
+  if(!cfg){f.hidden=true;$("#invRoot").style.paddingBottom="";updateFloatBack();return;}
   f.hidden=false;const nb=$("#wizNext"),bb=$("#wizBack");
   if(cfg.nextHidden){nb.style.display="none";bb.style.flex="1";}
   else{nb.style.display="";bb.style.flex="0 0 38%";nb.textContent=cfg.nextLabel||"Next ›";nb.disabled=!cfg.nextOn;nb.onclick=cfg.nextOn?cfg.next:null;}
   bb.textContent=cfg.backLabel||"‹ Back";bb.onclick=cfg.back;
   f.style.bottom="0px";
-  $("#invRoot").style.paddingBottom=(f.offsetHeight+14)+"px";}
+  $("#invRoot").style.paddingBottom=(f.offsetHeight+14)+"px";updateFloatBack();}
 // group spots: split by prefix and whether they carry a letter suffix (A-spots)
 function spotGroup(name){const m=name.match(/^(.*?)(\d+)([A-Za-z].*)?$/);
   if(!m)return {key:name,label:name,ord:0,letter:false};
@@ -591,7 +633,7 @@ function renderInvRegion(r){
   $$("#regChips .chip").forEach(c=>c.addEventListener("click",()=>pickRegion(c.dataset.g,c.dataset.r==="1")));
   $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
   $("#reset")?.addEventListener("click",()=>{inv=newInv();renderInventory();});
-  setWizFoot({back:()=>showTab("equipment"),backLabel:"‹ Exit",nextHidden:true});
+  setWizFoot({back:invStepBack,backLabel:"‹ Exit",nextHidden:true});
 }
 function renderInvArea(r){
   const as=areasInRegion(inv.region);
@@ -603,7 +645,7 @@ function renderInvArea(r){
     ${inv.covered.length?`<div class="btnrow"><button class="btn navy" id="finish"> Generate sheet (${inv.covered.length})</button></div>`:""}</div>`;
   $$("#areaChips .chip").forEach(c=>c.addEventListener("click",()=>{inv.area=c.dataset.a;enterArea();}));
   $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
-  setWizFoot({back:()=>{inv.area=null;inv.stage="region";renderInventory();},nextHidden:true});
+  setWizFoot({back:invStepBack,nextHidden:true});
 }
 function renderInvSpot(r){
   const spots=spotsInArea(inv.area),groups=groupSpots(spots),multi=groups.length>1;
@@ -619,7 +661,7 @@ function renderInvSpot(r){
     inv.spot=c.dataset.s;inv.ac=data.spotAircraft[inv.spot]||null;
     inv.stage=holdsAircraft(inv.spot)?"aircraft":"select";renderInventory();}));
   $("#finish")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
-  setWizFoot({back:()=>{inv.spot=null;inv.stage=multiArea()?"area":"region";renderInventory();},nextHidden:true});
+  setWizFoot({back:invStepBack,nextHidden:true});
 }
 function renderInvAircraft(r){
   const cur=inv.ac||data.spotAircraft[inv.spot]||null;
@@ -647,7 +689,7 @@ function renderInvAircraft(r){
   }
   shipIn.addEventListener("input",refreshAc);refreshAc();
   $("#noAc").addEventListener("click",()=>{inv.ac=null;inv.stage="select";renderInventory();});
-  $("#invAcBack").addEventListener("click",()=>{inv.stage="spot";renderInventory();});
+  $("#invAcBack").addEventListener("click",invStepBack);
   $("#invAcNext").addEventListener("click",()=>{if(inv.ac&&inv.ac.ship&&inv.ac.reg)rememberAircraft(inv.ac.ship,inv.ac.reg,inv.ac.type);inv.stage="select";renderInventory();});
   setWizFoot(null);
 }
@@ -679,7 +721,7 @@ function renderInvSelect(r){
   $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
     const id=li.dataset.id;if(invSel.has(id))invSel.delete(id);else invSel.add(id);paint();});
   $("#invSearch").addEventListener("input",paint);
-  setWizFoot({back:()=>{inv.stage=holdsAircraft(inv.spot)?"aircraft":"spot";renderInventory();},
+  setWizFoot({back:invStepBack,
     next:commitSpot,nextOn:true,nextLabel:"✓ Done ›"});
   paint();
 }
@@ -1159,6 +1201,7 @@ function updateHdr(){const n=data.equipment.length,locs=knownLocations().length;
 
 /* ---- init ---- */
 (async function(){save();if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();autoLoadMaster();})();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
 </script>
 </body>
 </html>
