@@ -1,1615 +1,1995 @@
 {
-"equipment": [
-{
-"id": "eq30000",
-"tag": "AC5111",
-"type": "PCA",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30001",
-"tag": "AC5405",
-"type": "PCA",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30002",
-"tag": "AC2559",
-"type": "PCA",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30003",
-"tag": "AC5090",
-"type": "PCA",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30004",
-"tag": "AC2552",
-"type": "PCA",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30005",
-"tag": "AC5400",
-"type": "PCA",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30006",
-"tag": "GP2026",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30007",
-"tag": "GP3080",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30008",
-"tag": "GP1079",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30009",
-"tag": "GP3081",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3000a",
-"tag": "GP1042",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3000b",
-"tag": "GP2016",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3000c",
-"tag": "GP2027",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3000d",
-"tag": "GP1100",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3000e",
-"tag": "108862",
-"type": "Stair Truck",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3000f",
-"tag": "WS023681",
-"type": "Stairs",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30010",
-"tag": "4763513",
-"type": "Stairs",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30011",
-"tag": "4763514",
-"type": "Stairs",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30012",
-"tag": "4763515",
-"type": "Stairs",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30013",
-"tag": "4763516",
-"type": "Stairs",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30014",
-"tag": "030",
-"type": "Airbus Stairs",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30015",
-"tag": "042",
-"type": "Airbus Stairs",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30016",
-"tag": "018",
-"type": "Airbus Stairs",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30017",
-"tag": "CT1462",
-"type": "Tug",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30018",
-"tag": "FT1036",
-"type": "Ballpark Tug",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30019",
-"tag": "GP3435",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3001a",
-"tag": "GP1077",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3001b",
-"tag": "GP1046",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3001c",
-"tag": "GP1915",
-"type": "Ground power",
-"location": "Amelia / Lindy",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3001d",
-"tag": "AC5308",
-"type": "PCA",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3001e",
-"tag": "AC5246",
-"type": "PCA",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3001f",
-"tag": "AC5318",
-"type": "PCA",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30020",
-"tag": "AC5315",
-"type": "PCA",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30021",
-"tag": "AC5321",
-"type": "PCA",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30022",
-"tag": "AC5401",
-"type": "PCA",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30023",
-"tag": "AC5266",
-"type": "PCA",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30024",
-"tag": "GP1745",
-"type": "Ground power",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30025",
-"tag": "GP1052",
-"type": "Ground power",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30026",
-"tag": "GP8084",
-"type": "Ground power",
-"location": "C4 Hardstand",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30027",
-"tag": "GP1045",
-"type": "Ground power",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30028",
-"tag": "GP2023",
-"type": "Ground power",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30029",
-"tag": "DA363284X",
-"type": "Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3002a",
-"tag": "024",
-"type": "Airbus Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3002b",
-"tag": "023",
-"type": "Airbus Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3002c",
-"tag": "029",
-"type": "Airbus Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3002d",
-"tag": "4748249",
-"type": "Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3002e",
-"tag": "4741091",
-"type": "Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3002f",
-"tag": "WS2965",
-"type": "Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30030",
-"tag": "DA023559",
-"type": "Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30031",
-"tag": "GP1922",
-"type": "Ground power",
-"location": "C4 Hardstand",
-"notes": "90KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30032",
-"tag": "GP3081",
-"type": "Ground power",
-"location": "C4 Hardstand",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30033",
-"tag": "GP0137",
-"type": "Ground power",
-"location": "C4 Hardstand",
-"notes": "90KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30034",
-"tag": "AC5035",
-"type": "PCA",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30035",
-"tag": "16",
-"type": "Airbus Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30036",
-"tag": "18",
-"type": "Airbus Stairs",
-"location": "C4 Hardstand",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30037",
-"tag": "GP0366",
-"type": "Ground power",
-"location": "West Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30038",
-"tag": "GP1080",
-"type": "Ground power",
-"location": "West Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30039",
-"tag": "GP1938",
-"type": "Ground power",
-"location": "West Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3003a",
-"tag": "GP2668",
-"type": "Ground power",
-"location": "West Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3003b",
-"tag": "GP0368",
-"type": "Ground power",
-"location": "West Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3003c",
-"tag": "GP2043",
-"type": "Ground power",
-"location": "West Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3003d",
-"tag": "GP9737",
-"type": "Ground power",
-"location": "West Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3003e",
-"tag": "GP1045",
-"type": "Ground power",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3003f",
-"tag": "AC2708",
-"type": "PCA",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30040",
-"tag": "AC5343",
-"type": "PCA",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30041",
-"tag": "AC5341",
-"type": "PCA",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30042",
-"tag": "AC5237",
-"type": "PCA",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30043",
-"tag": "AC2737",
-"type": "PCA",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30044",
-"tag": "AH0073",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30045",
-"tag": "AH0058",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30046",
-"tag": "AH0099",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30047",
-"tag": "GP8860",
-"type": "Ground power",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30048",
-"tag": "GP2042",
-"type": "Ground power",
-"location": "West Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30049",
-"tag": "AH0090",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3004a",
-"tag": "AH0072",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3004b",
-"tag": "AH0089",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3004c",
-"tag": "AH0040",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3004d",
-"tag": "AH0088",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3004e",
-"tag": "AH0091",
-"type": "PCA Heat",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3004f",
-"tag": "NM2418",
-"type": "Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30050",
-"tag": "4739706",
-"type": "Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30051",
-"tag": "WS366439",
-"type": "Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30052",
-"tag": "002",
-"type": "Airbus Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30053",
-"tag": "003",
-"type": "Airbus Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30054",
-"tag": "015",
-"type": "Airbus Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30055",
-"tag": "024",
-"type": "Airbus Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30056",
-"tag": "021",
-"type": "Airbus Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30057",
-"tag": "040",
-"type": "Airbus Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30058",
-"tag": "014",
-"type": "Airbus Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30059",
-"tag": "GP8860",
-"type": "Ground power",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3005a",
-"tag": "0320",
-"type": "Stairs",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3005b",
-"tag": "MS9616",
-"type": "Stair Truck",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3005c",
-"tag": "MS8861",
-"type": "Stair Truck",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3005d",
-"tag": "MS0531",
-"type": "Stair Truck",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3005e",
-"tag": "FT2433",
-"type": "Ballpark Tug",
-"location": "West Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3005f",
-"tag": "AC5245",
-"type": "PCA",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30060",
-"tag": "AC5144",
-"type": "PCA",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30061",
-"tag": "AC5249",
-"type": "PCA",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30062",
-"tag": "AC5320",
-"type": "PCA",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30063",
-"tag": "AC2706",
-"type": "PCA",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30064",
-"tag": "AC5094",
-"type": "PCA",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30065",
-"tag": "AH0750",
-"type": "PCA Heat",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30066",
-"tag": "AH0131",
-"type": "PCA Heat",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30067",
-"tag": "AH0703",
-"type": "PCA Heat",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30068",
-"tag": "AC5248",
-"type": "PCA",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30069",
-"tag": "AC5095",
-"type": "PCA",
-"location": "C4 Boneyard",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3006a",
-"tag": "GP0298",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "90KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3006b",
-"tag": "GP1104",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3006c",
-"tag": "GP0137",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "90KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3006d",
-"tag": "GP1859",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3006e",
-"tag": "GP1922",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "90KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3006f",
-"tag": "GP0961",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30070",
-"tag": "GP1048",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30071",
-"tag": "GP1731",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30072",
-"tag": "GP1083",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30073",
-"tag": "GP1078",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30074",
-"tag": "GP1050",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30075",
-"tag": "GP3435",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30076",
-"tag": "GP1081",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30077",
-"tag": "GP1738",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30078",
-"tag": "GP1044",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30079",
-"tag": "GP1076",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3007a",
-"tag": "GP1103",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3007b",
-"tag": "GP1047",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3007c",
-"tag": "GP0958",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3007d",
-"tag": "GP1043",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "120KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3007e",
-"tag": "GP1082",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3007f",
-"tag": "GP1732",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "No KVA tag",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30080",
-"tag": "GP3343",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "90KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30081",
-"tag": "GP1052",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30082",
-"tag": "GP3050",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "180KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30083",
-"tag": "GP1914",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30084",
-"tag": "GP2023",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30085",
-"tag": "GP1742",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "K80KVA",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30086",
-"tag": "AC5088",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30087",
-"tag": "AC5342",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30088",
-"tag": "AC5344",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30089",
-"tag": "AC2740",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3008a",
-"tag": "AC5120",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3008b",
-"tag": "AC5058",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3008c",
-"tag": "AC5400",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3008d",
-"tag": "AC5057",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3008e",
-"tag": "GP3433",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3008f",
-"tag": "GP3050",
-"type": "Ground power",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30090",
-"tag": "AC5043",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30091",
-"tag": "AC5314",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30092",
-"tag": "AC5080",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30093",
-"tag": "AC5063",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30094",
-"tag": "AC5049",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30095",
-"tag": "AC2709",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30096",
-"tag": "AC5067",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30097",
-"tag": "AC5060",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30098",
-"tag": "AC5044",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq30099",
-"tag": "AC5064",
-"type": "PCA",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3009a",
-"tag": "4749091",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3009b",
-"tag": "4749092",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3009c",
-"tag": "4749089",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3009d",
-"tag": "4749090",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3009e",
-"tag": "WS025061",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq3009f",
-"tag": "WS366768",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a0",
-"tag": "WS366775",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a1",
-"tag": "WS023682",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a2",
-"tag": "WS366771",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a3",
-"tag": "WS366770",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a4",
-"tag": "WS366772",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a5",
-"tag": "WS366774",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a6",
-"tag": "WS366773",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a7",
-"tag": "WS366769",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a8",
-"tag": "WS2967",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300a9",
-"tag": "WS2964",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300aa",
-"tag": "WS2966",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300ab",
-"tag": "AH0059",
-"type": "PCA Heat",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300ac",
-"tag": "AH0052",
-"type": "PCA Heat",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300ad",
-"tag": "FT0542",
-"type": "Ballpark Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300ae",
-"tag": "FT0556",
-"type": "Ballpark Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300af",
-"tag": "FT0540",
-"type": "Ballpark Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b0",
-"tag": "HT0940",
-"type": "Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b1",
-"tag": "FT0541",
-"type": "Ballpark Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b2",
-"tag": "FT0558",
-"type": "Ballpark Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b3",
-"tag": "FT0538",
-"type": "Ballpark Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b4",
-"tag": "FT0557",
-"type": "Ballpark Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b5",
-"tag": "PI3343",
-"type": "Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b6",
-"tag": "4751105",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b7",
-"tag": "4751103",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b8",
-"tag": "BP#02",
-"type": "Stairs",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300b9",
-"tag": "PI2509",
-"type": "Pickup Truck",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300ba",
-"tag": "CT6250",
-"type": "Tug",
-"location": "Ball Park",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300bb",
-"tag": "AC5079",
-"type": "PCA",
-"location": "GSE",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300bc",
-"tag": "AC5069",
-"type": "PCA",
-"location": "GSE",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300bd",
-"tag": "AC5094",
-"type": "PCA",
-"location": "GSE",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300be",
-"tag": "AC2553",
-"type": "PCA",
-"location": "GSE",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300bf",
-"tag": "AH0111",
-"type": "PCA Heat",
-"location": "GSE",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300c0",
-"tag": "AH0113",
-"type": "PCA Heat",
-"location": "GSE",
-"notes": "",
-"updated": "2026-06-25"
-},
-{
-"id": "eq300c1",
-"tag": "GP1731",
-"type": "Ground power",
-"location": "GSE",
-"notes": "180KVA",
-"updated": "2026-06-25"
-}
-],
-"types": [
-"PCA",
-"PCA Heat",
-"Ground power",
-"Stairs",
-"Airbus Stairs",
-"Stair Truck",
-"Ballpark Tug",
-"Tug",
-"Pickup Truck"
-],
-"spotAircraft": {},
-"locations": [
-{
-"name": "Amelia / Lindy",
-"area": "Amelia / Lindy",
-"holdsAircraft": false,
-"region": "",
-"hidden": false
-},
-{
-"name": "C4 Hardstand",
-"area": "C4 Hardstand",
-"holdsAircraft": false,
-"region": "",
-"hidden": false
-},
-{
-"name": "West Park",
-"area": "West Park",
-"holdsAircraft": false,
-"region": "",
-"hidden": false
-},
-{
-"name": "C4 Boneyard",
-"area": "C4 Boneyard",
-"holdsAircraft": false,
-"region": "",
-"hidden": false
-},
-{
-"name": "Ball Park",
-"area": "Ball Park",
-"holdsAircraft": false,
-"region": "",
-"hidden": false
-},
-{
-"name": "GSE",
-"area": "GSE",
-"holdsAircraft": false,
-"region": "",
-"hidden": false
-}
-],
-"locSeedV": 11,
-"typeSeedV": 2,
-"secureLog": []
+  "equipment": [
+    {
+      "id": "eq30000",
+      "tag": "AC5111",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30001",
+      "tag": "AC5405",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30002",
+      "tag": "AC2559",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30003",
+      "tag": "AC5090",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30004",
+      "tag": "AC2552",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30005",
+      "tag": "AC5400",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30006",
+      "tag": "GP2026",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30007",
+      "tag": "GP3080",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30008",
+      "tag": "GP1079",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq30009",
+      "tag": "GP3081",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq3000a",
+      "tag": "GP1042",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "180KVA",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq3000b",
+      "tag": "GP2016",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq3000c",
+      "tag": "GP2027",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq3000d",
+      "tag": "GP1100",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq3000e",
+      "tag": "108862",
+      "type": "Stair Truck",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq3000f",
+      "tag": "WS023681",
+      "type": "Stairs",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30010",
+      "tag": "4763513",
+      "type": "Stairs",
+      "location": "South",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "subtype": "W.A.A.G.",
+      "volt": ""
+    },
+    {
+      "id": "eq30011",
+      "tag": "4763514",
+      "type": "Stairs",
+      "location": "South",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "subtype": "W.A.A.G.",
+      "volt": ""
+    },
+    {
+      "id": "eq30012",
+      "tag": "4763515",
+      "type": "Stairs",
+      "location": "South",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "subtype": "W.A.A.G.",
+      "volt": ""
+    },
+    {
+      "id": "eq30013",
+      "tag": "4763516",
+      "type": "Stairs",
+      "location": "South",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "subtype": "W.A.A.G.",
+      "volt": ""
+    },
+    {
+      "id": "eq30014",
+      "tag": "030",
+      "type": "Airbus Stairs",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30015",
+      "tag": "042",
+      "type": "Airbus Stairs",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30016",
+      "tag": "018",
+      "type": "Airbus Stairs",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30017",
+      "tag": "CT1462",
+      "type": "Tug",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30018",
+      "tag": "FT1036",
+      "type": "Ballpark Tug",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30019",
+      "tag": "GP3435",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "120KVA",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq3001a",
+      "tag": "GP1077",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "180KVA",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq3001b",
+      "tag": "GP1046",
+      "type": "Ground Power",
+      "location": "South",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "Staging Area",
+      "nose": ""
+    },
+    {
+      "id": "eq3001c",
+      "tag": "GP1915",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq3001d",
+      "tag": "AC5308",
+      "type": "PCA",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3001e",
+      "tag": "AC5246",
+      "type": "PCA",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3001f",
+      "tag": "AC5318",
+      "type": "PCA",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30020",
+      "tag": "AC5315",
+      "type": "PCA",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30021",
+      "tag": "AC5321",
+      "type": "PCA",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30022",
+      "tag": "AC5401",
+      "type": "PCA",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30023",
+      "tag": "AC5266",
+      "type": "PCA",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30024",
+      "tag": "GP1745",
+      "type": "Ground Power",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30025",
+      "tag": "GP1052",
+      "type": "Ground Power",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30026",
+      "tag": "GP8084",
+      "type": "Ground Power",
+      "location": "C4 Hardstand",
+      "notes": "120KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30027",
+      "tag": "GP1045",
+      "type": "Ground Power",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30028",
+      "tag": "GP2023",
+      "type": "Ground Power",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30029",
+      "tag": "DA363284X",
+      "type": "Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3002a",
+      "tag": "024",
+      "type": "Airbus Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3002b",
+      "tag": "023",
+      "type": "Airbus Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3002c",
+      "tag": "029",
+      "type": "Airbus Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3002d",
+      "tag": "4748249",
+      "type": "Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3002e",
+      "tag": "4741091",
+      "type": "Stairs",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq3002f",
+      "tag": "WS2965",
+      "type": "Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30030",
+      "tag": "DA023559",
+      "type": "Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30031",
+      "tag": "GP1922",
+      "type": "Ground Power",
+      "location": "C4 Hardstand",
+      "notes": "90KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30032",
+      "tag": "GP3081",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "180KVA",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq30033",
+      "tag": "GP0137",
+      "type": "Ground Power",
+      "location": "C4 Hardstand",
+      "notes": "90KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30034",
+      "tag": "AC5035",
+      "type": "PCA",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30035",
+      "tag": "16",
+      "type": "Airbus Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30036",
+      "tag": "18",
+      "type": "Airbus Stairs",
+      "location": "C4 Hardstand",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30037",
+      "tag": "GP0366",
+      "type": "Ground Power",
+      "location": "South",
+      "notes": "120KVA",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "Staging Area",
+      "nose": ""
+    },
+    {
+      "id": "eq30038",
+      "tag": "GP1080",
+      "type": "Ground Power",
+      "location": "West Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30039",
+      "tag": "GP1938",
+      "type": "Ground Power",
+      "location": "West Park",
+      "notes": "120KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3003a",
+      "tag": "GP2668",
+      "type": "Ground Power",
+      "location": "West Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3003b",
+      "tag": "GP0368",
+      "type": "Ground Power",
+      "location": "South",
+      "notes": "180KVA",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "Staging Area",
+      "nose": ""
+    },
+    {
+      "id": "eq3003c",
+      "tag": "GP2043",
+      "type": "Ground Power",
+      "location": "West Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3003d",
+      "tag": "GP9737",
+      "type": "Ground Power",
+      "location": "West Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3003e",
+      "tag": "GP1045",
+      "type": "Ground Power",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3003f",
+      "tag": "AC2708",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": "",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq30040",
+      "tag": "AC5343",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30041",
+      "tag": "AC5341",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30042",
+      "tag": "AC5237",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30043",
+      "tag": "AC2737",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30044",
+      "tag": "AH0073",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq30045",
+      "tag": "AH0058",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "HEAT",
+      "volt": ""
+    },
+    {
+      "id": "eq30046",
+      "tag": "AH0099",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq30047",
+      "tag": "GP8860",
+      "type": "Ground Power",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30048",
+      "tag": "GP2042",
+      "type": "Ground Power",
+      "location": "West Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30049",
+      "tag": "AH0090",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq3004a",
+      "tag": "AH0072",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "HEAT",
+      "volt": ""
+    },
+    {
+      "id": "eq3004b",
+      "tag": "AH0089",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq3004c",
+      "tag": "AH0040",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq3004d",
+      "tag": "AH0088",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq3004e",
+      "tag": "AH0091",
+      "type": "PCA",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq3004f",
+      "tag": "NM2418",
+      "type": "Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30050",
+      "tag": "4739706",
+      "type": "Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30051",
+      "tag": "WS366439",
+      "type": "Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30052",
+      "tag": "002",
+      "type": "Airbus Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30053",
+      "tag": "003",
+      "type": "Airbus Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30054",
+      "tag": "015",
+      "type": "Airbus Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30055",
+      "tag": "024",
+      "type": "Airbus Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30056",
+      "tag": "021",
+      "type": "Airbus Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30057",
+      "tag": "040",
+      "type": "Airbus Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30058",
+      "tag": "014",
+      "type": "Airbus Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30059",
+      "tag": "GP8860",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq3005a",
+      "tag": "0320",
+      "type": "Stairs",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3005b",
+      "tag": "MS9616",
+      "type": "Stair Truck",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3005c",
+      "tag": "MS8861",
+      "type": "Stair Truck",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3005d",
+      "tag": "MS0531",
+      "type": "Stair Truck",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3005e",
+      "tag": "FT2433",
+      "type": "Ballpark Tug",
+      "location": "West Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3005f",
+      "tag": "AC5245",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30060",
+      "tag": "AC5144",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30061",
+      "tag": "AC5249",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30062",
+      "tag": "AC5320",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30063",
+      "tag": "AC2706",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30064",
+      "tag": "AC5094",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30065",
+      "tag": "AH0750",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq30066",
+      "tag": "AH0131",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq30067",
+      "tag": "AH0703",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq30068",
+      "tag": "AC5248",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq30069",
+      "tag": "AC5095",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "spot": "",
+      "nose": "",
+      "oos": false
+    },
+    {
+      "id": "eq3006a",
+      "tag": "GP0298",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "90KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3006b",
+      "tag": "GP1104",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3006c",
+      "tag": "GP0137",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "90KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3006d",
+      "tag": "GP1859",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3006e",
+      "tag": "GP1922",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "90KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3006f",
+      "tag": "GP0961",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "120KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30070",
+      "tag": "GP1048",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "120KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30071",
+      "tag": "GP1731",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30072",
+      "tag": "GP1083",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30073",
+      "tag": "GP1078",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30074",
+      "tag": "GP1050",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30075",
+      "tag": "GP3435",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "120KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30076",
+      "tag": "GP1081",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30077",
+      "tag": "GP1738",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30078",
+      "tag": "GP1044",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "120KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30079",
+      "tag": "GP1076",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3007a",
+      "tag": "GP1103",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3007b",
+      "tag": "GP1047",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "120KVA",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq3007c",
+      "tag": "GP0958",
+      "type": "Ground Power",
+      "location": "",
+      "notes": "120KVA",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq3007d",
+      "tag": "GP1043",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "120KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3007e",
+      "tag": "GP1082",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3007f",
+      "tag": "GP1732",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "No KVA tag",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30080",
+      "tag": "GP3343",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "90KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30081",
+      "tag": "GP1052",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30082",
+      "tag": "GP3050",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30083",
+      "tag": "GP1914",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30084",
+      "tag": "GP2023",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30085",
+      "tag": "GP1742",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "K80KVA",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30086",
+      "tag": "AC5088",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30087",
+      "tag": "AC5342",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30088",
+      "tag": "AC5344",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30089",
+      "tag": "AC2740",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3008a",
+      "tag": "AC5120",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3008b",
+      "tag": "AC5058",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3008c",
+      "tag": "AC5400",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3008d",
+      "tag": "AC5057",
+      "type": "PCA",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq3008e",
+      "tag": "GP3433",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3008f",
+      "tag": "GP3050",
+      "type": "Ground Power",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30090",
+      "tag": "AC5043",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30091",
+      "tag": "AC5314",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30092",
+      "tag": "AC5080",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30093",
+      "tag": "AC5063",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30094",
+      "tag": "AC5049",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30095",
+      "tag": "AC2709",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30096",
+      "tag": "AC5067",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30097",
+      "tag": "AC5060",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30098",
+      "tag": "AC5044",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq30099",
+      "tag": "AC5064",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3009a",
+      "tag": "4749091",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3009b",
+      "tag": "4749092",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3009c",
+      "tag": "4749089",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3009d",
+      "tag": "4749090",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3009e",
+      "tag": "WS025061",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq3009f",
+      "tag": "WS366768",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a0",
+      "tag": "WS366775",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a1",
+      "tag": "WS023682",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a2",
+      "tag": "WS366771",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a3",
+      "tag": "WS366770",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a4",
+      "tag": "WS366772",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a5",
+      "tag": "WS366774",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a6",
+      "tag": "WS366773",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a7",
+      "tag": "WS366769",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a8",
+      "tag": "WS2967",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300a9",
+      "tag": "WS2964",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300aa",
+      "tag": "WS2966",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300ab",
+      "tag": "AH0059",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "HEAT",
+      "volt": ""
+    },
+    {
+      "id": "eq300ac",
+      "tag": "AH0052",
+      "type": "PCA",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq300ad",
+      "tag": "FT0542",
+      "type": "Ballpark Tug",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300ae",
+      "tag": "FT0556",
+      "type": "Ballpark Tug",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq300af",
+      "tag": "FT0540",
+      "type": "Ballpark Tug",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300b0",
+      "tag": "HT0940",
+      "type": "Ballpark Tug",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "Ice Cream Truck",
+      "volt": ""
+    },
+    {
+      "id": "eq300b1",
+      "tag": "FT0541",
+      "type": "Ballpark Tug",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300b2",
+      "tag": "FT0558",
+      "type": "Ballpark Tug",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300b3",
+      "tag": "FT0538",
+      "type": "Ballpark Tug",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300b4",
+      "tag": "FT0557",
+      "type": "Ballpark Tug",
+      "location": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "eq300b5",
+      "tag": "PI3343",
+      "type": "Pickup Truck",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq300b6",
+      "tag": "4751105",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300b7",
+      "tag": "4751103",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300b8",
+      "tag": "BP#02",
+      "type": "Stairs",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300b9",
+      "tag": "PI2509",
+      "type": "Pickup Truck",
+      "location": "Move Team",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq300ba",
+      "tag": "CT6250",
+      "type": "Ballpark Tug",
+      "location": "Ball Park",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "Electric",
+      "volt": ""
+    },
+    {
+      "id": "eq300bb",
+      "tag": "AC5079",
+      "type": "PCA",
+      "location": "GSE",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300bc",
+      "tag": "AC5069",
+      "type": "PCA",
+      "location": "GSE",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300bd",
+      "tag": "AC5094",
+      "type": "PCA",
+      "location": "GSE",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300be",
+      "tag": "AC2553",
+      "type": "PCA",
+      "location": "GSE",
+      "notes": "",
+      "updated": "2026-06-25"
+    },
+    {
+      "id": "eq300bf",
+      "tag": "AH0111",
+      "type": "PCA",
+      "location": "GSE",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq300c0",
+      "tag": "AH0113",
+      "type": "PCA",
+      "location": "GSE",
+      "notes": "",
+      "updated": "2026-06-25",
+      "subtype": "",
+      "volt": ""
+    },
+    {
+      "id": "eq300c1",
+      "tag": "GP1731",
+      "type": "Ground Power",
+      "location": "GSE",
+      "notes": "180KVA",
+      "updated": "2026-06-25"
+    }
+  ],
+  "types": [
+    "PCA",
+    "Ground Power",
+    "Stairs",
+    "Stair Truck",
+    "Ballpark Tug",
+    "Tug",
+    "Pickup Truck"
+  ],
+  "spotAircraft": {},
+  "locations": [
+    {
+      "name": "Amelia / Lindy",
+      "area": "Amelia / Lindy",
+      "holdsAircraft": false,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "C4 Hardstand",
+      "area": "C4 Hardstand",
+      "holdsAircraft": false,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "West Park",
+      "area": "West Park",
+      "holdsAircraft": false,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "C4 Boneyard",
+      "area": "C4 Boneyard",
+      "holdsAircraft": false,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "Ball Park",
+      "area": "Ball Park",
+      "holdsAircraft": false,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "GSE",
+      "area": "GSE",
+      "holdsAircraft": false,
+      "region": "",
+      "hidden": false
+    }
+  ],
+  "locSeedV": 11,
+  "typeSeedV": 2,
+  "secureLog": [],
+  "equipLocs": [
+    "South",
+    "C4 Hardstand",
+    "West Park",
+    "Ball Park",
+    "GSE"
+  ],
+  "movements": [
+    {
+      "id": "emqu1w78z552",
+      "tag": "4763513",
+      "type": "Stairs",
+      "from": "",
+      "to": "South",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782425118131,
+      "min": 1085
+    },
+    {
+      "id": "emqu21rej5g5",
+      "tag": "4763514",
+      "type": "PCA",
+      "from": "",
+      "to": "South",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782425377531,
+      "min": 1089
+    },
+    {
+      "id": "emqu22lyl7pk",
+      "tag": "4763515",
+      "type": "Stairs",
+      "from": "",
+      "to": "South",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782425417133,
+      "min": 1090
+    },
+    {
+      "id": "emqu22ubu63i",
+      "tag": "4763516",
+      "type": "Stairs",
+      "from": "",
+      "to": "South",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782425427978,
+      "min": 1090
+    },
+    {
+      "id": "emqu26lk83w2",
+      "tag": "4741091",
+      "type": "Stairs",
+      "from": "C4 Hardstand",
+      "to": "C4 Har",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782425603240,
+      "min": 1093
+    },
+    {
+      "id": "emqu272hb7cd",
+      "tag": "AC5035",
+      "type": "PCA",
+      "from": "C4 Hardstand",
+      "to": "C4 Hards",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782425625167,
+      "min": 1093
+    },
+    {
+      "id": "emqu276bp3ug",
+      "tag": "AC5035",
+      "type": "PCA",
+      "from": "C4 Hards",
+      "to": "C4 Hardstand",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782425630149,
+      "min": 1093
+    },
+    {
+      "id": "emqu27ryr7i",
+      "tag": "4741091",
+      "type": "Stairs",
+      "from": "C4 Har",
+      "to": "",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782425658195,
+      "min": 1094
+    },
+    {
+      "id": "emqu2nwfi206",
+      "tag": "PI2509",
+      "type": "Pickup Truck",
+      "from": "Ball Park",
+      "to": "Move Team",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782426410478,
+      "min": 1106
+    },
+    {
+      "id": "emqu3e97x5f",
+      "tag": "AC2559",
+      "type": "PCA",
+      "from": "",
+      "to": "Ball Park",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782427640109,
+      "min": 1127
+    }
+  ],
+  "locZones": {},
+  "hiddenTiles": [
+    "preview",
+    "preview2"
+  ],
+  "settings": {
+    "trackInventory": true,
+    "trackEdits": true,
+    "trackQuickMove": true,
+    "trackDeletions": false,
+    "trackClears": false,
+    "moveCap": 300,
+    "shiftAM": 300,
+    "shiftPM": 780,
+    "shiftNH": 1260,
+    "shiftNameAM": "AM",
+    "shiftNamePM": "PM",
+    "shiftNameNH": "Nighthawk",
+    "passcode": "3599",
+    "headerSub": "One for All"
+  },
+  "subtypes": {
+    "Stairs": [
+      "W.A.A.G.",
+      "Widebody W.A.A.G",
+      "737",
+      "MAX",
+      "Widebody"
+    ],
+    "Ballpark Tug": [
+      "Ice Cream Truck",
+      "Electric"
+    ],
+    "PCA": [
+      "HEAT"
+    ],
+    "Pickup Truck": [
+      "P.A.A.T.S."
+    ]
+  },
+  "previewSeeded": true
 }
