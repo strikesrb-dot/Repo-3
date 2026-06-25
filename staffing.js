@@ -241,6 +241,20 @@ function promptTargets(){
   return [...trainees,...excl];
 }
 
+function fmtMin(m){ m=((m%1440)+1440)%1440; const h=Math.floor(m/60),mm=m%60; return (h<10?"0":"")+h+":"+(mm<10?"0":"")+mm; }
+/* the hours to SHOW for a person on this shift — clipped to their ~8h shift window,
+   so a double/relief block (e.g. 05:00-21:00) reads as their current shift (05:00-13:00) */
+function shiftHours(b,shift){
+  const a=mins(b.start); let z=mins(b.end); if(a==null||z==null) return (b.start||"")+"-"+(b.end||"");
+  if(z<=a)z+=1440;
+  const prev=PREV_SHIFT[shift];
+  let workedPrevShift=false;
+  if(prev){ let ov=0; (ST.bodies||[]).filter(x=>x.emp===b.emp).forEach(x=>{const p=ivl(x.start,x.end); if(p)ov+=ovl(p,SHIFT_CORE[prev]);}); workedPrevShift=Math.min(ov,480)>=45; }
+  let ds,de;
+  if(workedPrevShift){ de=z; ds=Math.max(a,z-480); }   // came off the previous shift → show the tail (this shift)
+  else { ds=a; de=Math.min(z,a+480); }                 // forward/normal → show their first ~8h
+  return fmtMin(ds)+"-"+fmtMin(de);
+}
 /* per-shift pool (deduped by emp within shift) */
 function poolFor(shift){
   const out=[],seen=new Set();
@@ -250,7 +264,7 @@ function poolFor(shift){
     if(!sh)continue;
     if(b.emp&&seen.has(b.emp))continue; if(b.emp)seen.add(b.emp);
     const d=ST.dbl&&ST.dbl[b.emp];
-    out.push({...b,prim:sh.prim,ov:sh.ov,double:!!(d&&d.double),hours:b.start+"-"+b.end,span:(d&&d.double&&d.combo)?d.combo[0]+"-"+d.combo[1]:""});
+    out.push({...b,prim:sh.prim,ov:sh.ov,double:!!(d&&d.double),hours:shiftHours(b,shift),span:(d&&d.double&&d.combo)?d.combo[0]+"-"+d.combo[1]:""});
   }
   out.sort((a,b)=>(a.prim===b.prim?normName(a.name).localeCompare(normName(b.name)):a.prim?-1:1));
   return out;
@@ -650,7 +664,7 @@ function rAssign(){
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=toMin(e)<groupEnd;                         // leaves before the group's latest end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
-    return `<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}"${b.span?` title="Double · full span ${esc(b.span)}"`:''}>${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+    return `<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const grp={};avail.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
   const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
   const poolHTML=avail.length?gkeys.map(st=>{
@@ -677,7 +691,7 @@ function rAssign(){
   }).join("");
   // tugs grouped
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
-    return `<div class="tcard big ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
+    return `<div class="tcard ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
       <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>⚡ELEC</i>':''}${ty?`<small class="tty">${ty}</small>`:''}</span>
         <span class="thdr-r"><button class="gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''} title="Ground power">${t.gpu==='inop'?BOLT_X:BOLT}</button>
         <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button></span></div>
@@ -685,9 +699,12 @@ function rAssign(){
         `<div class="trow ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(crew.DRIVER)}</div>
          <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>`}
     </div>`;};
-  const tugGroups=TUG_GROUPS.map(g=>{const ids=g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
-    return ids.length?`<div class="tug-gtitle">STUG ${g.label}</div><div class="tug-grid">${ids.map(tugCard).join("")}</div>`:"";}).join("")
-    ||`<p class="hint">No tugs in service yet — set them on the Tug status screen.</p>`;
+  // unused (unset) tugs still show, extremely muted — tap to bring into service
+  const mutedCard=id=>`<div class="tcard muted" data-add="${id}"><div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>⚡ELEC</i>':''}${tugType(id)?`<small class="tty">${tugType(id)}</small>`:''}</span><span class="muse">+ add</span></div><div class="muted-b">Not in service · tap to add</div></div>`;
+  const tugGroups=TUG_GROUPS.map(g=>{
+    const cells=g.ids.map(id=>{const t=tugState(id);return (t.running||t.oos)?tugCard(id):mutedCard(id);});
+    return `<div class="tug-gtitle">STUG ${g.label}${tugType(g.ids[0])?` · ${tugType(g.ids[0])}`:''}</div><div class="tug-grid">${cells.join("")}</div>`;
+  }).join("");
   const running=TUGS.filter(id=>tugState(id).running).length;
   ROOT.innerHTML=`
     <div class="card pad assign-top">
@@ -711,6 +728,7 @@ function rAssign(){
     if(t[role]){t[role]=null;render();return;} place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); });
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
+  $$('#staffRoot .tcard.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
   $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="brief"; render(); };

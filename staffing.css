@@ -138,15 +138,21 @@
 /* early-leave time shown in red (assign pool grouping) */
 .abody .early{color:#c0271e;text-decoration:none;font-weight:800}
 
-/* bigger, more readable assigned tug cards */
-.tcard.big .thdr{font-size:15px;padding:9px 12px}
-.tcard.big .thdr .tty{font-size:11px}
-.tcard.big .thdr i{font-size:10px;padding:2px 6px}
-.tcard.big .trow{padding:12px;font-size:15px;min-height:30px}
-.tcard.big .trow i{font-size:11px;width:64px}
-.tcard.big .slot-name{font-size:15px}
-.tcard.big .trow .slot-t{font-size:12px;font-weight:700}
-.tcard.big .oosbar{font-size:13px;padding:16px 10px}
+/* compact assigned tug cards */
+.tcard .thdr{font-size:12px;padding:5px 9px}
+.tcard .thdr .tty{font-size:9px}
+.tcard .trow{padding:7px 9px;font-size:12.5px;min-height:0}
+.tcard .trow i{font-size:9.5px;width:52px}
+.tcard .slot-name{font-size:12.5px}
+.tcard .trow .slot-t{font-size:10px}
+/* unused tugs — extremely muted, tap to bring into service */
+.tug-grid{align-items:start}
+.tcard.muted{opacity:.38;border-style:dashed;background:#fafbfc;cursor:pointer}
+.tcard.muted:active{transform:scale(.98);opacity:.6}
+.tcard.muted .thdr{background:#9aa6b1}
+.tcard.muted .thdr i{background:#dfe5ea;color:#5a6772}
+.tcard.muted .muse{font-size:10px;font-weight:800;color:#fff;opacity:.9}
+.tcard.muted .muted-b{font-size:9.5px;color:var(--muted);font-weight:700;padding:5px 9px}
 
 /* dispatch dropdown */
 .disp-box{display:flex;flex-direction:column;gap:8px}
