@@ -1667,7 +1667,26 @@ function updateHdr(){const n=data.equipment.length,locs=new Set(data.equipment.m
 
 /* ---- init ---- */
 (async function(){save();if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();autoLoadMaster();})();
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
+if("serviceWorker" in navigator){
+  const hadController=!!navigator.serviceWorker.controller;
+  let refreshing=false;
+  // when a new worker takes over, reload once so the user sees fresh code (no manual cache clearing)
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(refreshing||!hadController)return; refreshing=true; location.reload();
+  });
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(reg=>{
+      reg.update().catch(()=>{});
+      // if a fresh worker is already waiting, activate it immediately
+      if(reg.waiting)reg.waiting.postMessage("skipWaiting");
+      reg.addEventListener("updatefound",()=>{const w=reg.installing;if(!w)return;
+        w.addEventListener("statechange",()=>{ if(w.state==="installed")w.postMessage("skipWaiting"); });});
+      // re-check for a new version periodically and when the tab regains focus
+      setInterval(()=>reg.update().catch(()=>{}),60000);
+      document.addEventListener("visibilitychange",()=>{ if(!document.hidden)reg.update().catch(()=>{}); });
+    }).catch(()=>{});
+  });
+}
 </script>
 <script src="staffing.js"></script>
 <script src="preview.js"></script>
