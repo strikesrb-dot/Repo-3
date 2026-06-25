@@ -66,6 +66,8 @@
   .btn{padding:13px 16px;width:100%;background:var(--accent);color:#3a2600}.btn:active{background:var(--accent-d)}
   .btn.navy{background:var(--navy);color:#fff}.btn.navy:active{background:var(--navy-d)}
   .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line)}
+  .btn.green{background:var(--good);color:#fff}.btn.green:active{filter:brightness(.92)}
+  .more-ic{width:54px;height:54px;margin:6px auto 0;border-radius:50%;background:var(--good-bg);color:var(--good);font-size:28px;font-weight:900;display:flex;align-items:center;justify-content:center}
   .btn.sm{width:auto;padding:9px 13px;font-size:14px}
   .btn.danger{background:#fff;color:var(--danger);border:1px solid #eccfcb}
   .btn[disabled]{opacity:.5}
@@ -79,6 +81,7 @@
   .item .main{flex:1;min-width:0}
   .item .tag{font-weight:700;font-size:16px;letter-spacing:.2px}
   .item .meta{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .meta .volt{font-size:11px;font-weight:700;color:var(--good);background:var(--good-bg);border-radius:5px;padding:1px 6px;margin-left:7px}
   .item .notes{font-size:13px;color:var(--muted);margin-top:2px}
   .loc{display:inline-block;background:#eaf1f7;color:var(--navy);font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap}
   .loc.none{background:#f7eaea;color:var(--danger)}
@@ -287,6 +290,18 @@
   .m-ck{width:17px;height:17px;border:1.5px solid #c5ced6;border-radius:4px;flex:none;align-self:center}
   .m-tag{font-weight:700;color:#1c2530}
   .m-det{font-size:12px;font-weight:600;color:#8a939c}
+  .m-volt{font-size:11px;font-weight:700;color:#15622f;background:rgba(30,125,70,.12);border-radius:5px;padding:1px 6px}
+  .mv-date{font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin:14px 2px 6px}
+  .mv-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .mv-row{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow)}
+  .mv-main{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .mv-tag{font-weight:800;color:var(--ink)}
+  .mv-type{font-size:12px;color:var(--muted)}
+  .mv-oos{font-size:10px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--danger);border-radius:4px;padding:1px 5px}
+  .mv-path{margin-top:4px;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .mv-arrow{color:var(--navy);font-weight:800}
+  .mv-det{font-size:12px;font-weight:600;color:#8a939c}
+  .mv-none{color:var(--muted);font-style:italic}
   .m-oos{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.04em;color:#c0271e}
   .sh-loc{margin:0 0 16px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .sh-loc-h{display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;padding:9px 14px;font-size:16px;font-weight:800;letter-spacing:.3px}
@@ -389,11 +404,20 @@
       <button class="hubtile" data-go="aircraft"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg></span>Aircraft Lookup</button>
       <button class="hubtile" data-go="park"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg></span>Stop Mark Lookup</button>
       <button class="hubtile" data-go="equipment"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></span>Equipment List</button>
+      <button class="hubtile" data-go="movement"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13"/><path d="m13 6 6 6-6 6"/><path d="M21 4v16"/></svg></span>Equipment Movement</button>
     </div>
     <div class="hubsec">App</div>
     <div class="hubgrid one">
       <button class="hubtile" data-go="settings"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>Settings</button>
     </div>
+  </section>
+
+  <section id="view-movement" class="view">
+    <h2 class="section">Equipment Movement</h2>
+    <p class="hint" style="margin-top:0">Every time a unit changes location — counting it during inventory, editing it, or a quick move — the change is logged here.</p>
+    <div class="toolbar"><input id="moveSearch" type="search" placeholder="Search tag, location…" autocomplete="off" /></div>
+    <div id="moveList" style="margin-top:10px"></div>
+    <div class="btnrow no-print" style="margin-top:12px"><button class="btn ghost" id="moveClear">Clear movement log</button></div>
   </section>
 
   <section id="view-equipment" class="view">
@@ -561,6 +585,8 @@
     <select id="fType"></select>
     <label for="fLoc">Location</label>
     <select id="fLoc"></select>
+    <label for="fVolt">Voltage (optional)</label>
+    <input id="fVolt" placeholder="e.g. 90 kVA, 28.5 V, 400 Hz" autocomplete="off" />
     <label for="fNotes">Notes (optional)</label>
     <textarea id="fNotes" placeholder="Condition, fuel level…"></textarea>
     <div class="btnrow">
@@ -611,7 +637,7 @@ let data=load();
 function load(){
   let d=Store.getJSON(KEY,null);
   if(!d)d={};
-  d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[];
+  d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[]; d.movements||=[];
   d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();
     if(/^westpark staging area$/i.test(e.location||""))e.location="WestPark";
     if(/^amelia staging area$/i.test(e.location||"")){e.location="South";e.spot="Staging Area";}}); // caps + location migration
@@ -762,6 +788,7 @@ function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active")
 function goTab(t){showTab(t);
   if(t==="equipment"){renderList();refreshAudit();updateLockBar();}
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[]};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();renderInventory();}
+  if(t==="movement"){renderMovement();}
   if(t==="staffing"){window.STAFF&&window.STAFF.open();}
   if(t==="briefing"){window.BRIEF&&window.BRIEF.open();}
   if(t==="preview"){window.PREVIEW&&window.PREVIEW.open();}
@@ -798,7 +825,7 @@ function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&$("#wizFoot"
 $("#homeBtn").addEventListener("click",()=>showTab("hub"));
 $("#hdrTitle")?.addEventListener("click",()=>showTab("hub"));
 function invStepBack(){const s=inv.stage;
-  if(s==="select"||s==="sheet"){closeInvPop();inv.stage="loc";renderInventory();return;}
+  if(s==="select"||s==="sheet"||s==="more"){closeInvPop();inv.stage="loc";renderInventory();return;}
   showTab("hub");}
 function parkBack(){const s=park.stage;
   if(s==="spot")park.stage="area";else if(s==="ac")park.stage="spot";else if(s==="result")park.stage="ac";
@@ -827,7 +854,7 @@ function renderList(){
   list.innerHTML=items.map(e=>{
     const loc=e.location?`<span class="loc"> ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
     return `<li class="item card" data-id="${e.id}"><div class="main">
-      <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}</div>
+      <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.volt?`<span class="volt">⚡ ${esc(e.volt)}</span>`:""}</div>
       ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
       <div class="acts"><button class="iconbtn act-move" title="Move">⇄</button>
       <button class="iconbtn act-edit" title="Edit">✎</button><button class="iconbtn act-del" title="Delete">✕</button></div></li>`;
@@ -893,6 +920,8 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
 })();
 $("#search").addEventListener("input",renderList);
 $("#filterLoc").addEventListener("change",renderList);
+$("#moveSearch").addEventListener("input",renderMovement);
+$("#moveClear").addEventListener("click",()=>{if(!data.movements.length){toast("Nothing to clear");return;}if(!confirm("Clear the entire movement log?"))return;data.movements=[];save();renderMovement();toast("Movement log cleared");});
 function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
   // only locations you actually have equipment at
   const locs=[...new Set(data.equipment.map(e=>e.location).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
@@ -915,20 +944,43 @@ function openEdit(id){editingId=id;
   fillTypeSelect($("#fType"),e?.type||data.types[0]||"");
   fillLocSelect(e?.location||"");
   $("#editTitle").textContent=e?"Edit equipment":"Add equipment";
-  $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";
+  $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";$("#fVolt").value=e?.volt||"";
   $("#editOverlay").classList.add("open");if(!e)setTimeout(()=>$("#fTag").focus(),120);}
 function closeEdit(){$("#editOverlay").classList.remove("open");editingId=null;}
 $("#cancelEq").addEventListener("click",closeEdit);
 $("#editOverlay").addEventListener("click",e=>{if(e.target.id==="editOverlay")closeEdit();});
 $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toUpperCase();if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
-  const p={tag,type:$("#fType").value,location:$("#fLoc").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
-  if(editingId){Object.assign(data.equipment.find(x=>x.id===editingId),p);toast("Updated");}
+  const p={tag,type:$("#fType").value,location:$("#fLoc").value.trim(),volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
+  if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"";Object.assign(ex,p);if(from!==p.location)logMove(ex,from,p.location);toast("Updated");}
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
   data.equipment=data.equipment.filter(x=>x.id!==id);save();refreshAll();toast("Deleted");}
 function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
-  const loc=prompt(`New location for ${e.tag}:`,e.location||"");if(loc===null)return;
-  e.location=loc.trim();e.updated=todayISO();save();refreshAll();toast(loc.trim()?`Moved to ${loc.trim()}`:"Location cleared");}
+  const from=e.location||"",loc=prompt(`New location for ${e.tag}:`,e.location||"");if(loc===null)return;
+  const to=loc.trim();e.location=to;e.updated=todayISO();if(from!==to)logMove(e,from,to);save();refreshAll();toast(to?`Moved to ${to}`:"Location cleared");}
+// record a location change for the Movement tab (newest kept, cap 300)
+function logMove(e,from,to){from=(from||"").trim();to=(to||"").trim();if(from===to)return;
+  data.movements.push({id:uid(),tag:e.tag||"",type:e.type||"",from,to,spot:e.spot||"",nose:e.nose||"",oos:!!e.oos,date:todayISO(),ts:Date.now()});
+  if(data.movements.length>300)data.movements=data.movements.slice(-300);}
+function renderMovement(){
+  const q=($("#moveSearch")?.value||"").trim().toLowerCase();
+  const list=$("#moveList");if(!list)return;
+  let mv=data.movements.slice().reverse(); // newest first
+  if(q)mv=mv.filter(m=>[m.tag,m.type,m.from,m.to].some(v=>(v||"").toLowerCase().includes(q)));
+  if(!data.movements.length){list.innerHTML=`<div class="empty"><p>No movements logged yet.<br>Counting equipment during inventory will record location changes here.</p></div>`;return;}
+  if(!mv.length){list.innerHTML=`<div class="empty"><p>Nothing matches your search.</p></div>`;return;}
+  const byDate={};mv.forEach(m=>{(byDate[m.date]=byDate[m.date]||[]).push(m);});
+  list.innerHTML=Object.keys(byDate).map(d=>{
+    const rows=byDate[d].map(m=>{
+      const det=invDetail(m.spot,m.nose);
+      const from=m.from?esc(m.from):'<span class="mv-none">unassigned</span>';
+      const to=m.to?esc(m.to):'<span class="mv-none">unassigned</span>';
+      return `<li class="mv-row"><div class="mv-main"><span class="mv-tag">${esc(m.tag)}</span>${m.type?`<span class="mv-type">${esc(m.type)}</span>`:""}${m.oos?'<span class="mv-oos">OOS</span>':""}</div>
+        <div class="mv-path">${from} <span class="mv-arrow">→</span> ${to}${det?`<span class="mv-det">${esc(det)}</span>`:""}</div></li>`;
+    }).join("");
+    return `<div class="mv-date">${esc(fmtDate(d))}</div><ul class="mv-list">${rows}</ul>`;
+  }).join("");
+}
 
 /* ===================== INVENTORY (location -> equipment) ===================== */
 const EQUIP_LOCS_DEFAULT=["South","C4","Ballpark","WestPark"];
@@ -959,11 +1011,11 @@ function invDetail(spot,nose){return [spot,nose?"#"+nose:""].filter(Boolean).joi
 function topLocs(){const out=[],seen=new Set();invLocs().forEach(l=>{if(!seen.has(l)){seen.add(l);out.push(l);}});return out;}
 function locCovered(top){return inv.covered.includes(top);}
 function renderInventory(){const r=$("#invRoot");
-  ({loc:renderInvLoc,select:renderInvSelect,sheet:renderInvSheet}[inv.stage]||renderInvLoc)(r);
+  ({loc:renderInvLoc,select:renderInvSelect,more:renderInvMore,sheet:renderInvSheet}[inv.stage]||renderInvLoc)(r);
   const c=r.firstElementChild;if(c)c.classList.add(inv.stage==="select"?"zoomin":"zoomout");
   injectWizSteps(r);}
 function injectWizSteps(r){
-  const steps=[["loc","Location"],["select","Count"],["sheet","Sheet"]],order=["loc","select","sheet"],cur=order.indexOf(inv.stage);
+  const steps=[["loc","Location"],["select","Count"],["sheet","Sheet"]],order=["loc","select","sheet"],cur=order.indexOf(inv.stage==="more"?"select":inv.stage);
   const html=`<div class="wiz-steps">`+steps.map(([k,label],i)=>{
     const cls=i===cur?"on":i<cur?"done":"todo";
     const dis=(k==="select"&&i!==cur)||(k==="sheet"&&!inv.covered.length&&i!==cur);
@@ -987,12 +1039,28 @@ function renderInvLoc(r){
     <div class="loc-grid" id="invLocChips">${tiles}</div>
     ${inv.covered.length
       ?`<p class="hint" style="margin:16px 0 6px">Counted: ${esc(inv.covered.join(", "))}</p>
-        <div class="btnrow"><button class="btn navy" id="invGen">Generate sheet (${inv.covered.length})</button></div>
+        <div class="btnrow"><button class="btn navy" id="invDone">Done — generate sheet (${inv.covered.length})</button></div>
         <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="invReset">Start over</button></div>`
       :`<p class="hint" style="margin:16px 2px 0">Pick a location and count its equipment first — your sheet builds from what you select.</p>`}</div>`;
   $$("#invLocChips .loc-tile").forEach(c=>c.addEventListener("click",()=>{inv.loc=c.dataset.l;inv.stage="select";renderInventory();}));
-  $("#invGen")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
+  $("#invDone")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
   $("#invReset")?.addEventListener("click",()=>{inv={stage:"loc",loc:null,covered:[]};renderInventory();});
+  setWizFoot(null);
+}
+// after counting a location, ask whether more equipment needs logging before the sheet
+function renderInvMore(r){
+  const loc=inv.lastLoc||"",n=inv.lastN||0;
+  r.innerHTML=`<div class="card pad" style="text-align:center">
+    <div class="more-ic">✓</div>
+    <h3 style="margin:6px 0 2px">Saved ${esc(loc)} — ${n} item${n===1?"":"s"}</h3>
+    <p class="hint" style="margin:2px 0 18px">Do you have any other equipment to log?</p>
+    <div class="btnrow" style="flex-direction:column;gap:10px">
+      <button class="btn navy" id="moreYes" style="width:100%">Yes — log another location</button>
+      <button class="btn green" id="moreNo" style="width:100%">No — generate sheet</button>
+    </div>
+    <p class="hint" style="margin:14px 2px 0">Counted so far: ${esc(inv.covered.join(", "))}</p></div>`;
+  $("#moreYes").addEventListener("click",()=>{inv.loc=null;inv.stage="loc";renderInventory();});
+  $("#moreNo").addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
   setWizFoot(null);
 }
 function renderInvSelect(r){
@@ -1084,11 +1152,12 @@ function openInvPop(pill,id,after){
 }
 function commitInv(){
   const loc=inv.loc,n=invSel.size;
-  data.equipment.forEach(e=>{if(invSel.has(e.id)){e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();}else if(e.location===loc){e.location="";e.oos=false;e.spot="";e.nose="";e.updated=todayISO();}});
+  data.equipment.forEach(e=>{
+    if(invSel.has(e.id)){const from=e.location||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();if(from!==loc)logMove(e,from,loc);}
+    else if(e.location===loc){const from=e.location;e.location="";e.oos=false;e.spot="";e.nose="";e.updated=todayISO();logMove(e,from,"");}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
-  inv.loc=null;inv.stage="loc";renderInventory();
-  toast(`✓ ${loc}: ${n} item${n===1?"":"s"}`);
+  inv.lastLoc=loc;inv.lastN=n;inv.loc=null;inv.stage="more";renderInventory();
 }
 let invSheetMode="list"; // "list" | "checklist"
 function sheetLocsWithEquip(){const base=inv.covered.length?inv.covered.slice():invLocs();
@@ -1101,7 +1170,7 @@ function buildInvSheet(locs,mode){mode=mode||invSheetMode;
     const cats=groupByType(items).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"",undefined,{numeric:true,sensitivity:"base"}));
     const body=cats.map(g=>{
       const rows=sortTags(g.items).map(e=>{const d=invDetail(e.spot,e.nose);
-        return `<div class="m-row">${ck?'<span class="m-ck"></span>':""}<span class="m-tag">${esc(e.tag)}</span>${d?`<span class="m-det">${esc(d)}</span>`:""}${e.oos?'<span class="m-oos">OUT OF SERVICE</span>':""}</div>`;}).join("");
+        return `<div class="m-row">${ck?'<span class="m-ck"></span>':""}<span class="m-tag">${esc(e.tag)}</span>${e.volt?`<span class="m-volt">${esc(e.volt)}</span>`:""}${d?`<span class="m-det">${esc(d)}</span>`:""}${e.oos?'<span class="m-oos">OUT OF SERVICE</span>':""}</div>`;}).join("");
       return `<div class="m-cat">${esc(g.type)}</div>${rows}`;
     }).join("");
     return `<div class="m-loc">${esc(loc)}<span class="m-locn">${items.length} unit${items.length===1?"":"s"}</span></div>${body}`;
@@ -1137,7 +1206,7 @@ function downloadInvText(locs){
     fmtDate(todayISO())+"  ·  "+locs.length+" location(s)  ·  "+tot+" item(s)"+(oosN?"  ·  "+oosN+" out of service":""),""];
   locs.forEach(loc=>{lines.push(loc.toUpperCase()+" ("+data.equipment.filter(e=>e.location===loc).length+")");
     groupByType(data.equipment.filter(e=>e.location===loc)).forEach(g=>{lines.push("  "+g.type+":");
-      sortTags(g.items).forEach(e=>{const d=invDetail(e.spot,e.nose);lines.push("    "+pre+e.tag+(d?"  ["+d+"]":"")+(e.oos?"  ** OUT OF SERVICE **":""));});});
+      sortTags(g.items).forEach(e=>{const d=invDetail(e.spot,e.nose);lines.push("    "+pre+e.tag+(e.volt?"  ("+e.volt+")":"")+(d?"  ["+d+"]":"")+(e.oos?"  ** OUT OF SERVICE **":""));});});
     lines.push("");});
   const blob=new Blob([lines.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-inventory-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
