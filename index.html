@@ -818,6 +818,14 @@ function load(){
     d.locations.forEach(l=>{const s=seedByName[l.name.toLowerCase()];if(s){l.area=s.area;l.region=s.region;if(s.hidden)l.hidden=true;}});
     d.locSeedV=LOC_SEED_V;
   }
+  // one-time: merge the user's "Ball Park" area into the seeded "Ballpark" so the
+  // Secure/Park flow shows a single Ballpark with all the BP/A10 spots
+  if(!d.bpMerged){
+    d.locations.forEach(l=>{if((l.area||"").toLowerCase()==="ball park")l.area="Ballpark";});
+    const bpSpots=d.locations.filter(l=>l.area==="Ballpark"&&!/^ball ?park$/i.test(l.name));
+    if(bpSpots.length)d.locations=d.locations.filter(l=>!(/^ball ?park$/i.test(l.name)&&l.area==="Ballpark"));
+    d.bpMerged=true;
+  }
   return d;
 }
 function save(){Store.setJSON(KEY,data);}
