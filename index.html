@@ -52,6 +52,10 @@
   @media (min-width:1200px){ main{max-width:1180px;padding:22px} }
   .view{display:none}.view.active{display:block}
   h2.section{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 4px 8px}
+  #view-settings .section{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
+  #view-settings .section::before{content:'▾';font-size:12px;color:var(--navy)}
+  #view-settings .section.collapsed::before{content:'▸'}
+  #view-settings .section.collapsed + .card{display:none}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
   .catblock{overflow:hidden;border-radius:16px}
   .catblock .cathdr{border-radius:16px 16px 0 0}
@@ -716,6 +720,20 @@
   </div>
 </div>
 
+<!-- QUICK MOVE — pick a new location from a dropdown -->
+<div class="overlay" id="movePickOverlay">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3 id="moveTitle">Move equipment</h3>
+    <label for="moveSel">New location</label>
+    <select id="moveSel"></select>
+    <div class="btnrow">
+      <button class="btn navy" id="moveGo">Move</button>
+      <button class="btn ghost" id="moveCancel" style="flex:0 0 110px">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <button id="floatBack" class="floatback" hidden>‹ Back</button>
 <div id="printArea"></div>
 <div class="toast" id="toast"></div>
@@ -922,7 +940,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -1128,6 +1146,12 @@ function applyTileVisibility(){
   $$('#view-hub .hubgrid').forEach(g=>{const vis=[...g.querySelectorAll('.hubtile')].some(b=>b.style.display!=='none');
     g.style.display=vis?'':'none';const prev=g.previousElementSibling;if(prev&&prev.classList.contains('hubsec'))prev.style.display=vis?'':'none';});
 }
+function initSettingsCollapse(){
+  $$('#view-settings .section').forEach(h=>{
+    if(h._wired)return;h._wired=true;h.classList.add('collapsed'); // collapsible, start collapsed
+    h.addEventListener('click',()=>h.classList.toggle('collapsed'));
+  });
+}
 function renderSubtypePresets(){
   const sel=$("#subtypeCat");if(!sel)return;const cur=sel.value;
   sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
@@ -1199,9 +1223,21 @@ $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toU
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
   data.equipment=data.equipment.filter(x=>x.id!==id);save();refreshAll();toast("Deleted");}
-function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
-  const from=e.location||"",loc=prompt(`New location for ${e.tag}:`,e.location||"");if(loc===null)return;
-  const to=loc.trim();e.location=to;e.updated=todayISO();if(from!==to)logMove(e,from,to,"quickmove");save();refreshAll();toast(to?`Moved to ${to}`:"Location cleared");}
+function locOptions(cur){const opts=[...new Set([...equipLocs(),...data.equipment.map(e=>e.location).filter(Boolean)])]
+    .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+  if(cur&&!opts.includes(cur))opts.unshift(cur);
+  return `<option value="">— No location —</option>`+opts.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");}
+let moveId=null;
+function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;moveId=id;
+  $("#moveTitle").textContent=`Move ${e.tag||"unit"}`;
+  $("#moveSel").innerHTML=locOptions(e.location||"");$("#moveSel").value=e.location||"";
+  $("#movePickOverlay").classList.add("open");}
+function closeMovePick(){$("#movePickOverlay").classList.remove("open");moveId=null;}
+$("#moveGo").addEventListener("click",()=>{const e=data.equipment.find(x=>x.id===moveId);if(!e){closeMovePick();return;}
+  const from=e.location||"",to=$("#moveSel").value;e.location=to;e.updated=todayISO();
+  if(from!==to)logMove(e,from,to,"quickmove");save();refreshAll();closeMovePick();toast(to?`Moved to ${to}`:"Location cleared");});
+$("#moveCancel").addEventListener("click",closeMovePick);
+$("#movePickOverlay").addEventListener("click",e=>{if(e.target.id==="movePickOverlay")closeMovePick();});
 // settings helpers
 function curPass(){return (data.settings&&data.settings.passcode)||SETTINGS_PASS;}
 function minToTime(m){m=((Math.round(m)||0)%1440+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
