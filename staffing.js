@@ -200,11 +200,34 @@ function poolFor(shift){
     const sh=shiftsFor(b).find(x=>x.sh===shift);
     if(!sh)continue;
     if(b.emp&&seen.has(b.emp))continue; if(b.emp)seen.add(b.emp);
-    out.push({...b,prim:sh.prim,ov:sh.ov});
+    const d=ST.dbl&&ST.dbl[b.emp];
+    out.push({...b,prim:sh.prim,ov:sh.ov,double:!!(d&&d.double),hours:(d&&d.double&&d.combo)?d.combo[0]+"-"+d.combo[1]:b.start+"-"+b.end});
   }
-  // primary first, then by name
   out.sort((a,b)=>(a.prim===b.prim?normName(a.name).localeCompare(normName(b.name)):a.prim?-1:1));
   return out;
+}
+/* double detection: an emp working 2+ shifts → combined window + "Double" */
+function comboWin(blocks){
+  if(blocks.length===1)return [blocks[0].start,blocks[0].end];
+  const m=s=>mins(s);
+  const hasNH=blocks.some(b=>m(b.start)>=1260||m(b.start)<240);
+  const hasAM=blocks.some(b=>m(b.start)>=240&&m(b.start)<720);
+  if(hasNH&&hasAM){ // overnight into morning (NH → AM)
+    const nh=blocks.filter(b=>m(b.start)>=1260||m(b.start)<240).sort((a,b)=>m(a.start)-m(b.start))[0];
+    const am=blocks.filter(b=>m(b.start)>=240&&m(b.start)<720).sort((a,b)=>m(b.end)-m(a.end))[0];
+    return [nh.start,am.end];
+  }
+  const s=blocks.slice().sort((a,b)=>m(a.start)-m(b.start));
+  return [s[0].start,s[s.length-1].end];
+}
+function buildDoubles(){
+  const byEmp={};for(const b of ST.bodies){if(!b.emp)continue;(byEmp[b.emp]=byEmp[b.emp]||[]).push(b);}
+  const map={};
+  for(const emp in byEmp){const blocks=byEmp[emp];const shifts=new Set();
+    blocks.forEach(b=>shiftsFor(b).forEach(x=>{if(x.prim||x.ov>60)shifts.add(x.sh);}));
+    const isD=shifts.size>=2;
+    map[emp]={double:isD,combo:isD?comboWin(blocks):null};}
+  return map;
 }
 /* dispatch candidate for the shift from the DISPATCH section */
 function dispatchCandidates(shift){
@@ -243,7 +266,7 @@ function absenceTally(){
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
-  ({upload:rUpload,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet}[ST.step]||rUpload)();
+  ({upload:rUpload,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs}[ST.step]||rUpload)();
 }
 function card(inner){return `<div class="card pad">${inner}</div>`;}
 function back(toStep,label){return `<button class="btn ghost stp-back" data-to="${toStep}" style="margin-top:10px">‹ ${label}</button>`;}
@@ -264,10 +287,12 @@ function rUpload(){
     ${slot("ot","Overtime sheet","OT Award Report PDF",".pdf")}
     ${slot("co","Call-out sheet","Absence Monitor (.xls/.html)",".xls,.html,.htm,.xlsx")}
     <div id="upMsg" class="hint" style="margin-top:10px"></div>
-    <div class="btnrow" style="margin-top:6px"><button class="btn navy" id="upBuild" ${f.mp?"":"disabled"}>Read files &amp; build pool ›</button></div>`);
+    <div class="btnrow" style="margin-top:6px"><button class="btn navy" id="upBuild" ${f.mp?"":"disabled"}>Read files &amp; build pool ›</button></div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="upLogs">Past manpower logs (${loadLog().length})</button></div>`);
   $$('#staffRoot input[type=file]').forEach(inp=>inp.addEventListener("change",e=>{
     const k=inp.dataset.k,file=inp.files[0];if(!file)return;ST.files[k]=file;render();}));
   $("#upBuild")?.addEventListener("click",doBuild);
+  $("#upLogs")?.addEventListener("click",()=>{ST.step="logs";render();});
 }
 async function doBuild(){
   const msg=$("#upMsg");msg.innerHTML=`<span class="spin"></span> Reading files…`;
@@ -314,7 +339,7 @@ function rSetup(){
   $$('#staffRoot .chip[data-sup]').forEach(b=>b.onclick=()=>{const n=b.dataset.sup;ST.supers=ST.supers.includes(n)?ST.supers.filter(x=>x!==n):[...ST.supers,n];render();});
   $$('#staffRoot .chip[data-asst]').forEach(b=>b.onclick=()=>{const n=b.dataset.asst;ST.asst=ST.asst.includes(n)?ST.asst.filter(x=>x!==n):[...ST.asst,n];render();});
   $$('#staffRoot .chip[data-mgr]').forEach(b=>b.onclick=()=>{ST.manager=ST.manager===b.dataset.mgr?"":b.dataset.mgr;render();});
-  $("#toPool").onclick=()=>{ ST.bodies=buildBodies(); ST.step="pool"; render(); };
+  $("#toPool").onclick=()=>{ ST.bodies=buildBodies(); ST.dbl=buildDoubles(); ST.step="pool"; render(); };
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
@@ -323,8 +348,8 @@ function rPool(){
   const pool=poolFor(ST.shift);
   const disp=dispatchCandidates(ST.shift);
   const dispLine=disp.length?disp.map(d=>`${esc(d.name)}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
-  const rows=pool.map(b=>`<div class="prow"><div><b>${esc(b.name)}</b> <span class="hint">${esc(b.start)}-${esc(b.end)}</span>
-      ${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">cover</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${!b.prim?`<span class="tag ov">+${(b.ov/60).toFixed(1).replace('.0','')}h</span>`:''}</div>
+  const rows=pool.map(b=>`<div class="prow"><div><b>${esc(b.name)}</b> <span class="hint">${esc(b.hours)}</span>
+      ${b.double?'<span class="tag db">Double</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">cover</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${!b.prim&&!b.double?`<span class="tag ov">+${(b.ov/60).toFixed(1).replace('.0','')}h</span>`:''}</div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div>`).join("");
   ROOT.innerHTML=card(`
     <div class="pool-head"><h2 class="staff-h" style="margin:0">${ST.shift} pool</h2><span class="cnt">${pool.length}</span></div>
@@ -390,8 +415,8 @@ function rAssign(){
   const pool=poolFor(ST.shift);
   const used=assignedEmps();
   const avail=pool.filter(b=>!used.has(b.emp));
-  const chip=b=>`<button class="abody ${SEL===b.emp?'sel':''}" data-emp="${esc(b.emp)}">${esc(b.name)}<span>${esc(b.start)}-${esc(b.end)}${b.prim?'':' +'+ovh(b.ov)+'h'}</span></button>`;
-  const slotName=p=>p?`<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p.start)}-${esc(p.end)}</span>`:`<span class="slot-empty">tap to fill</span>`;
+  const chip=b=>`<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${esc(b.hours)}${b.prim||b.double?'':' +'+ovh(b.ov)+'h'}</span></button>`;
+  const slotName=p=>p?`<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${p._double?' · Double':''}</span>`:`<span class="slot-empty">tap to fill</span>`;
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
@@ -410,8 +435,9 @@ function rAssign(){
   // tugs grouped
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{};
     return `<div class="tcard ${t.oos?'oos':''}">
-      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''} <span class="gpu ${t.gpu==='inop'?'inop':'ok'}">${t.gpu==='inop'?BOLT_X:BOLT}</span></span>
-        <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button></div>
+      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span>
+        <span class="thdr-r"><button class="gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''} title="Ground power">${t.gpu==='inop'?BOLT_X:BOLT}</button>
+        <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button></span></div>
       ${t.oos?`<div class="oosbar"><span class="haz">✕</span> OUT OF SERVICE</div>`:
         `<div class="trow ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(crew.DRIVER)}</div>
          <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>`}
@@ -430,7 +456,7 @@ function rAssign(){
     <div class="btnrow"><button class="btn navy" id="toBrief">Briefing &amp; focus items ›</button></div>
     ${back("reconcile","Tugs")}`;
   $$('#staffRoot .abody').forEach(b=>b.onclick=()=>{ SEL=(SEL===b.dataset.emp?null:b.dataset.emp); render(); });
-  const place=(setter)=>{ if(!SEL)return; const b=poolFor(ST.shift).find(x=>x.emp===SEL); if(!b)return; setter({name:b.name,emp:b.emp,start:b.start,end:b.end}); SEL=null; render(); };
+  const place=(setter)=>{ if(!SEL)return; const b=poolFor(ST.shift).find(x=>x.emp===SEL); if(!b)return; setter({name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double}); SEL=null; render(); };
   $("#dispSel")?.addEventListener("change",e=>{ const v=e.target.value;
     if(v==="__custom"){ST.dispatch={name:custom?cur:"",emp:"",custom:true};}
     else{ const m=pool.find(b=>normName(b.name)===normName(v)); ST.dispatch=v?{name:v,emp:m?m.emp:"",custom:false}:{name:"",emp:"",custom:false}; }
@@ -439,6 +465,7 @@ function rAssign(){
   $$('#staffRoot .trow').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
     if(t[role]){t[role]=null;render();return;} place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); });
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const t=tugState(b.dataset.oos); t.oos=!t.oos; if(t.oos)delete ST.assign.tugs[b.dataset.oos]; render(); });
+  $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const t=tugState(b.dataset.gpu); if(t.oos)return; t.gpu=t.gpu==='inop'?'ok':'inop'; render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
   $("#toBrief").onclick=()=>{ initBrief(); ST.step="brief"; render(); };
@@ -522,6 +549,7 @@ function rSheet(){
     <div class="sheet-scroll"><div id="staffSheet">${html}</div></div>
     <div class="card pad no-print">
       <div class="btnrow"><button class="btn navy" id="shShare">Email / Share both ›</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn good" id="shLog">✓ Log this manpower</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shImg">Save image</button><button class="btn ghost" id="shPrint">Print / PDF</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shTxt">Text</button><button class="btn ghost stp-back" data-to="brief">‹ Briefing</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button><button class="btn ghost" id="shNew">New</button></div>
@@ -531,12 +559,13 @@ function rSheet(){
   $("#shImg").onclick=()=>{ sheetView==="staff"?exportSheetImage():exportBriefImage(); };
   $("#shTxt").onclick=exportSheetText;
   $("#shShare").onclick=shareSheets;
+  $("#shLog").onclick=logManpower;
   $("#shNew")?.addEventListener("click",()=>{ ST.step="upload"; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST._tugSeeded=false; ST.dispatch=null; render(); });
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 function buildSheet(){
   const a=ST.assign, dn=ST.dispatch&&ST.dispatch.name?esc(ST.dispatch.name):'<span class="sb-oos">OPEN</span>';
-  const crew=p=>p?`${esc(p.name)} <span class="sb-t">${esc(p.start)}-${esc(p.end)}</span>`:"";
+  const crew=p=>p?`${esc(p.name)}${p._double?' <b class="sb-db">DBL</b>':''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>`:"";
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
     return `<div class="sb-area"><div class="sb-area-h">${esc(k)}${min?` <span>${list.length}/${min}</span>`:''}</div>
       <div class="sb-area-b">${list.map(p=>`<div>${esc(p.name)}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
@@ -721,6 +750,48 @@ function exportSheetText(){
   if(ab.length){L.push("");L.push("NOT HERE:");ab.forEach(x=>L.push("  "+x.name+" — "+x.code));}
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),el=document.createElement("a");
   el.href=u;el.download="EWR-AMT-Staffing-"+ST.shift+".txt";document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(u);
+}
+
+/* ---- manpower log (history) ---- */
+function loadLog(){try{return JSON.parse(localStorage.getItem("elt.staff.log")||"[]")||[];}catch(_){return [];}}
+function saveLogList(l){try{localStorage.setItem("elt.staff.log",JSON.stringify(l));return true;}catch(e){return false;}}
+function logManpower(){
+  const date=ST.parsed?ST.parsed.date:"",shift=ST.shift,a=ST.assign;
+  const running=TUGS.filter(id=>!tugState(id).oos).length, pool=poolFor(shift).length;
+  const areasFilled=AREAS.reduce((s,ar)=>s+((a.areas[ar.key]||[]).length),0);
+  const crews=TUGS.filter(id=>!tugState(id).oos&&(a.tugs[id]&&(a.tugs[id].DRIVER||a.tugs[id].OBSERVR))).length;
+  let img="";try{const src=renderStaffCanvas();const w=1000,h=Math.round(src.height/src.width*w);
+    const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);
+    img=c.toDataURL("image/jpeg",0.85);}catch(_){}
+  const entry={id:date+"|"+shift,date,shift,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",img};
+  let l=loadLog().filter(e=>e.id!==entry.id);l.unshift(entry);l=l.slice(0,24);
+  if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,img:""}); l=l.slice(0,12); saveLogList(l); }
+  toast("Logged: "+date+" "+shift);
+}
+let logSel=null;
+function rLogs(){
+  const list=loadLog();
+  if(logSel){const e=list.find(x=>x.id===logSel);
+    if(!e){logSel=null;return rLogs();}
+    ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.date)} · ${esc(e.shift)}</h2></div>
+      <div class="muted-row">${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(e.dispatch||"OPEN")}</div>
+      ${e.img?`<div class="sheet-scroll"><img class="log-img" src="${e.img}" alt="staffing sheet"/></div>`:'<p class="hint">Image not stored for this entry.</p>'}
+      <div class="btnrow" style="margin-top:10px"><button class="btn ghost" id="logBack">‹ Back to logs</button><button class="btn ghost" id="logDel">Delete</button></div>`);
+    $("#logBack").onclick=()=>{logSel=null;render();};
+    $("#logDel").onclick=()=>{saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render();};
+    return;
+  }
+  const byDate={};list.forEach(e=>{(byDate[e.date]=byDate[e.date]||[]).push(e);});
+  const ord={AM:0,PM:1,NH:2};
+  const dates=Object.keys(byDate).sort((a,b)=>{const da=new Date(a),db=new Date(b);return (isNaN(db)?0:db)-(isNaN(da)?0:da);});
+  ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">Manpower logs</h2><span class="cnt">${list.length}</span></div>
+    <p class="hint" style="margin:0 0 8px">Past boards — tap to view what each shift had.</p>
+    ${list.length?dates.map(d=>`<div class="log-day"><div class="log-date">${esc(d)}</div>
+      ${byDate[d].slice().sort((a,b)=>(ord[a.shift]??9)-(ord[b.shift]??9)).map(e=>`<button class="log-row" data-id="${esc(e.id)}"><b>${esc(e.shift)} manpower</b><span>${e.pool} pool · ${e.crews||0}/${e.running} tugs · ${esc(e.dispatch||"OPEN")}</span></button>`).join("")}
+    </div>`).join(""):'<p class="hint">Nothing logged yet. Generate a board and tap “Log this manpower”.</p>'}
+    <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="upload">‹ Back</button></div>`);
+  $$('#staffRoot .log-row').forEach(b=>b.onclick=()=>{logSel=b.dataset.id;render();});
+  $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
 /* expose entry point */

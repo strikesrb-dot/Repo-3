@@ -175,3 +175,23 @@
 .bf-focus li{padding:2px 0}
 .bf-notes{background:#fffaf0;border-color:#e7d3a0}
 @media print{.bf{border:none;min-width:0}.bf-title,.bf-h{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* ===== doubles, gpu toggle in assign, logs ===== */
+.tag.db{background:#0b3d63;color:#fff}
+.abody.dbl{border-color:#0b3d63}
+.abody em{font-style:normal;font-size:8.5px;font-weight:900;letter-spacing:.04em;background:#0b3d63;color:#fff;border-radius:4px;padding:1px 4px;margin-left:5px;vertical-align:1px}
+.abody.sel em{background:#fff;color:var(--navy)}
+.sb-db{font-style:normal;font-size:8px;font-weight:900;background:#0b3d63;color:#fff;border-radius:3px;padding:0 3px}
+.thdr-r{display:flex;align-items:center;gap:6px}
+.gpubtn{border:none;border-radius:6px;padding:3px 6px;cursor:pointer;display:inline-flex;align-items:center;background:rgba(255,255,255,.18);line-height:0}
+.gpubtn.ok{color:#9fe9b1}.gpubtn.inop{color:#ffb4ad;background:rgba(217,52,43,.35)}
+.gpubtn:disabled{opacity:.4}
+.btn.good{background:var(--good);color:#fff}
+/* logs */
+.log-day{margin-bottom:14px}
+.log-date{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.log-row{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:11px 13px;margin-bottom:7px;cursor:pointer;text-align:left}
+.log-row b{font-size:15px;color:var(--ink)}
+.log-row span{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+.log-row:active{transform:scale(.99)}
+.log-img{width:100%;height:auto;border:1px solid var(--line);border-radius:10px}
