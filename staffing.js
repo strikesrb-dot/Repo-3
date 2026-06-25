@@ -204,6 +204,11 @@ function prevWorkLabel(emp){
 }
 // compact form for assigned-crew badges ("Worked last night" → "last night")
 function prevWorkShort(emp){ const l=prevWorkLabel(emp); return l?l.replace(/^Worked\s+/i,""):""; }
+// works this shift AND the next one = a (forward) double → DBL
+const NEXT_SHIFT={AM:"PM",PM:"NH",NH:"AM"};
+function worksNext(emp){ const nx=NEXT_SHIFT[ST.shift]; if(!nx||!emp)return false;
+  let ov=0; (ST.bodies||[]).filter(b=>b.emp===emp).forEach(b=>{const p=ivl(b.start,b.end); if(p)ov+=ovl(p,SHIFT_CORE[nx]);});
+  return Math.min(ov,480)>=45; }
 function excludeList(){ const d=Store.getJSON("elt.staff.exclude",null); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }
 
 /* build the body list (all shifts) from parsed inputs + prompt answers */
@@ -585,9 +590,9 @@ function rPool(){
   const pool=poolFor(ST.shift);
   const disp=dispatchCandidates(ST.shift);
   const dispLine=disp.length?disp.map(d=>`${esc(d.name)}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
-  const rows=pool.map(b=>{const bid=BIDS&&BIDS[b.emp];
+  const rows=pool.map(b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);
     return `<div class="prow prow-tap" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(b.name)}</b> <span class="hint">${esc(b.hours)}</span>
-      ${b.double?'<span class="tag db">Double</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${!b.prim&&!b.double?`<span class="tag ov">+${(b.ov/60).toFixed(1).replace('.0','')}h</span>`:''}${prevWorkLabel(b.emp)?`<span class="tag pw">${prevWorkLabel(b.emp)}</span>`:''}
+      ${fwd?'<span class="tag db">Double</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
       <div class="bid-line">${bid?`Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b>`:'<span class="hint">No bid on file</span>'}</div></div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;}).join("");
   ROOT.innerHTML=card(`
@@ -665,11 +670,11 @@ function rAssign(){
   const avail=pool.filter(b=>!used.has(b.emp));
   // group by START time so doubles & prev-shift workers sit with their base-shift peers
   const toMin=t=>{const m=(t||"").match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):9999;};
-  const chip=(b,groupEnd)=>{const pw=prevWorkLabel(b.emp);
+  const chip=(b,groupEnd)=>{const pw=prevWorkLabel(b.emp), fwd=!pw&&worksNext(b.emp);
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=toMin(e)<groupEnd;                         // leaves before the group's latest end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
-    return `<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+    return `<button class="abody ${SEL===b.emp?'sel':''} ${fwd?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${fwd?'<em>DBL</em>':''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const grp={};avail.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
   const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
   const poolHTML=avail.length?gkeys.map(st=>{
@@ -680,8 +685,8 @@ function rAssign(){
     return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(st)}"><span class="shg-ca">${col?'▸':'▾'}</span>${esc(st)}-${esc(endStr)}<span>${list.length}</span></div><div class="abody-wrap">${list.map(b=>chip(b,groupEnd)).join("")}</div></div>`;
   }).join(""):'<span class="hint">All assigned.</span>';
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
-    const pw=prevWorkShort(p.emp);
-    return `<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
+    const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
+    return `<span class="slot-name">${esc(p.name)}${fwd?'<em class="sdbl">DBL</em>':''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
@@ -851,8 +856,8 @@ function rSheet(){
 }
 function buildSheet(){
   const a=ST.assign, dn=ST.dispatch&&ST.dispatch.name?esc(ST.dispatch.name):'<span class="sb-oos">OPEN</span>';
-  const crew=p=>{ if(!p)return ""; const pw=prevWorkShort(p.emp);
-    return `${esc(p.name)} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
+  const crew=p=>{ if(!p)return ""; const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
+    return `${esc(p.name)}${fwd?' <b class="sb-db">DBL</b>':''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
     return `<div class="sb-area"><div class="sb-area-h">${esc(k)}${min?` <span>${list.length}/${min}</span>`:''}</div>
       <div class="sb-area-b">${list.map(p=>`<div>${esc(p.name)}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
@@ -948,10 +953,11 @@ function renderStaffCanvas(){
         ["DRIVER","OBSERVR"].forEach((role,k)=>{const yk=yy+42+k*26;
           ctx.font=FA("800 9px");ctx.fillStyle="#90a0ad";ctx.textAlign="left";ctx.fillText(role,x+7,yk);
           const p=cr[role];if(!p){ctx.fillStyle="#cdd5dc";ctx.font=FA("600 12px");ctx.fillText("—",x+62,yk);return;}
-          const pw=prevWorkShort(p.emp);
-          ctx.font=FA("700 13px");const nmw=ctx.measureText(p.name).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(p.name,tw-(pw?172:150),FA("700 13px")),x+62,yk);
-          ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+62+Math.min(nmw,tw-(pw?174:152))+7,yk);
-          if(pw){ctx.font=FA("800 8px");ctx.fillStyle="#7a3287";ctx.textAlign="right";ctx.fillText(pw,x+tw-6,yk);ctx.textAlign="left";} });
+          const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
+          const tag=pw||(fwd?"DBL":"");
+          ctx.font=FA("700 13px");const nmw=ctx.measureText(p.name).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(p.name,tw-(tag?180:150),FA("700 13px")),x+62,yk);
+          ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+62+Math.min(nmw,tw-(tag?182:152))+7,yk);
+          if(tag){ctx.font=FA("800 8px");ctx.fillStyle=pw?"#7a3287":"#0b3d63";ctx.textAlign="right";ctx.fillText(tag,x+tw-6,yk);ctx.textAlign="left";} });
       }
     });
     gy+=groupHeights[gi];
