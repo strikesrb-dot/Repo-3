@@ -47,6 +47,9 @@
   .homebtn .ic{width:20px;height:20px;vertical-align:0}
   header .sub{margin:9px 2px 0;font-size:12px;font-weight:500;color:rgba(255,255,255,.82);letter-spacing:.2px}
   main{max-width:760px;margin:0 auto;padding:14px}
+  /* 13" iPad (portrait ~1032 / landscape ~1366) gets more room */
+  @media (min-width:820px){ main{max-width:980px;padding:18px} }
+  @media (min-width:1200px){ main{max-width:1180px;padding:22px} }
   .view{display:none}.view.active{display:block}
   h2.section{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 4px 8px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
