@@ -434,6 +434,7 @@
     <p class="hint" style="margin-top:0">Every time a unit changes location — counting it during inventory, editing it, or a quick move — the change is logged here.</p>
     <div class="toolbar"><input id="moveSearch" type="search" placeholder="Search tag, location…" autocomplete="off" /></div>
     <div id="moveList" style="margin-top:10px"></div>
+    <div class="btnrow no-print" style="margin-top:14px"><button class="btn ghost" id="moveWipe">🔒 Wipe log (passcode)</button></div>
   </section>
 
   <section id="view-equipment" class="view">
@@ -952,6 +953,13 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
 $("#search").addEventListener("input",renderList);
 $("#filterLoc").addEventListener("change",renderList);
 $("#moveSearch").addEventListener("input",renderMovement);
+$("#moveWipe").addEventListener("click",()=>{
+  if(!data.movements.length){toast("Nothing to wipe");return;}
+  const pass=prompt("Enter passcode to wipe the movement log:");
+  if(pass===null)return;
+  if(pass!==SETTINGS_PASS){toast("Wrong passcode");return;}
+  if(!confirm(`Permanently wipe all ${data.movements.length} logged movement(s)? This cannot be undone.`))return;
+  data.movements=[];save();renderMovement();toast("Movement log wiped");});
 function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
   // only locations you actually have equipment at
   const locs=[...new Set(data.equipment.map(e=>e.location).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
