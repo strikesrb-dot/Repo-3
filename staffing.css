@@ -244,8 +244,12 @@
 }
 @media (min-width:1200px){
   #staffRoot .rt-grid{grid-template-columns:repeat(6,1fr)}
-  #staffRoot .tug-grid{grid-template-columns:repeat(4,1fr)}
   #staffRoot .area-grid{grid-template-columns:repeat(4,1fr)}
+}
+/* tugs: 3 per row on iPad (touch), 4 on a real desktop (mouse) — keeps iPad
+   landscape at 3 even though it's wide */
+@media (min-width:1100px) and (pointer:fine){
+  #staffRoot .tug-grid{grid-template-columns:repeat(4,1fr)}
 }
 
 /* ===== supervisor auth gate ===== */
@@ -290,9 +294,12 @@
 .abody.sel .pw{background:rgba(255,255,255,.22);color:#fff}
 .pool-groups{display:flex;flex-direction:column;gap:10px;max-height:42vh;overflow:auto}
 @media (min-width:820px){.pool-groups{max-height:none}}
-.shgrp-h{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--navy);letter-spacing:.03em;margin-bottom:6px}
-.shgrp-h span{background:#eef2f5;color:#67727e;border-radius:999px;font-size:10px;padding:0 7px}
+.shgrp-h{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--navy);letter-spacing:.03em;margin-bottom:6px;cursor:pointer;user-select:none}
+.shgrp-h span{background:#eef2f5;color:#67727e;border-radius:999px;font-size:10px;padding:0 7px;margin-left:auto}
+.shgrp-h .shg-ca{background:none;color:var(--navy);margin-left:0;font-size:10px;width:12px}
 .shgrp .abody-wrap{max-height:none}
+.shgrp.collapsed .abody-wrap{display:none}
+.shgrp.collapsed{margin-bottom:6px}
 .staff-modal{position:fixed;inset:0;background:rgba(10,20,35,.55);display:flex;align-items:center;justify-content:center;z-index:400;padding:24px;animation:smFade .15s ease}
 @keyframes smFade{from{opacity:0}to{opacity:1}}
 .sm-box{background:#fff;border-radius:18px;box-shadow:0 22px 60px rgba(10,25,45,.4);padding:24px 22px;max-width:340px;width:100%;text-align:center;animation:smPop .18s cubic-bezier(.2,.9,.3,1.2)}
