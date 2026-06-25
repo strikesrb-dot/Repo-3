@@ -615,6 +615,18 @@
       </div>
     </div>
 
+    <h2 class="section">Subtype presets</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Create subtypes per category (e.g. <b>Stairs</b> → Airbus, Wide-body). They become the dropdown choices when you set a unit's subtype.</p>
+      <label for="subtypeCat" style="margin-top:0">Category</label>
+      <select id="subtypeCat"></select>
+      <div id="subtypePresets"></div>
+      <div class="toolbar" style="margin-top:8px;margin-bottom:0">
+        <input id="newSubtype" placeholder="Add a subtype" autocomplete="off" />
+        <button class="btn sm navy" id="addSubtypeBtn" style="width:auto">Add</button>
+      </div>
+    </div>
+
     <h2 class="section">Aircraft fleet</h2>
     <div class="card pad">
       <p class="hint" id="fleetStatus" style="margin-top:0"></p>
@@ -675,7 +687,7 @@
     <label for="fType">Type / category</label>
     <select id="fType"></select>
     <label for="fSub">Subtype (optional)</label>
-    <input id="fSub" placeholder="e.g. Diesel, 400 Hz, Wide-body" autocomplete="off" />
+    <select id="fSub"></select>
     <label for="fLoc">Location</label>
     <select id="fLoc"></select>
     <label for="fVolt">Voltage (optional)</label>
@@ -746,7 +758,7 @@ function load(){
   let d=Store.getJSON(KEY,null);
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[]; d.movements||=[]; d.locZones||={};
-  d.hiddenTiles||=[];
+  d.hiddenTiles||=[]; d.subtypes||={};
   d.settings=Object.assign({
     trackInventory:true,trackEdits:true,trackQuickMove:true,trackDeletions:true,trackClears:true,
     moveCap:300, shiftAM:300,shiftPM:780,shiftNH:1260,
@@ -900,7 +912,7 @@ let curTab="hub";
 function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
   window.scrollTo(0,0);if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
 function goTab(t){showTab(t);
-  if(t==="equipment"){refreshLocationFilter();refreshTypeFilter();renderList();refreshAudit();updateLockBar();}
+  if(t==="equipment"){eqInitCollapse=true;refreshLocationFilter();refreshTypeFilter();renderList();refreshAudit();updateLockBar();}
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[]};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();renderInventory();}
   if(t==="movement"){renderMovement();}
   if(t==="staffing"){window.STAFF&&window.STAFF.open();}
@@ -910,7 +922,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -958,6 +970,7 @@ $("#floatBack").addEventListener("click",goBack);
 /* ---- equipment list ---- */
 let eqGroup="type";              // "type" (hub by category) | "area" | "none"
 let eqCollapsed=new Set();        // collapsed group keys
+let eqInitCollapse=true;          // start every group collapsed when the list (re)opens
 function eqCardHTML(e){
   const loc=e.location?`<span class="loc"> ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
   return `<li class="item card" data-id="${e.id}"><div class="main">
@@ -992,14 +1005,18 @@ function renderList(){
   }else{ // type = hub by category, ordered by data.types then extras
     groups=groupByType(items).map(g=>({key:"t:"+g.type,label:g.type,items:g.items}));
   }
+  // start collapsed on (re)open; a search auto-expands so matches are visible
+  if(eqInitCollapse&&eqGroup!=="none"){eqCollapsed=new Set(groups.map(g=>g.key));}
+  eqInitCollapse=false;
+  const searching=!!q;
   list.innerHTML=groups.map(g=>{
     const cards=`<ul class="eqgrid">${g.items.map(eqCardHTML).join("")}</ul>`;
     if(eqGroup==="none")return cards;
-    const col=eqCollapsed.has(g.key);
+    const col=!searching&&eqCollapsed.has(g.key);
     return `<div class="eqgroup ${col?'collapsed':''}"><button class="eqg-h" data-grp="${esc(g.key)}"><span class="eqg-ca">${col?'▸':'▾'}</span><span class="eqg-name">${esc(g.label)}</span><span class="eqg-n">${g.items.length}</span></button>${cards}</div>`;
   }).join("");
 }
-$$("#grpSeg .seg").forEach(b=>b.addEventListener("click",()=>{eqGroup=b.dataset.g;renderList();}));
+$$("#grpSeg .seg").forEach(b=>b.addEventListener("click",()=>{eqGroup=b.dataset.g;eqInitCollapse=true;renderList();}));
 $("#eqList").addEventListener("click",e=>{
   const h=e.target.closest(".eqg-h");if(h){const k=h.dataset.grp;eqCollapsed.has(k)?eqCollapsed.delete(k):eqCollapsed.add(k);renderList();return;}
   const li=e.target.closest(".item");if(!li)return;const id=li.dataset.id;
@@ -1111,6 +1128,24 @@ function applyTileVisibility(){
   $$('#view-hub .hubgrid').forEach(g=>{const vis=[...g.querySelectorAll('.hubtile')].some(b=>b.style.display!=='none');
     g.style.display=vis?'':'none';const prev=g.previousElementSibling;if(prev&&prev.classList.contains('hubsec'))prev.style.display=vis?'':'none';});
 }
+function renderSubtypePresets(){
+  const sel=$("#subtypeCat");if(!sel)return;const cur=sel.value;
+  sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur;
+  const cat=sel.value,subs=data.subtypes[cat]||[];
+  $("#subtypePresets").innerHTML=subs.length
+    ?`<div class="le-subs" style="margin:10px 0 0">`+subs.map((s,i)=>`<span class="le-sub">${esc(s)}<button class="le-subdel" data-i="${i}" title="Remove">✕</button></span>`).join("")+`</div>`
+    :`<p class="hint" style="margin:10px 0 0">No subtypes for ${esc(cat||"this category")} yet.</p>`;
+}
+$("#subtypeCat").addEventListener("change",renderSubtypePresets);
+$("#subtypePresets").addEventListener("click",e=>{const t=e.target.closest(".le-subdel");if(!t)return;
+  const cat=$("#subtypeCat").value,arr=data.subtypes[cat]||[];arr.splice(+t.dataset.i,1);
+  if(arr.length)data.subtypes[cat]=arr;else delete data.subtypes[cat];save();renderSubtypePresets();});
+$("#addSubtypeBtn").addEventListener("click",()=>{const cat=$("#subtypeCat").value,v=$("#newSubtype").value.trim();if(!cat||!v)return;
+  data.subtypes[cat]=data.subtypes[cat]||[];
+  if(data.subtypes[cat].some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already listed");return;}
+  data.subtypes[cat].push(v);$("#newSubtype").value="";save();renderSubtypePresets();toast("Subtype added");});
+$("#newSubtype").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addSubtypeBtn").click();});
 $("#passSave").addEventListener("click",()=>{const v=$("#passNew").value.trim();
   if(!/^\d{3,8}$/.test(v)){toast("Use 3–8 digits");return;}
   data.settings.passcode=v;save();$("#passNew").value="";toast("Passcode updated");});
@@ -1129,6 +1164,14 @@ function refreshTypeFilter(){const sel=$("#filterType");if(!sel)return;const cur
 /* ---- add/edit ---- */
 let editingId=null;
 function fillTypeSelect(sel,val){sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")+`<option value="__new__">➕ Add new type…</option>`;if(val!=null)sel.value=val;}
+// subtype dropdown built from the presets you create in Settings for the chosen category
+function fillSubtypeSelect(type,val){const presets=(data.subtypes[type]||[]).slice();if(val&&!presets.includes(val))presets.unshift(val);
+  $("#fSub").innerHTML=`<option value="">— None —</option>`+presets.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("")+`<option value="__custom__">➕ Custom…</option>`;
+  $("#fSub").value=val||"";}
+$("#fSub").addEventListener("change",function(){if(this.value!=="__custom__")return;
+  const type=$("#fType").value,v=(prompt("New subtype for "+type+":")||"").trim();
+  if(v){data.subtypes[type]=data.subtypes[type]||[];if(!data.subtypes[type].some(x=>x.toLowerCase()===v.toLowerCase()))data.subtypes[type].push(v);save();}
+  fillSubtypeSelect(type,v||"");});
 function fillLocSelect(val){const opts=[...equipLocs()];if(val&&!opts.includes(val))opts.unshift(val);
   $("#fLoc").innerHTML=`<option value="">— No location —</option>`+opts.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("")+`<option value="__other__">Other…</option>`;
   $("#fLoc").value=val||"";}
@@ -1136,19 +1179,22 @@ $("#fLoc").addEventListener("change",function(){if(this.value==="__other__"){con
 $("#fType").addEventListener("change",function(){if(this.value==="__new__"){
   const v=(prompt("New equipment type / category:")||"").trim();
   if(v&&!data.types.some(t=>t.toLowerCase()===v.toLowerCase())){data.types.push(v);save();}
-  fillTypeSelect(this,v||data.types[0]);}});
+  fillTypeSelect(this,v||data.types[0]);}
+  fillSubtypeSelect(this.value,"");});
 function openEdit(id){editingId=id;
   const e=id?data.equipment.find(x=>x.id===id):null;
   fillTypeSelect($("#fType"),e?.type||data.types[0]||"");
   fillLocSelect(e?.location||"");
   $("#editTitle").textContent=e?"Edit equipment":"Add equipment";
-  $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";$("#fVolt").value=e?.volt||"";$("#fSub").value=e?.subtype||"";
+  $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";$("#fVolt").value=e?.volt||"";
+  fillSubtypeSelect(e?.type||data.types[0]||"",e?.subtype||"");
   $("#editOverlay").classList.add("open");if(!e)setTimeout(()=>$("#fTag").focus(),120);}
 function closeEdit(){$("#editOverlay").classList.remove("open");editingId=null;}
 $("#cancelEq").addEventListener("click",closeEdit);
 $("#editOverlay").addEventListener("click",e=>{if(e.target.id==="editOverlay")closeEdit();});
 $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toUpperCase();if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
-  const p={tag,type:$("#fType").value,subtype:$("#fSub").value.trim(),location:$("#fLoc").value.trim(),volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
+  const sub=$("#fSub").value==="__custom__"?"":$("#fSub").value;
+  const p={tag,type:$("#fType").value,subtype:sub,location:$("#fLoc").value.trim(),volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
   if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"";Object.assign(ex,p);if(from!==p.location)logMove(ex,from,p.location,"edit");toast("Updated");}
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
