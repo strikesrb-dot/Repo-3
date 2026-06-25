@@ -97,6 +97,7 @@
 .sb-tug.oos{background:#fbeceb}
 .sb-tug-h{background:#eef2f5;color:#0b3d63;font-size:11px;font-weight:900;padding:3px 7px;display:flex;align-items:center;gap:5px}
 .sb-tug-h b{font-style:normal;background:#f5a623;color:#3a2500;border-radius:3px;font-size:9px;padding:0 3px}
+.sb-tug-h u{text-decoration:none;font-size:8.5px;font-weight:800;color:#67727e;letter-spacing:.03em;text-transform:uppercase}
 .sb-tug-r{display:flex;gap:6px;padding:3px 7px;font-size:11.5px;border-top:1px solid #eef1f4;min-height:20px}
 .sb-tug-r i{font-style:normal;font-size:9px;font-weight:800;color:#90a0ad;width:46px;flex:none;letter-spacing:.03em;padding-top:1px}
 @media print{
@@ -106,21 +107,28 @@
   .sb-area-h,.sb-tug-h b,.sb-disp .sb-area-h,.sb-rail,.thdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
-/* ===== phase 2: reconcile, dispatch, groups, briefing ===== */
-.recon{display:flex;flex-direction:column;gap:14px}
-.rg-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 6px}
-.rg-tugs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.rtug{border:1.5px solid var(--line);border-radius:11px;padding:9px 10px;background:#fff}
-.rtug.oos{background:#fbeceb;border-color:#e7b0ab}
-.rt-id{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:7px}
-.rt-id i{font-style:normal;background:#f5a623;color:#3a2500;border-radius:4px;font-size:9px;padding:1px 4px;margin-left:4px}
-.rt-btns{display:flex;gap:6px}
-.rt-oos,.rt-gpu{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:8px 4px;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px}
-.rt-oos.on{background:var(--danger);border-color:var(--danger);color:#fff}
-.rt-gpu.ok{color:#15803d;border-color:#bfe3c8}
-.rt-gpu.inop{color:#c0271e;border-color:#e7b0ab;background:#fdecec}
-.rt-gpu:disabled{opacity:.4}
-.rt-gpu svg,.gpu svg{vertical-align:-2px}
+/* ===== phase 2: tug status (tap-cycle), dispatch, groups, briefing ===== */
+.recon{display:flex;flex-direction:column;gap:16px}
+.rg-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 7px}
+.rk{font-style:normal;border-radius:4px;padding:0 5px;color:#fff}
+.rk.g{background:#1e7d46}.rk.y{background:#c77f12}.rk.r{background:#c0271e}
+.rt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+/* tap-cycle tile — grey/opaque by default, colors as state advances */
+.rtile{position:relative;display:flex;flex-direction:column;gap:3px;text-align:left;border:2px solid #d7dce1;background:#f4f6f8;color:#8a939c;
+  border-radius:14px;padding:12px 13px;min-height:74px;cursor:pointer;transition:transform .05s,background .12s,border-color .12s,color .12s;opacity:.92}
+.rtile:active{transform:scale(.97)}
+.rt-top{display:flex;align-items:baseline;gap:6px}
+.rt-n{font-size:26px;font-weight:900;line-height:1}
+.rt-e{font-size:10px;font-weight:900;letter-spacing:.04em;opacity:.85}
+.rt-ty{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;opacity:.85}
+.rt-st{font-size:11.5px;font-weight:800;margin-top:auto}
+.rtile.ready{background:#e7f5ec;border-color:#3fa368;color:#15622f;opacity:1}
+.rtile.ready .rt-st{color:#15803d}
+.rtile.inop{background:#fdf2dd;border-color:#e0a52e;color:#8a5a00;opacity:1}
+.rtile.inop .rt-st{color:#a8740c}
+.rtile.oos{background:#fbeceb;border-color:#d9342b;color:#9a201a;opacity:1}
+.rtile.oos .rt-st{color:#c0271e}
+.gpu svg{vertical-align:-2px}
 
 /* dispatch dropdown */
 .disp-box{display:flex;flex-direction:column;gap:8px}
@@ -128,6 +136,9 @@
 
 /* tug groups in assign */
 .tug-gtitle{font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--navy);margin:10px 0 6px;text-transform:uppercase}
+.thdr .tty{font-weight:700;font-size:9.5px;letter-spacing:.03em;opacity:.78;margin-left:6px;text-transform:uppercase}
+.tcard.gpinop{border-color:#e0a52e}
+.tcard.gpinop .thdr{background:#a8740c}
 .thdr .gpu{display:inline-flex}
 .thdr .gpu.ok{color:#9fe9b1}.thdr .gpu.inop{color:#ffb4ad}
 .oosbar .haz{color:#fff;background:var(--danger);border-radius:4px;padding:0 5px;margin-right:4px;font-weight:900}
@@ -195,6 +206,19 @@
 .log-row span{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
 .log-row:active{transform:scale(.99)}
 .log-img{width:100%;height:auto;border:1px solid var(--line);border-radius:10px}
+
+/* ===== responsive: 13" iPad + desktop get more columns ===== */
+@media (min-width:820px){
+  #staffRoot .rt-grid{grid-template-columns:repeat(4,1fr)}
+  #staffRoot .tug-grid{grid-template-columns:repeat(3,1fr)}
+  #staffRoot .area-grid{grid-template-columns:repeat(3,1fr)}
+  #staffRoot .abody-wrap{max-height:none}
+}
+@media (min-width:1200px){
+  #staffRoot .rt-grid{grid-template-columns:repeat(6,1fr)}
+  #staffRoot .tug-grid{grid-template-columns:repeat(4,1fr)}
+  #staffRoot .area-grid{grid-template-columns:repeat(4,1fr)}
+}
 
 /* ===== bid info on tap (pool) ===== */
 .prow-tap{cursor:pointer}

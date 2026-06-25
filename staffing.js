@@ -151,13 +151,21 @@ const ST={
   numTugs:8,
   prompts:{},            // name -> bool (trainees + exclusions availability)
   supers:[], manager:MANAGERS[0]||"", asst:[],
-  tug:{},                // tugId -> {oos:bool, gpu:'ok'|'inop'}
+  tug:{},                // tugId -> "unset"|"ready"|"inop"|"oos"
   dispatch:null,         // {name,emp}
   brief:null,            // briefing fields (phase 2)
   bodies:null,           // built pool bodies (all shifts)
   assign:null,           // {tugs:{id:{DRIVER,OBSERVR}}, areas:{key:[...]}}
 };
-function tugState(id){ return ST.tug[id]||(ST.tug[id]={oos:false,gpu:"ok"}); }
+/* 4-state tug cycle: unset(grey) → ready(green) → inop(yellow) → oos(red) → unset */
+const TUG_ORDER=["unset","ready","inop","oos"];
+function tugSt(id){ return ST.tug[id]||"unset"; }
+function setTug(id,s){ ST.tug[id]=s; }
+function cycleTug(id){ ST.tug[id]=TUG_ORDER[(TUG_ORDER.indexOf(tugSt(id))+1)%TUG_ORDER.length]; }
+// compatibility view used by sheets/board/exports
+function tugState(id){ const s=tugSt(id); return {state:s, oos:s==="oos", gpu:s==="inop"?"inop":"ok", running:s==="ready"||s==="inop", unset:s==="unset"}; }
+// tug make/model by id range
+function tugType(id){ if([1,3,4].includes(id))return "TBL400"; if(id>=10&&id<=19)return "TBL 280"; if(id>=20&&id<=29)return "Golhofer"; return ""; }
 function excludeList(){ try{ const d=JSON.parse(localStorage.getItem("elt.staff.exclude")||"null"); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }catch(_){ return EXCLUDE_DEFAULT.slice(); } }
 
 /* build the body list (all shifts) from parsed inputs + prompt answers */
@@ -371,29 +379,34 @@ function rPool(){
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
-/* ---- step: tug reconciliation (OOS + ground power) ---- */
-function initTug(){
-  // seed once: tugs beyond the chosen target start OOS; all GPUs assumed working
-  if(!ST._tugSeeded){ TUGS.forEach((id,i)=>{ ST.tug[id]={oos:i>=ST.numTugs, gpu:"ok"}; }); ST._tugSeeded=true; }
-}
+/* ---- step: tug status (tap-cycle reconciliation) ---- */
+function initTug(){ /* everything starts grey/unset — supervisor taps each tug */ }
+const STATUS_LABEL={
+  unset:"Tap to set status",
+  ready:"Ready · Good GPU",
+  inop:"GPU Inop · tug still ready",
+  oos:"Tug out of Service"
+};
 function rReconcile(){
-  const running=TUGS.filter(id=>!tugState(id).oos).length;
-  const grp=g=>`<div class="rg"><div class="rg-h">${g.label}</div><div class="rg-tugs">`+
-    g.ids.map(id=>{const t=tugState(id);
-      return `<div class="rtug ${t.oos?'oos':''}">
-        <div class="rt-id">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</div>
-        <div class="rt-btns">
-          <button class="rt-oos ${t.oos?'on':''}" data-oos="${id}">${t.oos?'OOS':'In svc'}</button>
-          <button class="rt-gpu ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''}>${t.gpu==='inop'?BOLT_X+' GP inop':BOLT+' GP ok'}</button>
-        </div></div>`;}).join("")+`</div></div>`;
+  const running=TUGS.filter(id=>tugState(id).running).length;
+  const oosN=TUGS.filter(id=>tugState(id).oos).length;
+  const inopN=TUGS.filter(id=>tugSt(id)==="inop").length;
+  const unsetN=TUGS.filter(id=>tugSt(id)==="unset").length;
+  const tile=id=>{const s=tugSt(id);
+    return `<button class="rtile ${s}" data-tug="${id}">
+        <span class="rt-top"><span class="rt-n">${id}</span>${ELECTRIC.has(id)?'<span class="rt-e">⚡E</span>':''}</span>
+        <span class="rt-ty">${tugType(id)||'&nbsp;'}</span>
+        <span class="rt-st">${s==='ready'?'✓ ':''}${STATUS_LABEL[s]}</span>
+      </button>`;};
+  const grp=g=>`<div class="rgroup"><div class="rg-h">STUG ${g.label}</div><div class="rt-grid">${g.ids.map(tile).join("")}</div></div>`;
   ROOT.innerHTML=card(`
-    <h2 class="staff-h">Reconcile tugs</h2>
-    <p class="hint" style="margin:0 0 6px">Mark out-of-service tugs and whether each tug's ground power works. <b>${running}</b> in service.</p>
+    <h2 class="staff-h">Tug status</h2>
+    <p class="hint" style="margin:0 0 8px">Tap a tug to cycle: <b class="rk g">green</b> ready, good GPU → <b class="rk y">yellow</b> GPU inop but still ready → <b class="rk r">red</b> out of service → grey not set.</p>
+    <div class="muted-row"><b>${running}</b> in service · <b>${inopN}</b> GPU inop · <b>${oosN}</b> out of service${unsetN?` · ${unsetN} not set`:''}</div>
     <div class="recon">${TUG_GROUPS.map(grp).join("")}</div>
     <div class="btnrow" style="margin-top:12px"><button class="btn navy" id="toAssign2">Assign the board ›</button></div>
     ${back("pool","Pool")}`);
-  $$('#staffRoot .rt-oos').forEach(b=>b.onclick=()=>{const t=tugState(b.dataset.oos);t.oos=!t.oos;render();});
-  $$('#staffRoot .rt-gpu').forEach(b=>b.onclick=()=>{const t=tugState(b.dataset.gpu);if(t.oos)return;t.gpu=t.gpu==='inop'?'ok':'inop';render();});
+  $$('#staffRoot .rtile').forEach(b=>b.onclick=()=>{cycleTug(+b.dataset.tug);render();});
   $("#toAssign2").onclick=()=>{ initAssign(); ST.step="assign"; render(); };
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
@@ -441,17 +454,19 @@ function rAssign(){
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
   // tugs grouped
-  const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{};
-    return `<div class="tcard ${t.oos?'oos':''}">
-      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span>
+  const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
+    return `<div class="tcard ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
+      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}${ty?`<small class="tty">${ty}</small>`:''}</span>
         <span class="thdr-r"><button class="gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''} title="Ground power">${t.gpu==='inop'?BOLT_X:BOLT}</button>
         <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button></span></div>
       ${t.oos?`<div class="oosbar"><span class="haz">✕</span> OUT OF SERVICE</div>`:
         `<div class="trow ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(crew.DRIVER)}</div>
          <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>`}
     </div>`;};
-  const tugGroups=TUG_GROUPS.map(g=>`<div class="tug-gtitle">STUG ${g.label}</div><div class="tug-grid">${g.ids.map(tugCard).join("")}</div>`).join("");
-  const running=TUGS.filter(id=>!tugState(id).oos).length;
+  const tugGroups=TUG_GROUPS.map(g=>{const ids=g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
+    return ids.length?`<div class="tug-gtitle">STUG ${g.label}</div><div class="tug-grid">${ids.map(tugCard).join("")}</div>`:"";}).join("")
+    ||`<p class="hint">No tugs in service yet — set them on the Tug status screen.</p>`;
+  const running=TUGS.filter(id=>tugState(id).running).length;
   ROOT.innerHTML=`
     <div class="card pad assign-top">
       <div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
@@ -472,8 +487,8 @@ function rAssign(){
   $("#dispCustom")?.addEventListener("input",e=>{ ST.dispatch={name:e.target.value,emp:"",custom:true}; });
   $$('#staffRoot .trow').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
     if(t[role]){t[role]=null;render();return;} place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); });
-  $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const t=tugState(b.dataset.oos); t.oos=!t.oos; if(t.oos)delete ST.assign.tugs[b.dataset.oos]; render(); });
-  $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const t=tugState(b.dataset.gpu); if(t.oos)return; t.gpu=t.gpu==='inop'?'ok':'inop'; render(); });
+  $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
+  $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
   $("#toBrief").onclick=()=>{ initBrief(); ST.step="brief"; render(); };
@@ -520,7 +535,7 @@ function tally(abs){const t={VAC:0,DAT:0,CB:0,SICK:0,OUT:0,OJI:0};abs.forEach(a=
   if(/VC|VAC/.test(c))t.VAC++;else if(/DAT/.test(c))t.DAT++;else if(/CB/.test(c))t.CB++;else if(/SICK/.test(c))t.SICK++;else if(/OJI|INJ/.test(c))t.OJI++;else t.OUT++;});return t;}
 function buildBriefing(){
   const b=ST.brief||{focus:[]};
-  const oosT=TUGS.filter(id=>tugState(id).oos), inop=TUGS.filter(id=>!tugState(id).oos&&tugState(id).gpu==='inop'), sked=TUGS.length-oosT.length;
+  const oosT=TUGS.filter(id=>tugState(id).oos), inop=TUGS.filter(id=>tugSt(id)==='inop'), sked=TUGS.filter(id=>tugState(id).running).length;
   const rows=SHIFTS.map(sh=>{const pool=poolFor(sh),t=tally(absentFor(sh));return {sh,n:pool.length,max:Math.floor(pool.length/2),t};});
   const fld=(l,v)=>`<div class="bf-row"><div class="bf-l">${l}</div><div class="bf-v">${v?esc(v).replace(/\n/g,"<br>"):'<span class="bf-em">—</span>'}</div></div>`;
   const date=ST.parsed?ST.parsed.date:"";
@@ -577,11 +592,12 @@ function buildSheet(){
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
     return `<div class="sb-area"><div class="sb-area-h">${esc(k)}${min?` <span>${list.length}/${min}</span>`:''}</div>
       <div class="sb-area-b">${list.map(p=>`<div>${esc(p.name)}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
-  const tugCell=id=>{const t=tugState(id),c=a.tugs[id]||{};
+  const tugCell=id=>{const t=tugState(id),c=a.tugs[id]||{},ty=tugType(id);
     const bolt=t.gpu==='inop'?`<span class="sb-bolt inop">${BOLT_X}</span>`:`<span class="sb-bolt ok">${BOLT}</span>`;
-    return `<div class="sb-tug ${t.oos?'oos':''}"><div class="sb-tug-h">STUG ${id}${ELECTRIC.has(id)?'<b>w</b>':''} ${bolt}${t.oos?'<span class="sb-oos">OUT OF SERVICE</span>':''}</div>
+    return `<div class="sb-tug ${t.oos?'oos':''}"><div class="sb-tug-h">STUG ${id}${ELECTRIC.has(id)?'<b>w</b>':''}${ty?`<u>${ty}</u>`:''} ${t.oos?'':bolt}${t.oos?'<span class="sb-oos">OUT OF SERVICE</span>':''}</div>
       ${t.oos?'<div class="sb-haz"></div>':`<div class="sb-tug-r"><i>DRIVER</i>${crew(c.DRIVER)}</div><div class="sb-tug-r"><i>OBSERVR</i>${crew(c.OBSERVR)}</div>`}</div>`;};
-  const groupBlock=g=>`<div class="sb-tgroup"><div class="sb-tg-h">STUG ${g.label}</div><div class="sb-tg-cells">${g.ids.map(tugCell).join("")}</div></div>`;
+  const groupBlock=g=>{const ids=g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
+    return ids.length?`<div class="sb-tgroup"><div class="sb-tg-h">STUG ${g.label}</div><div class="sb-tg-cells">${ids.map(tugCell).join("")}</div></div>`:"";};
   const absent=absentFor(ST.shift);
   const absBlock=absent.length?`<div class="sb-absent"><div class="sb-abs-h">NOT HERE THIS SHIFT — ${absent.length}</div>
     <div class="sb-abs-grid">${absent.map(x=>`<span class="sb-abs"><b>${esc(x.name)}</b> <span>${esc(x.code)}</span></span>`).join("")}</div></div>`:"";
@@ -621,7 +637,9 @@ function renderStaffCanvas(){
   const railW=24,gx0=M+railW+gap,tgW=W-2*M-2*(railW+gap);
   // tug rows by group (each group is a labeled band of up to 5 cells)
   const tcols=5,tw=(tgW-(tcols-1)*gap)/tcols,th=58,ghH=20;
-  const groupHeights=TUG_GROUPS.map(g=>ghH+Math.ceil(g.ids.length/tcols)*(th+gap));
+  const touched=id=>{const t=tugState(id);return t.running||t.oos;};
+  const groupIds=TUG_GROUPS.map(g=>g.ids.filter(touched));
+  const groupHeights=groupIds.map(ids=>ids.length?ghH+Math.ceil(ids.length/tcols)*(th+gap):0);
   const titleH=44,bandY=M+titleH+10,tugTop=bandY+brows*(bh+gap)+10;
   const tugAreaH=groupHeights.reduce((s,h)=>s+h,0);
   const absent=absentFor(ST.shift), absH=absent.length?28+Math.ceil(absent.length/4)*18+10:0;
@@ -646,16 +664,19 @@ function renderStaffCanvas(){
     ctx.save();ctx.translate(rx+railW/2,tugTop+tugAreaH/2);ctx.rotate(-Math.PI/2);ctx.fillStyle="#fff";ctx.font=FA("900 12px");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("ALWAYS FOLLOW SOP",0,0);ctx.restore();});
   // tug groups
   let gy=tugTop;
-  TUG_GROUPS.forEach(g=>{
+  TUG_GROUPS.forEach((g,gi)=>{
+    const ids=groupIds[gi];if(!ids.length)return;
     ctx.fillStyle="#0b3d63";ctx.font=FA("900 12px");ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("STUG "+g.label,gx0,gy+10);
     let ty=gy+ghH;
-    g.ids.forEach((id,i)=>{const col=i%tcols,x=gx0+col*(tw+gap),yy=ty+Math.floor(i/tcols)*(th+gap);
-      const t=tugState(id),cr=a.tugs[id]||{};
+    ids.forEach((id,i)=>{const col=i%tcols,x=gx0+col*(tw+gap),yy=ty+Math.floor(i/tcols)*(th+gap);
+      const t=tugState(id),cr=a.tugs[id]||{},tlbl=tugType(id);
       ctx.fillStyle=t.oos?"#fbeceb":"#fff";ctx.fillRect(x,yy,tw,th);
       ctx.fillStyle="#eef2f5";ctx.fillRect(x,yy,tw,20);
       ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(x+.5,yy+.5,tw-1,th-1);
-      ctx.fillStyle="#0b3d63";ctx.font=FA("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";ctx.fillText("STUG "+id+(ELECTRIC.has(id)?" w":""),x+6,yy+10);
-      drawBolt(ctx,x+tw-20,yy+3,t.gpu==='inop');
+      ctx.fillStyle="#0b3d63";ctx.font=FA("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";
+      const hd="STUG "+id+(ELECTRIC.has(id)?" w":"");ctx.fillText(hd,x+6,yy+10);
+      if(tlbl){const w0=ctx.measureText(hd).width;ctx.fillStyle="#90a0ad";ctx.font=FA("700 8px");ctx.fillText(tlbl,x+6+w0+6,yy+10);}
+      if(!t.oos)drawBolt(ctx,x+tw-20,yy+3,t.gpu==='inop');
       if(t.oos){ ctx.strokeStyle="#d9342b";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+4,yy+24);ctx.lineTo(x+tw-4,yy+th-4);ctx.moveTo(x+tw-4,yy+24);ctx.lineTo(x+4,yy+th-4);ctx.stroke();
         ctx.fillStyle="#c0271e";ctx.font=FA("800 10px");ctx.textAlign="center";ctx.fillText("OUT OF SERVICE",x+tw/2,yy+th/2+8); }
       else{
@@ -666,7 +687,7 @@ function renderStaffCanvas(){
           ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+54+Math.min(nmw,tw-112)+6,yk); });
       }
     });
-    gy+=groupHeights[TUG_GROUPS.indexOf(g)];
+    gy+=groupHeights[gi];
   });
   // absent strip
   if(absH){const ay=tugTop+tugAreaH+8;
@@ -684,7 +705,7 @@ function canvasToPng(c){return new Promise(res=>c.toBlob(b=>res(b),"image/png"))
 function exportSheetImage(){ const c=renderStaffCanvas(); c.toBlob(b=>{ if(!b)return alert("Image export failed — use Print."); const name="EWR-AMT-Staffing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
 function renderBriefCanvas(){
   const b=ST.brief||{focus:[]},S=2,W=1100,M=34;
-  const oosT=TUGS.filter(id=>tugState(id).oos),inop=TUGS.filter(id=>!tugState(id).oos&&tugState(id).gpu==='inop'),sked=TUGS.length-oosT.length;
+  const oosT=TUGS.filter(id=>tugState(id).oos),inop=TUGS.filter(id=>tugSt(id)==='inop'),sked=TUGS.filter(id=>tugState(id).running).length;
   const rows=SHIFTS.map(sh=>{const pool=poolFor(sh),t=tally(absentFor(sh));return {sh,n:pool.length,max:Math.floor(pool.length/2),t};});
   // pre-measure not needed; compute height by simulating
   const ctx0=document.createElement("canvas").getContext("2d");
@@ -751,9 +772,10 @@ function exportSheetText(){
   L.push("");L.push("AREAS:");
   AREAS.forEach(ar=>{const list=a.areas[ar.key]||[];if(list.length||ar.min)L.push("  "+ar.key+(ar.min?" ("+list.length+"/"+ar.min[ST.shift]+")":"")+": "+(list.map(p=>p.name).join(", ")||"—"));});
   L.push("");L.push("TUGS:");
-  TUG_GROUPS.forEach(g=>{L.push(" ["+g.label+"]");g.ids.forEach(id=>{const t=tugState(id);if(t.oos){L.push("  STUG "+id+": OUT OF SERVICE");return;}
+  TUG_GROUPS.forEach(g=>{const ids=g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});if(!ids.length)return;
+    L.push(" ["+g.label+"]");ids.forEach(id=>{const t=tugState(id),ty=tugType(id)?" "+tugType(id):"";if(t.oos){L.push("  STUG "+id+ty+": OUT OF SERVICE");return;}
     const cr=a.tugs[id]||{},gp=t.gpu==='inop'?" [GP INOP]":"";
-    L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+gp+": DRIVER "+(cr.DRIVER?cr.DRIVER.name+" "+cr.DRIVER.start+"-"+cr.DRIVER.end:"—")+" / OBSERVR "+(cr.OBSERVR?cr.OBSERVR.name+" "+cr.OBSERVR.start+"-"+cr.OBSERVR.end:"—"));});});
+    L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+ty+gp+": DRIVER "+(cr.DRIVER?cr.DRIVER.name+" "+cr.DRIVER.start+"-"+cr.DRIVER.end:"—")+" / OBSERVR "+(cr.OBSERVR?cr.OBSERVR.name+" "+cr.OBSERVR.start+"-"+cr.OBSERVR.end:"—"));});});
   const ab=absentFor(ST.shift);
   if(ab.length){L.push("");L.push("NOT HERE:");ab.forEach(x=>L.push("  "+x.name+" — "+x.code));}
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),el=document.createElement("a");
@@ -765,9 +787,9 @@ function loadLog(){try{return JSON.parse(localStorage.getItem("elt.staff.log")||
 function saveLogList(l){try{localStorage.setItem("elt.staff.log",JSON.stringify(l));return true;}catch(e){return false;}}
 function logManpower(){
   const date=ST.parsed?ST.parsed.date:"",shift=ST.shift,a=ST.assign;
-  const running=TUGS.filter(id=>!tugState(id).oos).length, pool=poolFor(shift).length;
+  const running=TUGS.filter(id=>tugState(id).running).length, pool=poolFor(shift).length;
   const areasFilled=AREAS.reduce((s,ar)=>s+((a.areas[ar.key]||[]).length),0);
-  const crews=TUGS.filter(id=>!tugState(id).oos&&(a.tugs[id]&&(a.tugs[id].DRIVER||a.tugs[id].OBSERVR))).length;
+  const crews=TUGS.filter(id=>tugState(id).running&&(a.tugs[id]&&(a.tugs[id].DRIVER||a.tugs[id].OBSERVR))).length;
   let img="";try{const src=renderStaffCanvas();const w=1000,h=Math.round(src.height/src.width*w);
     const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);
     img=c.toDataURL("image/jpeg",0.85);}catch(_){}
