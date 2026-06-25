@@ -13,7 +13,9 @@ const CK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 const SHIFTS=["AM","PM","NH"];
 const SHIFT_CORE={AM:[300,780],PM:[780,1260],NH:[1260,1740]}; // 05–13 / 13–21 / 21–05 (mins)
 const TUGS=[1,3,4,10,17,18,19,20,21,22,23,24,25,26,27,28,29,51];
+const TUG_GROUPS=[{label:"1 · 3 · 4",ids:[1,3,4]},{label:"10–19",ids:[10,17,18,19]},{label:"20–29",ids:[20,21,22,23,24,25,26,27,28,29]},{label:"51",ids:[51]}];
 const ELECTRIC=new Set([20,25,26,28,29]);
+const DISPATCHERS=["Plant, Corey","Castro, Alex","Cope, Yolanda","Santana, Carlos","Menendez, Kevin","Murillo Mieles, Andres","Murray, Naki","Young, Benjamin","Platero, German","Reid, Sharee"];
 const AREAS=[ // min staffing per shift; null = supervisor discretion
   {key:"Ballpark",  min:{AM:3,PM:3,NH:3}},
   {key:"WestPark",  min:{AM:2,PM:2,NH:2}},
@@ -145,10 +147,13 @@ const ST={
   numTugs:8,
   prompts:{},            // name -> bool (trainees + exclusions availability)
   supers:[], manager:MANAGERS[0]||"", asst:[],
-  oos:{},                // tugId -> true
+  tug:{},                // tugId -> {oos:bool, gpu:'ok'|'inop'}
+  dispatch:null,         // {name,emp}
+  brief:null,            // briefing fields (phase 2)
   bodies:null,           // built pool bodies (all shifts)
-  assign:null,           // {dispatch, tugs:{id:{DRIVER,OBSERVR}}, areas:{key:[...]}}
+  assign:null,           // {tugs:{id:{DRIVER,OBSERVR}}, areas:{key:[...]}}
 };
+function tugState(id){ return ST.tug[id]||(ST.tug[id]={oos:false,gpu:"ok"}); }
 function excludeList(){ try{ const d=JSON.parse(localStorage.getItem("elt.staff.exclude")||"null"); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }catch(_){ return EXCLUDE_DEFAULT.slice(); } }
 
 /* build the body list (all shifts) from parsed inputs + prompt answers */
@@ -207,12 +212,38 @@ function dispatchCandidates(shift){
   return mpRecs.filter(r=>r.sec==="DISPATCH"&&r.start).map(r=>({...r,avail:!r.code||WORKED_CODES.has(r.code),sh:primaryShift(r.start)}))
     .filter(d=>d.sh===shift);
 }
+/* who was scheduled for the shift but isn't in the pool, and why (code) */
+function calloutReason(emp){ const r=(ST.parsed.coRows||[]).find(x=>x.emp===emp); return r?(/(sick)/i.test(r.reason)?"SICK":(r.reason||"OUT")):""; }
+function absentFor(shift){
+  const {mpRecs}=ST.parsed;
+  const poolEmps=new Set(poolFor(shift).map(b=>b.emp));
+  const seen=new Set(),out=[];
+  for(const r of mpRecs){
+    if(r.sec!=="PUSH"||!r.start)continue;
+    if(primaryShift(r.start)!==shift)continue;
+    if(poolEmps.has(r.emp))continue;          // they're working — skip
+    if(seen.has(r.emp||r.name))continue; seen.add(r.emp||r.name);
+    let code=calloutReason(r.emp)||r.code||(isExcluded(r.name)?"N/A":"OUT");
+    out.push({name:r.name,code});
+  }
+  out.sort((a,b)=>a.code.localeCompare(b.code)||normName(a.name).localeCompare(normName(b.name)));
+  return out;
+}
+/* tallies across all shifts for the briefing staffing count */
+function absenceTally(){
+  const t={VAC:0,DAT:0,CB:0,SICK:0,OUT:0,OJI:0};
+  const all=[].concat(...SHIFTS.map(s=>absentFor(s)));
+  for(const a of all){ const c=(a.code||"").toUpperCase();
+    if(/VC|VAC/.test(c))t.VAC++; else if(/DAT/.test(c))t.DAT++; else if(/CB/.test(c))t.CB++;
+    else if(/SICK/.test(c))t.SICK++; else if(/OJI|INJ/.test(c))t.OJI++; else t.OUT++; }
+  return t;
+}
 
 /* =====================  RENDER  ===================== */
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
-  ({upload:rUpload,setup:rSetup,pool:rPool,assign:rAssign,sheet:rSheet}[ST.step]||rUpload)();
+  ({upload:rUpload,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet}[ST.step]||rUpload)();
 }
 function card(inner){return `<div class="card pad">${inner}</div>`;}
 function back(toStep,label){return `<button class="btn ghost stp-back" data-to="${toStep}" style="margin-top:10px">‹ ${label}</button>`;}
@@ -248,6 +279,7 @@ async function doBuild(){
     const dm=mpToks.find(t=>/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(t));
     const date=dm||"";
     ST.parsed={ mpRecs:parseManpower(mpToks), otRecs:parseOT(otToks), coRows:parseCallout(coText,date), date };
+    ST.tug={};ST._tugSeeded=false;ST.dispatch=null;ST.assign=null;ST.brief=null;ST.bodies=null;
     ST.step="setup";render();
   }catch(err){ msg.innerHTML=`<span style="color:var(--danger)">Couldn't read a file: ${esc(err.message||err)}</span>`; }
 }
@@ -302,185 +334,391 @@ function rPool(){
     ${back("setup","Setup")}`);
   $$('#staffRoot .xrem').forEach(b=>b.onclick=()=>{ const emp=b.dataset.emp,nm=b.dataset.name;
     ST.bodies=ST.bodies.filter(x=>!(x.emp===emp&&x.name===nm)); render(); });
-  $("#toAssign").onclick=()=>{ initAssign(); ST.step="assign"; render(); };
+  $("#toAssign").onclick=()=>{ initTug(); ST.step="reconcile"; render(); };
+  $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
+}
+
+/* ---- step: tug reconciliation (OOS + ground power) ---- */
+function initTug(){
+  // seed once: tugs beyond the chosen target start OOS; all GPUs assumed working
+  if(!ST._tugSeeded){ TUGS.forEach((id,i)=>{ ST.tug[id]={oos:i>=ST.numTugs, gpu:"ok"}; }); ST._tugSeeded=true; }
+}
+function rReconcile(){
+  const running=TUGS.filter(id=>!tugState(id).oos).length;
+  const grp=g=>`<div class="rg"><div class="rg-h">${g.label}</div><div class="rg-tugs">`+
+    g.ids.map(id=>{const t=tugState(id);
+      return `<div class="rtug ${t.oos?'oos':''}">
+        <div class="rt-id">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</div>
+        <div class="rt-btns">
+          <button class="rt-oos ${t.oos?'on':''}" data-oos="${id}">${t.oos?'OOS':'In svc'}</button>
+          <button class="rt-gpu ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''}>${t.gpu==='inop'?BOLT_X+' GP inop':BOLT+' GP ok'}</button>
+        </div></div>`;}).join("")+`</div></div>`;
+  ROOT.innerHTML=card(`
+    <h2 class="staff-h">Reconcile tugs</h2>
+    <p class="hint" style="margin:0 0 6px">Mark out-of-service tugs and whether each tug's ground power works. <b>${running}</b> in service.</p>
+    <div class="recon">${TUG_GROUPS.map(grp).join("")}</div>
+    <div class="btnrow" style="margin-top:12px"><button class="btn navy" id="toAssign2">Assign the board ›</button></div>
+    ${back("pool","Pool")}`);
+  $$('#staffRoot .rt-oos').forEach(b=>b.onclick=()=>{const t=tugState(b.dataset.oos);t.oos=!t.oos;render();});
+  $$('#staffRoot .rt-gpu').forEach(b=>b.onclick=()=>{const t=tugState(b.dataset.gpu);if(t.oos)return;t.gpu=t.gpu==='inop'?'ok':'inop';render();});
+  $("#toAssign2").onclick=()=>{ initAssign(); ST.step="assign"; render(); };
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
 /* ---- step: assign ---- */
 let SEL=null; // selected pool entry key
 function initAssign(){
-  const disp=dispatchCandidates(ST.shift).find(d=>d.avail);
-  ST.assign={ dispatch:disp?{name:disp.name,emp:disp.emp}:null, tugs:{}, areas:{} };
-  AREAS.forEach(a=>ST.assign.areas[a.key]=[]);
-  ST.oos={};
-  TUGS.slice(ST.numTugs).forEach(id=>ST.oos[id]=true); // beyond target = OOS (adjustable)
+  if(!ST.assign){ ST.assign={ tugs:{}, areas:{} }; AREAS.forEach(a=>ST.assign.areas[a.key]=[]); }
+  if(!ST.dispatch){ const d=dispatchCandidates(ST.shift).find(x=>x.avail); ST.dispatch=d?{name:d.name,emp:d.emp,custom:false}:{name:"",emp:"",custom:false}; }
+}
+function dispEmp(){ // emp of the chosen dispatcher if they're a pool body (so they leave the pool)
+  if(!ST.dispatch||!ST.dispatch.name)return "";
+  if(ST.dispatch.emp)return ST.dispatch.emp;
+  const m=poolFor(ST.shift).find(b=>normName(b.name)===normName(ST.dispatch.name));
+  return m?m.emp:"";
 }
 function assignedEmps(){
-  const s=new Set();const a=ST.assign;
-  if(a.dispatch&&a.dispatch.emp)s.add(a.dispatch.emp);
+  const s=new Set();const a=ST.assign;const de=dispEmp();if(de)s.add(de);
   Object.values(a.tugs).forEach(t=>["DRIVER","OBSERVR"].forEach(r=>t[r]&&s.add(t[r].emp)));
   Object.values(a.areas).forEach(list=>list.forEach(p=>s.add(p.emp)));
   return s;
 }
+const BOLT='<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/></svg>';
+const BOLT_X='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" fill="currentColor" stroke="none"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+const ovh=m=>(m/60).toFixed(1).replace('.0','');
 function rAssign(){
   const pool=poolFor(ST.shift);
   const used=assignedEmps();
   const avail=pool.filter(b=>!used.has(b.emp));
-  const chip=b=>`<button class="abody ${SEL===b.emp?'sel':''}" data-emp="${esc(b.emp)}">${esc(b.name)}<span>${esc(b.start)}-${esc(b.end)}${b.prim?'':' +'+(b.ov/60).toFixed(1).replace('.0','')+'h'}</span></button>`;
-  const slotName=p=>p?`<span class="slot-name">${esc(p.name)}</span>`:`<span class="slot-empty">tap to fill</span>`;
-  // dispatch
-  const dispSlot=`<div class="slot disp ${ST.assign.dispatch?'full':''}" data-slot="disp">DISPATCH ${slotName(ST.assign.dispatch)}</div>`;
+  const chip=b=>`<button class="abody ${SEL===b.emp?'sel':''}" data-emp="${esc(b.emp)}">${esc(b.name)}<span>${esc(b.start)}-${esc(b.end)}${b.prim?'':' +'+ovh(b.ov)+'h'}</span></button>`;
+  const slotName=p=>p?`<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p.start)}-${esc(p.end)}</span>`:`<span class="slot-empty">tap to fill</span>`;
+  // dispatch dropdown + custom
+  const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
+  const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
+  const dispBox=`<select id="dispSel">
+      <option value="">— none / OPEN —</option>
+      ${opts.map(n=>`<option value="${esc(n)}" ${cur===n&&!custom?'selected':''}>${esc(n)}</option>`).join("")}
+      <option value="__custom" ${custom?'selected':''}>Custom…</option>
+    </select>${custom?`<input id="dispCustom" placeholder="Type dispatcher name" value="${esc(cur)}" autocomplete="off" />`:''}`;
   // areas
   const areaCards=AREAS.map(a=>{
-    const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0;
-    const need=min&&list.length<min;
+    const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0,need=min&&list.length<min;
     return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
       <div class="aslots">${list.map((p,i)=>`<span class="slot-chip" data-area="${esc(a.key)}" data-i="${i}">${esc(p.name)} ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
-  // tugs
-  const tugCards=TUGS.map(id=>{
-    const oos=ST.oos[id],t=ST.assign.tugs[id]||{};
-    return `<div class="tcard ${oos?'oos':''}">
-      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span>
-        <button class="toos" data-oos="${id}">${oos?'OOS':'on'}</button></div>
-      ${oos?`<div class="oosbar">OUT OF SERVICE</div>`:
-        `<div class="trow ${t.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(t.DRIVER)}</div>
-         <div class="trow ${t.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(t.OBSERVR)}</div>`}
-    </div>`;
-  }).join("");
+  // tugs grouped
+  const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{};
+    return `<div class="tcard ${t.oos?'oos':''}">
+      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''} <span class="gpu ${t.gpu==='inop'?'inop':'ok'}">${t.gpu==='inop'?BOLT_X:BOLT}</span></span>
+        <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button></div>
+      ${t.oos?`<div class="oosbar"><span class="haz">✕</span> OUT OF SERVICE</div>`:
+        `<div class="trow ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(crew.DRIVER)}</div>
+         <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>`}
+    </div>`;};
+  const tugGroups=TUG_GROUPS.map(g=>`<div class="tug-gtitle">STUG ${g.label}</div><div class="tug-grid">${g.ids.map(tugCard).join("")}</div>`).join("");
+  const running=TUGS.filter(id=>!tugState(id).oos).length;
   ROOT.innerHTML=`
     <div class="card pad assign-top">
       <div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
-      <p class="hint" style="margin:2px 0 8px">Tap a name, then tap a slot. Priority: Dispatch → Tugs → areas.</p>
+      <p class="hint" style="margin:2px 0 8px">Tap a name, then tap a tug or area slot.</p>
       <div class="abody-wrap">${avail.map(chip).join("")||'<span class="hint">All assigned.</span>'}</div>
     </div>
-    <div class="card pad"><div class="seg-section">DISPATCH</div>${dispSlot}</div>
-    <div class="card pad"><div class="seg-section">TUGS (${TUGS.length-Object.values(ST.oos).filter(Boolean).length} running)</div><div class="tug-grid">${tugCards}</div></div>
+    <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
+    <div class="card pad"><div class="seg-section">TUGS — ${running} running</div>${tugGroups}</div>
     <div class="card pad"><div class="seg-section">AREAS</div><div class="area-grid">${areaCards}</div></div>
-    <div class="btnrow"><button class="btn navy" id="toSheet">Generate staffing sheet ›</button></div>
-    ${back("pool","Pool")}`;
+    <div class="btnrow"><button class="btn navy" id="toBrief">Briefing &amp; focus items ›</button></div>
+    ${back("reconcile","Tugs")}`;
   $$('#staffRoot .abody').forEach(b=>b.onclick=()=>{ SEL=(SEL===b.dataset.emp?null:b.dataset.emp); render(); });
   const place=(setter)=>{ if(!SEL)return; const b=poolFor(ST.shift).find(x=>x.emp===SEL); if(!b)return; setter({name:b.name,emp:b.emp,start:b.start,end:b.end}); SEL=null; render(); };
-  $('#staffRoot .slot.disp')?.addEventListener("click",()=>{ if(ST.assign.dispatch){ST.assign.dispatch=null;render();return;} place(p=>ST.assign.dispatch=p); });
+  $("#dispSel")?.addEventListener("change",e=>{ const v=e.target.value;
+    if(v==="__custom"){ST.dispatch={name:custom?cur:"",emp:"",custom:true};}
+    else{ const m=pool.find(b=>normName(b.name)===normName(v)); ST.dispatch=v?{name:v,emp:m?m.emp:"",custom:false}:{name:"",emp:"",custom:false}; }
+    render(); });
+  $("#dispCustom")?.addEventListener("input",e=>{ ST.dispatch={name:e.target.value,emp:"",custom:true}; });
   $$('#staffRoot .trow').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
     if(t[role]){t[role]=null;render();return;} place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); });
-  $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=b.dataset.oos; ST.oos[id]=!ST.oos[id]; if(ST.oos[id])delete ST.assign.tugs[id]; render(); });
+  $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const t=tugState(b.dataset.oos); t.oos=!t.oos; if(t.oos)delete ST.assign.tugs[b.dataset.oos]; render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
-  $("#toSheet").onclick=()=>{ST.step="sheet";render();};
+  $("#toBrief").onclick=()=>{ initBrief(); ST.step="brief"; render(); };
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
-/* ---- step: sheet ---- */
+/* ---- step: briefing / focus items ---- */
+const FOCUS_DEFAULT=[
+ "Do you know who your first aid responders are and where the nearest kit is located?",
+ "Slippery conditions — keep tugs under 10 MPH on taxiways, 5 MPH on remote and gates.",
+ "Follow SOP, no shortcuts, heighten situational awareness.",
+ "Safety is our #1 priority — head out to your assignment early. Do not sit on tows.",
+ "Keep the app updated and answer your radio.",
+ "Ensure AC are properly secured with chocks and safety cones.",
+ "Once AC is secured ensure stairs are 5 feet away from the AC.",
+ "Report any challenges or equipment shortages to the supervisor.",
+ "Complete web-based training when time allows."];
+function loadFocus(){ try{const d=JSON.parse(localStorage.getItem("elt.staff.focus")||"null");return Array.isArray(d)&&d.length?d:FOCUS_DEFAULT.slice();}catch(_){return FOCUS_DEFAULT.slice();} }
+function initBrief(){ if(!ST.brief)ST.brief={weather:"",flight:"",parking:"",safety:"",notes:"",focus:loadFocus()}; }
+function rBrief(){
+  const b=ST.brief;
+  const fa=(id,label,val,ph,rows)=>`<label class="fld-l">${label}</label><textarea id="${id}" class="bf-in" rows="${rows||2}" placeholder="${esc(ph||'')}">${esc(val)}</textarea>`;
+  ROOT.innerHTML=card(`
+    <h2 class="staff-h">Briefing &amp; focus items</h2>
+    <p class="hint" style="margin:0 0 4px">Staffing counts and tug status fill in automatically. Add tonight's info below.</p>
+    ${fa("brWeather","Weather",b.weather,"Tonight's forecast…")}
+    ${fa("brFlight","Flight activity / ATC",b.flight,"Arrivals 421 / Departures 403 | PBT 55,000")}
+    ${fa("brParking","Remote parking",b.parking,"Murphy / remote spot notes…")}
+    ${fa("brSafety","Safety tip of the day",b.safety,"")}
+    ${fa("brNotes","Notes",b.notes,"e.g. STG 28 GP found damaged again")}
+    <label class="fld-l">Focus items</label>
+    <div id="focusWrap" class="focus-wrap">${b.focus.map((t,i)=>`<div class="frow"><textarea rows="2" data-fi="${i}">${esc(t)}</textarea><button class="xrem" data-fdel="${i}" title="Remove">✕</button></div>`).join("")}</div>
+    <button class="btn ghost" id="focusAdd" style="margin-top:8px">+ Add focus item</button>
+    <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="toGen">Generate sheets ›</button></div>
+    ${back("assign","Board")}`);
+  const save=()=>{ b.weather=$("#brWeather").value;b.flight=$("#brFlight").value;b.parking=$("#brParking").value;b.safety=$("#brSafety").value;b.notes=$("#brNotes").value;
+    b.focus=$$("#focusWrap textarea").map(t=>t.value); };
+  $("#focusAdd").onclick=()=>{ save(); b.focus.push(""); render(); };
+  $$('#staffRoot [data-fdel]').forEach(x=>x.onclick=()=>{ save(); b.focus.splice(+x.dataset.fdel,1); render(); });
+  $("#toGen").onclick=()=>{ save(); localStorage.setItem("elt.staff.focus",JSON.stringify(b.focus.filter(s=>s.trim()))); ST.step="sheet"; render(); };
+  $$('#staffRoot .stp-back').forEach(x=>x.onclick=()=>{ save(); ST.step=x.dataset.to; render(); });
+}
+function tally(abs){const t={VAC:0,DAT:0,CB:0,SICK:0,OUT:0,OJI:0};abs.forEach(a=>{const c=(a.code||"").toUpperCase();
+  if(/VC|VAC/.test(c))t.VAC++;else if(/DAT/.test(c))t.DAT++;else if(/CB/.test(c))t.CB++;else if(/SICK/.test(c))t.SICK++;else if(/OJI|INJ/.test(c))t.OJI++;else t.OUT++;});return t;}
+function buildBriefing(){
+  const b=ST.brief||{focus:[]};
+  const oosT=TUGS.filter(id=>tugState(id).oos), inop=TUGS.filter(id=>!tugState(id).oos&&tugState(id).gpu==='inop'), sked=TUGS.length-oosT.length;
+  const rows=SHIFTS.map(sh=>{const pool=poolFor(sh),t=tally(absentFor(sh));return {sh,n:pool.length,max:Math.floor(pool.length/2),t};});
+  const fld=(l,v)=>`<div class="bf-row"><div class="bf-l">${l}</div><div class="bf-v">${v?esc(v).replace(/\n/g,"<br>"):'<span class="bf-em">—</span>'}</div></div>`;
+  const date=ST.parsed?ST.parsed.date:"";
+  return `<div class="bf">
+    <div class="bf-title">DAILY MOVE TEAM SHIFT BRIEFING<span>${esc(date)}</span></div>
+    <div class="bf-2col">
+      <div class="bf-card"><div class="bf-h">Tonight</div>
+        ${fld("Weather",b.weather)}${fld("Flight activity / ATC",b.flight)}${fld("Remote parking",b.parking)}</div>
+      <div class="bf-card"><div class="bf-h">Tugs &amp; Equipment</div>
+        ${fld("Tugs SKED",sked+" of "+TUGS.length)}
+        ${fld("Tugs OOS",oosT.length?oosT.join(", "):"none")}
+        ${fld("INOP ground power",inop.length?inop.join(", "):"none")}
+        ${fld("Safety tip",b.safety)}</div>
+    </div>
+    <div class="bf-card"><div class="bf-h">Move Team Staffing Count</div>
+      <table class="bf-tbl"><thead><tr><th>Shift</th><th>Available</th><th>Max tugs</th><th>VAC | DAT | CB</th><th>SICK | OUT | OJI</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td><b>${r.sh}</b></td><td>${r.n}</td><td>${r.max}</td><td>${r.t.VAC} | ${r.t.DAT} | ${r.t.CB}</td><td>${r.t.SICK} | ${r.t.OUT} | ${r.t.OJI}</td></tr>`).join("")}</tbody></table>
+      <div class="bf-mgr">MGR <b>${esc(ST.manager||"—")}</b> · ASST <b>${esc(ST.asst.join(", ")||"—")}</b> · SUP <b>${esc(ST.supers.join(", ")||"—")}</b></div>
+    </div>
+    <div class="bf-card"><div class="bf-h">Briefing Focus Items</div>
+      <ol class="bf-focus">${(b.focus||[]).filter(s=>s.trim()).map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div>
+    ${b.notes?`<div class="bf-card bf-notes"><div class="bf-h">Notes</div><div>${esc(b.notes).replace(/\n/g,"<br>")}</div></div>`:""}
+  </div>`;
+}
+
+/* ---- step: generate (staffing sheet + briefing, exports) ---- */
+let sheetView="staff";
 function rSheet(){
-  ROOT.innerHTML=`<div class="sheet-scroll"><div id="staffSheet">${buildSheet()}</div></div>
-    <div class="card pad no-print"><div class="btnrow"><button class="btn navy" id="shPrint">Print / Save as PDF</button></div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shImg">Image</button><button class="btn ghost" id="shTxt">Text</button></div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button><button class="btn ghost" id="shNew">New sheet</button></div></div>`;
-  $("#shPrint").onclick=()=>{ $("#printArea").innerHTML=`<div class="sb-print">${buildSheet()}</div>`; window.print(); };
-  $("#shImg").onclick=exportSheetImage;
+  const html=sheetView==="staff"?buildSheet():buildBriefing();
+  ROOT.innerHTML=`
+    <div class="card pad no-print" style="padding-bottom:8px">
+      <div class="seg-wrap"><button class="seg ${sheetView==='staff'?'on':''}" data-sv="staff">Staffing sheet</button><button class="seg ${sheetView==='brief'?'on':''}" data-sv="brief">Briefing</button></div>
+    </div>
+    <div class="sheet-scroll"><div id="staffSheet">${html}</div></div>
+    <div class="card pad no-print">
+      <div class="btnrow"><button class="btn navy" id="shShare">Email / Share both ›</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shImg">Save image</button><button class="btn ghost" id="shPrint">Print / PDF</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shTxt">Text</button><button class="btn ghost stp-back" data-to="brief">‹ Briefing</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button><button class="btn ghost" id="shNew">New</button></div>
+    </div>`;
+  $$('#staffRoot .seg[data-sv]').forEach(s=>s.onclick=()=>{sheetView=s.dataset.sv;render();});
+  $("#shPrint").onclick=()=>{ $("#printArea").innerHTML=`<div class="sb-print">${buildSheet()}</div><div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); };
+  $("#shImg").onclick=()=>{ sheetView==="staff"?exportSheetImage():exportBriefImage(); };
   $("#shTxt").onclick=exportSheetText;
-  $("#shNew")?.addEventListener("click",()=>{ ST.step="upload"; ST.bodies=null; ST.assign=null; render(); });
+  $("#shShare").onclick=shareSheets;
+  $("#shNew")?.addEventListener("click",()=>{ ST.step="upload"; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST._tugSeeded=false; ST.dispatch=null; render(); });
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 function buildSheet(){
-  const a=ST.assign;
-  const nm=p=>p?esc(p.name):"";
+  const a=ST.assign, dn=ST.dispatch&&ST.dispatch.name?esc(ST.dispatch.name):'<span class="sb-oos">OPEN</span>';
+  const crew=p=>p?`${esc(p.name)} <span class="sb-t">${esc(p.start)}-${esc(p.end)}</span>`:"";
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
     return `<div class="sb-area"><div class="sb-area-h">${esc(k)}${min?` <span>${list.length}/${min}</span>`:''}</div>
       <div class="sb-area-b">${list.map(p=>`<div>${esc(p.name)}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
-  const tugCol=ids=>ids.map(id=>{const oos=ST.oos[id],t=a.tugs[id]||{};
-    return `<div class="sb-tug ${oos?'oos':''}"><div class="sb-tug-h">STUG ${id}${ELECTRIC.has(id)?'<b>w</b>':''}${oos?'<span class="sb-oos">OUT OF SERVICE</span>':''}</div>
-      ${oos?'':`<div class="sb-tug-r"><i>DRIVER</i>${nm(t.DRIVER)}</div><div class="sb-tug-r"><i>OBSERVR</i>${nm(t.OBSERVR)}</div>`}</div>`;}).join("");
-  const third=Math.ceil(TUGS.length/3);
-  const cols=[TUGS.slice(0,third),TUGS.slice(third,third*2),TUGS.slice(third*2)];
+  const tugCell=id=>{const t=tugState(id),c=a.tugs[id]||{};
+    const bolt=t.gpu==='inop'?`<span class="sb-bolt inop">${BOLT_X}</span>`:`<span class="sb-bolt ok">${BOLT}</span>`;
+    return `<div class="sb-tug ${t.oos?'oos':''}"><div class="sb-tug-h">STUG ${id}${ELECTRIC.has(id)?'<b>w</b>':''} ${bolt}${t.oos?'<span class="sb-oos">OUT OF SERVICE</span>':''}</div>
+      ${t.oos?'<div class="sb-haz"></div>':`<div class="sb-tug-r"><i>DRIVER</i>${crew(c.DRIVER)}</div><div class="sb-tug-r"><i>OBSERVR</i>${crew(c.OBSERVR)}</div>`}</div>`;};
+  const groupBlock=g=>`<div class="sb-tgroup"><div class="sb-tg-h">STUG ${g.label}</div><div class="sb-tg-cells">${g.ids.map(tugCell).join("")}</div></div>`;
+  const absent=absentFor(ST.shift);
+  const absBlock=absent.length?`<div class="sb-absent"><div class="sb-abs-h">NOT HERE THIS SHIFT — ${absent.length}</div>
+    <div class="sb-abs-grid">${absent.map(x=>`<span class="sb-abs"><b>${esc(x.name)}</b> <span>${esc(x.code)}</span></span>`).join("")}</div></div>`:"";
   return `<div class="sb">
     <div class="sb-top"><div class="sb-title">EWR AMT STAFFING</div><div class="sb-shift">SHIFT <b>${ST.shift}</b></div></div>
     <div class="sb-band">
       ${AREAS.map(x=>areaBox(x.key)).join("")}
-      <div class="sb-area sb-disp"><div class="sb-area-h">DISPATCHER</div><div class="sb-area-b">${nm(a.dispatch)||'<span class="sb-oos">OPEN</span>'}</div></div>
+      <div class="sb-area sb-disp"><div class="sb-area-h">DISPATCHER</div><div class="sb-area-b">${dn}</div></div>
       <div class="sb-area"><div class="sb-area-h">SUPERVISORS</div><div class="sb-area-b">${ST.supers.map(esc).map(s=>`<div>${s}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>
       <div class="sb-area"><div class="sb-area-h">MANAGERS</div><div class="sb-area-b">${[ST.manager,...ST.asst].filter(Boolean).map(esc).map(s=>`<div>${s}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>
     </div>
     <div class="sb-grid"><div class="sb-rail">ALWAYS FOLLOW SOP</div>
-      <div class="sb-tugs">${cols.map(c=>`<div class="sb-tcol">${tugCol(c)}</div>`).join("")}</div>
+      <div class="sb-tugs">${TUG_GROUPS.map(groupBlock).join("")}</div>
       <div class="sb-rail">ALWAYS FOLLOW SOP</div></div>
+    ${absBlock}
   </div>`;
 }
 
 /* ---- exporters (canvas-drawn — works in Safari/WebKit) ---- */
-function exportSheetImage(){
-  const a=ST.assign,S=2,W=1360,M=26,gap=8,F=s=>s+" -apple-system,Arial,sans-serif";
-  // area boxes
+const FA=s=>s+" -apple-system,Arial,sans-serif";
+function drawBolt(ctx,x,y,inop){ // small lightning at (x,y) top-left ~13x15
+  ctx.save();ctx.beginPath();ctx.moveTo(x+8,y);ctx.lineTo(x,y+9);ctx.lineTo(x+5,y+9);ctx.lineTo(x+3,y+15);ctx.lineTo(x+11,y+6);ctx.lineTo(x+6,y+6);ctx.closePath();
+  ctx.fillStyle=inop?"#c0271e":"#1e7d46";ctx.fill();
+  if(inop){ctx.strokeStyle="#c0271e";ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(x-1,y-1);ctx.lineTo(x+13,y+16);ctx.stroke();}
+  ctx.restore();
+}
+function renderStaffCanvas(){
+  const a=ST.assign,S=2,W=1360,M=26,gap=8;
   const boxes=[];
   AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:x.key,n:list.map(p=>p.name),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
-  boxes.push({t:"DISPATCHER",n:[a.dispatch?a.dispatch.name:"OPEN"],navy:true,open:!a.dispatch});
+  const dn=ST.dispatch&&ST.dispatch.name?ST.dispatch.name:"";
+  boxes.push({t:"DISPATCHER",n:[dn||"OPEN"],navy:true,open:!dn});
   boxes.push({t:"SUPERVISORS",n:ST.supers.slice()});
   boxes.push({t:"MANAGERS",n:[ST.manager,...ST.asst].filter(Boolean)});
   const cols=5,brows=Math.ceil(boxes.length/cols),bandW=W-2*M,bw=(bandW-(cols-1)*gap)/cols;
   const maxN=Math.max(2,...boxes.map(b=>b.n.length)),bh=22+maxN*16+6;
-  const railW=24,tcols=3,trows=Math.ceil(TUGS.length/tcols);
-  const tgW=W-2*M-2*(railW+gap),tw=(tgW-(tcols-1)*gap)/tcols,th=58;
-  const titleH=44,tugTop=M+titleH+10+brows*(bh+gap)+10;
-  const H=tugTop+trows*(th+gap)-gap+M;
+  const railW=24,gx0=M+railW+gap,tgW=W-2*M-2*(railW+gap);
+  // tug rows by group (each group is a labeled band of up to 5 cells)
+  const tcols=5,tw=(tgW-(tcols-1)*gap)/tcols,th=58,ghH=20;
+  const groupHeights=TUG_GROUPS.map(g=>ghH+Math.ceil(g.ids.length/tcols)*(th+gap));
+  const titleH=44,bandY=M+titleH+10,tugTop=bandY+brows*(bh+gap)+10;
+  const tugAreaH=groupHeights.reduce((s,h)=>s+h,0);
+  const absent=absentFor(ST.shift), absH=absent.length?28+Math.ceil(absent.length/4)*18+10:0;
+  const H=tugTop+tugAreaH+ (absH?absH+8:0) +M;
   const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
   ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
   const clip=(t,mw,font)=>{ctx.font=font;t=t||"";if(ctx.measureText(t).width<=mw)return t;while(t.length&&ctx.measureText(t+"…").width>mw)t=t.slice(0,-1);return t+"…";};
-  // title + shift
-  ctx.fillStyle="#10171f";ctx.font=F("900 30px");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("EWR AMT STAFFING",W/2,M+titleH/2);
-  ctx.font=F("800 13px");ctx.fillStyle="#5a6772";ctx.textAlign="right";ctx.fillText("SHIFT",W-M-52,M+titleH/2);
-  ctx.fillStyle="#0b3d63";ctx.fillRect(W-M-46,M+titleH/2-13,46,26);ctx.fillStyle="#fff";ctx.font=F("800 14px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-23,M+titleH/2+1);
-  // area band
-  const bandY=M+titleH+10;
+  ctx.fillStyle="#10171f";ctx.font=FA("900 30px");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("EWR AMT STAFFING",W/2,M+titleH/2);
+  ctx.font=FA("800 13px");ctx.fillStyle="#5a6772";ctx.textAlign="right";ctx.fillText("SHIFT",W-M-52,M+titleH/2);
+  ctx.fillStyle="#0b3d63";ctx.fillRect(W-M-46,M+titleH/2-13,46,26);ctx.fillStyle="#fff";ctx.font=FA("800 14px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-23,M+titleH/2+1);
   boxes.forEach((bx,i)=>{const col=i%cols,row=Math.floor(i/cols),x=M+col*(bw+gap),by=bandY+row*(bh+gap);
     ctx.fillStyle="#fff";ctx.fillRect(x,by,bw,bh);
     ctx.fillStyle=bx.navy?"#0b3d63":"#f5a623";ctx.fillRect(x,by,bw,20);
     ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(x+.5,by+.5,bw-1,bh-1);
-    ctx.fillStyle=bx.navy?"#fff":"#3a2500";ctx.font=F("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";ctx.fillText(clip(bx.t.toUpperCase(),bw-40,F("900 11px")),x+6,by+10);
+    ctx.fillStyle=bx.navy?"#fff":"#3a2500";ctx.font=FA("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";ctx.fillText(clip(bx.t.toUpperCase(),bw-40,FA("900 11px")),x+6,by+10);
     if(bx.sub){ctx.textAlign="right";ctx.fillText(bx.sub,x+bw-6,by+10);}
-    ctx.font=F("600 12px");ctx.textAlign="left";
-    (bx.n.length?bx.n:["—"]).forEach((nm,j)=>{ctx.fillStyle=bx.open?"#c0271e":(bx.n.length?"#1c2530":"#c2ccd4");ctx.fillText(clip(nm,bw-12,F("600 12px")),x+6,by+20+12+j*16);});
+    ctx.font=FA("600 12px");ctx.textAlign="left";
+    (bx.n.length?bx.n:["—"]).forEach((nm,j)=>{ctx.fillStyle=bx.open?"#c0271e":(bx.n.length?"#1c2530":"#c2ccd4");ctx.fillText(clip(nm,bw-12,FA("600 12px")),x+6,by+20+12+j*16);});
   });
-  // SOP rails
-  const tugGridH=trows*(th+gap)-gap;
-  [M,W-M-railW].forEach(rx=>{ctx.fillStyle="#0b3d63";ctx.fillRect(rx,tugTop,railW,tugGridH);
-    ctx.save();ctx.translate(rx+railW/2,tugTop+tugGridH/2);ctx.rotate(-Math.PI/2);ctx.fillStyle="#fff";ctx.font=F("900 12px");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("ALWAYS FOLLOW SOP",0,0);ctx.restore();});
-  // tug grid
-  const gx0=M+railW+gap;
-  TUGS.forEach((id,i)=>{const col=i%tcols,row=Math.floor(i/tcols),x=gx0+col*(tw+gap),ty=tugTop+row*(th+gap);
-    const oos=!!ST.oos[id],t=a.tugs[id]||{};
-    ctx.fillStyle=oos?"#fbeceb":"#fff";ctx.fillRect(x,ty,tw,th);
-    ctx.fillStyle="#eef2f5";ctx.fillRect(x,ty,tw,20);
-    ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(x+.5,ty+.5,tw-1,th-1);
-    ctx.fillStyle="#0b3d63";ctx.font=F("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";ctx.fillText("STUG "+id+(ELECTRIC.has(id)?" (E)":""),x+6,ty+10);
-    if(oos){ctx.fillStyle="#c0271e";ctx.font=F("800 10px");ctx.textAlign="right";ctx.fillText("OUT OF SERVICE",x+tw-6,ty+10);}
-    else{
-      ctx.font=F("800 9px");ctx.textAlign="left";ctx.fillStyle="#90a0ad";ctx.fillText("DRIVER",x+6,ty+32);ctx.fillText("OBSERVR",x+6,ty+48);
-      ctx.font=F("600 12px");ctx.fillStyle="#1c2530";
-      ctx.fillText(clip((t.DRIVER&&t.DRIVER.name)||"",tw-58,F("600 12px")),x+54,ty+32);
-      ctx.fillText(clip((t.OBSERVR&&t.OBSERVR.name)||"",tw-58,F("600 12px")),x+54,ty+48);
-    }
+  // rails
+  [M,W-M-railW].forEach(rx=>{ctx.fillStyle="#0b3d63";ctx.fillRect(rx,tugTop,railW,tugAreaH);
+    ctx.save();ctx.translate(rx+railW/2,tugTop+tugAreaH/2);ctx.rotate(-Math.PI/2);ctx.fillStyle="#fff";ctx.font=FA("900 12px");ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("ALWAYS FOLLOW SOP",0,0);ctx.restore();});
+  // tug groups
+  let gy=tugTop;
+  TUG_GROUPS.forEach(g=>{
+    ctx.fillStyle="#0b3d63";ctx.font=FA("900 12px");ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("STUG "+g.label,gx0,gy+10);
+    let ty=gy+ghH;
+    g.ids.forEach((id,i)=>{const col=i%tcols,x=gx0+col*(tw+gap),yy=ty+Math.floor(i/tcols)*(th+gap);
+      const t=tugState(id),cr=a.tugs[id]||{};
+      ctx.fillStyle=t.oos?"#fbeceb":"#fff";ctx.fillRect(x,yy,tw,th);
+      ctx.fillStyle="#eef2f5";ctx.fillRect(x,yy,tw,20);
+      ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(x+.5,yy+.5,tw-1,th-1);
+      ctx.fillStyle="#0b3d63";ctx.font=FA("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";ctx.fillText("STUG "+id+(ELECTRIC.has(id)?" w":""),x+6,yy+10);
+      drawBolt(ctx,x+tw-20,yy+3,t.gpu==='inop');
+      if(t.oos){ ctx.strokeStyle="#d9342b";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+4,yy+24);ctx.lineTo(x+tw-4,yy+th-4);ctx.moveTo(x+tw-4,yy+24);ctx.lineTo(x+4,yy+th-4);ctx.stroke();
+        ctx.fillStyle="#c0271e";ctx.font=FA("800 10px");ctx.textAlign="center";ctx.fillText("OUT OF SERVICE",x+tw/2,yy+th/2+8); }
+      else{
+        ctx.font=FA("800 9px");ctx.textAlign="left";ctx.fillStyle="#90a0ad";ctx.fillText("DRIVER",x+6,yy+32);ctx.fillText("OBSERVR",x+6,yy+48);
+        ctx.fillStyle="#1c2530";
+        ["DRIVER","OBSERVR"].forEach((role,k)=>{const p=cr[role];if(!p)return;const yk=yy+32+k*16;
+          ctx.font=FA("600 12px");const nmw=ctx.measureText(p.name).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(p.name,tw-110,FA("600 12px")),x+54,yk);
+          ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+54+Math.min(nmw,tw-112)+6,yk); });
+      }
+    });
+    gy+=groupHeights[TUG_GROUPS.indexOf(g)];
   });
+  // absent strip
+  if(absH){const ay=tugTop+tugAreaH+8;
+    ctx.fillStyle="#fbfbfc";ctx.fillRect(M,ay,W-2*M,absH);ctx.strokeStyle="#e2e7eb";ctx.lineWidth=1;ctx.strokeRect(M+.5,ay+.5,W-2*M-1,absH-1);
+    ctx.fillStyle="#67727e";ctx.font=FA("800 11px");ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("NOT HERE THIS SHIFT — "+absent.length,M+8,ay+13);
+    ctx.font=FA("600 12px");const cw=(W-2*M-16)/4;
+    absent.forEach((x,i)=>{const col=i%4,row=Math.floor(i/4),px=M+8+col*cw,py=ay+28+row*18;
+      ctx.fillStyle="#1c2530";const nm=clip(x.name,cw-44,FA("600 12px"));ctx.fillText(nm,px,py);
+      ctx.fillStyle="#c0271e";ctx.font=FA("800 10px");ctx.fillText(x.code,px+ctx.measureText(nm).width+6,py);ctx.font=FA("600 12px"); });
+  }
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
-  c.toBlob(b=>{ if(!b){alert("Image export failed — use Print / Save as PDF.");return;}
-    const name="EWR-AMT-Staffing-"+ST.shift+".png";
-    if(window.showImagePreview)window.showImagePreview(b,name);
-    else{const u=URL.createObjectURL(b),el=document.createElement("a");el.href=u;el.download=name;document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(u);}
-  },"image/png");
+  return c;
+}
+function canvasToPng(c){return new Promise(res=>c.toBlob(b=>res(b),"image/png"));}
+function exportSheetImage(){ const c=renderStaffCanvas(); c.toBlob(b=>{ if(!b)return alert("Image export failed — use Print."); const name="EWR-AMT-Staffing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
+function renderBriefCanvas(){
+  const b=ST.brief||{focus:[]},S=2,W=1100,M=34;
+  const oosT=TUGS.filter(id=>tugState(id).oos),inop=TUGS.filter(id=>!tugState(id).oos&&tugState(id).gpu==='inop'),sked=TUGS.length-oosT.length;
+  const rows=SHIFTS.map(sh=>{const pool=poolFor(sh),t=tally(absentFor(sh));return {sh,n:pool.length,max:Math.floor(pool.length/2),t};});
+  // pre-measure not needed; compute height by simulating
+  const ctx0=document.createElement("canvas").getContext("2d");
+  const wrap=(t,mw,font)=>{ctx0.font=font;const words=(t||"").split(/\s+/),lines=[];let cur="";for(const w of words){const test=cur?cur+" "+w:w;if(ctx0.measureText(test).width>mw&&cur){lines.push(cur);cur=w;}else cur=test;}if(cur)lines.push(cur);return lines.length?lines:[""];};
+  const fields=[["Weather",b.weather],["Flight activity / ATC",b.flight],["Remote parking",b.parking],["Safety tip",b.safety]];
+  let y=M+40;
+  const segs=[];
+  const addH=(label,lines,fs)=>{segs.push({label,lines,fs});y+=18+lines.length*(fs+4)+6;};
+  fields.forEach(([l,v])=>addH(l,wrap(v||"—",W-2*M-150,FA("400 15px")),16));
+  addH("Tugs SKED / OOS / INOP GP",[sked+" of "+TUGS.length+"   ·   OOS: "+(oosT.join(", ")||"none")+"   ·   INOP GP: "+(inop.join(", ")||"none")],16);
+  const tblY=y+6;y+=30+rows.length*22+14;
+  const mgrY=y;y+=24;
+  segs.push({focusTitle:true});y+=24;
+  const focus=(b.focus||[]).filter(s=>s.trim());
+  const focusLines=focus.map(f=>wrap(f,W-2*M-30,FA("400 14px")));
+  focusLines.forEach(fl=>y+=fl.length*18+6);
+  if(b.notes){y+=10;const nl=wrap(b.notes,W-2*M-20,FA("400 14px"));y+=24+nl.length*18;}
+  const H=y+M;
+  const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#0b3d63";ctx.fillRect(0,0,W,4);
+  ctx.fillStyle="#10171f";ctx.font=FA("900 24px");ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.fillText("DAILY MOVE TEAM SHIFT BRIEFING",M,M+24);
+  ctx.fillStyle="#67727e";ctx.font=FA("600 13px");ctx.textAlign="right";ctx.fillText(ST.parsed?ST.parsed.date:"",W-M,M+24);
+  let yy=M+50;
+  segs.forEach(s=>{
+    if(s.focusTitle){ctx.fillStyle="#0b3d63";ctx.font=FA("800 14px");ctx.textAlign="left";ctx.fillText("BRIEFING FOCUS ITEMS",M,yy+4);yy+=24;
+      focus.forEach((f,i)=>{const fl=focusLines[i];ctx.fillStyle="#1c2530";ctx.font=FA("400 14px");
+        fl.forEach((ln,k)=>ctx.fillText((k===0?(i+1)+". ":"   ")+ln,M+4,yy+14+k*18));yy+=fl.length*18+6;});return;}
+    ctx.fillStyle="#8a939c";ctx.font=FA("800 11px");ctx.textAlign="left";ctx.fillText(s.label.toUpperCase(),M,yy+2);
+    ctx.fillStyle="#1c2530";ctx.font=FA("400 15px");s.lines.forEach((ln,k)=>ctx.fillText(ln,M+150,yy+2+k*(s.fs+4)));
+    yy+=18+s.lines.length*(s.fs+4)+6;
+  });
+  // staffing table
+  ctx.fillStyle="#0b3d63";ctx.font=FA("800 13px");ctx.textAlign="left";ctx.fillText("MOVE TEAM STAFFING COUNT",M,tblY+2);
+  const cols=["Shift","Avail","Max tugs","VAC|DAT|CB","SICK|OUT|OJI"],cx=[M,M+90,M+170,M+290,M+440];
+  ctx.font=FA("800 11px");ctx.fillStyle="#67727e";cols.forEach((h,i)=>ctx.fillText(h,cx[i],tblY+22));
+  ctx.font=FA("600 13px");
+  rows.forEach((r,i)=>{const ry=tblY+22+18+i*22;ctx.fillStyle="#1c2530";
+    ctx.fillText(r.sh,cx[0],ry);ctx.fillText(""+r.n,cx[1],ry);ctx.fillText(""+r.max,cx[2],ry);
+    ctx.fillText(r.t.VAC+" | "+r.t.DAT+" | "+r.t.CB,cx[3],ry);ctx.fillText(r.t.SICK+" | "+r.t.OUT+" | "+r.t.OJI,cx[4],ry);});
+  ctx.fillStyle="#67727e";ctx.font=FA("600 12px");ctx.fillText("MGR "+(ST.manager||"—")+"   ·   ASST "+(ST.asst.join(", ")||"—")+"   ·   SUP "+(ST.supers.join(", ")||"—"),M,mgrY+6);
+  if(b.notes){ctx.fillStyle="#0b3d63";ctx.font=FA("800 12px");ctx.fillText("NOTES",M,H-M-((wrap(b.notes,W-2*M-20,FA("400 14px")).length)*18)-2);
+    ctx.fillStyle="#1c2530";ctx.font=FA("400 14px");wrap(b.notes,W-2*M-20,FA("400 14px")).forEach((ln,k)=>ctx.fillText(ln,M,H-M-((wrap(b.notes,W-2*M-20,FA("400 14px")).length-1-k)*18)));}
+  ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
+  return c;
+}
+function exportBriefImage(){ const c=renderBriefCanvas(); c.toBlob(b=>{ if(!b)return alert("Image export failed."); const name="Daily-Briefing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
+async function shareSheets(){
+  try{
+    const [s,br]=await Promise.all([canvasToPng(renderStaffCanvas()),canvasToPng(renderBriefCanvas())]);
+    const files=[new File([s],"EWR-AMT-Staffing-"+ST.shift+".png",{type:"image/png"}), new File([br],"Daily-Briefing-"+ST.shift+".png",{type:"image/png"})];
+    if(navigator.canShare&&navigator.canShare({files})){ await navigator.share({files,title:"EWR Move Team — "+ST.shift,text:"Staffing + Daily Briefing ("+ST.shift+")"}); return; }
+    // fallback: download both
+    files.forEach(f=>{const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
+    alert("Sharing isn't supported here — both files were downloaded instead.");
+  }catch(err){ if(String(err).indexOf("AbortError")<0)alert("Share failed: "+(err.message||err)); }
 }
 function exportSheetText(){
   const a=ST.assign,L=[];
-  L.push("EWR AMT STAFFING — "+ST.shift);
-  L.push("=".repeat(30));
-  L.push("DISPATCHER: "+(a.dispatch?a.dispatch.name:"OPEN"));
+  L.push("EWR AMT STAFFING — "+ST.shift);L.push("=".repeat(30));
+  L.push("DISPATCHER: "+(ST.dispatch&&ST.dispatch.name?ST.dispatch.name:"OPEN"));
   if(ST.supers.length)L.push("SUPERVISORS: "+ST.supers.join(", "));
   const mgr=[ST.manager,...ST.asst].filter(Boolean);if(mgr.length)L.push("MANAGERS: "+mgr.join(", "));
   L.push("");L.push("AREAS:");
   AREAS.forEach(ar=>{const list=a.areas[ar.key]||[];if(list.length||ar.min)L.push("  "+ar.key+(ar.min?" ("+list.length+"/"+ar.min[ST.shift]+")":"")+": "+(list.map(p=>p.name).join(", ")||"—"));});
   L.push("");L.push("TUGS:");
-  TUGS.forEach(id=>{ if(ST.oos[id]){L.push("  STUG "+id+": OUT OF SERVICE");return;}
-    const t=a.tugs[id]||{};L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+": DRIVER "+(t.DRIVER?t.DRIVER.name:"—")+" / OBSERVR "+(t.OBSERVR?t.OBSERVR.name:"—"));});
+  TUG_GROUPS.forEach(g=>{L.push(" ["+g.label+"]");g.ids.forEach(id=>{const t=tugState(id);if(t.oos){L.push("  STUG "+id+": OUT OF SERVICE");return;}
+    const cr=a.tugs[id]||{},gp=t.gpu==='inop'?" [GP INOP]":"";
+    L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+gp+": DRIVER "+(cr.DRIVER?cr.DRIVER.name+" "+cr.DRIVER.start+"-"+cr.DRIVER.end:"—")+" / OBSERVR "+(cr.OBSERVR?cr.OBSERVR.name+" "+cr.OBSERVR.start+"-"+cr.OBSERVR.end:"—"));});});
+  const ab=absentFor(ST.shift);
+  if(ab.length){L.push("");L.push("NOT HERE:");ab.forEach(x=>L.push("  "+x.name+" — "+x.code));}
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),el=document.createElement("a");
   el.href=u;el.download="EWR-AMT-Staffing-"+ST.shift+".txt";document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(u);
 }
