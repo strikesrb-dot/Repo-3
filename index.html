@@ -87,12 +87,19 @@
   .loc{display:inline-block;background:#eaf1f7;color:var(--navy);font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap}
   .loc.none{background:#f7eaea;color:var(--danger)}
   .item .acts{display:flex;gap:6px}
-  /* wide screens: lay the list out as a grid of cards instead of full-width strips */
-  @media(min-width:680px){#eqList{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}}
-  @media(min-width:1000px){#eqList{grid-template-columns:repeat(3,1fr)}}
-  @media(min-width:1300px){#eqList{grid-template-columns:repeat(4,1fr)}}
-  #eqList .item{align-items:flex-start}
-  #eqList .empty{grid-column:1/-1}
+  /* grouped/hubbed list: stacked groups, each a responsive grid of cards */
+  #eqList{display:flex;flex-direction:column;gap:14px}
+  .eqgrid{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px}
+  @media(min-width:680px){.eqgrid{display:grid;grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1000px){.eqgrid{grid-template-columns:repeat(3,1fr)}}
+  @media(min-width:1300px){.eqgrid{grid-template-columns:repeat(4,1fr)}}
+  .eqgrid .item{align-items:flex-start}
+  .eqgroup .eqg-h{display:flex;align-items:center;gap:9px;width:100%;background:#eef3f7;border:1px solid var(--line);border-radius:12px;padding:11px 14px;cursor:pointer;margin-bottom:11px}
+  .eqg-name{font-weight:800;color:var(--navy);font-size:15px;text-transform:uppercase;letter-spacing:.3px}
+  .eqg-n{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);background:#fff;border-radius:999px;padding:2px 10px}
+  .eqg-ca{color:var(--navy);font-weight:800;width:14px;text-align:center}
+  .eqgroup.collapsed .eqgrid{display:none}
+  .eqgroup.collapsed .eqg-h{margin-bottom:0}
   .iconbtn{background:#f1f4f7;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:15px;color:var(--ink)}
   .iconbtn:active{background:#e4e9ee}
   .empty{text-align:center;color:var(--muted);padding:40px 16px}.empty .big{font-size:40px}
@@ -104,15 +111,16 @@
   .crow .ctag{font-weight:700;font-size:15px}
   .crow .ctype{font-size:12px;color:var(--muted)}
   .crow .cloc{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
-  .pillgrid{display:flex;flex-wrap:wrap;gap:7px;padding:8px 0 4px}
-  .selpill{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px 7px 9px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer}
+  /* inventory pill — design 3 "corner badge": tap-cycle card with a corner status dot */
+  .pillgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:13px;padding:12px 2px 4px}
+  .selpill{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:14px 8px;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;text-align:center}
   .selpill:active{transform:scale(.96)}
-  .selpill .selc{width:18px;height:18px;border-radius:50%;border:2px solid #c2ccd4;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:0 0 auto}
+  .selpill .selc{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:none;display:none;align-items:center;justify-content:center;font-size:12px;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
   .selpill.on{background:var(--good-bg);border-color:var(--good);color:#15622f}
-  .selpill.on .selc{background:var(--good);border-color:var(--good)}
+  .selpill.on .selc{display:inline-flex;background:var(--good)}
   .selpill.oos{background:#fdecec;border-color:#d9342b;color:#b3251d}
-  .selpill.oos .selc{background:#d9342b;border-color:#d9342b}
-  .selpill .oostag{font-size:9px;font-weight:800;letter-spacing:.04em;color:#fff;background:#d9342b;border-radius:6px;padding:2px 5px;margin-left:1px}
+  .selpill.oos .selc{display:inline-flex;background:#d9342b}
+  .selpill .oostag{display:none}
   .selpill.away{border-style:dashed}
   .selpill.locked{opacity:.5;cursor:not-allowed;border-style:dashed;background:#f6f7f9}
   .selpill.locked .pillspot{background:transparent;color:var(--muted)}
@@ -460,7 +468,7 @@
     <div class="btnrow" style="margin-top:0;margin-bottom:10px"><button class="btn navy" id="addBtn">➕ Add equipment</button></div>
     <details class="card acItem" id="sheetGen" style="margin-bottom:12px">
       <summary><div class="main"><div class="tag"> Generate sheet</div>
-        <div class="meta">Quick audit sheet for an area or everything</div></div></summary>
+        <div class="meta">All areas, one area, or one category — grouped &amp; check-off ready</div></div></summary>
       <div style="padding:0 14px 12px">
         <label for="auditLoc">Scope</label>
         <select id="auditLoc"></select>
@@ -486,8 +494,13 @@
         <option value="volt">Sort: Voltage</option>
       </select>
     </div>
+    <div class="seg-wrap" id="grpSeg" style="margin-bottom:10px">
+      <button class="seg on" data-g="type">Hub by category</button>
+      <button class="seg" data-g="area">By area</button>
+      <button class="seg" data-g="none">Flat</button>
+    </div>
     <p class="count" id="eqCount"></p>
-    <ul class="list" id="eqList"></ul>
+    <div class="list" id="eqList"></div>
   </section>
 
   <!-- INVENTORY -->
@@ -943,6 +956,16 @@ function goBack(){
 $("#floatBack").addEventListener("click",goBack);
 
 /* ---- equipment list ---- */
+let eqGroup="type";              // "type" (hub by category) | "area" | "none"
+let eqCollapsed=new Set();        // collapsed group keys
+function eqCardHTML(e){
+  const loc=e.location?`<span class="loc"> ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
+  return `<li class="item card" data-id="${e.id}"><div class="main">
+    <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.subtype?`<span class="subt">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="volt">⚡ ${esc(e.volt)}</span>`:""}</div>
+    ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
+    <div class="acts"><button class="iconbtn act-move" title="Move">⇄</button>
+    <button class="iconbtn act-edit" title="Edit">✎</button><button class="iconbtn act-del" title="Delete">✕</button></div></li>`;
+}
 function renderList(){
   const q=$("#search").value.trim().toLowerCase(),lf=$("#filterLoc").value,tf=$("#filterType").value,sb=$("#sortBy").value||"tag";
   let items=data.equipment.slice();
@@ -956,19 +979,30 @@ function renderList(){
     oos:(a,b)=>(b.oos?1:0)-(a.oos?1:0)||byTag(a,b)};
   items.sort(cmp[sb]||byTag);
   const list=$("#eqList");
+  $$("#grpSeg .seg").forEach(b=>b.classList.toggle("on",b.dataset.g===eqGroup));
   $("#eqCount").textContent=`${items.length} of ${data.equipment.length} item${data.equipment.length===1?"":"s"}`;
   if(!data.equipment.length){list.innerHTML=`<div class="empty"><div class="big"></div><p>No equipment yet.<br>Tap <b>➕ Add equipment</b>.</p></div>`;return;}
   if(!items.length){list.innerHTML=`<div class="empty"><p>Nothing matches your filter.</p></div>`;return;}
-  list.innerHTML=items.map(e=>{
-    const loc=e.location?`<span class="loc"> ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
-    return `<li class="item card" data-id="${e.id}"><div class="main">
-      <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.subtype?`<span class="subt">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="volt">⚡ ${esc(e.volt)}</span>`:""}</div>
-      ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
-      <div class="acts"><button class="iconbtn act-move" title="Move">⇄</button>
-      <button class="iconbtn act-edit" title="Edit">✎</button><button class="iconbtn act-del" title="Delete">✕</button></div></li>`;
+  // build groups
+  let groups;
+  if(eqGroup==="none"){groups=[{key:"",label:"",items}];}
+  else if(eqGroup==="area"){
+    const areas=[...new Set(items.map(e=>e.location||""))].sort((a,b)=>(a===""?1:0)-(b===""?1:0)||a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+    groups=areas.map(a=>({key:"a:"+a,label:a||"No location",items:items.filter(e=>(e.location||"")===a)}));
+  }else{ // type = hub by category, ordered by data.types then extras
+    groups=groupByType(items).map(g=>({key:"t:"+g.type,label:g.type,items:g.items}));
+  }
+  list.innerHTML=groups.map(g=>{
+    const cards=`<ul class="eqgrid">${g.items.map(eqCardHTML).join("")}</ul>`;
+    if(eqGroup==="none")return cards;
+    const col=eqCollapsed.has(g.key);
+    return `<div class="eqgroup ${col?'collapsed':''}"><button class="eqg-h" data-grp="${esc(g.key)}"><span class="eqg-ca">${col?'▸':'▾'}</span><span class="eqg-name">${esc(g.label)}</span><span class="eqg-n">${g.items.length}</span></button>${cards}</div>`;
   }).join("");
 }
-$("#eqList").addEventListener("click",e=>{const li=e.target.closest(".item");if(!li)return;const id=li.dataset.id;
+$$("#grpSeg .seg").forEach(b=>b.addEventListener("click",()=>{eqGroup=b.dataset.g;renderList();}));
+$("#eqList").addEventListener("click",e=>{
+  const h=e.target.closest(".eqg-h");if(h){const k=h.dataset.grp;eqCollapsed.has(k)?eqCollapsed.delete(k):eqCollapsed.add(k);renderList();return;}
+  const li=e.target.closest(".item");if(!li)return;const id=li.dataset.id;
   const act=e.target.classList.contains("act-del")?"del":e.target.classList.contains("act-move")?"move":"edit";
   requireUnlock(()=>{if(act==="del")delEquip(id);else if(act==="move")quickMove(id);else openEdit(id);});});
 /* ---- pattern lock ---- */
@@ -1844,22 +1878,67 @@ function buildSheetHTML(spotNames,title){
     <p style="font-size:12px;color:#777;margin-top:10px">Check (✔) each unit as you verify it on site. Generated ${esc(date)}.</p>`;
 }
 
-/* ---- quick sheet ---- */
+/* ---- quick sheet (scoped by all areas / one area / one category) ---- */
 function refreshAudit(){const sel=$("#auditLoc"),cur=sel.value;
-  sel.innerHTML=`<option value="__all__">— All areas —</option>`+
-    areasList().map(a=>`<option value="area:${esc(a)}">Area: ${esc(a)}</option>`).join("")+
-    visLocs().map(l=>`<option value="spot:${esc(l.name)}">Spot: ${esc(l.name)}</option>`).join("");
+  const natSort=(a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"});
+  const areas=[...new Set(data.equipment.map(e=>e.location).filter(Boolean))].sort(natSort);
+  const types=[...new Set(data.equipment.map(e=>e.type).filter(Boolean))].sort(natSort);
+  sel.innerHTML=`<option value="all">— All areas (everything) —</option>`+
+    (areas.length?`<optgroup label="By area">`+areas.map(a=>`<option value="area:${esc(a)}">${esc(a)}</option>`).join("")+`</optgroup>`:"")+
+    (types.length?`<optgroup label="By category">`+types.map(t=>`<option value="type:${esc(t)}">${esc(t)}</option>`).join("")+`</optgroup>`:"");
   if([...sel.options].some(o=>o.value===cur))sel.value=cur;
   if(!$("#auditDate").value)$("#auditDate").value=todayISO();}
+function auditScope(){const v=$("#auditLoc").value||"all";
+  if(v.startsWith("area:"))return {kind:"area",value:v.slice(5)};
+  if(v.startsWith("type:"))return {kind:"type",value:v.slice(5)};
+  return {kind:"all"};}
+// gather equipment for a scope as {title, mode, groups:[{label,items}]}
+function equipScopeData(scope){
+  const natSort=(a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"});
+  if(scope.kind==="type"){
+    const items=data.equipment.filter(e=>(e.type||"")===scope.value);
+    const areas=[...new Set(items.map(e=>e.location||"No location"))].sort(natSort);
+    return {title:"Equipment — "+scope.value,mode:"type",groups:areas.map(a=>({label:a,items:items.filter(e=>(e.location||"No location")===a)}))};
+  }
+  const areas=scope.kind==="all"?[...new Set(data.equipment.map(e=>e.location||"No location"))].sort(natSort):[scope.value];
+  return {title:scope.kind==="all"?"Equipment — All Areas":"Equipment — "+scope.value,mode:"area",
+    groups:areas.map(a=>({label:a,items:data.equipment.filter(e=>(e.location||"No location")===a)}))};
+}
+function buildEquipSheetHTML(scope){
+  const {title,mode,groups}=equipScopeData(scope);
+  const date=fmtDate(todayISO()),by=$("#auditBy")?.value.trim()||"____________";
+  const rowFor=e=>`<tr><td><b>${esc(e.tag)}</b>${e.oos?' <span style="color:#c0271e;font-size:10px;font-weight:800">OOS</span>':""}${e.volt?` <span style="color:#15622f;font-size:10px;font-weight:700">⚡${esc(e.volt)}</span>`:""}</td><td>${esc(e.subtype||e.notes||"")}</td><td class="chk">☐</td></tr>`;
+  let total=0;
+  const blocks=groups.map(g=>{total+=g.items.length;let body;
+    if(!g.items.length){body=`<table class="audit"><tbody><tr><td style="text-align:center;color:#888;padding:12px">No equipment.</td></tr></tbody></table>`;}
+    else if(mode==="type"){body=`<table class="audit"><thead><tr><th>Asset Tag</th><th>Subtype / Notes</th><th>✓</th></tr></thead><tbody>${sortTags(g.items).map(rowFor).join("")}</tbody></table>`;}
+    else{const rows=groupByType(g.items).map(c=>`<tr class="cat"><td colspan="3"><b>${esc(c.type)}</b> · ${c.items.length}</td></tr>`+sortTags(c.items).map(rowFor).join("")).join("");
+      body=`<table class="audit"><thead><tr><th>Asset Tag</th><th>Subtype / Notes</th><th>✓</th></tr></thead><tbody>${rows}</tbody></table>`;}
+    return `<div class="area-block"><div class="area-title">${esc(g.label)} · ${g.items.length}</div>${body}</div>`;
+  }).join("");
+  return `<div class="sheet-head">
+      <div><div class="title">${esc(title)}</div><div style="font-size:13px;color:#555">${groups.length} group(s) · ${total} item(s)</div></div>
+      <div class="info">Date: <b>${esc(date)}</b><br>By: <b>${esc(by)}</b></div>
+    </div>${blocks||'<p style="color:#888">No equipment.</p>'}
+    <p style="font-size:12px;color:#777;margin-top:10px">Check (✔) each unit as you verify it on site. Generated ${esc(date)}.</p>`;
+}
+function downloadEquipText(scope){
+  const {title,mode,groups}=equipScopeData(scope);
+  const total=groups.reduce((a,g)=>a+g.items.length,0);
+  const L=["========================================","   "+title.toUpperCase(),"========================================",
+    fmtDate(todayISO())+"  ·  "+total+" item(s)",""];
+  groups.forEach(g=>{L.push(g.label.toUpperCase()+" ("+g.items.length+")");
+    if(mode==="type"){sortTags(g.items).forEach(e=>L.push("    [ ] "+e.tag+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));}
+    else{groupByType(g.items).forEach(c=>{L.push("  "+c.type+":");sortTags(c.items).forEach(e=>L.push("    [ ] "+e.tag+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));});}
+    L.push("");});
+  const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=u;a.download="equipment-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
 $("#genAudit").addEventListener("click",()=>{
-  const v=$("#auditLoc").value;let spots,title;
-  if(v==="__all__"){spots=visLocs().map(l=>l.name);title="Equipment Audit — All Areas";}
-  else if(v.startsWith("area:")){const a=v.slice(5);spots=spotsInArea(a).map(s=>s.name);title="Equipment Audit — "+a;}
-  else{const s=v.slice(5);spots=[s];title="Equipment Audit — "+s;}
-  const html=buildSheetHTML(spots,title);
-  $("#auditPreview").innerHTML=`<div class="card pad" style="margin-top:14px">${html}
-    <div class="btnrow no-print"><button class="btn navy" id="printAudit"> Print / Save as PDF</button></div></div>`;
-  $("#printAudit").addEventListener("click",()=>{$("#printArea").innerHTML=buildSheetHTML(spots,title);window.print();});
+  const scope=auditScope();
+  $("#auditPreview").innerHTML=`<div class="card pad" style="margin-top:14px">${buildEquipSheetHTML(scope)}
+    <div class="btnrow no-print"><button class="btn navy" id="printAudit">Print / Save as PDF</button><button class="btn ghost" id="txtAudit" style="flex:0 0 110px">Text</button></div></div>`;
+  $("#printAudit").addEventListener("click",()=>{$("#printArea").innerHTML=buildEquipSheetHTML(scope);window.print();});
+  $("#txtAudit").addEventListener("click",()=>downloadEquipText(scope));
   $("#auditPreview").scrollIntoView({behavior:"smooth",block:"start"});});
 
 /* ---- settings: areas & spots ---- */
