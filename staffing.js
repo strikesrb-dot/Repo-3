@@ -144,7 +144,7 @@ function isExcluded(name){
 
 /* =====================  STATE  ===================== */
 const ST={
-  step:"upload",
+  step:"menu",
   files:{mp:null,ot:null,co:null},
   parsed:null,           // {mpRecs, otRecs, coRows, date}
   shift:"AM",
@@ -165,7 +165,20 @@ function cycleTug(id){ ST.tug[id]=TUG_ORDER[(TUG_ORDER.indexOf(tugSt(id))+1)%TUG
 // compatibility view used by sheets/board/exports
 function tugState(id){ const s=tugSt(id); return {state:s, oos:s==="oos", gpu:s==="inop"?"inop":"ok", running:s==="ready"||s==="inop", unset:s==="unset"}; }
 // tug make/model by id range
-function tugType(id){ if([1,3,4].includes(id))return "TBL400"; if(id>=10&&id<=19)return "TBL 280"; if(id>=20&&id<=29)return "Golhofer"; return ""; }
+function tugType(id){ if([1,3,4].includes(id))return "TBL-400"; if(id>=10&&id<=19)return "TBL-280"; if(id>=20&&id<=29)return "GOLDHOFER"; if(id===51)return "Kalmar"; return ""; }
+const PREV_SHIFT={AM:"NH",PM:"AM",NH:"PM"};
+// label for someone who worked the directly-preceding shift (full or partial)
+function prevWorkLabel(emp){
+  const prev=PREV_SHIFT[ST.shift]; if(!prev||!emp) return "";
+  const blocks=(ST.bodies||[]).filter(b=>b.emp===emp);
+  if(!blocks.length) return "";
+  let ov=0; blocks.forEach(b=>{const p=ivl(b.start,b.end); if(p) ov+=ovl(p,SHIFT_CORE[prev]);});
+  ov=Math.min(ov,480);
+  if(ov<45) return "";
+  const full=ov>=360;
+  if(full) return prev==="NH" ? "Worked last night" : "Worked "+prev;
+  return "Worked Partial ("+prev+")";
+}
 function excludeList(){ try{ const d=JSON.parse(localStorage.getItem("elt.staff.exclude")||"null"); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }catch(_){ return EXCLUDE_DEFAULT.slice(); } }
 
 /* build the body list (all shifts) from parsed inputs + prompt answers */
@@ -208,6 +221,7 @@ function promptTargets(){
 /* per-shift pool (deduped by emp within shift) */
 function poolFor(shift){
   const out=[],seen=new Set();
+  if(!ST.bodies)return out;
   for(const b of ST.bodies){
     const sh=shiftsFor(b).find(x=>x.sh===shift);
     if(!sh)continue;
@@ -250,6 +264,7 @@ function dispatchCandidates(shift){
 /* who was scheduled for the shift but isn't in the pool, and why (code) */
 function calloutReason(emp){ const r=(ST.parsed.coRows||[]).find(x=>x.emp===emp); return r?(/(sick)/i.test(r.reason)?"SICK":(r.reason||"OUT")):""; }
 function absentFor(shift){
+  if(!ST.parsed)return [];
   const {mpRecs}=ST.parsed;
   const poolEmps=new Set(poolFor(shift).map(b=>b.emp));
   const seen=new Set(),out=[];
@@ -278,10 +293,80 @@ function absenceTally(){
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
-  ({upload:rUpload,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs}[ST.step]||rUpload)();
+  ({menu:rMenu,upload:rUpload,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts}[ST.step]||rMenu)();
 }
 function card(inner){return `<div class="card pad">${inner}</div>`;}
+function staffModal(html){
+  document.querySelector(".staff-modal")?.remove();
+  const ov=document.createElement("div");ov.className="staff-modal";
+  ov.innerHTML=`<div class="sm-box">${html}</div>`;
+  ov.addEventListener("click",e=>{ if(e.target===ov||e.target.closest("[data-close]"))ov.remove(); });
+  document.body.appendChild(ov);
+  return ov;
+}
+function dispatcherWarn(){
+  if(!ST.dispatch||!ST.dispatch.name){
+    staffModal(`<div class="sm-bang">!!!</div>
+      <h3 class="sm-title">YOU DON'T HAVE A DISPATCHER!!!</h3>
+      <p class="sm-sub">Pick a dispatcher below before you finish the board.</p>
+      <button class="btn navy" data-close>OK</button>`);
+  }
+}
 function back(toStep,label){return `<button class="btn ghost stp-back" data-to="${toStep}" style="margin-top:10px">‹ ${label}</button>`;}
+
+/* ---- snapshots, drafts & past logs ---- */
+const SNAP_KEYS=["shift","numTugs","prompts","supers","manager","asst","tug","dispatch","brief","assign","bodies","dbl","parsed"];
+function snapshot(){ const s={}; SNAP_KEYS.forEach(k=>s[k]=ST[k]); return JSON.parse(JSON.stringify(s)); }
+function applySnapshot(s){ SNAP_KEYS.forEach(k=>{ if(k in s) ST[k]=JSON.parse(JSON.stringify(s[k])); }); }
+function withSnapshot(s,fn){ const cur={}; SNAP_KEYS.forEach(k=>cur[k]=ST[k]); applySnapshot(s); try{ return fn(); } finally { SNAP_KEYS.forEach(k=>ST[k]=cur[k]); } }
+function assignedCount(){ if(!ST.assign)return 0; let n=0;
+  Object.values(ST.assign.tugs).forEach(t=>["DRIVER","OBSERVR"].forEach(r=>t[r]&&n++));
+  Object.values(ST.assign.areas).forEach(li=>n+=li.length);
+  if(ST.dispatch&&ST.dispatch.name)n++; return n; }
+function loadDrafts(){try{return JSON.parse(localStorage.getItem("elt.staff.drafts")||"[]")||[];}catch(_){return [];}}
+function saveDraftList(l){try{localStorage.setItem("elt.staff.drafts",JSON.stringify(l));return true;}catch(e){return false;}}
+function saveDraft(){
+  if(!ST.parsed||assignedCount()<1)return;
+  const date=ST.parsed.date||"",shift=ST.shift,id="D|"+date+"|"+shift;
+  const entry={id,date,shift,when:Date.now(),count:assignedCount(),step:ST.step,snap:snapshot()};
+  let l=loadDrafts().filter(e=>e.id!==id);l.unshift(entry);l=l.slice(0,6);
+  if(!saveDraftList(l)){l=l.slice(0,3);saveDraftList(l);}
+}
+function deleteDraft(id){ saveDraftList(loadDrafts().filter(e=>e.id!==id)); }
+
+/* ---- step: menu (Create / Past / Draft) ---- */
+function rMenu(){
+  const logs=loadLog().length, drafts=loadDrafts().length;
+  ROOT.innerHTML=card(`
+    <h2 class="staff-h">Manpower / Staffing</h2>
+    <p class="hint" style="margin:0 0 12px">Build tonight's board, pick up a draft, or look back at a past shift.</p>
+    <div class="mp-menu">
+      <button class="mp-tile create" id="mpCreate">
+        <span class="mp-ic">＋</span><span class="mp-tx"><b>Create Manpower</b><span>Link the eTA sheets &amp; build a new board</span></span></button>
+      <button class="mp-tile" id="mpDraft">
+        <span class="mp-ic">✎</span><span class="mp-tx"><b>Draft Manpowers</b><span>${drafts?drafts+" saved · resume where you left off":"Nothing in progress"}</span></span><span class="mp-n">${drafts||""}</span></button>
+      <button class="mp-tile" id="mpPast">
+        <span class="mp-ic">🗂</span><span class="mp-tx"><b>Past Manpowers</b><span>${logs?logs+" logged · AM · PM · NH (read-only)":"Nothing logged yet"}</span></span><span class="mp-n">${logs||""}</span></button>
+    </div>`);
+  $("#mpCreate").onclick=()=>{ ST.files={mp:null,ot:null,co:null}; ST.parsed=null; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST.dispatch=null; ST.step="upload"; render(); };
+  $("#mpDraft").onclick=()=>{ ST.step="drafts"; render(); };
+  $("#mpPast").onclick=()=>{ ST.step="logs"; render(); };
+}
+
+/* ---- step: drafts ---- */
+function rDrafts(){
+  const list=loadDrafts();
+  const ord={AM:0,PM:1,NH:2};
+  ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">Draft manpowers</h2><span class="cnt">${list.length}</span></div>
+    <p class="hint" style="margin:0 0 8px">Boards you started but didn't log. Resume to keep assigning.</p>
+    ${list.length?list.map(e=>`<div class="log-row draft-row"><button class="dr-main" data-id="${esc(e.id)}"><b>${esc(e.shift)} manpower</b><span>${esc(e.date||'(no date)')} · ${e.count} assigned</span></button>
+        <button class="dr-del" data-del="${esc(e.id)}" title="Delete">✕</button></div>`).join(""):'<p class="hint">No drafts. They save automatically once you assign at least one person.</p>'}
+    <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="menu">‹ Back</button></div>`);
+  $$('#staffRoot .dr-main').forEach(b=>b.onclick=()=>{ const e=loadDrafts().find(x=>x.id===b.dataset.id); if(!e)return render();
+    applySnapshot(e.snap); ST._tugSeeded=true; ST.step=e.step&&e.step!=="upload"?e.step:"assign"; render(); });
+  $$('#staffRoot .dr-del').forEach(b=>b.onclick=()=>{ deleteDraft(b.dataset.del); render(); });
+  $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
+}
 
 /* ---- step: upload ---- */
 function rUpload(){
@@ -300,11 +385,11 @@ function rUpload(){
     ${slot("co","Call-out sheet","Absence Monitor (.xls/.html)",".xls,.html,.htm,.xlsx")}
     <div id="upMsg" class="hint" style="margin-top:10px"></div>
     <div class="btnrow" style="margin-top:6px"><button class="btn navy" id="upBuild" ${f.mp?"":"disabled"}>Read files &amp; build pool ›</button></div>
-    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="upLogs">Past manpower logs (${loadLog().length})</button></div>`);
+    ${back("menu","Manpower menu")}`);
   $$('#staffRoot input[type=file]').forEach(inp=>inp.addEventListener("change",e=>{
     const k=inp.dataset.k,file=inp.files[0];if(!file)return;ST.files[k]=file;render();}));
   $("#upBuild")?.addEventListener("click",doBuild);
-  $("#upLogs")?.addEventListener("click",()=>{ST.step="logs";render();});
+  $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 async function doBuild(){
   const msg=$("#upMsg");msg.innerHTML=`<span class="spin"></span> Reading files…`;
@@ -362,7 +447,7 @@ function rPool(){
   const dispLine=disp.length?disp.map(d=>`${esc(d.name)}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
   const rows=pool.map(b=>{const bid=BIDS&&BIDS[b.emp];
     return `<div class="prow prow-tap" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(b.name)}</b> <span class="hint">${esc(b.hours)}</span>
-      ${b.double?'<span class="tag db">Double</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">cover</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${!b.prim&&!b.double?`<span class="tag ov">+${(b.ov/60).toFixed(1).replace('.0','')}h</span>`:''}
+      ${b.double?'<span class="tag db">Double</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${!b.prim&&!b.double?`<span class="tag ov">+${(b.ov/60).toFixed(1).replace('.0','')}h</span>`:''}${prevWorkLabel(b.emp)?`<span class="tag pw">${prevWorkLabel(b.emp)}</span>`:''}
       <div class="bid-line">${bid?`Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b>`:'<span class="hint">No bid on file</span>'}</div></div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;}).join("");
   ROOT.innerHTML=card(`
@@ -407,7 +492,7 @@ function rReconcile(){
     <div class="btnrow" style="margin-top:12px"><button class="btn navy" id="toAssign2">Assign the board ›</button></div>
     ${back("pool","Pool")}`);
   $$('#staffRoot .rtile').forEach(b=>b.onclick=()=>{cycleTug(+b.dataset.tug);render();});
-  $("#toAssign2").onclick=()=>{ initAssign(); ST.step="assign"; render(); };
+  $("#toAssign2").onclick=()=>{ initAssign(); ST.step="assign"; render(); dispatcherWarn(); };
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
@@ -436,7 +521,13 @@ function rAssign(){
   const pool=poolFor(ST.shift);
   const used=assignedEmps();
   const avail=pool.filter(b=>!used.has(b.emp));
-  const chip=b=>`<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${esc(b.hours)}${b.prim||b.double?'':' +'+ovh(b.ov)+'h'}</span></button>`;
+  const chip=b=>{const pw=prevWorkLabel(b.emp);
+    return `<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${esc(b.hours)}${b.prim||b.double?'':' +'+ovh(b.ov)+'h'}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+  // group the available pool by the hours they're working (0500-1300, 0400-1200, …)
+  const startMin=k=>{const m=(k||"").match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):9999;};
+  const grp={};avail.forEach(b=>{(grp[b.hours]=grp[b.hours]||[]).push(b);});
+  const gkeys=Object.keys(grp).sort((a,b)=>startMin(a)-startMin(b));
+  const poolHTML=avail.length?gkeys.map(k=>`<div class="shgrp"><div class="shgrp-h">${esc(k)}<span>${grp[k].length}</span></div><div class="abody-wrap">${grp[k].map(chip).join("")}</div></div>`).join(""):'<span class="hint">All assigned.</span>';
   const slotName=p=>p?`<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${p._double?' · Double':''}</span>`:`<span class="slot-empty">tap to fill</span>`;
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
@@ -471,7 +562,7 @@ function rAssign(){
     <div class="card pad assign-top">
       <div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
       <p class="hint" style="margin:2px 0 8px">Tap a name, then tap a tug or area slot.</p>
-      <div class="abody-wrap">${avail.map(chip).join("")||'<span class="hint">All assigned.</span>'}</div>
+      <div class="pool-groups">${poolHTML}</div>
     </div>
     <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
     <div class="card pad"><div class="seg-section">TUGS — ${running} running</div>${tugGroups}</div>
@@ -491,7 +582,8 @@ function rAssign(){
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
-  $("#toBrief").onclick=()=>{ initBrief(); ST.step="brief"; render(); };
+  $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="brief"; render(); };
+  saveDraft();
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
@@ -583,7 +675,7 @@ function rSheet(){
   $("#shTxt").onclick=exportSheetText;
   $("#shShare").onclick=shareSheets;
   $("#shLog").onclick=logManpower;
-  $("#shNew")?.addEventListener("click",()=>{ ST.step="upload"; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST._tugSeeded=false; ST.dispatch=null; render(); });
+  $("#shNew")?.addEventListener("click",()=>{ ST.step="menu"; render(); });
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 function buildSheet(){
@@ -625,7 +717,7 @@ function drawBolt(ctx,x,y,inop){ // small lightning at (x,y) top-left ~13x15
   ctx.restore();
 }
 function renderStaffCanvas(){
-  const a=ST.assign,S=2,W=1360,M=26,gap=8;
+  const a=ST.assign,S=2,W=1180,M=26,gap=8;
   const boxes=[];
   AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:x.key,n:list.map(p=>p.name),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
   const dn=ST.dispatch&&ST.dispatch.name?ST.dispatch.name:"";
@@ -636,7 +728,7 @@ function renderStaffCanvas(){
   const maxN=Math.max(2,...boxes.map(b=>b.n.length)),bh=22+maxN*16+6;
   const railW=24,gx0=M+railW+gap,tgW=W-2*M-2*(railW+gap);
   // tug rows by group (each group is a labeled band of up to 5 cells)
-  const tcols=5,tw=(tgW-(tcols-1)*gap)/tcols,th=58,ghH=20;
+  const tcols=4,tw=(tgW-(tcols-1)*gap)/tcols,th=84,ghH=22;
   const touched=id=>{const t=tugState(id);return t.running||t.oos;};
   const groupIds=TUG_GROUPS.map(g=>g.ids.filter(touched));
   const groupHeights=groupIds.map(ids=>ids.length?ghH+Math.ceil(ids.length/tcols)*(th+gap):0);
@@ -673,18 +765,19 @@ function renderStaffCanvas(){
       ctx.fillStyle=t.oos?"#fbeceb":"#fff";ctx.fillRect(x,yy,tw,th);
       ctx.fillStyle="#eef2f5";ctx.fillRect(x,yy,tw,20);
       ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(x+.5,yy+.5,tw-1,th-1);
-      ctx.fillStyle="#0b3d63";ctx.font=FA("900 11px");ctx.textBaseline="middle";ctx.textAlign="left";
-      const hd="STUG "+id+(ELECTRIC.has(id)?" w":"");ctx.fillText(hd,x+6,yy+10);
-      if(tlbl){const w0=ctx.measureText(hd).width;ctx.fillStyle="#90a0ad";ctx.font=FA("700 8px");ctx.fillText(tlbl,x+6+w0+6,yy+10);}
-      if(!t.oos)drawBolt(ctx,x+tw-20,yy+3,t.gpu==='inop');
-      if(t.oos){ ctx.strokeStyle="#d9342b";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+4,yy+24);ctx.lineTo(x+tw-4,yy+th-4);ctx.moveTo(x+tw-4,yy+24);ctx.lineTo(x+4,yy+th-4);ctx.stroke();
-        ctx.fillStyle="#c0271e";ctx.font=FA("800 10px");ctx.textAlign="center";ctx.fillText("OUT OF SERVICE",x+tw/2,yy+th/2+8); }
+      ctx.fillStyle="#0b3d63";ctx.font=FA("900 12px");ctx.textBaseline="middle";ctx.textAlign="left";
+      const hd="STUG "+id+(ELECTRIC.has(id)?" w":"");ctx.fillText(hd,x+7,yy+11);
+      if(tlbl){const w0=ctx.measureText(hd).width;ctx.fillStyle="#90a0ad";ctx.font=FA("800 8.5px");ctx.fillText(tlbl,x+7+w0+7,yy+11);}
+      if(!t.oos)drawBolt(ctx,x+tw-21,yy+3,t.gpu==='inop');
+      if(t.oos){ ctx.strokeStyle="#d9342b";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+4,yy+26);ctx.lineTo(x+tw-4,yy+th-4);ctx.moveTo(x+tw-4,yy+26);ctx.lineTo(x+4,yy+th-4);ctx.stroke();
+        ctx.fillStyle="#c0271e";ctx.font=FA("800 11px");ctx.textAlign="center";ctx.fillText("OUT OF SERVICE",x+tw/2,yy+th/2+10); }
       else{
-        ctx.font=FA("800 9px");ctx.textAlign="left";ctx.fillStyle="#90a0ad";ctx.fillText("DRIVER",x+6,yy+32);ctx.fillText("OBSERVR",x+6,yy+48);
-        ctx.fillStyle="#1c2530";
-        ["DRIVER","OBSERVR"].forEach((role,k)=>{const p=cr[role];if(!p)return;const yk=yy+32+k*16;
-          ctx.font=FA("600 12px");const nmw=ctx.measureText(p.name).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(p.name,tw-110,FA("600 12px")),x+54,yk);
-          ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+54+Math.min(nmw,tw-112)+6,yk); });
+        ctx.textAlign="left";
+        ["DRIVER","OBSERVR"].forEach((role,k)=>{const yk=yy+42+k*26;
+          ctx.font=FA("800 9px");ctx.fillStyle="#90a0ad";ctx.fillText(role,x+7,yk);
+          const p=cr[role];if(!p){ctx.fillStyle="#cdd5dc";ctx.font=FA("600 12px");ctx.fillText("—",x+62,yk);return;}
+          ctx.font=FA("700 13px");const nmw=ctx.measureText(p.name).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(p.name,tw-150,FA("700 13px")),x+62,yk);
+          ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+62+Math.min(nmw,tw-152)+7,yk); });
       }
     });
     gy+=groupHeights[gi];
@@ -793,9 +886,10 @@ function logManpower(){
   let img="";try{const src=renderStaffCanvas();const w=1000,h=Math.round(src.height/src.width*w);
     const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);
     img=c.toDataURL("image/jpeg",0.85);}catch(_){}
-  const entry={id:date+"|"+shift,date,shift,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",img};
+  const entry={id:date+"|"+shift,date,shift,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",img,snap:snapshot()};
   let l=loadLog().filter(e=>e.id!==entry.id);l.unshift(entry);l=l.slice(0,24);
-  if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,img:""}); l=l.slice(0,12); saveLogList(l); }
+  if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,snap:null}); if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,img:""}); l=l.slice(0,12); saveLogList(l); } }
+  deleteDraft("D|"+date+"|"+shift);   // finalized — drop the draft
   toast("Logged: "+date+" "+shift);
 }
 let logSel=null;
@@ -803,27 +897,80 @@ function rLogs(){
   const list=loadLog();
   if(logSel){const e=list.find(x=>x.id===logSel);
     if(!e){logSel=null;return rLogs();}
-    ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.date)} · ${esc(e.shift)}</h2></div>
-      <div class="muted-row">${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(e.dispatch||"OPEN")}</div>
+    ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.shift)} manpower <span class="ro-badge">read-only</span></h2></div>
+      <div class="muted-row">${esc(e.date||'')} · ${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(e.dispatch||"OPEN")}</div>
       ${e.img?`<div class="sheet-scroll"><img class="log-img" src="${e.img}" alt="staffing sheet"/></div>`:'<p class="hint">Image not stored for this entry.</p>'}
-      <div class="btnrow" style="margin-top:10px"><button class="btn ghost" id="logBack">‹ Back to logs</button><button class="btn ghost" id="logDel">Delete</button></div>`);
+      <div class="btnrow" style="margin-top:10px">${e.snap?'<button class="btn ghost" id="logImg">Save image</button><button class="btn ghost" id="logPdf">PDF / Print</button>':''}</div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button><button class="btn ghost" id="logDel">Delete</button></div>`);
     $("#logBack").onclick=()=>{logSel=null;render();};
     $("#logDel").onclick=()=>{saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render();};
+    $("#logImg")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetImage()));
+    $("#logPdf")?.addEventListener("click",()=>withSnapshot(e.snap,()=>{ $("#printArea").innerHTML=`<div class="sb-print">${buildSheet()}</div><div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); }));
     return;
   }
   const byDate={};list.forEach(e=>{(byDate[e.date]=byDate[e.date]||[]).push(e);});
   const ord={AM:0,PM:1,NH:2};
   const dates=Object.keys(byDate).sort((a,b)=>{const da=new Date(a),db=new Date(b);return (isNaN(db)?0:db)-(isNaN(da)?0:da);});
-  ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">Manpower logs</h2><span class="cnt">${list.length}</span></div>
-    <p class="hint" style="margin:0 0 8px">Past boards — tap to view what each shift had.</p>
+  ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">Past manpowers</h2><span class="cnt">${list.length}</span></div>
+    <p class="hint" style="margin:0 0 8px">Read-only — tap a shift to view its sheet, image &amp; PDF.</p>
     ${list.length?dates.map(d=>`<div class="log-day"><div class="log-date">${esc(d)}</div>
-      ${byDate[d].slice().sort((a,b)=>(ord[a.shift]??9)-(ord[b.shift]??9)).map(e=>`<button class="log-row" data-id="${esc(e.id)}"><b>${esc(e.shift)} manpower</b><span>${e.pool} pool · ${e.crews||0}/${e.running} tugs · ${esc(e.dispatch||"OPEN")}</span></button>`).join("")}
+      <div class="log-shifts">${["AM","PM","NH"].map(sh=>{const e=byDate[d].find(x=>x.shift===sh);
+        return e?`<button class="log-row shift-${sh}" data-id="${esc(e.id)}"><b>${sh}</b><span>${e.pool} pool · ${e.crews||0}/${e.running} tugs · ${esc(e.dispatch||"OPEN")}</span></button>`
+          :`<div class="log-row empty"><b>${sh}</b><span>not logged</span></div>`;}).join("")}</div>
     </div>`).join(""):'<p class="hint">Nothing logged yet. Generate a board and tap “Log this manpower”.</p>'}
-    <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="upload">‹ Back</button></div>`);
-  $$('#staffRoot .log-row').forEach(b=>b.onclick=()=>{logSel=b.dataset.id;render();});
+    <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="menu">‹ Back</button></div>`);
+  $$('#staffRoot .log-row[data-id]').forEach(b=>b.onclick=()=>{logSel=b.dataset.id;render();});
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
-/* expose entry point */
+/* ---- standalone Briefing & Focus tab (home) ---- */
+let briefTabView="edit";
+async function shareBriefOnly(){
+  try{ const blob=await canvasToPng(renderBriefCanvas());
+    const files=[new File([blob],"Daily-Briefing-"+ST.shift+".png",{type:"image/png"})];
+    if(navigator.canShare&&navigator.canShare({files})){ await navigator.share({files,title:"Daily Move Team Briefing",text:"Daily Move Team Shift Briefing"}); return; }
+    const u=URL.createObjectURL(files[0]),a=document.createElement("a");a.href=u;a.download=files[0].name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);
+  }catch(err){ if(String(err).indexOf("AbortError")<0)alert("Share failed: "+(err.message||err)); }
+}
+function renderBriefTab(){
+  const root=document.getElementById("briefRoot"); if(!root) return;
+  initBrief();
+  if(briefTabView==="sheet"){
+    root.innerHTML=`<div class="card pad no-print"><div class="pool-head"><h2 class="staff-h" style="margin:0">Daily Briefing</h2></div></div>
+      <div class="sheet-scroll"><div id="staffSheet">${buildBriefing()}</div></div>
+      <div class="card pad no-print">
+        <div class="btnrow"><button class="btn navy" id="btShare">Share / Email ›</button></div>
+        <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="btImg">Save image</button><button class="btn ghost" id="btPrint">Print / PDF</button></div>
+        <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="btEdit">‹ Edit briefing</button></div>
+      </div>`;
+    root.querySelector("#btEdit").onclick=()=>{briefTabView="edit";renderBriefTab();};
+    root.querySelector("#btImg").onclick=()=>exportBriefImage();
+    root.querySelector("#btPrint").onclick=()=>{ document.getElementById("printArea").innerHTML=`<div class="sb-print">${buildBriefing()}</div>`; window.print(); };
+    root.querySelector("#btShare").onclick=shareBriefOnly;
+    return;
+  }
+  const b=ST.brief;
+  const fa=(id,label,val,ph,rows)=>`<label class="fld-l">${label}</label><textarea id="${id}" class="bf-in" rows="${rows||2}" placeholder="${esc(ph||'')}">${esc(val)}</textarea>`;
+  root.innerHTML=card(`<h2 class="staff-h">Briefing &amp; focus items</h2>
+    <p class="hint" style="margin:0 0 6px">Prep tonight's briefing. Staffing counts &amp; tug status fill in from the active manpower if one's loaded.</p>
+    ${fa("tbWeather","Weather",b.weather,"Tonight's forecast…")}
+    ${fa("tbFlight","Flight activity / ATC",b.flight,"Arrivals 421 / Departures 403 | PBT 55,000")}
+    ${fa("tbParking","Remote parking",b.parking,"Murphy / remote spot notes…")}
+    ${fa("tbSafety","Safety tip of the day",b.safety,"")}
+    ${fa("tbNotes","Notes",b.notes,"")}
+    <label class="fld-l">Focus items</label>
+    <div id="tbFocus" class="focus-wrap">${b.focus.map((t,i)=>`<div class="frow"><textarea rows="2" data-fi="${i}">${esc(t)}</textarea><button class="xrem" data-fdel="${i}" title="Remove">✕</button></div>`).join("")}</div>
+    <button class="btn ghost" id="tbAdd" style="margin-top:8px">+ Add focus item</button>
+    <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="tbGen">Generate Daily Briefing ›</button></div>`);
+  const g=id=>root.querySelector("#"+id);
+  const save=()=>{ b.weather=g("tbWeather").value;b.flight=g("tbFlight").value;b.parking=g("tbParking").value;b.safety=g("tbSafety").value;b.notes=g("tbNotes").value;
+    b.focus=[...root.querySelectorAll("#tbFocus textarea")].map(t=>t.value); };
+  g("tbAdd").onclick=()=>{ save(); b.focus.push(""); renderBriefTab(); };
+  root.querySelectorAll("[data-fdel]").forEach(x=>x.onclick=()=>{ save(); b.focus.splice(+x.dataset.fdel,1); renderBriefTab(); });
+  g("tbGen").onclick=()=>{ save(); localStorage.setItem("elt.staff.focus",JSON.stringify(b.focus.filter(s=>s.trim()))); briefTabView="sheet"; renderBriefTab(); };
+}
+
+/* expose entry points */
 window.STAFF={ open:()=>{ loadBids(); render(); } };
+window.BRIEF={ open:()=>{ loadBids(); briefTabView="edit"; renderBriefTab(); } };
 })();

@@ -1,69 +1,124 @@
-/* ===== Preview: curated design variants @ phone / iPad / desktop ===== */
+/* ===== Preview: curated REVIEW-POOL & ASSIGN-BOARD designs @ phone / iPad / desktop ===== */
 (function(){
 "use strict";
 const $=(s,el=document)=>el.querySelector(s);
 const $$=(s,el=document)=>[...el.querySelectorAll(s)];
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const DEV={phone:{w:390,l:"Phone"},ipad:{w:834,l:"iPad"},desktop:{w:1180,l:"Desktop"}};
+const DEV={phone:{w:390,l:"Phone"},ipad:{w:1032,l:'iPad 13"'},desktop:{w:1280,l:"Desktop"}};
+
+/* sample data */
+const POOL=[
+  {n:"Marmol, Pete",h:"05:00-13:00",bid:"04:00-12:00",off:"Wed, Thu",t:["AM"]},
+  {n:"Clark, Lawrence",h:"05:00-13:00",bid:"05:00-13:00",off:"Sun, Sat",t:["AM"]},
+  {n:"Maria, Franklin",h:"05:00-13:00",bid:"05:00-13:00",off:"Sat, Sun",t:["AM"]},
+  {n:"Day, Hakim",h:"05:00-21:00",bid:"05:00-13:00",off:"Tue, Wed",t:["DBL"]},
+  {n:"Sambilay, Daniel",h:"04:00-12:00",bid:"04:00-12:00",off:"Fri, Sat",t:["Daytrade"]},
+  {n:"Mbacke, Murtalla",h:"05:00-13:00",bid:"21:00-05:00",off:"Wed, Thu",t:["OT","Worked last night"]},
+  {n:"Roach, Rehaem",h:"04:00-12:00",bid:"04:00-12:00",off:"Sun, Mon",t:["AM"]},
+  {n:"Cutting, Lisa",h:"05:00-13:00",bid:"05:00-13:00",off:"Thu, Fri",t:["OJT"]},
+];
 const TUGS=[1,3,4,10,17,18,19,20,21,22,23,24,25,26,27,28,29,51];
-const E=new Set([20,25,26,28,29]), OOS=new Set([20,24,27]), INOP=new Set([21,23]);
-const CREW={1:["Marmol Pete","Day, Hakim"],3:["Clark, Lawrence","Cutting, Lisa"],4:["Maria, Franklin",""]};
-const POOL=[["Marmol Pete","05:00-13:00","AM","04:00-12:00 · Off Wed, Thu"],["Clark, Lawrence","05:00-13:00","AM","05:00-13:00 · Off Sun, Sat"],
-  ["Sambilay, Daniel","13:00-05:00","Double","13:00-21:00 · Off Fri, Sat"],["Day, Hakim","05:00-21:00","Double","05:00-13:00 · Off Tue, Wed"],
-  ["Mbacke, Murtalla","21:00-05:00","NH","21:00-05:00 · Off Sun, Mon"],["Maria, Franklin","05:00-13:00","AM","05:00-13:00 · Off Sat, Sun"]];
+const TYPE=id=>[1,3,4].includes(id)?"TBL-400":id>=10&&id<=19?"TBL-280":id>=20&&id<=29?"GOLDHOFER":id===51?"Kalmar":"";
+const OOS=new Set([24,27]),INOP=new Set([21]);
+const CREW={1:["Marmol, Pete","Day, Hakim"],3:["Clark, Lawrence","Cutting, Lisa"],4:["Maria, Franklin",""],10:["Roach, Rehaem",""]};
+const AREAS=[["Ballpark",3],["WestPark",2],["South Team",2],["Terminal B",1],["APU",1],["Support",0],["C4",0]];
 
-let kind="tug", dev="phone", v=1;
-const COUNTS={tug:6, asg:5, pool:4};
+let kind="pool", dev="phone", v=1;
+const COUNT={pool:5, board:5};
 
-/* ---------- tug-selection variants ---------- */
-function tugVariant(n){
-  const st=id=>OOS.has(id)?"oos":INOP.has(id)?"inop":"ok";
-  if(n===1) return `<div class="pvg pvg1">${TUGS.map(id=>`<div class="pc1 ${st(id)}"><span>STUG ${id}${E.has(id)?" ⚡E":""}</span><b>${OOS.has(id)?"OOS":INOP.has(id)?"GP✕":"GP✓"}</b></div>`).join("")}</div>`;
-  if(n===2) return `<div class="pvlist">${TUGS.map(id=>`<div class="pr2 ${st(id)}"><span class="dot"></span>STUG ${id}<i>${E.has(id)?"Electric":"Diesel"}</i><b>${OOS.has(id)?"Out of service":INOP.has(id)?"GPU inop":"Ready"}</b></div>`).join("")}</div>`;
-  if(n===3) return `<div class="pvg pvg3">${TUGS.map(id=>`<div class="pc3 ${st(id)}"><div class="n">${id}</div><div class="s">${OOS.has(id)?"OOS":"STUG"}</div>${E.has(id)?'<span class="e">E</span>':""}</div>`).join("")}</div>`;
-  if(n===4) return `<div class="pvg pvg4">${TUGS.map(id=>`<button class="pc4 ${st(id)}">STUG ${id}${E.has(id)?'<u>E</u>':""}<span class="bolt">${INOP.has(id)?"⚡̸":"⚡"}</span></button>`).join("")}</div>`;
-  if(n===5) return `<div class="pvg pvg5">${TUGS.map(id=>`<div class="pc5 ${st(id)}"><div class="hd">STUG ${id}</div><div class="tg"><span class="${OOS.has(id)?'off':'on'}"></span>${OOS.has(id)?"OOS":"In svc"}</div><div class="gp">${INOP.has(id)?"GP inop":"GP ok"}</div></div>`).join("")}</div>`;
-  return `<div class="pvg pvg6">${TUGS.map(id=>`<div class="pc6 ${st(id)}"><b>${id}</b><small>${E.has(id)?"⚡ ELEC":"STUG"}</small><em>${OOS.has(id)?"OOS":INOP.has(id)?"NO GP":"GO"}</em></div>`).join("")}</div>`;
-}
-/* ---------- assignment variants ---------- */
-function tcrew(id){const c=CREW[id]||[];return `<div class="x-dr">DRIVER <b>${esc(c[0]||"—")}</b></div><div class="x-ob">OBSERVR <b>${esc(c[1]||"—")}</b></div>`;}
-function asgVariant(n){
-  const poolChips=POOL.map(p=>`<span class="ac-chip">${esc(p[0])}${p[2]==="Double"?'<i>DBL</i>':""}<small>${esc(p[1])}</small></span>`).join("");
-  const tugCells=TUGS.slice(0,9).map(id=>`<div class="x-tug ${OOS.has(id)?"oos":""}"><div class="x-h">STUG ${id}</div>${OOS.has(id)?'<div class="x-oos">OOS</div>':tcrew(id)}</div>`).join("");
-  if(n===1) return `<div class="av1"><div class="pool-top">${poolChips}</div><div class="av1-grid">${tugCells}</div></div>`;
-  if(n===2) return `<div class="av2"><div class="av2-pool"><h5>Pool</h5>${POOL.map(p=>`<div class="av2-row">${esc(p[0])}<small>${esc(p[1])}</small></div>`).join("")}</div><div class="av2-board">${tugCells}</div></div>`;
-  if(n===3) return `<div class="av3"><div class="pool-top">${poolChips}</div><div class="av3-cols"><div class="av3-col"><h5>Dispatch</h5><div class="av3-slot">Castro, Alex</div></div><div class="av3-col"><h5>Tugs</h5>${TUGS.slice(0,6).map(id=>`<div class="av3-slot ${OOS.has(id)?"oos":""}">STUG ${id} · ${(CREW[id]||[])[0]||"open"}</div>`).join("")}</div><div class="av3-col"><h5>Areas</h5>${["Ballpark","South","APU"].map(a=>`<div class="av3-slot">${a}</div>`).join("")}</div></div></div>`;
-  if(n===4) return `<div class="av4"><div class="pool-top">${poolChips}</div><div class="av4-list">${TUGS.slice(0,8).map(id=>`<div class="av4-row ${OOS.has(id)?"oos":""}"><b>STUG ${id}</b><span>${(CREW[id]||[]).filter(Boolean).join(" / ")||"— tap to assign —"}</span></div>`).join("")}</div></div>`;
-  return `<div class="av5"><div class="av5-side">${POOL.map(p=>`<span class="ac-chip sm">${esc(p[0].split(",")[0])}</span>`).join("")}</div><div class="av5-grid">${TUGS.slice(0,12).map(id=>`<div class="av5-cell ${OOS.has(id)?"oos":""}">${id}<small>${(CREW[id]||[])[0]?"✓✓":"··"}</small></div>`).join("")}</div></div>`;
-}
-/* ---------- pool screen variants (Preview 2) ---------- */
+function byHours(){const g={};POOL.forEach(p=>{(g[p.h]=g[p.h]||[]).push(p);});return Object.entries(g).sort((a,b)=>a[0].localeCompare(b[0]));}
+const tag=t=>`<i class="pvtag ${/Worked/.test(t)?'pw':t==='DBL'?'db':t==='OT'?'ot':t==='Daytrade'?'dt':t==='OJT'?'oj':'sh'}">${esc(t)}</i>`;
+
+/* ---------------- REVIEW POOL variants ---------------- */
 function poolVariant(n){
-  if(n===1) return `<div class="pl1">${POOL.map(p=>`<div class="pl1-row"><div><b>${esc(p[0])}</b> <small>${esc(p[1])}</small> ${p[2]==="Double"?'<i class="db">Double</i>':""}</div><div class="pl1-bid">Bid ${esc(p[3])}</div></div>`).join("")}</div>`;
-  if(n===2){const g={AM:[],PM:[],NH:[],Double:[]};POOL.forEach(p=>g[p[2]]?g[p[2]].push(p):0);
-    return `<div class="pl2">${Object.entries(g).filter(([k,v])=>v.length).map(([k,v])=>`<div class="pl2-grp"><h5>${k} (${v.length})</h5>${v.map(p=>`<div class="pl2-card"><span class="av">${esc(p[0][0])}</span>${esc(p[0])}<small>${esc(p[1])}</small></div>`).join("")}</div>`).join("")}</div>`;}
-  if(n===3) return `<table class="pl3"><thead><tr><th>Name</th><th>Hours</th><th>Shift</th><th>Off</th></tr></thead><tbody>${POOL.map(p=>`<tr><td><b>${esc(p[0])}</b></td><td>${esc(p[1])}</td><td>${esc(p[2])}</td><td>${esc((p[3].split("Off ")[1]||""))}</td></tr>`).join("")}</tbody></table>`;
-  return `<div class="pl4">${POOL.map(p=>`<button class="pl4-tile"><b>${esc(p[0].split(",")[0])}</b><span>${esc(p[1])}</span>${p[2]==="Double"?'<i>DBL</i>':`<em>${esc(p[2])}</em>`}</button>`).join("")}</div>`;
+  if(n===1){
+    const NH=[["Bonet, C.","VAC"],["Stephens, K.","DTO"],["Dickey, T.","SICK"],["Vizcaino, A.","CB"]];
+    return `<div class="rp-h">AM pool review <span>${POOL.length} working</span></div>
+      <div class="rp-dual">
+        <div class="rp-col"><h5>Working</h5>${POOL.map(p=>`<div class="rp-li"><b>${esc(p.n)}</b><span>${esc(p.h)}</span>${p.t.map(tag).join("")}</div>`).join("")}</div>
+        <div class="rp-col not"><h5>Not here</h5>${NH.map(x=>`<div class="rp-li out"><b>${esc(x[0])}</b><span class="code">${esc(x[1])}</span></div>`).join("")}</div>
+      </div>`;
+  }
+  if(n===2){
+    return `<div class="rp-h">AM pool review <span>${POOL.length} working</span></div>
+      <div class="rp-grid">${POOL.map(p=>`<div class="rp-card"><b>${esc(p.n)}</b><span class="hrs">${esc(p.h)}</span>
+        <div class="rp-bid">Bid ${esc(p.bid)} · Off ${esc(p.off)}</div><div class="rp-tags">${p.t.map(tag).join("")}</div></div>`).join("")}</div>`;
+  }
+  if(n===3){
+    return `<div class="rp-h">AM pool review <span>${POOL.length} working</span></div>
+      ${byHours().map(([h,list])=>`<div class="rp-sh"><div class="rp-sh-h">${esc(h)}<span>${list.length}</span></div>
+        ${list.map(p=>`<div class="rp-li"><b>${esc(p.n)}</b>${p.t.map(tag).join("")}</div>`).join("")}</div>`).join("")}`;
+  }
+  if(n===4){
+    return `<div class="rp-h">AM pool review <span>${POOL.length} working</span></div>
+      <table class="rp-tbl"><thead><tr><th>Name</th><th>Hours</th><th>Bid</th><th>Off</th><th></th></tr></thead>
+      <tbody>${POOL.map(p=>`<tr><td><b>${esc(p.n)}</b></td><td>${esc(p.h)}</td><td>${esc(p.bid)}</td><td>${esc(p.off)}</td><td>${p.t.map(tag).join("")}</td></tr>`).join("")}</tbody></table>`;
+  }
+  return `<div class="rp-h">AM pool review <span>${POOL.length} working</span></div>
+    <div class="rp-md"><div class="rp-md-list">${POOL.map((p,i)=>`<div class="rp-md-li ${i===3?'on':''}"><b>${esc(p.n)}</b><span>${esc(p.h)}</span></div>`).join("")}</div>
+      <div class="rp-md-detail"><div class="md-name">Day, Hakim</div><div class="md-sub">05:00-21:00 · Double</div>
+        <div class="md-row"><span>Bid hours</span><b>05:00-13:00</b></div><div class="md-row"><span>Days off</span><b>Tue, Wed</b></div>
+        <div class="md-row"><span>Status</span><b>Working a double</b></div><div class="rp-tags">${["DBL"].map(tag).join("")}</div></div></div>`;
 }
 
-function render2(which){ // which: 'preview' or 'preview2'
-  const root=$(which==="preview"?"#previewRoot":"#preview2Root");if(!root)return;
-  const isP2=which==="preview2";
-  const max=isP2?COUNTS.pool:(kind==="tug"?COUNTS.tug:COUNTS.asg);
-  if(v>max)v=1;
+/* ---------------- ASSIGN BOARD variants ---------------- */
+const poolDock=cls=>`<div class="${cls}">${POOL.slice(0,7).map(p=>`<button class="pp ${p.t.includes('DBL')?'db':''}">${esc(p.n.split(",")[0])}<small>${esc(p.h)}</small></button>`).join("")}</div>`;
+const tcrew=id=>{const c=CREW[id]||[];return `<div class="bt-dr">DRV <b>${esc((c[0]||"—").split(",")[0])}</b></div><div class="bt-dr">OBS <b>${esc((c[1]||"").split(",")[0]||"—")}</b></div>`;};
+const tugMini=id=>`<div class="bt ${OOS.has(id)?'oos':''} ${INOP.has(id)?'inop':''}"><div class="bt-h">STUG ${id}<u>${TYPE(id)}</u></div>${OOS.has(id)?'<div class="bt-oos">Out of Service</div>':tcrew(id)}</div>`;
+const areaMini=([k,m])=>`<div class="ba"><div class="ba-h">${esc(k)}${m?`<span>0/${m}</span>`:''}</div><div class="ba-b">tap to add</div></div>`;
+
+function boardVariant(n){
+  const tugs=TUGS.filter(id=>id!==51).slice(0,9);
+  if(n===1){
+    return `<div class="bd1"><div class="bd1-pool"><h5>Staff · 7 left</h5>${poolDock("bd1-dock")}</div>
+      <div class="bd1-board"><div class="bd-sec">DISPATCH</div><div class="ba disp"><div class="ba-h">Dispatcher</div><div class="ba-b">Castro, Alex</div></div>
+        <div class="bd-sec">TUGS</div><div class="bt-grid">${tugs.map(tugMini).join("")}</div>
+        <div class="bd-sec">AREAS</div><div class="ba-grid">${AREAS.map(areaMini).join("")}</div></div></div>`;
+  }
+  if(n===2){
+    return `<div class="bd2"><div class="bd2-staff">${poolDock("bd1-dock")}</div>
+      <div class="bd2-tabs"><span class="on">Tugs</span><span>Areas</span><span>Dispatch</span></div>
+      <div class="bt-grid">${tugs.map(tugMini).join("")}</div></div>`;
+  }
+  if(n===3){
+    return `<div class="bd3"><div class="bd3-scroll"><div class="bd-sec">DISPATCH</div><div class="ba disp"><div class="ba-h">Dispatcher</div><div class="ba-b">Castro, Alex</div></div>
+      <div class="bd-sec">TUGS</div><div class="bt-grid">${tugs.map(tugMini).join("")}</div>
+      <div class="bd-sec">AREAS</div><div class="ba-grid">${AREAS.map(areaMini).join("")}</div></div>
+      <div class="bd3-dock"><div class="bd3-dock-h">Tap a name → tap a slot</div>${poolDock("bd1-dock")}</div></div>`;
+  }
+  if(n===4){
+    return `<div class="bd4"><div class="bd4-staff">${poolDock("bd1-dock")}</div>
+      <div class="bd4-acc open"><div class="acc-h">DISPATCH <i>Castro, Alex</i><b>▾</b></div><div class="acc-b"><div class="ba disp"><div class="ba-h">Dispatcher</div><div class="ba-b">Castro, Alex</div></div></div></div>
+      <div class="bd4-acc open"><div class="acc-h">TUGS <i>7 running</i><b>▾</b></div><div class="acc-b"><div class="bt-grid">${tugs.slice(0,6).map(tugMini).join("")}</div></div></div>
+      <div class="bd4-acc"><div class="acc-h">AREAS <i>0/9 filled</i><b>▸</b></div></div></div>`;
+  }
+  return `<div class="bd5"><div class="bd5-rail"><h5>Staff</h5>${POOL.slice(0,7).map(p=>`<button class="pp v">${esc(p.n.split(",")[0])}<small>${esc(p.h)}</small></button>`).join("")}</div>
+    <div class="bd5-grid"><div class="ba disp"><div class="ba-h">Dispatch</div><div class="ba-b">Castro, Alex</div></div>
+      ${tugs.map(tugMini).join("")}${AREAS.map(areaMini).join("")}</div></div>`;
+}
+
+/* ---------------- shell ---------------- */
+function render(){
+  const root=$("#previewRoot");if(!root)return;
+  const max=COUNT[kind]; if(v>max)v=1;
+  const kindBtns=`<div class="pv-kind">
+    <button class="pv-seg ${kind==='pool'?'on':''}" data-kind="pool">Review pool</button>
+    <button class="pv-seg ${kind==='board'?'on':''}" data-kind="board">Assign board</button></div>`;
   const devBtns=Object.entries(DEV).map(([k,d])=>`<button class="pv-seg ${dev===k?"on":""}" data-dev="${k}">${d.l}</button>`).join("");
-  const kindBtns=isP2?"":`<div class="pv-kind"><button class="pv-seg ${kind==="tug"?"on":""}" data-kind="tug">Tug selection</button><button class="pv-seg ${kind==="asg"?"on":""}" data-kind="asg">Assignment</button></div>`;
   const vBtns=Array.from({length:max},(_,i)=>`<button class="pv-vnum ${v===i+1?"on":""}" data-v="${i+1}">${i+1}</button>`).join("");
-  const body=isP2?poolVariant(v):(kind==="tug"?tugVariant(v):asgVariant(v));
+  const body=kind==="pool"?poolVariant(v):boardVariant(v);
+  const note=kind==="board"?'<p class="pv-note">Each layout keeps the staff list within reach so you’re not scrolling up to grab a name and back down to Ballpark.</p>':'<p class="pv-note">Dual-list and grid takes on the shift-pool review.</p>';
   root.innerHTML=`<div class="card pad pv-ctrl">
-      <h2 class="staff-h" style="margin:0 0 8px">${isP2?"Pool screen designs":"Screen designs"}</h2>
+      <h2 class="staff-h" style="margin:0 0 8px">Screen designs</h2>
       ${kindBtns}
       <div class="pv-row"><span class="pv-lbl">Device</span><div class="pv-segs">${devBtns}</div></div>
       <div class="pv-row"><span class="pv-lbl">Variant</span><div class="pv-segs">${vBtns}</div></div>
+      ${note}
     </div>
-    <div class="pv-stage"><div class="pv-dev pv-${dev}"><div class="pv-frame" style="width:${DEV[dev].w}px"><div class="pv-screen">${body}</div></div><div class="pv-cap">${DEV[dev].l} · ${DEV[dev].w}px — variant ${v}</div></div></div>`;
-  $$(`#${root.id} .pv-seg[data-dev]`).forEach(b=>b.onclick=()=>{dev=b.dataset.dev;render2(which);});
-  $$(`#${root.id} .pv-seg[data-kind]`).forEach(b=>b.onclick=()=>{kind=b.dataset.kind;v=1;render2(which);});
-  $$(`#${root.id} .pv-vnum`).forEach(b=>b.onclick=()=>{v=+b.dataset.v;render2(which);});
+    <div class="pv-stage"><div class="pv-dev pv-${dev}"><div class="pv-frame" style="width:${DEV[dev].w}px"><div class="pv-screen pv-k-${kind}">${body}</div></div><div class="pv-cap">${DEV[dev].l} · ${DEV[dev].w}px — variant ${v}</div></div></div>`;
+  $$('#previewRoot .pv-seg[data-dev]').forEach(b=>b.onclick=()=>{dev=b.dataset.dev;render();});
+  $$('#previewRoot .pv-seg[data-kind]').forEach(b=>b.onclick=()=>{kind=b.dataset.kind;v=1;render();});
+  $$('#previewRoot .pv-vnum').forEach(b=>b.onclick=()=>{v=+b.dataset.v;render();});
 }
-window.PREVIEW={ open:()=>{v=1;render2("preview");}, open2:()=>{v=1;render2("preview2");} };
+window.PREVIEW={ open:()=>{ v=1; render(); } };
 })();
