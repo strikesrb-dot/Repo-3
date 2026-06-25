@@ -761,7 +761,7 @@ function mapType(t){t=t||"";
   if(/ground power|gpu|\bgp\b/i.test(t))return "GPUs";
   if(/pca|air condition|heat|\bac\b|\bah\b/i.test(t))return "PCA/AC/HEAT Unit";
   return t;}
-const LOC_SEED_V=11;
+const LOC_SEED_V=12; // bumped: re-merge built-in spots (Ballpark BP1-11/A10, Amelia, Lindy…) dropped when a same-version master was loaded
 function R(pre,a,b){const o=[];for(let i=a;i<=b;i++)o.push(pre+i);return o;}
 const LOC_SEED=[
   ["Staging",false,["Staging Area"]],
@@ -1668,8 +1668,8 @@ function showImagePreview(blob,filename){
 
 /* ===================== SECURE LOG ===================== */
 const SECURE_REASONS=["Aircraft Maintenance","UGE","Airways","PrimeFlight","Catering","Ramp","Move Team"];
-let sec={stage:"home",id:null,area:null,spot:null,ac:null,reason:null,name:"",time:"",comment:""};
-function newSec(){return {stage:"home",id:null,area:null,spot:null,ac:null,reason:null,name:"",time:"",comment:""};}
+let sec={stage:"home",id:null,area:null,spot:null,ac:null,reasons:[],name:"",time:"",comment:""};
+function newSec(){return {stage:"home",id:null,area:null,spot:null,ac:null,reasons:[],name:"",time:"",comment:""};}
 function nowHHMM(){const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 function renderSecure(){const r=$("#secRoot");
   ({home:renderSecHome,area:renderSecArea,spot:renderSecSpot,aircraft:renderSecAircraft,details:renderSecDetails}[sec.stage]||renderSecHome)(r);}
@@ -1696,7 +1696,7 @@ function renderSecHome(r){
     if(confirm("Delete this entry?")){data.secureLog=data.secureLog.filter(x=>x.id!==li.dataset.id);save();renderSecure();}}));
   $$(".sec-edit",r).forEach(b=>b.addEventListener("click",e=>{const li=e.target.closest("[data-id]");
     const en=data.secureLog.find(x=>x.id===li.dataset.id);if(!en)return;
-    sec={stage:"details",id:en.id,area:en.area,spot:en.spot,ac:en.ac?{...en.ac}:null,reason:en.reason,name:en.name||"",time:en.time||"",comment:en.comment||""};
+    sec={stage:"details",id:en.id,area:en.area,spot:en.spot,ac:en.ac?{...en.ac}:null,reasons:en.reasons?en.reasons.slice():(en.reason?[en.reason]:[]),name:en.name||"",time:en.time||"",comment:en.comment||""};
     renderSecure();}));
 }
 function renderSecArea(r){
@@ -1750,8 +1750,8 @@ function renderSecDetails(r){
   r.innerHTML=`<div class="card pad">
     <div class="crumbs">${esc(sec.spot)}${sec.ac&&sec.ac.ship?` · ✈ Nose ${esc(sec.ac.ship)}`:""}</div>
     <div class="step">${sec.id?"Edit entry":"Step 4 — details"}</div>
-    <label>Who had the aircraft (not secure)?</label>
-    <div class="chips" id="secReasons">${SECURE_REASONS.map(x=>`<button class="chip ${sec.reason===x?'sel':''}" data-x="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+    <label>Who had the aircraft (not secure)? <span style="font-weight:500;color:var(--muted)">— tap all that apply</span></label>
+    <div class="chips" id="secReasons">${SECURE_REASONS.map(x=>`<button class="chip ${sec.reasons.includes(x)?'sel':''}" data-x="${esc(x)}">${esc(x)}</button>`).join("")}</div>
     <label for="secName">Name (optional)</label>
     <input id="secName" autocomplete="off" placeholder="Person's name" value="${esc(sec.name)}" />
     <label for="secTime">Time</label>
@@ -1759,15 +1759,16 @@ function renderSecDetails(r){
     <label for="secComment">Comment (optional)</label>
     <textarea id="secComment" placeholder="Stairs still on, doors open, GPU connected…">${esc(sec.comment)}</textarea>
     <div class="btnrow"><button class="btn ghost" id="secBack">← Back</button><button class="btn navy" id="secLog" style="flex:2">${sec.id?"✓ Save changes":"✓ Log it"}</button></div></div>`;
-  $$("#secReasons .chip").forEach(c=>c.addEventListener("click",()=>{sec.reason=c.dataset.x;
-    $$("#secReasons .chip").forEach(x=>x.classList.toggle("sel",x.dataset.x===sec.reason));}));
+  $$("#secReasons .chip").forEach(c=>c.addEventListener("click",()=>{const x=c.dataset.x;
+    const i=sec.reasons.indexOf(x);if(i>=0)sec.reasons.splice(i,1);else sec.reasons.push(x);
+    c.classList.toggle("sel",sec.reasons.includes(x));}));
   $("#secName").addEventListener("input",e=>sec.name=e.target.value);
   $("#secTime").addEventListener("input",e=>sec.time=e.target.value);
   $("#secComment").addEventListener("input",e=>sec.comment=e.target.value);
   $("#secBack").addEventListener("click",()=>{sec.stage="aircraft";renderSecure();});
   $("#secLog").addEventListener("click",()=>{
-    if(!sec.reason){toast("Pick who had the aircraft");return;}
-    const fields={area:sec.area,spot:sec.spot,ac:sec.ac,reason:sec.reason,
+    if(!sec.reasons.length){toast("Pick who had the aircraft");return;}
+    const fields={area:sec.area,spot:sec.spot,ac:sec.ac,reasons:sec.reasons.slice(),reason:sec.reasons.join(", "),
       name:(sec.name||"").trim(),time:sec.time||nowHHMM(),comment:(sec.comment||"").trim()};
     if(sec.id){const en=data.secureLog.find(x=>x.id===sec.id);if(en)Object.assign(en,fields);}
     else data.secureLog.push({id:uid(),...fields,date:todayISO()});
