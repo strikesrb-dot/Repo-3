@@ -52,10 +52,17 @@
   @media (min-width:1200px){ main{max-width:1180px;padding:22px} }
   .view{display:none}.view.active{display:block}
   h2.section{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 4px 8px}
-  #view-settings .section{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
-  #view-settings .section::before{content:'▾';font-size:12px;color:var(--navy)}
-  #view-settings .section.collapsed::before{content:'▸'}
+  #view-settings .section{cursor:pointer;user-select:none;display:flex;align-items:center;gap:10px;
+    text-transform:none;letter-spacing:0;font-size:15px;font-weight:800;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin:10px 0 0;
+    box-shadow:var(--shadow);transition:background .15s}
+  #view-settings .section:active{background:#f3f6f9}
+  #view-settings .section::after{content:'▾';margin-left:auto;color:var(--muted);font-size:13px;transition:transform .2s}
+  #view-settings .section.collapsed::after{transform:rotate(-90deg)}
+  #view-settings .section + .card{margin-top:8px}
   #view-settings .section.collapsed + .card{display:none}
+  #setBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+  #setBar .sb-t{font-size:13px;color:var(--muted)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
   .catblock{overflow:hidden;border-radius:16px}
   .catblock .cathdr{border-radius:16px 16px 0 0}
@@ -539,6 +546,7 @@
 
   <!-- SETTINGS -->
   <section id="view-settings" class="view">
+    <div id="setBar"><span class="sb-t">Tap a section to open it</span><button class="btn ghost sm" id="setExpandAll" style="width:auto">Expand all</button></div>
     <h2 class="section">Inventory locations &amp; zones</h2>
     <div class="card pad">
       <p class="hint" style="margin-top:0">The locations you pick in <b>Do Inventory</b> and when adding equipment. Drag order with ▲▼.</p>
@@ -1153,12 +1161,19 @@ function applyTileVisibility(){
   $$('#view-hub .hubgrid').forEach(g=>{const vis=[...g.querySelectorAll('.hubtile')].some(b=>b.style.display!=='none');
     g.style.display=vis?'':'none';const prev=g.previousElementSibling;if(prev&&prev.classList.contains('hubsec'))prev.style.display=vis?'':'none';});
 }
+function updateExpandAllBtn(){const b=$("#setExpandAll");if(!b)return;
+  const anyOpen=$$('#view-settings .section').some(s=>!s.classList.contains('collapsed'));
+  b.textContent=anyOpen?'Collapse all':'Expand all';}
 function initSettingsCollapse(){
   $$('#view-settings .section').forEach(h=>{
     if(h._wired)return;h._wired=true;h.classList.add('collapsed'); // collapsible, start collapsed
-    h.addEventListener('click',()=>h.classList.toggle('collapsed'));
+    h.addEventListener('click',()=>{h.classList.toggle('collapsed');updateExpandAllBtn();});
   });
+  updateExpandAllBtn();
 }
+$("#setExpandAll").addEventListener("click",()=>{
+  const secs=$$('#view-settings .section');const anyOpen=secs.some(s=>!s.classList.contains('collapsed'));
+  secs.forEach(s=>s.classList.toggle('collapsed',anyOpen));updateExpandAllBtn();});
 function renderSubtypePresets(){
   const sel=$("#subtypeCat");if(!sel)return;const cur=sel.value;
   sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
