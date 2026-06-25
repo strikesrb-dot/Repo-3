@@ -1,635 +1,128 @@
-{
-"_note": "MTE FT/PT bid results eff 4.12.26; emp -> bid hours + days off",
-"bids": {
-"235221": {
-"name": "Faria,Joey",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"248759": {
-"name": "Simmons,Nakia",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"172128": {
-"name": "Tomaylla-Aguirre,Erika",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"131613": {
-"name": "Buttitta,Cosmo",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"230945": {
-"name": "Marino,Joaquin",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"249414": {
-"name": "Aponte,Elvin",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"128570": {
-"name": "Kadelak,Chris",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"249750": {
-"name": "Towle,Jimmy",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"231244": {
-"name": "Kull,Fred",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"252837": {
-"name": "Morais,Anthony",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"131147": {
-"name": "Thomas,Claudell",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"248975": {
-"name": "Cosmiano,Brian",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"424173": {
-"name": "Mitchell,Isreal",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"193063": {
-"name": "Bausa,Jonas",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"237538": {
-"name": "Tavarez,David",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"240754": {
-"name": "Lesniak,Paul",
-"hours": "05:00-13:00",
-"off": "Wed, Thu"
-},
-"235516": {
-"name": "Cuttino,Lisa",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"240013": {
-"name": "Marques,Victor",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"193279": {
-"name": "Torres,Lenny",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"239539": {
-"name": "Ruiz,Dexter",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"216441": {
-"name": "Marmol,Pete",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"195849": {
-"name": "Washington,Demond",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"217596": {
-"name": "Lynch,Lori",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"247717": {
-"name": "Resurreccion,Randolph",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"205733": {
-"name": "Guglielmetti,Robert",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"184882": {
-"name": "Walsh,Kenny",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"139082": {
-"name": "Maria,Franklin",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"246450": {
-"name": "Cuellar,Fredy",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"139711": {
-"name": "Clark,Lawrence",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"242030": {
-"name": "Amato,Tony",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"228470": {
-"name": "Murph,John",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"238157": {
-"name": "Galamay,Garner",
-"hours": "05:00-13:00",
-"off": "Thu, Fri"
-},
-"247658": {
-"name": "Robustelli,Tiffany",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"280930": {
-"name": "Zablocki,Paul",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"233413": {
-"name": "Platero,German",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"247145": {
-"name": "Gonzales,Al",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"242293": {
-"name": "Fudge,Jim",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"368896": {
-"name": "Murray,Naki",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"152599": {
-"name": "Jones,Christopher",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"234181": {
-"name": "Ramirez,Ramon",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"339094": {
-"name": "Arias,Bryan",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"231050": {
-"name": "DiCorcia,Jim",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"218711": {
-"name": "Castillo,Juan",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"166816": {
-"name": "Rigor,Rudy",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"240953": {
-"name": "Nimene,John",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"235361": {
-"name": "Day,Hakim",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"235670": {
-"name": "Liberato,Jasmin",
-"hours": "12:00-22:00",
-"off": "Fri, Sat"
-},
-"179371": {
-"name": "Torres,Gus",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"341093": {
-"name": "Small,Kevin",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"243133": {
-"name": "Torres,Melvin",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"199585": {
-"name": "Latham,Gary",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"376772": {
-"name": "Sunaz,Gerard",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"343619": {
-"name": "Martinez,Jose",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"251648": {
-"name": "Solon,Oleen",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"216213": {
-"name": "Welch,Joe",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"224965": {
-"name": "Manicia,Gerald",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"227424": {
-"name": "Bueno,Nolan",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"219375": {
-"name": "Quiles,Jose",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"292525": {
-"name": "Young,Benjamin",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"245840": {
-"name": "Lobo,Mario",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"272300": {
-"name": "Szymczak,John",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"239374": {
-"name": "Brasche,Kered",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"343595": {
-"name": "Gray,David",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"245735": {
-"name": "Brion,Larry",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"247099": {
-"name": "Hernandez,Romeo",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"194151": {
-"name": "Guillen,William",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"212685": {
-"name": "Green,Shanda",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"234552": {
-"name": "Danaci,Berk",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"245594": {
-"name": "Sambilay,Daniel",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"358720": {
-"name": "Brion,Henric",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"154080": {
-"name": "Jerez,Edson",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"346731": {
-"name": "Rodriguez,Lemuel",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"347079": {
-"name": "Allic,Bernard",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"263338": {
-"name": "Antunes,Victor",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"232978": {
-"name": "Ramirez,Gustavo",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"237354": {
-"name": "Bahamon,Oscar",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"131233": {
-"name": "Rizzolo,Joanne",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"248515": {
-"name": "Cheung,Michael",
-"hours": "13:00-21:00",
-"off": "Fri, Sat"
-},
-"246665": {
-"name": "Royandoyan,Ted",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"248382": {
-"name": "Watson,Shakir",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"262891": {
-"name": "Rodas,Cris",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"396779": {
-"name": "Murillo Mieles,Andres",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"383989": {
-"name": "Rodriguez,Chris",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"416817": {
-"name": "Ortiz,Heilah",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"418134": {
-"name": "Ortiz,Alexis",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"416810": {
-"name": "Allen,Oshane",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"225346": {
-"name": "Hutchinson,Henrique",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"377863": {
-"name": "Velazquez Ortiz,Joseph",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"179684": {
-"name": "Burley,Antwaine",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"341079": {
-"name": "Lammy,Charles",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"239265": {
-"name": "Stephens,Kevin",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"233352": {
-"name": "Rodriguez,Oveth",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"157331": {
-"name": "Pampo,Jerry",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"114474": {
-"name": "Zamora,Orli",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"253530": {
-"name": "Santos,Daniel",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"159924": {
-"name": "Roach,Rehaem",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"357770": {
-"name": "Mumuni,Abdul",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"341314": {
-"name": "Mitchell,Wilfred",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"405711": {
-"name": "Mbacke,Murtalla",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"377862": {
-"name": "Arias Guerrero,Jovanni",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"418610": {
-"name": "Bausing,Shaquille",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"388091": {
-"name": "Presti,Rob",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"405599": {
-"name": "Arriaza,Elder",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"398707": {
-"name": "Arias,Jose",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"399677": {
-"name": "Ramos,Ricky",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"343596": {
-"name": "Hasim Legette,Shakira",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"342598": {
-"name": "Permaul,Anand",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"237650": {
-"name": "Sambilay,John",
-"hours": "21:00-05:00",
-"off": "Sun, Sat"
-},
-"389217": {
-"name": "Raymond,Anbessa",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"396669": {
-"name": "Rosario,Abriel",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"192466": {
-"name": "Rivera,Ron",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"234350": {
-"name": "Valencia,Julio",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"236928": {
-"name": "Menendez,Kevin",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"263154": {
-"name": "Cope,Yolanda",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"148701": {
-"name": "Plant,Corey",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"148135": {
-"name": "Santana,Carlos",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"420053": {
-"name": "St Hill,Rome",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"163561": {
-"name": "Castro,Alex",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"419804": {
-"name": "Reid,Sharee",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"405595": {
-"name": "Bermudez Molina,Carlos",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"420459": {
-"name": "Lagdoue,Ollie",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"433563": {
-"name": "Peltier-brown,Andrew",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"386156": {
-"name": "Pulliam,Nicole",
-"hours": "21:00-05:00",
-"off": "Wed, Thu"
-},
-"403143": {
-"name": "Flores,Jose",
-"hours": "21:00-01:00",
-"off": "Thu, Fri"
-},
-"254172": {
-"name": "Marmorato,Andrew",
-"hours": "21:00-01:00",
-"off": "Thu, Fri"
-},
-"193540": {
-"name": "Smith,Carlos",
-"hours": "21:00-01:00",
-"off": "Thu, Fri"
-}
-}
-}
+{"bids":{
+  "114474":{"name": "Zamora,Orli", "hours": "21:00-05:00", "off": "Sun, Sat"},
+  "128570":{"name": "Kadelak,Chris", "hours": "05:00-13:00", "off": "Sun, Mon"},
+  "131147":{"name": "Thomas,Claudell", "hours": "04:00-12:00", "off": "Fri, Sat"},
+  "131233":{"name": "Rizzolo,Joanne", "hours": "13:00-21:00", "off": "Sun, Sat"},
+  "131613":{"name": "Buttitta,Cosmo", "hours": "05:00-13:00", "off": "Mon, Tue"},
+  "139082":{"name": "Maria,Franklin", "hours": "05:00-13:00", "off": "Sun, Sat"},
+  "139711":{"name": "Clark,Lawrence", "hours": "05:00-13:00", "off": "Fri, Sat"},
+  "148135":{"name": "Santana,Carlos", "hours": "12:00-22:00", "off": "Sun, Mon, Tue"},
+  "148701":{"name": "Plant,Corey", "hours": "12:00-22:00", "off": "Thu, Fri, Sat"},
+  "152599":{"name": "Jones,Christopher", "hours": "12:00-22:00", "off": "Wed, Thu, Fri"},
+  "154080":{"name": "Jerez,Edson", "hours": "13:00-21:00", "off": "Mon, Tue"},
+  "157331":{"name": "Pampo,Jerry", "hours": "13:00-21:00", "off": "Fri, Sat"},
+  "159924":{"name": "Roach,Rehaem", "hours": "21:00-05:00", "off": "Sun, Sat"},
+  "163561":{"name": "Castro,Alex", "hours": "04:30-12:30", "off": "Fri, Sat"},
+  "166816":{"name": "Rigor,Rudy", "hours": "12:00-22:00", "off": "Sun, Mon, Tue"},
+  "172128":{"name": "Tomaylla-Aguirre,Erika", "hours": "05:00-13:00", "off": "Tue, Wed"},
+  "179371":{"name": "Torres,Gus", "hours": "13:00-21:00", "off": "Fri, Sat"},
+  "179684":{"name": "Burley,Antwaine", "hours": "21:00-05:00", "off": "Sun, Mon"},
+  "184882":{"name": "Walsh,Kenny", "hours": "05:00-13:00", "off": "Sun, Sat"},
+  "192466":{"name": "Rivera,Ron", "hours": "04:00-12:00", "off": "Wed, Thu"},
+  "193063":{"name": "Bausa,Jonas", "hours": "04:00-12:00", "off": "Sun, Mon"},
+  "193279":{"name": "Torres,Lenny", "hours": "05:00-13:00", "off": "Thu, Fri"},
+  "193540":{"name": "Smith,Carlos", "hours": "21:00-01:00", "off": "Sun, Mon"},
+  "194151":{"name": "Guillen,William", "hours": "13:00-21:00", "off": "Wed, Thu"},
+  "195849":{"name": "Washington,Demond", "hours": "05:00-13:00", "off": "Mon, Tue"},
+  "199585":{"name": "Latham,Gary", "hours": "13:00-21:00", "off": "Wed, Thu"},
+  "205733":{"name": "Guglielmetti,Robert", "hours": "05:00-13:00", "off": "Sun, Mon"},
+  "212685":{"name": "Green,Shanda", "hours": "13:00-21:00", "off": "Wed, Thu"},
+  "216213":{"name": "Welch,Joe", "hours": "13:00-21:00", "off": "Mon, Tue"},
+  "216441":{"name": "Marmol,Pete", "hours": "05:00-13:00", "off": "Tue, Wed"},
+  "217596":{"name": "Lynch,Lori", "hours": "05:00-13:00", "off": "Mon, Tue"},
+  "218711":{"name": "Castillo,Juan", "hours": "12:00-22:00", "off": "Thu, Fri, Sat"},
+  "219375":{"name": "Quiles,Jose", "hours": "13:00-21:00", "off": "Mon, Tue"},
+  "224965":{"name": "Manicia,Gerald", "hours": "13:00-21:00", "off": "Mon, Tue"},
+  "225346":{"name": "Hutchinson,Henrique", "hours": "21:00-05:00", "off": "Mon, Tue"},
+  "227424":{"name": "Bueno,Nolan", "hours": "13:00-21:00", "off": "Sun, Mon"},
+  "228470":{"name": "Murph,John", "hours": "05:00-13:00", "off": "Thu, Fri"},
+  "230945":{"name": "Marino,Joaquin", "hours": "05:00-13:00", "off": "Mon, Tue"},
+  "231050":{"name": "DiCorcia,Jim", "hours": "12:00-22:00", "off": "Thu, Fri, Sat"},
+  "231244":{"name": "Kull,Fred", "hours": "05:00-13:00", "off": "Sun, Sat"},
+  "232978":{"name": "Ramirez,Gustavo", "hours": "13:00-21:00", "off": "Sun, Mon"},
+  "233352":{"name": "Rodriguez,Oveth", "hours": "13:00-21:00", "off": "Sun, Sat"},
+  "233413":{"name": "Platero,German", "hours": "12:00-22:00", "off": "Sun, Mon, Sat"},
+  "234181":{"name": "Ramirez,Ramon", "hours": "12:00-22:00", "off": "Thu, Fri, Sat"},
+  "234350":{"name": "Valencia,Julio", "hours": "05:00-13:00", "off": "Fri, Sat"},
+  "234552":{"name": "Danaci,Berk", "hours": "13:00-21:00", "off": "Tue, Wed"},
+  "235221":{"name": "Faria,Joey", "hours": "05:00-13:00", "off": "Wed, Thu"},
+  "235361":{"name": "Day,Hakim", "hours": "05:00-13:00", "off": "Fri, Sat"},
+  "235516":{"name": "Cuttino,Lisa", "hours": "05:00-13:00", "off": "Thu, Fri"},
+  "235670":{"name": "Liberato,Jasmin", "hours": "12:00-22:00", "off": "Sun, Mon, Tue"},
+  "236928":{"name": "Menendez,Kevin", "hours": "20:00-06:00", "off": "Tue, Wed, Thu"},
+  "237354":{"name": "Bahamon,Oscar", "hours": "13:00-21:00", "off": "Sun, Sat"},
+  "237538":{"name": "Tavarez,David", "hours": "04:00-12:00", "off": "Mon, Tue"},
+  "237650":{"name": "Sambilay,John", "hours": "21:00-05:00", "off": "Sun, Sat"},
+  "238157":{"name": "Galamay,Garner", "hours": "05:00-13:00", "off": "Wed, Thu"},
+  "239265":{"name": "Stephens,Kevin", "hours": "13:00-21:00", "off": "Sun, Sat"},
+  "239374":{"name": "Brasche,Kered", "hours": "12:00-22:00", "off": "Wed, Thu, Fri"},
+  "239539":{"name": "Ruiz,Dexter", "hours": "05:00-13:00", "off": "Tue, Wed"},
+  "240013":{"name": "Marques,Victor", "hours": "05:00-13:00", "off": "Wed, Thu"},
+  "240754":{"name": "Lesniak,Paul", "hours": "04:00-12:00", "off": "Sun, Sat"},
+  "240953":{"name": "Nimene,John", "hours": "12:00-22:00", "off": "Sun, Mon, Tue"},
+  "242030":{"name": "Amato,Tony", "hours": "05:00-13:00", "off": "Thu, Fri"},
+  "242293":{"name": "Fudge,Jim", "hours": "12:00-22:00", "off": "Sun, Mon, Sat"},
+  "243133":{"name": "Torres,Melvin", "hours": "13:00-21:00", "off": "Thu, Fri"},
+  "245594":{"name": "Sambilay,Daniel", "hours": "13:00-21:00", "off": "Tue, Wed"},
+  "245735":{"name": "Brion,Larry", "hours": "13:00-21:00", "off": "Fri, Sat"},
+  "245840":{"name": "Lobo,Mario", "hours": "13:00-21:00", "off": "Sun, Mon"},
+  "246450":{"name": "Cuellar,Fredy", "hours": "05:00-13:00", "off": "Fri, Sat"},
+  "246665":{"name": "Royandoyan,Ted", "hours": "21:00-05:00", "off": "Sun, Sat"},
+  "247099":{"name": "Hernandez,Romeo", "hours": "13:00-21:00", "off": "Thu, Fri"},
+  "247145":{"name": "Gonzales,Al", "hours": "12:00-22:00", "off": "Wed, Thu, Fri"},
+  "247658":{"name": "Robustelli,Tiffany", "hours": "12:00-22:00", "off": "Wed, Thu, Fri"},
+  "247717":{"name": "Resurreccion,Randolph", "hours": "05:00-13:00", "off": "Sun, Mon"},
+  "248382":{"name": "Watson,Shakir", "hours": "21:00-05:00", "off": "Fri, Sat"},
+  "248515":{"name": "Cheung,Michael", "hours": "13:00-21:00", "off": "Fri, Sat"},
+  "248759":{"name": "Simmons,Nakia", "hours": "05:00-13:00", "off": "Tue, Wed"},
+  "248975":{"name": "Cosmiano,Brian", "hours": "04:00-12:00", "off": "Tue, Wed"},
+  "249414":{"name": "Aponte,Elvin", "hours": "05:00-13:00", "off": "Sun, Mon"},
+  "249750":{"name": "Towle,Jimmy", "hours": "05:00-13:00", "off": "Sun, Sat"},
+  "251648":{"name": "Solon,Oleen", "hours": "13:00-21:00", "off": "Tue, Wed"},
+  "252837":{"name": "Morais,Anthony", "hours": "04:00-12:00", "off": "Thu, Fri"},
+  "253530":{"name": "Santos,Daniel", "hours": "21:00-05:00", "off": "Fri, Sat"},
+  "254172":{"name": "Marmorato,Andrew", "hours": "21:00-01:00", "off": "Thu, Fri"},
+  "262891":{"name": "Rodas,Cris", "hours": "21:00-05:00", "off": "Fri, Sat"},
+  "263154":{"name": "Cope,Yolanda", "hours": "21:00-05:00", "off": "Sun, Mon"},
+  "263338":{"name": "Antunes,Victor", "hours": "13:00-21:00", "off": "Sun, Mon"},
+  "272300":{"name": "Szymczak,John", "hours": "12:00-22:00", "off": "Sun, Mon, Sat"},
+  "280930":{"name": "Zablocki,Paul", "hours": "12:00-22:00", "off": "Sun, Mon, Sat"},
+  "292525":{"name": "Young,Benjamin", "hours": "12:00-22:00", "off": "Tue, Wed, Thu"},
+  "339094":{"name": "Arias,Bryan", "hours": "12:00-22:00", "off": "Mon, Tue, Wed"},
+  "341079":{"name": "Lammy,Charles", "hours": "21:00-05:00", "off": "Sun, Mon"},
+  "341093":{"name": "Small,Kevin", "hours": "13:00-21:00", "off": "Thu, Fri"},
+  "341314":{"name": "Mitchell,Wilfred", "hours": "21:00-05:00", "off": "Fri, Sat"},
+  "342598":{"name": "Permaul,Anand", "hours": "21:00-05:00", "off": "Sun, Mon"},
+  "343595":{"name": "Gray,David", "hours": "12:00-22:00", "off": "Wed, Thu, Fri"},
+  "343596":{"name": "Hasim Legette,Shakira", "hours": "21:00-05:00", "off": "Sun, Mon"},
+  "343619":{"name": "Martinez,Jose", "hours": "13:00-21:00", "off": "Tue, Wed"},
+  "346731":{"name": "Rodriguez,Lemuel", "hours": "13:00-21:00", "off": "Mon, Tue"},
+  "347079":{"name": "Allic,Bernard", "hours": "13:00-21:00", "off": "Mon, Tue"},
+  "357770":{"name": "Mumuni,Abdul", "hours": "21:00-05:00", "off": "Thu, Fri"},
+  "358720":{"name": "Brion,Henric", "hours": "13:00-21:00", "off": "Mon, Tue"},
+  "368896":{"name": "Murray,Naki", "hours": "12:00-22:00", "off": "Mon, Tue, Wed"},
+  "376772":{"name": "Sunaz,Gerard", "hours": "13:00-21:00", "off": "Wed, Thu"},
+  "377862":{"name": "Arias Guerrero,Jovanni", "hours": "21:00-05:00", "off": "Thu, Fri"},
+  "377863":{"name": "Velazquez Ortiz,Joseph", "hours": "21:00-05:00", "off": "Mon, Tue"},
+  "383989":{"name": "Rodriguez,Chris", "hours": "21:00-05:00", "off": "Thu, Fri"},
+  "386156":{"name": "Pulliam,Nicole", "hours": "22:00-06:00", "off": "Sun, Mon"},
+  "388091":{"name": "Presti,Rob", "hours": "21:00-05:00", "off": "Wed, Thu"},
+  "389217":{"name": "Raymond,Anbessa", "hours": "21:00-05:00", "off": "Tue, Wed"},
+  "396669":{"name": "Rosario,Abriel", "hours": "21:00-05:00", "off": "Wed, Thu"},
+  "396779":{"name": "Murillo Mieles,Andres", "hours": "21:00-05:00", "off": "Thu, Fri"},
+  "398707":{"name": "Arias,Jose", "hours": "21:00-05:00", "off": "Mon, Tue"},
+  "399677":{"name": "Ramos,Ricky", "hours": "21:00-05:00", "off": "Mon, Tue"},
+  "403143":{"name": "Flores,Jose", "hours": "21:00-01:00", "off": "Tue, Wed"},
+  "405595":{"name": "Bermudez Molina,Carlos", "hours": "22:00-06:00", "off": "Thu, Fri"},
+  "405599":{"name": "Arriaza,Elder", "hours": "21:00-05:00", "off": "Tue, Wed"},
+  "405711":{"name": "Mbacke,Murtalla", "hours": "21:00-05:00", "off": "Wed, Thu"},
+  "416810":{"name": "Allen,Oshane", "hours": "21:00-05:00", "off": "Tue, Wed"},
+  "416817":{"name": "Ortiz,Heilah", "hours": "21:00-05:00", "off": "Wed, Thu"},
+  "418134":{"name": "Ortiz,Alexis", "hours": "21:00-05:00", "off": "Tue, Wed"},
+  "418610":{"name": "Bausing,Shaquille", "hours": "21:00-05:00", "off": "Tue, Wed"},
+  "419804":{"name": "Reid,Sharee", "hours": "22:00-06:00", "off": "Tue, Wed"},
+  "420053":{"name": "St Hill,Rome", "hours": "22:00-06:00", "off": "Thu, Fri"},
+  "420459":{"name": "Lagdoue,Ollie", "hours": "22:00-06:00", "off": "Sun, Mon"},
+  "424173":{"name": "Mitchell,Isreal", "hours": "04:00-12:00", "off": "Wed, Thu"},
+  "433563":{"name": "Peltier-brown,Andrew", "hours": "22:00-06:00", "off": "Tue, Wed"}
+}}
