@@ -302,6 +302,20 @@
   .mv-arrow{color:var(--navy);font-weight:800}
   .mv-det{font-size:12px;font-weight:600;color:#8a939c}
   .mv-none{color:var(--muted);font-style:italic}
+  .mv-shift{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:3px 9px;margin:10px 2px 6px}
+  .mv-shift.nh{color:#2c2660;background:#e6e3f5}
+  .mv-shift.am{color:#15622f;background:var(--good-bg)}
+  .mv-shift.pm{color:#8a4b00;background:#fdeccf}
+  .invloc-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .le-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:9px;background:#fff}
+  .le-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .le-lname{font-weight:800;color:var(--ink)}
+  .le-subs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .le-sub{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--navy);background:#eef2f5;border-radius:999px;padding:4px 6px 4px 11px}
+  .le-sub .le-subdel{border:none;background:rgba(0,0,0,.06);color:#666;border-radius:50%;width:18px;height:18px;line-height:1;font-size:11px;cursor:pointer;padding:0}
+  .le-none{font-size:12px;color:var(--muted);font-style:italic}
+  .le-addrow{display:flex;gap:6px}
+  .le-addrow .le-subin{flex:1;padding:8px 10px;font-size:13px}
   .m-oos{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.04em;color:#c0271e}
   .sh-loc{margin:0 0 16px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .sh-loc-h{display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;padding:9px 14px;font-size:16px;font-weight:800;letter-spacing:.3px}
@@ -417,7 +431,6 @@
     <p class="hint" style="margin-top:0">Every time a unit changes location — counting it during inventory, editing it, or a quick move — the change is logged here.</p>
     <div class="toolbar"><input id="moveSearch" type="search" placeholder="Search tag, location…" autocomplete="off" /></div>
     <div id="moveList" style="margin-top:10px"></div>
-    <div class="btnrow no-print" style="margin-top:12px"><button class="btn ghost" id="moveClear">Clear movement log</button></div>
   </section>
 
   <section id="view-equipment" class="view">
@@ -596,6 +609,21 @@
   </div>
 </div>
 
+<!-- INVENTORY LOCATION EDITOR (password-locked) -->
+<div class="overlay" id="locEditOverlay">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Edit inventory locations</h3>
+    <p class="hint" style="margin-top:0">Add or remove locations and their sub-locations. These show up in <b>Do Inventory</b>.</p>
+    <div id="locEditBody" style="max-height:52vh;overflow:auto"></div>
+    <div class="toolbar" style="margin-top:12px;margin-bottom:0">
+      <input id="locEditNew" placeholder="Add a location" autocomplete="off" />
+      <button class="btn sm navy" id="locEditAdd" style="width:auto">Add</button>
+    </div>
+    <div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="locEditDone">Done</button></div>
+  </div>
+</div>
+
 <button id="floatBack" class="floatback" hidden>‹ Back</button>
 <div id="printArea"></div>
 <div class="toast" id="toast"></div>
@@ -637,7 +665,7 @@ let data=load();
 function load(){
   let d=Store.getJSON(KEY,null);
   if(!d)d={};
-  d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[]; d.movements||=[];
+  d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[]; d.movements||=[]; d.locZones||={};
   d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();
     if(/^westpark staging area$/i.test(e.location||""))e.location="WestPark";
     if(/^amelia staging area$/i.test(e.location||"")){e.location="South";e.spot="Staging Area";}}); // caps + location migration
@@ -921,7 +949,6 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
 $("#search").addEventListener("input",renderList);
 $("#filterLoc").addEventListener("change",renderList);
 $("#moveSearch").addEventListener("input",renderMovement);
-$("#moveClear").addEventListener("click",()=>{if(!data.movements.length){toast("Nothing to clear");return;}if(!confirm("Clear the entire movement log?"))return;data.movements=[];save();renderMovement();toast("Movement log cleared");});
 function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
   // only locations you actually have equipment at
   const locs=[...new Set(data.equipment.map(e=>e.location).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
@@ -960,8 +987,13 @@ function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
   const to=loc.trim();e.location=to;e.updated=todayISO();if(from!==to)logMove(e,from,to);save();refreshAll();toast(to?`Moved to ${to}`:"Location cleared");}
 // record a location change for the Movement tab (newest kept, cap 300)
 function logMove(e,from,to){from=(from||"").trim();to=(to||"").trim();if(from===to)return;
-  data.movements.push({id:uid(),tag:e.tag||"",type:e.type||"",from,to,spot:e.spot||"",nose:e.nose||"",oos:!!e.oos,date:todayISO(),ts:Date.now()});
+  const d=new Date(),min=d.getHours()*60+d.getMinutes();
+  data.movements.push({id:uid(),tag:e.tag||"",type:e.type||"",from,to,spot:e.spot||"",nose:e.nose||"",oos:!!e.oos,date:todayISO(),ts:Date.now(),min});
   if(data.movements.length>300)data.movements=data.movements.slice(-300);}
+// shift a movement belongs to, by clock time: NH 2100-0500, AM 0500-1300, PM 1300-2100
+function moveMin(m){if(m.min!=null)return m.min;const d=new Date(m.ts||0);return d.getHours()*60+d.getMinutes();}
+function moveShift(m){const t=moveMin(m);if(t>=1260||t<300)return "Nighthawk";if(t<780)return "AM";return "PM";}
+function moveShiftKey(s){return s==="Nighthawk"?"nh":s==="AM"?"am":"pm";}
 function renderMovement(){
   const q=($("#moveSearch")?.value||"").trim().toLowerCase();
   const list=$("#moveList");if(!list)return;
@@ -969,16 +1001,19 @@ function renderMovement(){
   if(q)mv=mv.filter(m=>[m.tag,m.type,m.from,m.to].some(v=>(v||"").toLowerCase().includes(q)));
   if(!data.movements.length){list.innerHTML=`<div class="empty"><p>No movements logged yet.<br>Counting equipment during inventory will record location changes here.</p></div>`;return;}
   if(!mv.length){list.innerHTML=`<div class="empty"><p>Nothing matches your search.</p></div>`;return;}
+  const row=m=>{
+    const det=invDetail(m.spot,m.nose);
+    const from=m.from?esc(m.from):'<span class="mv-none">unassigned</span>';
+    const to=m.to?esc(m.to):'<span class="mv-none">unassigned</span>';
+    return `<li class="mv-row"><div class="mv-main"><span class="mv-tag">${esc(m.tag)}</span>${m.type?`<span class="mv-type">${esc(m.type)}</span>`:""}${m.oos?'<span class="mv-oos">OOS</span>':""}</div>
+      <div class="mv-path">${from} <span class="mv-arrow">→</span> ${to}${det?`<span class="mv-det">${esc(det)}</span>`:""}</div></li>`;};
   const byDate={};mv.forEach(m=>{(byDate[m.date]=byDate[m.date]||[]).push(m);});
   list.innerHTML=Object.keys(byDate).map(d=>{
-    const rows=byDate[d].map(m=>{
-      const det=invDetail(m.spot,m.nose);
-      const from=m.from?esc(m.from):'<span class="mv-none">unassigned</span>';
-      const to=m.to?esc(m.to):'<span class="mv-none">unassigned</span>';
-      return `<li class="mv-row"><div class="mv-main"><span class="mv-tag">${esc(m.tag)}</span>${m.type?`<span class="mv-type">${esc(m.type)}</span>`:""}${m.oos?'<span class="mv-oos">OOS</span>':""}</div>
-        <div class="mv-path">${from} <span class="mv-arrow">→</span> ${to}${det?`<span class="mv-det">${esc(det)}</span>`:""}</div></li>`;
-    }).join("");
-    return `<div class="mv-date">${esc(fmtDate(d))}</div><ul class="mv-list">${rows}</ul>`;
+    // within a date, split into shift sections (order = newest activity first)
+    const map={},order=[];
+    byDate[d].forEach(m=>{const sh=moveShift(m);if(!map[sh]){map[sh]=[];order.push(sh);}map[sh].push(m);});
+    const sections=order.map(sh=>`<div class="mv-shift ${moveShiftKey(sh)}">${sh}</div><ul class="mv-list">${map[sh].map(row).join("")}</ul>`).join("");
+    return `<div class="mv-date">${esc(fmtDate(d))}</div>${sections}`;
   }).join("");
 }
 
@@ -1004,6 +1039,8 @@ function groupSpots(spots){const g={};spots.forEach(s=>{const k=spotGroup(s.name
 function invLocs(){const s=[...equipLocs()];data.equipment.forEach(e=>{if(e.location&&!s.includes(e.location))s.push(e.location);});return s;}
 // locations whose equipment is placed by area (+ spot) inside the floating menu
 const LOC_ZONES={"South":["Staging Area","Lindy","Amelia"]};
+// user-defined sub-locations (data.locZones) override/extend the built-in zones
+function locZonesFor(loc){const z=data.locZones&&data.locZones[loc];if(z&&z.length)return z;return LOC_ZONES[loc]||null;}
 function zoneSpots(zone){if(zone==="Lindy")return PARK.Lindy.order;if(zone==="Amelia")return PARK.Amelia.order;return null;}
 // aircraft-servicing spots ask for a nose number: C4, plus South's Lindy & Amelia
 function needsNose(loc,zone){return loc==="C4"||(loc==="South"&&(zone==="Lindy"||zone==="Amelia"));}
@@ -1035,8 +1072,9 @@ function renderInvLoc(r){
   const locs=topLocs().slice().sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
   const tiles=locs.map(l=>locTile(l,`data-l="${esc(l)}"`,locCovered(l),false)).join("");
   r.innerHTML=`<div class="card pad">
-    <h3 style="margin:0 0 4px">What location are you doing inventory for?</h3>
-    <div class="loc-grid" id="invLocChips">${tiles}</div>
+    <div class="invloc-top"><h3 style="margin:0">What location are you doing inventory for?</h3>
+      <button class="btn ghost sm" id="invEditLoc" style="width:auto">✎ Edit</button></div>
+    <div class="loc-grid" id="invLocChips" style="margin-top:8px">${tiles}</div>
     ${inv.covered.length
       ?`<p class="hint" style="margin:16px 0 6px">Counted: ${esc(inv.covered.join(", "))}</p>
         <div class="btnrow"><button class="btn navy" id="invDone">Done — generate sheet (${inv.covered.length})</button></div>
@@ -1045,6 +1083,7 @@ function renderInvLoc(r){
   $$("#invLocChips .loc-tile").forEach(c=>c.addEventListener("click",()=>{inv.loc=c.dataset.l;inv.stage="select";renderInventory();}));
   $("#invDone")?.addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
   $("#invReset")?.addEventListener("click",()=>{inv={stage:"loc",loc:null,covered:[]};renderInventory();});
+  $("#invEditLoc")?.addEventListener("click",openLocEdit);
   setWizFoot(null);
 }
 // after counting a location, ask whether more equipment needs logging before the sheet
@@ -1063,6 +1102,47 @@ function renderInvMore(r){
   $("#moreNo").addEventListener("click",()=>{inv.stage="sheet";renderInventory();});
   setWizFoot(null);
 }
+/* ---- password-locked location editor (add/delete locations + sub-locations) ---- */
+function openLocEdit(){
+  const pass=prompt("Enter passcode to edit locations:");
+  if(pass===null)return;
+  if(pass!==SETTINGS_PASS){toast("Wrong passcode");return;}
+  data.equipLocs=equipLocs().slice(); data.locZones=data.locZones||{};
+  renderLocEdit(); $("#locEditOverlay").classList.add("open");
+}
+function closeLocEdit(){$("#locEditOverlay").classList.remove("open");renderInventory();refreshAll();}
+function renderLocEdit(){
+  const L=data.equipLocs;
+  $("#locEditBody").innerHTML=L.map((l,i)=>{
+    const subs=(data.locZones[l]||[]);
+    const subHtml=subs.map((s,j)=>`<span class="le-sub">${esc(s)}<button class="le-subdel" data-li="${i}" data-sj="${j}" title="Remove">✕</button></span>`).join("")
+      ||`<span class="le-none">No sub-locations</span>`;
+    return `<div class="le-row">
+      <div class="le-head"><span class="le-lname">${esc(l)}</span><button class="iconbtn le-del" data-li="${i}" title="Delete location">✕</button></div>
+      <div class="le-subs">${subHtml}</div>
+      <div class="le-addrow"><input class="le-subin" data-li="${i}" placeholder="Add sub-location" autocomplete="off" /><button class="btn sm ghost le-subadd" data-li="${i}" style="width:auto">＋</button></div>
+    </div>`;
+  }).join("")||`<p class="hint">No locations yet — add one below.</p>`;
+}
+$("#locEditBody").addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  const i=+t.dataset.li,L=data.equipLocs;
+  if(t.classList.contains("le-del")){const name=L[i],inUse=data.equipment.some(eq=>eq.location===name);
+    if(inUse&&!confirm(`"${name}" has equipment assigned. Delete it from the list anyway? (equipment keeps its label)`))return;
+    L.splice(i,1);delete data.locZones[name];}
+  else if(t.classList.contains("le-subadd")){const inp=$(`.le-subin[data-li="${i}"]`);const v=(inp?.value||"").trim();if(!v)return;
+    const name=L[i];data.locZones[name]=data.locZones[name]||[];
+    if(data.locZones[name].some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already listed");return;}
+    data.locZones[name].push(v);}
+  else if(t.classList.contains("le-subdel")){const j=+t.dataset.sj,name=L[i];if(data.locZones[name])data.locZones[name].splice(j,1);}
+  else return;
+  save();renderLocEdit();});
+$("#locEditBody").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("le-subin")){e.preventDefault();const i=e.target.dataset.li;$(`.le-subadd[data-li="${i}"]`)?.click();}});
+$("#locEditAdd").addEventListener("click",()=>{const v=$("#locEditNew").value.trim();if(!v)return;
+  if(data.equipLocs.some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already in the list");return;}
+  data.equipLocs.push(v);$("#locEditNew").value="";save();renderLocEdit();toast("Location added");});
+$("#locEditNew").addEventListener("keydown",e=>{if(e.key==="Enter")$("#locEditAdd").click();});
+$("#locEditDone").addEventListener("click",closeLocEdit);
+$("#locEditOverlay").addEventListener("click",e=>{if(e.target.id==="locEditOverlay")closeLocEdit();});
 function renderInvSelect(r){
   invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map(); // start fresh — no auto-highlight
   r.innerHTML=`<div class="card pad">
@@ -1103,7 +1183,7 @@ function paintNoseSug(pop,q){const box=pop.querySelector("#invNoseSug");if(!box)
 function openInvPop(pill,id,after){
   closeInvPop();
   const e=data.equipment.find(x=>x.id===id);if(!e)return;
-  const zones=LOC_ZONES[inv.loc]; // South etc. → pick area (+spot) before here/OOS
+  const zones=locZonesFor(inv.loc); // South etc. → pick area (+spot) before here/OOS
   const st={step:zones?"zone":"status",zone:null,spot:null,nose:""};
   const back=document.createElement("div");back.className="invpop-back";
   back.addEventListener("click",ev=>{if(ev.target===back)closeInvPop();});
