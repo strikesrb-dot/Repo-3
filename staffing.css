@@ -117,7 +117,7 @@
 .rtile{position:relative;display:flex;flex-direction:column;gap:3px;text-align:left;border:2px solid #d7dce1;background:#f4f6f8;color:#8a939c;
   border-radius:14px;padding:12px 13px;min-height:74px;cursor:pointer;transition:transform .05s,background .12s,border-color .12s,color .12s;opacity:.92}
 .rtile:active{transform:scale(.97)}
-.rt-top{display:flex;align-items:baseline;gap:6px}
+.rt-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .rt-n{font-size:26px;font-weight:900;line-height:1}
 .rt-e{font-size:10px;font-weight:900;letter-spacing:.04em;opacity:.85}
 .rt-ty{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;opacity:.85}
@@ -129,6 +129,26 @@
 .rtile.oos{background:#fbeceb;border-color:#d9342b;color:#9a201a;opacity:1}
 .rtile.oos .rt-st{color:#c0271e}
 .gpu svg{vertical-align:-2px}
+/* type on the group header + clear ELECTRIC badge on electric tugs */
+.rg-h b{color:var(--navy);font-weight:900}
+.rt-e{font-size:9.5px;font-weight:900;letter-spacing:.04em;background:#fde68a;color:#7a4d00;border-radius:5px;padding:1px 6px}
+.rtile.elec{border-color:#e3bd55}
+.rtile.elec.unset{background:#fffdf4}
+
+/* early-leave time shown in red (assign pool grouping) */
+.abody .early{color:#c0271e;text-decoration:none;font-weight:800}
+
+/* bigger, more readable assigned tug cards */
+.tcard.big .thdr{font-size:15px;padding:9px 12px}
+.tcard.big .thdr .tty{font-size:11px}
+.tcard.big .thdr i{font-size:10px;padding:2px 6px}
+.tcard.big .trow{padding:12px;font-size:15px;min-height:30px}
+.tcard.big .trow i{font-size:11px;width:64px}
+.tcard.big .slot-name{font-size:15px}
+.tcard.big .trow .slot-t{font-size:12px;font-weight:700}
+.tcard.big .oosbar{font-size:13px;padding:16px 10px}
+.tcard.big.elec{border-color:#e3bd55}
+.tcard.big.elec .thdr{background:#9a6a00}
 
 /* dispatch dropdown */
 .disp-box{display:flex;flex-direction:column;gap:8px}

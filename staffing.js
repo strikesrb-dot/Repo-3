@@ -250,7 +250,7 @@ function poolFor(shift){
     if(!sh)continue;
     if(b.emp&&seen.has(b.emp))continue; if(b.emp)seen.add(b.emp);
     const d=ST.dbl&&ST.dbl[b.emp];
-    out.push({...b,prim:sh.prim,ov:sh.ov,double:!!(d&&d.double),hours:(d&&d.double&&d.combo)?d.combo[0]+"-"+d.combo[1]:b.start+"-"+b.end});
+    out.push({...b,prim:sh.prim,ov:sh.ov,double:!!(d&&d.double),hours:b.start+"-"+b.end,span:(d&&d.double&&d.combo)?d.combo[0]+"-"+d.combo[1]:""});
   }
   out.sort((a,b)=>(a.prim===b.prim?normName(a.name).localeCompare(normName(b.name)):a.prim?-1:1));
   return out;
@@ -602,12 +602,11 @@ function rReconcile(){
   const inopN=TUGS.filter(id=>tugSt(id)==="inop").length;
   const unsetN=TUGS.filter(id=>tugSt(id)==="unset").length;
   const tile=id=>{const s=tugSt(id);
-    return `<button class="rtile ${s}" data-tug="${id}">
-        <span class="rt-top"><span class="rt-n">${id}</span>${ELECTRIC.has(id)?'<span class="rt-e">⚡E</span>':''}</span>
-        <span class="rt-ty">${tugType(id)||'&nbsp;'}</span>
+    return `<button class="rtile ${s} ${ELECTRIC.has(id)?'elec':''}" data-tug="${id}">
+        <span class="rt-top"><span class="rt-n">${id}</span>${ELECTRIC.has(id)?'<span class="rt-e">⚡ ELECTRIC</span>':''}</span>
         <span class="rt-st">${s==='ready'?'✓ ':''}${STATUS_LABEL[s]}</span>
       </button>`;};
-  const grp=g=>`<div class="rgroup"><div class="rg-h">STUG ${g.label}</div><div class="rt-grid">${g.ids.map(tile).join("")}</div></div>`;
+  const grp=g=>`<div class="rgroup"><div class="rg-h">STUG ${g.label}${tugType(g.ids[0])?` · <b>${tugType(g.ids[0])}</b>`:''}</div><div class="rt-grid">${g.ids.map(tile).join("")}</div></div>`;
   ROOT.innerHTML=card(`
     <h2 class="staff-h">Tug status</h2>
     <p class="hint" style="margin:0 0 8px">Tap a tug to cycle: <b class="rk g">green</b> ready, good GPU → <b class="rk y">yellow</b> GPU inop but still ready → <b class="rk r">red</b> out of service → grey not set.</p>
@@ -645,13 +644,21 @@ function rAssign(){
   const pool=poolFor(ST.shift);
   const used=assignedEmps();
   const avail=pool.filter(b=>!used.has(b.emp));
-  const chip=b=>{const pw=prevWorkLabel(b.emp);
-    return `<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${esc(b.hours)}${b.prim||b.double?'':' +'+ovh(b.ov)+'h'}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
-  // group the available pool by the hours they're working (0500-1300, 0400-1200, …)
-  const startMin=k=>{const m=(k||"").match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):9999;};
-  const grp={};avail.forEach(b=>{(grp[b.hours]=grp[b.hours]||[]).push(b);});
-  const gkeys=Object.keys(grp).sort((a,b)=>startMin(a)-startMin(b));
-  const poolHTML=avail.length?gkeys.map(k=>`<div class="shgrp"><div class="shgrp-h">${esc(k)}<span>${grp[k].length}</span></div><div class="abody-wrap">${grp[k].map(chip).join("")}</div></div>`).join(""):'<span class="hint">All assigned.</span>';
+  // group by START time so doubles & prev-shift workers sit with their base-shift peers
+  const toMin=t=>{const m=(t||"").match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):9999;};
+  const chip=(b,groupEnd)=>{const pw=prevWorkLabel(b.emp);
+    const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
+    const early=toMin(e)<groupEnd;                         // leaves before the group's latest end → flag red
+    const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
+    return `<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}"${b.span?` title="Double · full span ${esc(b.span)}"`:''}>${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+  const grp={};avail.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
+  const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
+  const poolHTML=avail.length?gkeys.map(st=>{
+    const list=grp[st];
+    const endStr=list.reduce((mx,x)=>{const e=(x.hours||"").split("-")[1]||"";return toMin(e)>toMin(mx)?e:mx;},"00:00");
+    const groupEnd=toMin(endStr);
+    return `<div class="shgrp"><div class="shgrp-h">${esc(st)}-${esc(endStr)}<span>${list.length}</span></div><div class="abody-wrap">${list.map(b=>chip(b,groupEnd)).join("")}</div></div>`;
+  }).join(""):'<span class="hint">All assigned.</span>';
   const slotName=p=>p?`<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${p._double?' · Double':''}</span>`:`<span class="slot-empty">tap to fill</span>`;
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
@@ -670,8 +677,8 @@ function rAssign(){
   }).join("");
   // tugs grouped
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
-    return `<div class="tcard ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
-      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}${ty?`<small class="tty">${ty}</small>`:''}</span>
+    return `<div class="tcard big ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''} ${ELECTRIC.has(id)?'elec':''}">
+      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>⚡ELEC</i>':''}${ty?`<small class="tty">${ty}</small>`:''}</span>
         <span class="thdr-r"><button class="gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''} title="Ground power">${t.gpu==='inop'?BOLT_X:BOLT}</button>
         <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button></span></div>
       ${t.oos?`<div class="oosbar"><span class="haz">✕</span> OUT OF SERVICE</div>`:
