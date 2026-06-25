@@ -43,8 +43,9 @@
 /* assign board */
 .assign-top{position:sticky;top:8px;z-index:5}
 .abody-wrap{display:flex;flex-wrap:wrap;gap:7px;max-height:34vh;overflow:auto}
-.abody{display:inline-flex;flex-direction:column;align-items:flex-start;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:7px 11px;cursor:pointer;line-height:1.15}
-.abody span{font-size:10.5px;color:var(--muted);font-weight:600}
+.abody{display:inline-flex;flex-direction:column;align-items:flex-start;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 13px;cursor:pointer;line-height:1.25;min-width:130px}
+.abody{font-size:14px;font-weight:800}
+.abody span{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
 .abody.sel{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(11,61,99,.3)}
 .abody.sel span{color:rgba(255,255,255,.8)}
 .seg-section{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 9px}
@@ -132,18 +133,10 @@
 /* type on the group header + clear ELECTRIC badge on electric tugs */
 .rg-h b{color:var(--navy);font-weight:900}
 .rt-e{font-size:9.5px;font-weight:900;letter-spacing:.04em;background:#fde68a;color:#7a4d00;border-radius:5px;padding:1px 6px}
-.rtile.elec{border-color:#e3bd55}
-.rtile.elec.unset{background:#fffdf4}
+/* electric tugs are flagged by the ELECTRIC badge only — no tile tint/border */
 
 /* early-leave time shown in red (assign pool grouping) */
 .abody .early{color:#c0271e;text-decoration:none;font-weight:800}
-
-/* assign-board move animations (FLIP transforms applied inline by JS) */
-.abody[data-flip],.slot-name[data-flip],.slot-chip[data-flip]{position:relative;will-change:transform}
-.abody.justsel{animation:abPulse .5s ease-out}
-@keyframes abPulse{0%{box-shadow:0 0 0 0 rgba(11,61,99,.55)}100%{box-shadow:0 0 0 14px rgba(11,61,99,0)}}
-.abody.sel{position:relative;z-index:3}            /* in-hand card rides above the rest while it flies */
-.slot-name[data-flip]{display:inline-block}
 
 /* bigger, more readable assigned tug cards */
 .tcard.big .thdr{font-size:15px;padding:9px 12px}
@@ -154,8 +147,6 @@
 .tcard.big .slot-name{font-size:15px}
 .tcard.big .trow .slot-t{font-size:12px;font-weight:700}
 .tcard.big .oosbar{font-size:13px;padding:16px 10px}
-.tcard.big.elec{border-color:#e3bd55}
-.tcard.big.elec .thdr{background:#9a6a00}
 
 /* dispatch dropdown */
 .disp-box{display:flex;flex-direction:column;gap:8px}
@@ -285,7 +276,7 @@
 /* ===== prev-shift worked tag + pool shift groups + dispatcher modal ===== */
 .tag.cv{background:#e4ecf6;color:#2b557e}
 .tag.pw{background:#f3e0f5;color:#7a3287}
-.abody .pw{display:block;font-style:normal;font-size:8.5px;font-weight:800;color:#7a3287;background:#f6e9f8;border-radius:4px;padding:1px 5px;margin-top:3px;align-self:flex-start}
+.abody .pw{display:block;font-style:normal;font-size:9.5px;font-weight:800;color:#7a3287;background:#f6e9f8;border-radius:5px;padding:2px 6px;margin-top:4px;align-self:flex-start}
 .abody.sel .pw{background:rgba(255,255,255,.22);color:#fff}
 .pool-groups{display:flex;flex-direction:column;gap:10px;max-height:42vh;overflow:auto}
 @media (min-width:820px){.pool-groups{max-height:none}}

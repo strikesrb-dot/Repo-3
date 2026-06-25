@@ -602,7 +602,7 @@ function rReconcile(){
   const inopN=TUGS.filter(id=>tugSt(id)==="inop").length;
   const unsetN=TUGS.filter(id=>tugSt(id)==="unset").length;
   const tile=id=>{const s=tugSt(id);
-    return `<button class="rtile ${s} ${ELECTRIC.has(id)?'elec':''}" data-tug="${id}">
+    return `<button class="rtile ${s}" data-tug="${id}">
         <span class="rt-top"><span class="rt-n">${id}</span>${ELECTRIC.has(id)?'<span class="rt-e">⚡ ELECTRIC</span>':''}</span>
         <span class="rt-st">${s==='ready'?'✓ ':''}${STATUS_LABEL[s]}</span>
       </button>`;};
@@ -620,31 +620,7 @@ function rReconcile(){
 }
 
 /* ---- step: assign ---- */
-let SEL=null;      // emp currently "in hand"
-let SELFROM=null;  // where they were picked up from: {type:'tug',id,role} | null
-const mkSlot=b=>({name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double});
-// if an in-hand person was picked up from a slot and not placed, put them back
-function dropBackOrigin(){
-  if(SEL&&SELFROM){ const b=poolFor(ST.shift).find(x=>x.emp===SEL);
-    if(b){ const p=mkSlot(b);
-      if(SELFROM.type==='tug'){ (ST.assign.tugs[SELFROM.id]=ST.assign.tugs[SELFROM.id]||{})[SELFROM.role]=p; } } }
-}
-/* ---- FLIP: animate each person between pool ↔ slots across a re-render ---- */
-function captureFlip(){ const m={}; $$('#staffRoot [data-flip]').forEach(el=>{ m[el.dataset.flip]=el.getBoundingClientRect(); }); return m; }
-let prevSEL=null;
-function flipRender(){
-  const prev=captureFlip();
-  render();
-  $$('#staffRoot [data-flip]').forEach(el=>{ const o=prev[el.dataset.flip]; if(!o)return;
-    const n=el.getBoundingClientRect(); const dx=o.left-n.left, dy=o.top-n.top;
-    if(Math.abs(dx)<2&&Math.abs(dy)<2)return;
-    el.style.transition='none'; el.style.transform=`translate(${dx}px,${dy}px)`;
-    requestAnimationFrame(()=>{ el.style.transition='transform .34s cubic-bezier(.2,.8,.2,1)'; el.style.transform=''; });
-  });
-  // pulse a card that just became selected (box-shadow only, so it doesn't fight the FLIP transform)
-  if(SEL && SEL!==prevSEL){ const s=$(`#staffRoot .abody[data-emp="${SEL}"]`); if(s)s.classList.add('justsel'); }
-  prevSEL=SEL;
-}
+let SEL=null; // selected pool entry key
 function initAssign(){
   if(!ST.assign){ ST.assign={ tugs:{}, areas:{} }; AREAS.forEach(a=>ST.assign.areas[a.key]=[]); }
   if(!ST.dispatch){ const d=dispatchCandidates(ST.shift).find(x=>x.avail); ST.dispatch=d?{name:d.name,emp:d.emp,custom:false}:{name:"",emp:"",custom:false}; }
@@ -674,7 +650,7 @@ function rAssign(){
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=toMin(e)<groupEnd;                         // leaves before the group's latest end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
-    return `<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}" data-flip="${esc(b.emp)}"${b.span?` title="Double · full span ${esc(b.span)}"`:''}>${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+    return `<button class="abody ${SEL===b.emp?'sel':''} ${b.double?'dbl':''}" data-emp="${esc(b.emp)}"${b.span?` title="Double · full span ${esc(b.span)}"`:''}>${esc(b.name)}${b.double?'<em>DBL</em>':''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const grp={};avail.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
   const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
   const poolHTML=avail.length?gkeys.map(st=>{
@@ -683,7 +659,7 @@ function rAssign(){
     const groupEnd=toMin(endStr);
     return `<div class="shgrp"><div class="shgrp-h">${esc(st)}-${esc(endStr)}<span>${list.length}</span></div><div class="abody-wrap">${list.map(b=>chip(b,groupEnd)).join("")}</div></div>`;
   }).join(""):'<span class="hint">All assigned.</span>';
-  const slotName=p=>p?`<span class="slot-name" data-flip="${esc(p.emp)}">${esc(p.name)}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${p._double?' · Double':''}</span>`:`<span class="slot-empty">tap to fill</span>`;
+  const slotName=p=>p?`<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${p._double?' · Double':''}</span>`:`<span class="slot-empty">tap to fill</span>`;
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
@@ -696,12 +672,12 @@ function rAssign(){
   const areaCards=AREAS.map(a=>{
     const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0,need=min&&list.length<min;
     return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
-      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip" data-area="${esc(a.key)}" data-i="${i}" data-flip="${esc(p.emp)}">${esc(p.name)} ✕</span>`).join("")}
+      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip" data-area="${esc(a.key)}" data-i="${i}">${esc(p.name)} ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
   // tugs grouped
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
-    return `<div class="tcard big ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''} ${ELECTRIC.has(id)?'elec':''}">
+    return `<div class="tcard big ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
       <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>⚡ELEC</i>':''}${ty?`<small class="tty">${ty}</small>`:''}</span>
         <span class="thdr-r"><button class="gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''} title="Ground power">${t.gpu==='inop'?BOLT_X:BOLT}</button>
         <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button></span></div>
@@ -716,7 +692,7 @@ function rAssign(){
   ROOT.innerHTML=`
     <div class="card pad assign-top">
       <div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
-      <p class="hint" style="margin:2px 0 8px">Tap a name then a slot. Tap an assigned person to pick them up and move them — tap them again to put them back.</p>
+      <p class="hint" style="margin:2px 0 8px">Tap a name, then tap a tug or area slot. Tap a filled slot to clear it.</p>
       <div class="pool-groups">${poolHTML}</div>
     </div>
     <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
@@ -724,28 +700,22 @@ function rAssign(){
     <div class="card pad"><div class="seg-section">AREAS</div><div class="area-grid">${areaCards}</div></div>
     <div class="btnrow"><button class="btn navy" id="toBrief">Briefing &amp; focus items ›</button></div>
     ${back("reconcile","Tugs")}`;
-  $$('#staffRoot .abody').forEach(b=>b.onclick=()=>{ const emp=b.dataset.emp;
-    if(SEL===emp){ dropBackOrigin(); SEL=null; SELFROM=null; }    // tap selected again → put back / deselect
-    else { dropBackOrigin(); SEL=emp; SELFROM=null; }             // switch selection (return any in-hand first)
-    flipRender(); });
-  const place=(setter)=>{ if(!SEL)return; const b=poolFor(ST.shift).find(x=>x.emp===SEL); if(!b)return; setter(mkSlot(b)); SEL=null; SELFROM=null; flipRender(); };
+  $$('#staffRoot .abody').forEach(b=>b.onclick=()=>{ SEL=(SEL===b.dataset.emp?null:b.dataset.emp); render(); });
+  const place=(setter)=>{ if(!SEL)return; const b=poolFor(ST.shift).find(x=>x.emp===SEL); if(!b)return; setter({name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double}); SEL=null; render(); };
   $("#dispSel")?.addEventListener("change",e=>{ const v=e.target.value;
     if(v==="__custom"){ST.dispatch={name:custom?cur:"",emp:"",custom:true};}
     else{ const m=pool.find(b=>normName(b.name)===normName(v)); ST.dispatch=v?{name:v,emp:m?m.emp:"",custom:false}:{name:"",emp:"",custom:false}; }
     render(); });
   $("#dispCustom")?.addEventListener("input",e=>{ ST.dispatch={name:e.target.value,emp:"",custom:true}; });
   $$('#staffRoot .trow').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
-    if(t[role]){ // occupied → pick this person up (animate them off the tug) so you can move them
-      dropBackOrigin(); const picked=t[role]; t[role]=null; SEL=picked.emp; SELFROM={type:'tug',id,role}; flipRender(); return; }
-    if(!SEL){ flipRender(); return; }
-    place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); });
+    if(t[role]){t[role]=null;render();return;} place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); });
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
-  $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); flipRender(); });
-  $("#toBrief").onclick=()=>{ dropBackOrigin(); SEL=null; SELFROM=null; initBrief(); saveDraft(); ST.step="brief"; render(); };
+  $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
+  $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="brief"; render(); };
   saveDraft();
-  $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ dropBackOrigin(); SEL=null; SELFROM=null; ST.step=b.dataset.to; render(); });
+  $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
 /* ---- step: briefing / focus items ---- */
