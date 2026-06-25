@@ -778,6 +778,8 @@ function load(){
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[]; d.movements||=[]; d.locZones||={};
   d.hiddenTiles||=[]; d.subtypes||={};
+  // one-time: hide the Preview tiles by default (re-show them via Settings → Home screen tiles)
+  if(!d.previewSeeded){["preview","preview2"].forEach(k=>{if(!d.hiddenTiles.includes(k))d.hiddenTiles.push(k);});d.previewSeeded=true;}
   d.settings=Object.assign({
     trackInventory:true,trackEdits:true,trackQuickMove:true,trackDeletions:true,trackClears:true,
     moveCap:300, shiftAM:300,shiftPM:780,shiftNH:1260,
