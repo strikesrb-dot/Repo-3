@@ -25,9 +25,32 @@ const AREAS=[ // min staffing per shift; null = supervisor discretion
   {key:"Support",   min:null},
   {key:"C4",        min:null},
 ];
-const SUPERVISORS=["Sheldon","Paulia","Qua","Mark","Stephanie","Denroy","Earl","John"];
+const SUP_DEFAULT=["Sheldon","Paulia","Qua","Mark","Stephanie","Denroy","Earl","John","Juan"];
 const MANAGERS=["Steve"];
 const ASSTMGRS=["Jay","Tito"];
+/* roster store (base supervisors + co-signed temporary supervisors) */
+function loadTempSups(){try{return JSON.parse(localStorage.getItem("elt.staff.tempsups")||"[]")||[];}catch(_){return [];}}
+function saveTempSups(l){try{localStorage.setItem("elt.staff.tempsups",JSON.stringify(l));}catch(_){}}
+function supervisorList(){ const t=loadTempSups().map(x=>x.name); return [...SUP_DEFAULT,...t.filter(n=>!SUP_DEFAULT.includes(n))]; }
+const SUPERVISORS=supervisorList(); // compatibility (recomputed where it matters via supervisorList())
+function isTempSup(name){ return loadTempSups().some(x=>x.name===name); }
+function rosterAll(){ return [...supervisorList().map(n=>({name:n,role:"Supervisor",temp:isTempSup(n)})),
+  ...MANAGERS.map(n=>({name:n,role:"Manager",temp:false})), ...ASSTMGRS.map(n=>({name:n,role:"Assistant Manager",temp:false}))]; }
+
+/* per-person codes (stored hashed, never plaintext) */
+function loadCodes(){try{return JSON.parse(localStorage.getItem("elt.staff.codes")||"{}")||{};}catch(_){return {};}}
+function saveCodes(c){try{localStorage.setItem("elt.staff.codes",JSON.stringify(c));return true;}catch(_){return false;}}
+function hasCode(name){ return !!loadCodes()[name]; }
+function resetCode(name){ const c=loadCodes(); delete c[name]; saveCodes(c); }
+async function hashCode(salt,code){
+  try{ const data=new TextEncoder().encode(salt+"|"+code);
+    const buf=await crypto.subtle.digest("SHA-256",data);
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
+  catch(_){ let h=0; const s=salt+"|"+code; for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;} return "f"+h.toString(16); }
+}
+function randSalt(){ const a=new Uint8Array(8); (crypto.getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=i*7)); return [...a].map(b=>b.toString(16).padStart(2,"0")).join(""); }
+async function setCode(name,code){ const c=loadCodes(); const salt=randSalt(); c[name]={salt,hash:await hashCode(salt,code)}; return saveCodes(c); }
+async function checkCode(name,code){ const e=loadCodes()[name]; if(!e)return false; return (await hashCode(e.salt,code))===e.hash; }
 const EXCLUDE_DEFAULT=["Bonet, Christopher","Vizcaino, Angel","Dickey, Todd","Mendes","Stephens, Kevin"];
 const OUT_CODES=new Set(["VC","OUT","DTO","HOLT","DATV","DO","SICK","SICK ","CB","SKU","SKUS","Partial DTO","Shift Trade","HOLF","HOLM","JD","MD","DATC","DAT3","C4D","HODV"]);
 const WORKED_CODES=new Set(["DTW","HWP","HWFT"]);
@@ -293,7 +316,7 @@ function absenceTally(){
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
-  ({menu:rMenu,upload:rUpload,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts}[ST.step]||rMenu)();
+  ({auth:rAuth,menu:rMenu,upload:rUpload,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts}[ST.step]||rMenu)();
 }
 function card(inner){return `<div class="card pad">${inner}</div>`;}
 function staffModal(html){
@@ -334,11 +357,111 @@ function saveDraft(){
 }
 function deleteDraft(id){ saveDraftList(loadDrafts().filter(e=>e.id!==id)); }
 
+/* ---- step: auth (who's running this shift + code) ---- */
+let AUTH=null;                  // {name, role, temp} for this app session
+let authView="pick", authRole="Supervisor", authPick=null, authErr="", authTemp={name:"",signer:""};
+function authenticate(name,role,temp){
+  AUTH={name,role,temp:!!temp}; authErr=""; authView="pick"; authPick=null; authTemp={name:"",signer:""};
+  if(role==="Supervisor"){ if(!ST.supers||!ST.supers.length)ST.supers=[name]; else if(!ST.supers.includes(name))ST.supers=[name,...ST.supers]; }
+  else if(role==="Manager"){ ST.manager=name; }
+  else if(role==="Assistant Manager"){ if(!ST.asst.includes(name))ST.asst=[...ST.asst,name]; }
+  ST.step="menu"; render();
+}
+function rAuth(){
+  // code entry (create on first use, or enter)
+  if(authView==="code"){
+    const first=!hasCode(authPick);
+    ROOT.innerHTML=card(`
+      <h2 class="staff-h">${esc(authPick)}</h2>
+      <p class="hint" style="margin:0 0 12px">${first?"First time — create a code you'll enter each shift. Keep it private.":"Enter your code to continue."}</p>
+      <label class="fld-l">${first?"Create code":"Code"}</label>
+      <input id="codeIn" class="code-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />
+      ${first?'<label class="fld-l">Confirm code</label><input id="codeIn2" class="code-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />':''}
+      ${authErr?`<div class="code-err">${esc(authErr)}</div>`:''}
+      <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="codeGo">${first?"Set code & continue":"Continue"} ›</button></div>
+      <button class="btn ghost auth-back" style="margin-top:10px">‹ Back</button>`);
+    const go=async()=>{
+      const v=($("#codeIn").value||"").trim();
+      if(first){ const v2=($("#codeIn2").value||"").trim();
+        if(v.length<4){authErr="Use at least 4 digits.";return render();}
+        if(v!==v2){authErr="Codes don't match.";return render();}
+        await setCode(authPick,v); authenticate(authPick,authRole,isTempSup(authPick)); return; }
+      if(await checkCode(authPick,v)){ authenticate(authPick,authRole,isTempSup(authPick)); }
+      else { authErr="Incorrect code."; render(); }
+    };
+    $("#codeGo").onclick=go;
+    $("#codeIn").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!first)go(); });
+    $$('#staffRoot .auth-back').forEach(b=>b.onclick=()=>{authView="pick";authErr="";render();});
+    setTimeout(()=>$("#codeIn")?.focus(),60);
+    return;
+  }
+  // create temporary supervisor — name
+  if(authView==="tempname"){
+    ROOT.innerHTML=card(`
+      <h2 class="staff-h">Temporary supervisor</h2>
+      <p class="hint" style="margin:0 0 12px">Add a fill-in supervisor for tonight. Creation must be co-signed by an existing supervisor.</p>
+      <label class="fld-l">New supervisor name</label>
+      <input id="tmpName" class="code-in txt" autocomplete="off" placeholder="e.g. Andres" value="${esc(authTemp.name)}" />
+      ${authErr?`<div class="code-err">${esc(authErr)}</div>`:''}
+      <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="tmpNext">Continue to co-sign ›</button></div>
+      <button class="btn ghost auth-back" style="margin-top:10px">‹ Back</button>`);
+    $("#tmpNext").onclick=()=>{ const n=($("#tmpName").value||"").trim();
+      if(n.length<2){authErr="Enter a name.";return render();}
+      if(rosterAll().some(r=>r.name.toLowerCase()===n.toLowerCase())){authErr="That name already exists.";return render();}
+      authTemp={name:n,signer:""}; authErr=""; authView="tempsign"; render(); };
+    $$('#staffRoot .auth-back').forEach(b=>b.onclick=()=>{authView="pick";authErr="";render();});
+    return;
+  }
+  // create temporary supervisor — co-sign
+  if(authView==="tempsign"){
+    const signers=rosterAll().filter(r=>r.role!=="Assistant Manager"&&r.name!==authTemp.name);
+    ROOT.innerHTML=card(`
+      <h2 class="staff-h">Co-sign “${esc(authTemp.name)}”</h2>
+      <p class="hint" style="margin:0 0 12px">An existing supervisor or manager must approve by entering their own code.</p>
+      <label class="fld-l">Approving supervisor</label>
+      <select id="signSel" class="code-in txt">
+        <option value="">— select —</option>
+        ${signers.map(r=>`<option value="${esc(r.name)}" ${authTemp.signer===r.name?'selected':''}>${esc(r.name)}${r.temp?' (temp)':''}</option>`).join("")}
+      </select>
+      <label class="fld-l">Their code</label>
+      <input id="signCode" class="code-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />
+      ${authErr?`<div class="code-err">${esc(authErr)}</div>`:''}
+      <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="signGo">Create temporary supervisor ›</button></div>
+      <button class="btn ghost auth-back" style="margin-top:10px">‹ Back</button>`);
+    $("#signSel").onchange=e=>{authTemp.signer=e.target.value;};
+    $("#signGo").onclick=async()=>{
+      const signer=$("#signSel").value, code=($("#signCode").value||"").trim();
+      if(!signer){authErr="Pick an approving supervisor.";return render();}
+      if(!hasCode(signer)){authErr=signer+" hasn't set up a code yet — they must sign in once first.";return render();}
+      if(!(await checkCode(signer,code))){authErr="That supervisor's code is incorrect.";return render();}
+      const l=loadTempSups(); l.push({name:authTemp.name,by:signer,when:Date.now()}); saveTempSups(l);
+      authenticate(authTemp.name,"Supervisor",true);
+    };
+    $$('#staffRoot .auth-back').forEach(b=>b.onclick=()=>{authView="tempname";authErr="";render();});
+    return;
+  }
+  // pick role + name
+  const roles=["Supervisor","Manager","Assistant Manager"];
+  const seg=roles.map(r=>`<button class="seg ${authRole===r?'on':''}" data-role="${r}">${r==="Assistant Manager"?"Asst Mgr":r}</button>`).join("");
+  const names=rosterAll().filter(r=>r.role===authRole);
+  const chips=names.map(r=>`<button class="auth-name" data-name="${esc(r.name)}">${esc(r.name)}${r.temp?'<i>temp</i>':''}${hasCode(r.name)?'':'<u>set up</u>'}</button>`).join("");
+  ROOT.innerHTML=card(`
+    <h2 class="staff-h">Who's running this shift?</h2>
+    <p class="hint" style="margin:0 0 10px">Pick your name, then enter your code. ${AUTH?`<br>Signed in as <b>${esc(AUTH.name)}</b>.`:''}</p>
+    <div class="seg-wrap auth-seg">${seg}</div>
+    <div class="auth-names">${chips||'<p class="hint">No one here.</p>'}</div>
+    ${authRole==="Supervisor"?'<button class="btn ghost" id="addTemp" style="margin-top:12px">＋ Temporary supervisor (co-signed)</button>':''}`);
+  $$('#staffRoot .seg[data-role]').forEach(b=>b.onclick=()=>{authRole=b.dataset.role;authErr="";render();});
+  $$('#staffRoot .auth-name').forEach(b=>b.onclick=()=>{authPick=b.dataset.name;authErr="";authView="code";render();});
+  $("#addTemp")?.addEventListener("click",()=>{authTemp={name:"",signer:""};authErr="";authView="tempname";render();});
+}
+
 /* ---- step: menu (Create / Past / Draft) ---- */
 function rMenu(){
   const logs=loadLog().length, drafts=loadDrafts().length;
   ROOT.innerHTML=card(`
-    <h2 class="staff-h">Manpower / Staffing</h2>
+    <div class="pool-head"><h2 class="staff-h" style="margin:0">Manpower / Staffing</h2>
+      ${AUTH?`<button class="who-chip" id="mpSwitch">${esc(AUTH.name)}${AUTH.temp?' · temp':''} · switch</button>`:''}</div>
     <p class="hint" style="margin:0 0 12px">Build tonight's board, pick up a draft, or look back at a past shift.</p>
     <div class="mp-menu">
       <button class="mp-tile create" id="mpCreate">
@@ -351,6 +474,7 @@ function rMenu(){
   $("#mpCreate").onclick=()=>{ ST.files={mp:null,ot:null,co:null}; ST.parsed=null; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST.dispatch=null; ST.step="upload"; render(); };
   $("#mpDraft").onclick=()=>{ ST.step="drafts"; render(); };
   $("#mpPast").onclick=()=>{ ST.step="logs"; render(); };
+  $("#mpSwitch")?.addEventListener("click",()=>{ AUTH=null; authView="pick"; authPick=null; ST.step="auth"; render(); });
 }
 
 /* ---- step: drafts ---- */
@@ -425,7 +549,7 @@ function rSetup(){
     <div class="num-row"><button class="numb" data-d="-1">−</button><input id="numTugs" type="number" min="0" max="${TUGS.length}" value="${ST.numTugs}" /><button class="numb" data-d="1">+</button></div>
     <label class="fld-l">Availability checks</label>
     <div class="prow-wrap">${promptRows}</div>
-    <label class="fld-l">Supervisor(s) on shift</label><div class="chips">${chip(SUPERVISORS,ST.supers,'data-sup')}</div>
+    <label class="fld-l">Supervisor(s) on shift</label><div class="chips">${chip(supervisorList(),ST.supers,'data-sup')}</div>
     <label class="fld-l">Manager / Asst</label><div class="chips">${MANAGERS.map(n=>`<button class="chip pick ${ST.manager===n?'on':''}" data-mgr="${esc(n)}">${esc(n)}${ST.manager===n?' ✓':''}</button>`).join("")} ${chip(ASSTMGRS,ST.asst,'data-asst')}</div>
     <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="toPool">Review pool ›</button></div>
     ${back("upload","Files")}`);
@@ -886,7 +1010,7 @@ function logManpower(){
   let img="";try{const src=renderStaffCanvas();const w=1000,h=Math.round(src.height/src.width*w);
     const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);
     img=c.toDataURL("image/jpeg",0.85);}catch(_){}
-  const entry={id:date+"|"+shift,date,shift,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",img,snap:snapshot()};
+  const entry={id:date+"|"+shift,date,shift,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",by:AUTH?AUTH.name:"",img,snap:snapshot()};
   let l=loadLog().filter(e=>e.id!==entry.id);l.unshift(entry);l=l.slice(0,24);
   if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,snap:null}); if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,img:""}); l=l.slice(0,12); saveLogList(l); } }
   deleteDraft("D|"+date+"|"+shift);   // finalized — drop the draft
@@ -898,7 +1022,7 @@ function rLogs(){
   if(logSel){const e=list.find(x=>x.id===logSel);
     if(!e){logSel=null;return rLogs();}
     ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.shift)} manpower <span class="ro-badge">read-only</span></h2></div>
-      <div class="muted-row">${esc(e.date||'')} · ${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(e.dispatch||"OPEN")}</div>
+      <div class="muted-row">${esc(e.date||'')} · ${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(e.dispatch||"OPEN")}${e.by?` · by <b>${esc(e.by)}</b>`:''}</div>
       ${e.img?`<div class="sheet-scroll"><img class="log-img" src="${e.img}" alt="staffing sheet"/></div>`:'<p class="hint">Image not stored for this entry.</p>'}
       <div class="btnrow" style="margin-top:10px">${e.snap?'<button class="btn ghost" id="logImg">Save image</button><button class="btn ghost" id="logPdf">PDF / Print</button>':''}</div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button><button class="btn ghost" id="logDel">Delete</button></div>`);
@@ -915,7 +1039,7 @@ function rLogs(){
     <p class="hint" style="margin:0 0 8px">Read-only — tap a shift to view its sheet, image &amp; PDF.</p>
     ${list.length?dates.map(d=>`<div class="log-day"><div class="log-date">${esc(d)}</div>
       <div class="log-shifts">${["AM","PM","NH"].map(sh=>{const e=byDate[d].find(x=>x.shift===sh);
-        return e?`<button class="log-row shift-${sh}" data-id="${esc(e.id)}"><b>${sh}</b><span>${e.pool} pool · ${e.crews||0}/${e.running} tugs · ${esc(e.dispatch||"OPEN")}</span></button>`
+        return e?`<button class="log-row shift-${sh}" data-id="${esc(e.id)}"><b>${sh}</b><span>${e.pool} pool · ${e.crews||0}/${e.running} tugs${e.by?' · '+esc(e.by):''}</span></button>`
           :`<div class="log-row empty"><b>${sh}</b><span>not logged</span></div>`;}).join("")}</div>
     </div>`).join(""):'<p class="hint">Nothing logged yet. Generate a board and tap “Log this manpower”.</p>'}
     <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="menu">‹ Back</button></div>`);
@@ -971,6 +1095,13 @@ function renderBriefTab(){
 }
 
 /* expose entry points */
-window.STAFF={ open:()=>{ loadBids(); render(); } };
+window.STAFF={
+  open:()=>{ loadBids(); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else if(ST.step==="auth"){ ST.step="menu"; } render(); },
+  roster:()=>rosterAll(),
+  hasCode:n=>hasCode(n),
+  resetCode:n=>{ resetCode(n); },
+  removeTempSup:n=>{ saveTempSups(loadTempSups().filter(x=>x.name!==n)); if(AUTH&&AUTH.name===n)AUTH=null; },
+  who:()=>AUTH?AUTH.name:""
+};
 window.BRIEF={ open:()=>{ loadBids(); briefTabView="edit"; renderBriefTab(); } };
 })();

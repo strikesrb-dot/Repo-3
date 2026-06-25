@@ -220,6 +220,20 @@
   #staffRoot .area-grid{grid-template-columns:repeat(4,1fr)}
 }
 
+/* ===== supervisor auth gate ===== */
+.auth-seg{margin-bottom:12px}
+.auth-names{display:flex;flex-direction:column;gap:8px}
+@media (min-width:560px){.auth-names{display:grid;grid-template-columns:repeat(2,1fr)}}
+@media (min-width:820px){.auth-names{grid-template-columns:repeat(3,1fr)}}
+.auth-name{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:14px 15px;font-size:15px;font-weight:800;color:var(--ink);cursor:pointer;text-align:left}
+.auth-name:active{transform:scale(.99)}
+.auth-name i{font-style:normal;font-size:9px;font-weight:800;background:#eef2f5;color:#67727e;border-radius:5px;padding:1px 5px}
+.auth-name u{margin-left:auto;text-decoration:none;font-size:9px;font-weight:800;background:#fde9c8;color:#9a5a00;border-radius:5px;padding:2px 6px}
+.code-in{width:100%;font-size:22px;font-weight:800;letter-spacing:.4em;text-align:center;padding:14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;margin-bottom:4px}
+.code-in.txt{letter-spacing:normal;font-size:16px;font-weight:600;text-align:left}
+.code-err{color:var(--danger);font-size:13px;font-weight:700;margin-top:8px}
+.who-chip{margin-left:auto;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:11.5px;font-weight:800;color:var(--navy);cursor:pointer}
+
 /* ===== manpower menu (Create / Draft / Past) ===== */
 .mp-menu{display:flex;flex-direction:column;gap:10px}
 .mp-tile{display:flex;align-items:center;gap:13px;border:1.5px solid var(--line);border-radius:14px;padding:15px;background:#fff;cursor:pointer;text-align:left;width:100%;position:relative}
