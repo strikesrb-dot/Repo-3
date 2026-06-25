@@ -207,10 +207,13 @@
   details.acItem>summary::-webkit-details-marker{display:none}
   details.acItem[open]>summary{border-bottom:1px solid var(--line)}
   .ac-main{width:100%}
-  .ac-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-  .ac-reg{font-size:25px;font-weight:800;letter-spacing:.6px;color:var(--navy);line-height:1.05}
-  .ac-sub{font-size:13px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ac-hint{font-size:11px;color:var(--muted);margin-top:5px}
+  .ac-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .ac-left{min-width:0}
+  .ac-nose{font-size:18px;font-weight:800;color:var(--ink);line-height:1.1}
+  .ac-type{font-size:13px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ac-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:none;text-align:right}
+  .ac-reg{font-size:23px;font-weight:800;letter-spacing:.6px;color:var(--navy);line-height:1}
+  .ac-hint{font-size:11px;color:var(--muted);margin-top:6px}
   .ac-hint:empty{display:none}
   .fr-pill{display:inline-flex;align-items:center;gap:6px;flex:none;background:#eef4fb;color:var(--navy);border:1.5px solid #cbdcee;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap}
   .fr-pill:active{transform:scale(.95)}
@@ -640,11 +643,14 @@ function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" 
   const fr=reg?`<a class="fr-pill" href="https://www.flightradar24.com/data/aircraft/${esc(reg.toLowerCase())}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12a10 10 0 0 1 10-10"/><path d="M6 12a6 6 0 0 1 6-6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M14.5 9.5 21 3"/><path d="M21 3h-4M21 3v4"/></svg>Flight Tracking</a>`:"";
   return `<details class="item card acItem"><summary><div class="main ac-main">
     <div class="ac-top">
-      <div class="ac-id">
-        <div class="ac-reg">${esc(reg||"(no tail)")}</div>
-        <div class="ac-sub">✈ ${hasShip?"Nose "+esc(a.ship)+" · ":""}${esc(a.type||"Unknown type")}</div>
+      <div class="ac-left">
+        <div class="ac-nose">${hasShip?"✈ Nose "+esc(a.ship):"✈ "+esc(reg||"(no tail)")}</div>
+        <div class="ac-type">${esc(a.type||"Unknown type")}</div>
       </div>
-      ${fr}
+      <div class="ac-right">
+        ${hasShip&&reg?`<div class="ac-reg">${esc(reg)}</div>`:""}
+        ${fr}
+      </div>
     </div>
     <div class="ac-hint">${sp?"▾ tap for specs":(hasShip?"":"Regional · United Express")}</div>
   </div></summary>
