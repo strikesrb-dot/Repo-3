@@ -716,7 +716,7 @@ function rAssign(){
     <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
     <div class="card pad"><div class="seg-section">TUGS — ${running} running</div>${tugGroups}</div>
     <div class="card pad"><div class="seg-section">AREAS</div><div class="area-grid">${areaCards}</div></div>
-    <div class="btnrow"><button class="btn navy" id="toBrief">Briefing &amp; focus items ›</button></div>
+    <div class="btnrow"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>
     ${back("reconcile","Tugs")}`;
   $$('#staffRoot .abody').forEach(b=>b.onclick=()=>{ SEL=(SEL===b.dataset.emp?null:b.dataset.emp); render(); });
   const place=(setter)=>{ if(!SEL)return; const b=poolFor(ST.shift).find(x=>x.emp===SEL); if(!b)return; setter({name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double}); SEL=null; render(); };
@@ -733,7 +733,7 @@ function rAssign(){
   $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
-  $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="brief"; render(); };
+  $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="sheet"; render(); };  // briefing is edited in its own tab, not here
   saveDraft();
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
@@ -817,8 +817,8 @@ function rSheet(){
       <div class="btnrow"><button class="btn navy" id="shShare">Email / Share both ›</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn good" id="shLog">✓ Log this manpower</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shImg">Save image</button><button class="btn ghost" id="shPrint">Print / PDF</button></div>
-      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shTxt">Text</button><button class="btn ghost stp-back" data-to="brief">‹ Briefing</button></div>
-      <div class="btnrow" style="margin-top:8px"><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button><button class="btn ghost" id="shNew">New</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shTxt">Text</button><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shNew">New</button></div>
     </div>`;
   $$('#staffRoot .seg[data-sv]').forEach(s=>s.onclick=()=>{sheetView=s.dataset.sv;render();});
   $("#shPrint").onclick=()=>{ $("#printArea").innerHTML=`<div class="sb-print">${buildSheet()}</div><div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); };
