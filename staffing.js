@@ -202,6 +202,8 @@ function prevWorkLabel(emp){
   if(full) return prev==="NH" ? "Worked last night" : "Worked "+prev;
   return "Worked Partial ("+prev+")";
 }
+// compact form for assigned-crew badges ("Worked last night" → "last night")
+function prevWorkShort(emp){ const l=prevWorkLabel(emp); return l?l.replace(/^Worked\s+/i,""):""; }
 function excludeList(){ const d=Store.getJSON("elt.staff.exclude",null); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }
 
 /* build the body list (all shifts) from parsed inputs + prompt answers */
@@ -636,6 +638,7 @@ function rReconcile(){
 /* ---- step: assign ---- */
 let SEL=null; // selected pool entry key
 let poolCollapsed=new Set(); // collapsed staff hour-groups (by start time)
+let showUnusedTugs=false;    // hide not-in-service tugs on the board unless toggled
 function initAssign(){
   if(!ST.assign){ ST.assign={ tugs:{}, areas:{} }; AREAS.forEach(a=>ST.assign.areas[a.key]=[]); }
   if(!ST.dispatch){ const d=dispatchCandidates(ST.shift).find(x=>x.avail); ST.dispatch=d?{name:d.name,emp:d.emp,custom:false}:{name:"",emp:"",custom:false}; }
@@ -677,8 +680,8 @@ function rAssign(){
     return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(st)}"><span class="shg-ca">${col?'▸':'▾'}</span>${esc(st)}-${esc(endStr)}<span>${list.length}</span></div><div class="abody-wrap">${list.map(b=>chip(b,groupEnd)).join("")}</div></div>`;
   }).join(""):'<span class="hint">All assigned.</span>';
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
-    const pw=prevWorkLabel(p.emp);
-    return `<span class="slot-name">${esc(p.name)}${p._double?'<em class="sdbl">DBL</em>':''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
+    const pw=prevWorkShort(p.emp);
+    return `<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
@@ -709,9 +712,13 @@ function rAssign(){
   // unused (unset) tugs still show, extremely muted — tap to bring into service
   const mutedCard=id=>`<div class="tcard muted" data-add="${id}"><div class="thdr"><span class="thdr-l">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span><span class="muse">+ add</span></div><div class="muted-b">Not in service · tap to add</div></div>`;
   const tugGroups=TUG_GROUPS.map(g=>{
-    const cells=g.ids.map(id=>{const t=tugState(id);return (t.running||t.oos)?tugCard(id):mutedCard(id);});
+    const ids=showUnusedTugs?g.ids:g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
+    if(!ids.length)return "";
+    const cells=ids.map(id=>{const t=tugState(id);return (t.running||t.oos)?tugCard(id):mutedCard(id);});
     return `<div class="tug-gtitle">STUG ${g.label}${tugType(g.ids[0])?` · ${tugType(g.ids[0])}`:''}</div><div class="tug-grid">${cells.join("")}</div>`;
-  }).join("");
+  }).join("")||'<p class="hint" style="margin:4px 0">No tugs in service — show unused to add one.</p>';
+  const unusedN=TUGS.filter(id=>tugState(id).unset).length;
+  const tugToggle=unusedN?`<button class="btn ghost sm" id="toggleUnused" style="margin-top:10px;width:auto">${showUnusedTugs?'Hide unused tugs':'＋ Show '+unusedN+' unused tug'+(unusedN>1?'s':'')}</button>`:'';
   const running=TUGS.filter(id=>tugState(id).running).length;
   ROOT.innerHTML=`
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
@@ -723,7 +730,7 @@ function rAssign(){
       </div>
       <div class="asg2-board">
         <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
-        <div class="card pad"><div class="seg-section">TUGS — ${running} running</div>${tugGroups}</div>
+        <div class="card pad"><div class="seg-section">TUGS — ${running} running</div>${tugGroups}${tugToggle}</div>
         <div class="card pad"><div class="seg-section">AREAS</div><div class="area-grid">${areaCards}</div></div>
       </div>
     </div>
@@ -742,6 +749,7 @@ function rAssign(){
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
   $$('#staffRoot .tcard.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
+  $("#toggleUnused")?.addEventListener("click",()=>{ showUnusedTugs=!showUnusedTugs; render(); });
   $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
@@ -843,7 +851,8 @@ function rSheet(){
 }
 function buildSheet(){
   const a=ST.assign, dn=ST.dispatch&&ST.dispatch.name?esc(ST.dispatch.name):'<span class="sb-oos">OPEN</span>';
-  const crew=p=>p?`${esc(p.name)}${p._double?' <b class="sb-db">DBL</b>':''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>`:"";
+  const crew=p=>{ if(!p)return ""; const pw=prevWorkShort(p.emp);
+    return `${esc(p.name)} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
     return `<div class="sb-area"><div class="sb-area-h">${esc(k)}${min?` <span>${list.length}/${min}</span>`:''}</div>
       <div class="sb-area-b">${list.map(p=>`<div>${esc(p.name)}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
@@ -855,7 +864,7 @@ function buildSheet(){
     return ids.length?`<div class="sb-tgroup"><div class="sb-tg-h">STUG ${g.label}</div><div class="sb-tg-cells">${ids.map(tugCell).join("")}</div></div>`:"";};
   const absent=absentFor(ST.shift);
   const absBlock=absent.length?`<div class="sb-absent"><div class="sb-abs-h">NOT HERE THIS SHIFT — ${absent.length}</div>
-    <div class="sb-abs-grid">${absent.map(x=>`<span class="sb-abs"><b>${esc(x.name)}</b> <span>${esc(x.code)}</span></span>`).join("")}</div></div>`:"";
+    <div class="sb-abs-grid">${absent.map(x=>`<span class="sb-abs"><b>${esc(x.name)}</b><span class="sb-abs-c">${esc(x.code)}</span></span>`).join("")}</div></div>`:"";
   return `<div class="sb">
     <div class="sb-top"><div class="sb-title">EWR AMT STAFFING</div><div class="sb-shift">SHIFT <b>${ST.shift}</b></div></div>
     <div class="sb-band">
@@ -937,10 +946,12 @@ function renderStaffCanvas(){
       else{
         ctx.textAlign="left";
         ["DRIVER","OBSERVR"].forEach((role,k)=>{const yk=yy+42+k*26;
-          ctx.font=FA("800 9px");ctx.fillStyle="#90a0ad";ctx.fillText(role,x+7,yk);
+          ctx.font=FA("800 9px");ctx.fillStyle="#90a0ad";ctx.textAlign="left";ctx.fillText(role,x+7,yk);
           const p=cr[role];if(!p){ctx.fillStyle="#cdd5dc";ctx.font=FA("600 12px");ctx.fillText("—",x+62,yk);return;}
-          ctx.font=FA("700 13px");const nmw=ctx.measureText(p.name).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(p.name,tw-150,FA("700 13px")),x+62,yk);
-          ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+62+Math.min(nmw,tw-152)+7,yk); });
+          const pw=prevWorkShort(p.emp);
+          ctx.font=FA("700 13px");const nmw=ctx.measureText(p.name).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(p.name,tw-(pw?172:150),FA("700 13px")),x+62,yk);
+          ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+62+Math.min(nmw,tw-(pw?174:152))+7,yk);
+          if(pw){ctx.font=FA("800 8px");ctx.fillStyle="#7a3287";ctx.textAlign="right";ctx.fillText(pw,x+tw-6,yk);ctx.textAlign="left";} });
       }
     });
     gy+=groupHeights[gi];
@@ -951,8 +962,8 @@ function renderStaffCanvas(){
     ctx.fillStyle="#67727e";ctx.font=FA("800 11px");ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("NOT HERE THIS SHIFT — "+absent.length,M+8,ay+13);
     ctx.font=FA("600 12px");const cw=(W-2*M-16)/4;
     absent.forEach((x,i)=>{const col=i%4,row=Math.floor(i/4),px=M+8+col*cw,py=ay+28+row*18;
-      ctx.fillStyle="#1c2530";const nm=clip(x.name,cw-44,FA("600 12px"));ctx.fillText(nm,px,py);
-      ctx.fillStyle="#c0271e";ctx.font=FA("800 10px");ctx.fillText(x.code,px+ctx.measureText(nm).width+6,py);ctx.font=FA("600 12px"); });
+      ctx.fillStyle="#1c2530";ctx.font=FA("600 12px");ctx.textAlign="left";ctx.fillText(clip(x.name,cw-48,FA("600 12px")),px,py);
+      ctx.fillStyle="#c0271e";ctx.font=FA("800 10px");ctx.textAlign="right";ctx.fillText(x.code,px+cw-14,py);ctx.textAlign="left";ctx.font=FA("600 12px"); });
   }
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
   return c;

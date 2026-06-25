@@ -43,8 +43,8 @@
 /* assign board */
 .assign-top{position:sticky;top:8px;z-index:5}
 .abody-wrap{display:flex;flex-wrap:wrap;gap:7px;max-height:34vh;overflow:auto}
-.abody{display:inline-flex;flex-direction:column;align-items:flex-start;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 13px;cursor:pointer;line-height:1.25;min-width:130px}
-.abody{font-size:14px;font-weight:800}
+.abody{display:inline-flex;flex-direction:column;align-items:flex-start;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:7px 11px;cursor:pointer;line-height:1.2;min-width:118px}
+.abody{font-size:13px;font-weight:800}
 .abody span{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
 .abody.sel{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(11,61,99,.3)}
 .abody.sel span{color:rgba(255,255,255,.8)}
@@ -195,7 +195,8 @@
 .sb-absent{margin-top:8px;border:1px solid #e2e7eb;border-radius:7px;overflow:hidden}
 .sb-abs-h{background:#f1f3f5;color:#5a6772;font-size:11px;font-weight:800;padding:4px 8px}
 .sb-abs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 10px;padding:7px 8px}
-.sb-abs{font-size:11.5px;color:#1c2530}.sb-abs span{color:#c0271e;font-weight:800;font-size:10px}
+.sb-abs{font-size:11.5px;color:#1c2530;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sb-abs .sb-abs-c{color:#c0271e;font-weight:800;font-size:10px;flex:none}
 
 /* briefing sheet */
 .bf{background:#fff;border:1.5px solid #d7dce1;border-radius:10px;padding:16px;min-width:560px}
@@ -223,6 +224,7 @@
 .abody em{font-style:normal;font-size:8.5px;font-weight:900;letter-spacing:.04em;background:#0b3d63;color:#fff;border-radius:4px;padding:1px 4px;margin-left:5px;vertical-align:1px}
 .abody.sel em{background:#fff;color:var(--navy)}
 .sb-db{font-style:normal;font-size:8px;font-weight:900;background:#0b3d63;color:#fff;border-radius:3px;padding:0 3px}
+.sb-wln{font-style:normal;font-size:8px;font-weight:800;color:#7a3287;background:#f6e9f8;border-radius:3px;padding:0 4px}
 .thdr-r{display:flex;align-items:center;gap:4px}
 .thdr .gpubtn.ok{color:#fff}.thdr .gpubtn.inop{color:#fff;background:rgba(255,255,255,.3)}
 .gpubtn:disabled{opacity:.4}
