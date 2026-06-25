@@ -221,6 +221,11 @@
   .acItem.ac-future{opacity:.6;background:#fafbfc}
   .acItem.ac-future .ac-nose,.acItem.ac-future .ac-reg{color:var(--muted)}
   .ac-na{display:inline-flex;align-items:center;gap:5px;background:#f1f3f5;color:#7a8690;border:1.5px solid #e2e7eb;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;white-space:nowrap}
+  .ac-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+  .ac-foot .ac-hint{margin-top:0}
+  .ac-toggle{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+  .ac-toggle.mk{color:var(--good);border-color:#bfe3c8;background:#f1faf4}
+  .ac-toggle.rv{color:var(--muted)}
   .specs{padding:10px 14px}
   .specs>div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #eceff2;font-size:14px}
   .specs>div b{color:var(--muted);font-weight:600}
@@ -609,6 +614,9 @@ function groupByType(items){
 
 /* ---- fleet ---- */
 let FLEET=[],byShip=new Map();
+let fstat={}; try{fstat=JSON.parse(localStorage.getItem("elt.fleet.fstat")||"{}")||{};}catch(e){fstat={};}
+function effFuture(a){const k=(a.reg||"").toUpperCase();return (k in fstat)?!!fstat[k]:!!a.future;}
+function setFstat(reg,isFuture){fstat[(reg||"").toUpperCase()]=isFuture;localStorage.setItem("elt.fleet.fstat",JSON.stringify(fstat));}
 function indexFleet(){byShip=new Map();FLEET.forEach(a=>{if(a.ship)byShip.set(String(a.ship),a);});}
 function loadFleetCache(){try{const d=JSON.parse(localStorage.getItem(FLEET_KEY)||"null");if(d&&Array.isArray(d.aircraft)){FLEET=d.aircraft;indexFleet();return true;}}catch(e){}return false;}
 function saveFleetCache(){localStorage.setItem(FLEET_KEY,JSON.stringify({aircraft:FLEET}));}
@@ -642,9 +650,10 @@ const TYPE_SPECS={
 };
 function specHtml(s){const row=(l,v)=>v?`<div><b>${l}</b><span>${esc(v)}</span></div>`:"";
   return `<div class="specs">${row("First @ United",s.united)}${row("Seats (United)",s.seats)}${row("Length",s.len)}${row("Wingspan",s.span)}${row("Range",s.range)}${row("Cruise",s.speed)}${row("Engines",s.engines)}${row("MTOW",s.mtow)}${row("Type first flew",s.first)}${s.notes?`<p class="hint" style="margin-top:6px">${esc(s.notes)}</p>`:""}<p class="hint" style="margin-top:4px;font-size:11px">Type-level facts; United configs/specs are approximate.</p></div>`;}
-function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" (")[0]];const hasShip=!!a.ship;const reg=a.reg||"";const future=!!a.future;
+function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" (")[0]];const hasShip=!!a.ship;const reg=a.reg||"";const future=effFuture(a);const wasFuture=!!a.future;
   const fr=(reg&&!future)?`<a class="fr-pill" href="https://www.flightradar24.com/data/aircraft/${esc(reg.toLowerCase())}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12a10 10 0 0 1 10-10"/><path d="M6 12a6 6 0 0 1 6-6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M14.5 9.5 21 3"/><path d="M21 3h-4M21 3v4"/></svg>Flight Tracking</a>`:"";
   const na=future?`<span class="ac-na">Not available yet</span>`:"";
+  const tog=wasFuture?`<button class="ac-toggle ${future?'mk':'rv'}" data-reg="${esc(reg)}" data-cur="${future?1:0}" onclick="event.stopPropagation();acToggleFut(this)">${future?"✓ Mark in service":"↩ Mark future"}</button>`:"";
   return `<details class="item card acItem ${future?'ac-future':''}"><summary><div class="main ac-main">
     <div class="ac-top">
       <div class="ac-left">
@@ -656,7 +665,7 @@ function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" 
         ${na||fr}
       </div>
     </div>
-    <div class="ac-hint">${sp?"▾ tap for specs":(future?"Not in service yet":(hasShip?"":"Regional · United Express"))}</div>
+    <div class="ac-foot"><span class="ac-hint">${sp?"▾ tap for specs":(future?"Not in service yet":(hasShip?"":"Regional · United Express"))}</span>${tog}</div>
   </div></summary>
   ${sp?specHtml(sp):'<p class="hint" style="padding:8px 14px 4px">No spec sheet for this type yet.</p>'}
   </details>`;}
@@ -683,6 +692,8 @@ function renderAircraftLookup(){
        <p class="hint">It may be a regional/charter not in the United mainline list. Add it on a spot during inventory and it'll be remembered.</p></div>`;
 }
 $("#acSearch")&&$("#acSearch").addEventListener("input",renderAircraftLookup);
+function acToggleFut(btn){const live=btn.dataset.cur==="1";setFstat(btn.dataset.reg,live?false:true);
+  toast(live?"Marked in service":"Marked as future");renderAircraftLookup();}
 
 /* ---- tabs ---- */
 let curTab="hub";
