@@ -1152,7 +1152,7 @@ function renderBriefTab(){
 
 /* expose entry points */
 window.STAFF={
-  open:()=>{ loadBids(); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else if(ST.step==="auth"){ ST.step="menu"; } render(); },
+  open:()=>{ loadBids(); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
   roster:()=>rosterAll(),
   hasCode:n=>hasCode(n),
   resetCode:n=>{ resetCode(n); },
