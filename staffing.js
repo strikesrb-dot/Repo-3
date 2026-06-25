@@ -654,6 +654,7 @@ function assignedEmps(){
 }
 const BOLT='<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/></svg>';
 const BOLT_X='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" fill="currentColor" stroke="none"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+const POWER='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3.5v8"/><path d="M6.8 7a8 8 0 1 0 10.4 0"/></svg>';
 const ovh=m=>(m/60).toFixed(1).replace('.0','');
 function rAssign(){
   const pool=poolFor(ST.shift);
@@ -697,16 +698,16 @@ function rAssign(){
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
     const stCls=t.oos?'st-oos':(t.gpu==='inop'?'st-inop':'st-ready');  // follow GPU/OOS color logic
     return `<div class="tcard ${stCls} ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
-      <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>⚡ELEC</i>':''}${ty?`<small class="tty">${ty}</small>`:''}</span>
-        <span class="thdr-r"><button class="gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''} title="Ground power">${t.gpu==='inop'?BOLT_X:BOLT}</button>
-        <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button>
-        <button class="thide" data-hide="${id}" title="Remove from board">✕</button></span></div>
+      <div class="thdr"><span class="thdr-l">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span>
+        <span class="thdr-r">${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}
+        <button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button>
+        <button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button></span></div>
       ${t.oos?`<div class="oosbar"><span class="haz">✕</span> OUT OF SERVICE</div>`:
         `<div class="trow ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(crew.DRIVER)}</div>
          <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>`}
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
-  const mutedCard=id=>`<div class="tcard muted" data-add="${id}"><div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>⚡ELEC</i>':''}${tugType(id)?`<small class="tty">${tugType(id)}</small>`:''}</span><span class="muse">+ add</span></div><div class="muted-b">Not in service · tap to add</div></div>`;
+  const mutedCard=id=>`<div class="tcard muted" data-add="${id}"><div class="thdr"><span class="thdr-l">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span><span class="muse">+ add</span></div><div class="muted-b">Not in service · tap to add</div></div>`;
   const tugGroups=TUG_GROUPS.map(g=>{
     const cells=g.ids.map(id=>{const t=tugState(id);return (t.running||t.oos)?tugCard(id):mutedCard(id);});
     return `<div class="tug-gtitle">STUG ${g.label}${tugType(g.ids[0])?` · ${tugType(g.ids[0])}`:''}</div><div class="tug-grid">${cells.join("")}</div>`;
