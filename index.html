@@ -2131,7 +2131,10 @@ $("#importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)r
     Store.setJSON(KEY,d);data=load();
     save();refreshAll();renderTypes();renderLocs();fillAreaList();toast("Imported");
   }catch(err){alert("That file isn't a valid backup.");}$("#importFile").value="";};r.readAsText(f);});
-$("#clearBtn").addEventListener("click",()=>{if(!confirm("Delete ALL your data? This cannot be undone."))return;
+$("#clearBtn").addEventListener("click",()=>{
+  const p=prompt("Enter passcode to delete ALL data:");if(p===null)return;
+  if(p!==curPass()){toast("Wrong passcode");return;}
+  if(!confirm("Delete ALL your data? This cannot be undone."))return;
   if(!confirm("Really delete everything?"))return;
   Store.del(KEY);Store.setRaw(SEEN_KEY,"1");data=load();
   save();refreshAll();renderTypes();renderLocs();fillAreaList();toast("All data cleared");});
