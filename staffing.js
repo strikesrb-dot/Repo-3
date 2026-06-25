@@ -32,6 +32,10 @@ const EXCLUDE_DEFAULT=["Bonet, Christopher","Vizcaino, Angel","Dickey, Todd","Me
 const OUT_CODES=new Set(["VC","OUT","DTO","HOLT","DATV","DO","SICK","SICK ","CB","SKU","SKUS","Partial DTO","Shift Trade","HOLF","HOLM","JD","MD","DATC","DAT3","C4D","HODV"]);
 const WORKED_CODES=new Set(["DTW","HWP","HWFT"]);
 
+/* ---------- bid results (hours + days off per emp) ---------- */
+let BIDS=null;
+async function loadBids(){ if(BIDS)return BIDS; try{const r=await fetch("./bids.json",{cache:"force-cache"});const j=await r.json();BIDS=j.bids||{};}catch(_){BIDS={};} return BIDS; }
+
 /* ---------- pdf.js (vendored, lazy) ---------- */
 let pdfjs=null;
 async function loadPdfjs(){
@@ -348,16 +352,20 @@ function rPool(){
   const pool=poolFor(ST.shift);
   const disp=dispatchCandidates(ST.shift);
   const dispLine=disp.length?disp.map(d=>`${esc(d.name)}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
-  const rows=pool.map(b=>`<div class="prow"><div><b>${esc(b.name)}</b> <span class="hint">${esc(b.hours)}</span>
-      ${b.double?'<span class="tag db">Double</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">cover</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${!b.prim&&!b.double?`<span class="tag ov">+${(b.ov/60).toFixed(1).replace('.0','')}h</span>`:''}</div>
-      <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div>`).join("");
+  const rows=pool.map(b=>{const bid=BIDS&&BIDS[b.emp];
+    return `<div class="prow prow-tap" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(b.name)}</b> <span class="hint">${esc(b.hours)}</span>
+      ${b.double?'<span class="tag db">Double</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">cover</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${!b.prim&&!b.double?`<span class="tag ov">+${(b.ov/60).toFixed(1).replace('.0','')}h</span>`:''}
+      <div class="bid-line">${bid?`Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b>`:'<span class="hint">No bid on file</span>'}</div></div>
+      <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;}).join("");
   ROOT.innerHTML=card(`
     <div class="pool-head"><h2 class="staff-h" style="margin:0">${ST.shift} pool</h2><span class="cnt">${pool.length}</span></div>
     <div class="muted-row">Dispatcher candidate: ${dispLine}</div>
+    <p class="hint" style="margin:0 0 6px">Tap a name to see their bid hours &amp; days off.</p>
     <div class="prow-wrap">${rows||'<p class="hint">No one in this shift.</p>'}</div>
     <div class="btnrow" style="margin-top:12px"><button class="btn navy" id="toAssign">Assign the board ›</button></div>
     ${back("setup","Setup")}`);
-  $$('#staffRoot .xrem').forEach(b=>b.onclick=()=>{ const emp=b.dataset.emp,nm=b.dataset.name;
+  $$('#staffRoot .prow-tap').forEach(r=>r.addEventListener("click",e=>{ if(e.target.closest(".xrem"))return; r.classList.toggle("open"); }));
+  $$('#staffRoot .xrem').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const emp=b.dataset.emp,nm=b.dataset.name;
     ST.bodies=ST.bodies.filter(x=>!(x.emp===emp&&x.name===nm)); render(); });
   $("#toAssign").onclick=()=>{ initTug(); ST.step="reconcile"; render(); };
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
@@ -795,5 +803,5 @@ function rLogs(){
 }
 
 /* expose entry point */
-window.STAFF={ open:()=>{ render(); } };
+window.STAFF={ open:()=>{ loadBids(); render(); } };
 })();
