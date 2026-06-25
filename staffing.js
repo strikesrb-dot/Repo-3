@@ -694,7 +694,8 @@ function rAssign(){
     return `<div class="tcard ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
       <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>⚡ELEC</i>':''}${ty?`<small class="tty">${ty}</small>`:''}</span>
         <span class="thdr-r"><button class="gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''} title="Ground power">${t.gpu==='inop'?BOLT_X:BOLT}</button>
-        <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button></span></div>
+        <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button>
+        <button class="thide" data-hide="${id}" title="Remove from board">✕</button></span></div>
       ${t.oos?`<div class="oosbar"><span class="haz">✕</span> OUT OF SERVICE</div>`:
         `<div class="trow ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(crew.DRIVER)}</div>
          <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>`}
@@ -729,6 +730,7 @@ function rAssign(){
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
   $$('#staffRoot .tcard.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
+  $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
   $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="brief"; render(); };

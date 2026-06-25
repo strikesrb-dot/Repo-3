@@ -61,6 +61,8 @@
 .thdr{display:flex;align-items:center;justify-content:space-between;background:var(--navy);color:#fff;padding:6px 10px;font-size:13px;font-weight:800}
 .thdr i{font-style:normal;background:#f5a623;color:#3a2500;border-radius:4px;font-size:9px;padding:1px 4px;margin-left:4px;font-weight:800}
 .toos{border:none;border-radius:6px;font-size:10px;font-weight:800;padding:3px 8px;cursor:pointer;background:rgba(255,255,255,.2);color:#fff}
+.thide{border:none;border-radius:6px;font-size:11px;font-weight:800;padding:2px 6px;cursor:pointer;background:rgba(255,255,255,.16);color:#fff;line-height:1}
+.thide:active{transform:scale(.9)}
 .tcard.oos .toos{background:var(--danger)}
 .oosbar{padding:14px 10px;text-align:center;font-size:11px;font-weight:800;color:var(--danger);letter-spacing:.04em}
 .trow{display:flex;align-items:center;gap:8px;padding:9px 10px;border-top:1px solid #eef1f4;cursor:pointer;font-size:13px}

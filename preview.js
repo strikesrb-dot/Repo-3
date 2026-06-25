@@ -120,5 +120,52 @@ function render(){
   $$('#previewRoot .pv-seg[data-kind]').forEach(b=>b.onclick=()=>{kind=b.dataset.kind;v=1;render();});
   $$('#previewRoot .pv-vnum').forEach(b=>b.onclick=()=>{v=+b.dataset.v;render();});
 }
-window.PREVIEW={ open:()=>{ v=1; render(); } };
+/* =========================================================================
+   PREVIEW 2 — 5 concepts for the ASSIGN-BOARD tug card, colored by status
+   (green = ready + good GPU, yellow = GPU inop but ready, red = out of service)
+   ========================================================================= */
+let dev2="phone", v2=1;
+const CT=[
+  {id:1, type:"TBL-400",  st:"ready", dr:"Scott, J.",  ob:"Pete, M.",      h:"05:00-13:00"},
+  {id:17,type:"TBL-280",  st:"ready", dr:"Kull, Fred", ob:"Marmol, Pete",  h:"05:00-13:00"},
+  {id:20,type:"GOLDHOFER",elec:true, st:"inop",  dr:"Torres, Lenny", ob:"Walsh, Kenny", h:"05:00-13:00"},
+  {id:24,type:"GOLDHOFER",st:"oos"},
+  {id:10,type:"TBL-280",  st:"ready", dr:"Matthews, S.",ob:"Mbacke, M.",   h:"05:00-13:00"},
+  {id:21,type:"GOLDHOFER",st:"inop",  dr:"Williams, T.",ob:"—",            h:"05:00-13:00"},
+];
+const STLBL={ready:"Good GPU",inop:"GPU Inop · still ready",oos:"Out of Service"};
+function concept(n){
+  const t=CT;
+  // 1 — colored header bar
+  if(n===1) return `<div class="c-grid">${t.map(x=>`<div class="c1 ${x.st}"><div class="c1-h">STUG ${x.id}${x.elec?' ⚡':''}<u>${x.type}</u><b>${x.st==='ready'?'✓ Good GPU':x.st==='inop'?'GPU Inop':'OOS'}</b></div>
+    ${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr} <s>${x.h}</s></div><div class="c-r"><i>OBS</i>${x.ob} <s>${x.h}</s></div>`}</div>`).join("")}</div>`;
+  // 2 — left status stripe
+  if(n===2) return `<div class="c-grid">${t.map(x=>`<div class="c2 ${x.st}"><div class="c2-h">STUG ${x.id}${x.elec?' ⚡':''} <u>${x.type}</u><span class="c2-dot"></span></div>
+    ${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr}</div><div class="c-r"><i>OBS</i>${x.ob}</div><div class="c2-gpu">${STLBL[x.st]}</div>`}</div>`).join("")}</div>`;
+  // 3 — status number tile + crew
+  if(n===3) return `<div class="c-grid">${t.map(x=>`<div class="c3 ${x.st}"><div class="c3-tile"><b>${x.id}</b><small>${x.elec?'⚡ ':''}${x.type}</small></div>
+    <div class="c3-b">${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr}</div><div class="c-r"><i>OBS</i>${x.ob}</div><div class="c3-gpu">${STLBL[x.st]}</div>`}</div></div>`).join("")}</div>`;
+  // 4 — full soft tint
+  if(n===4) return `<div class="c-grid">${t.map(x=>`<div class="c4 ${x.st}"><div class="c4-h"><span class="c4-n">${x.id}</span><span class="c4-ty">${x.elec?'⚡ ':''}${x.type}</span><span class="c4-pill">${x.st==='ready'?'GPU ✓':x.st==='inop'?'GPU ✕':'OOS'}</span></div>
+    ${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr} <s>${x.h}</s></div><div class="c-r"><i>OBS</i>${x.ob} <s>${x.h}</s></div>`}</div>`).join("")}</div>`;
+  // 5 — top accent + gpu pill
+  return `<div class="c-grid">${t.map(x=>`<div class="c5 ${x.st}"><div class="c5-top"></div><div class="c5-h">STUG ${x.id}${x.elec?' ⚡':''}<u>${x.type}</u></div>
+    ${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr}</div><div class="c-r"><i>OBS</i>${x.ob}</div><div class="c5-pill ${x.st}">${STLBL[x.st]}</div>`}</div>`).join("")}</div>`;
+}
+function render2(){
+  const root=$("#preview2Root");if(!root)return;
+  if(v2>5)v2=1;
+  const devBtns=Object.entries(DEV).map(([k,d])=>`<button class="pv-seg ${dev2===k?"on":""}" data-dev="${k}">${d.l}</button>`).join("");
+  const vBtns=Array.from({length:5},(_,i)=>`<button class="pv-vnum ${v2===i+1?"on":""}" data-v="${i+1}">${i+1}</button>`).join("");
+  root.innerHTML=`<div class="card pad pv-ctrl">
+      <h2 class="staff-h" style="margin:0 0 8px">Tug-card concepts</h2>
+      <p class="pv-note" style="margin:0 0 6px">Assign-board tug cards colored by status — <b class="rk g">green</b> ready/good GPU, <b class="rk y">yellow</b> GPU inop, <b class="rk r">red</b> out of service. Pick one and I'll make it the real board.</p>
+      <div class="pv-row"><span class="pv-lbl">Device</span><div class="pv-segs">${devBtns}</div></div>
+      <div class="pv-row"><span class="pv-lbl">Concept</span><div class="pv-segs">${vBtns}</div></div>
+    </div>
+    <div class="pv-stage"><div class="pv-dev pv-${dev2}"><div class="pv-frame" style="width:${DEV[dev2].w}px"><div class="pv-screen pv-c2">${concept(v2)}</div></div><div class="pv-cap">${DEV[dev2].l} · ${DEV[dev2].w}px — concept ${v2}</div></div></div>`;
+  $$('#preview2Root .pv-seg[data-dev]').forEach(b=>b.onclick=()=>{dev2=b.dataset.dev;render2();});
+  $$('#preview2Root .pv-vnum').forEach(b=>b.onclick=()=>{v2=+b.dataset.v;render2();});
+}
+window.PREVIEW={ open:()=>{ v=1; render(); }, open2:()=>{ v2=1; render2(); } };
 })();
