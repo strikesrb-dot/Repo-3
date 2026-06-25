@@ -1145,9 +1145,12 @@ $("#locEditDone").addEventListener("click",closeLocEdit);
 $("#locEditOverlay").addEventListener("click",e=>{if(e.target.id==="locEditOverlay")closeLocEdit();});
 function renderInvSelect(r){
   invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map(); // start fresh — no auto-highlight
+  // locations with sub-locations or a nose number still use the tap-menu so detail is captured;
+  // simple locations use the fast multi-press cycle: 1× here · 2× out of service · 3× clear
+  const detailed=!!locZonesFor(inv.loc)||needsNose(inv.loc,null);
   r.innerHTML=`<div class="card pad">
     <div class="m-loc">${esc(inv.loc)}<span class="m-locn" id="invSelN"></span></div>
-    <p class="hint" style="margin:2px 0 0">Tap a unit, then confirm it's here or mark it out of service.</p>
+    <p class="hint" style="margin:2px 0 0">${detailed?"Tap a unit, then pick its spot and confirm it's here or out of service.":"Tap to count — <b>1×</b> here · <b>2×</b> out of service · <b>3×</b> clear."}</p>
     <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:11px 0 2px" />
     <div id="invList" style="margin-top:6px"></div></div>`;
   function paint(){
@@ -1167,7 +1170,14 @@ function renderInvSelect(r){
     $("#wizNext").textContent=`✓ Save ${n} ›`;
   }
   $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
-    openInvPop(li,li.dataset.id,paint);});
+    const id=li.dataset.id;
+    if(detailed){openInvPop(li,id,paint);return;}
+    // multi-press cycle: none → here → out of service → none
+    const here=invSel.has(id)&&!invOos.has(id);
+    if(!invSel.has(id)){invSel.add(id);invOos.delete(id);}
+    else if(here){invOos.add(id);}
+    else{invSel.delete(id);invOos.delete(id);invSpot.delete(id);invNose.delete(id);}
+    paint();});
   $("#invSearch").addEventListener("input",()=>{closeInvPop();paint();});
   setWizFoot({back:()=>{closeInvPop();inv.stage="loc";renderInventory();},next:commitInv,nextOn:true,nextLabel:"✓ Save ›"});
   paint();

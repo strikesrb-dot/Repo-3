@@ -97,28 +97,37 @@ function boardVariant(n){
       ${tugs.map(tugMini).join("")}${AREAS.map(areaMini).join("")}</div></div>`;
 }
 
-/* ---------------- shell ---------------- */
+/* ---------------- PREVIEW 1 — inventory multi-press pill designs ---------------- */
+// tap-cycle: untouched → 1× here → 2× out of service → 3× cleared
+const PILL_SAMP=[["GP-3081","here"],["GP-3082","idle"],["WS-12","oos"],["AC-5401","here"],
+  ["FT-220","idle"],["HT-101","oos"],["GP-8084","here"],["MS-3","idle"],["CT-9","idle"]];
+const PILL_NAMES=["","Fill swap","Status stripe","Corner badge","State chip","Bold ring"];
+function ipMeta(s){return s==='here'?{ic:'✓',lbl:'HERE'}:s==='oos'?{ic:'⊘',lbl:'OUT OF SERVICE'}:{ic:'',lbl:''};}
+function ipillHtml(t,s){const m=ipMeta(s);
+  return `<button class="ipill st-${s}" data-s="${s}"><span class="ip-ic">${m.ic}</span><span class="ip-tag">${esc(t)}</span><span class="ip-chip">${m.lbl}</span></button>`;}
+function pillConcept(n){
+  const legend=`<div class="ipv-legend"><span class="ipl idle">untouched</span><span class="ipl here">1× here</span><span class="ipl oos">2× out of service</span><span class="ipl gone">3× cleared</span></div>`;
+  const grid=`<div class="ipv-grid d${n}">${PILL_SAMP.map(([t,s])=>ipillHtml(t,s)).join("")}</div>`;
+  return `<div class="ipv-wrap"><div class="ipv-title">Design ${n} — ${PILL_NAMES[n]}</div>${legend}${grid}<p class="ipv-tap">Tap any pill to feel the 1‑2‑3 press cycle.</p></div>`;
+}
 function render(){
   const root=$("#previewRoot");if(!root)return;
-  const max=COUNT[kind]; if(v>max)v=1;
-  const kindBtns=`<div class="pv-kind">
-    <button class="pv-seg ${kind==='pool'?'on':''}" data-kind="pool">Review pool</button>
-    <button class="pv-seg ${kind==='board'?'on':''}" data-kind="board">Assign board</button></div>`;
+  if(v>5)v=1;
   const devBtns=Object.entries(DEV).map(([k,d])=>`<button class="pv-seg ${dev===k?"on":""}" data-dev="${k}">${d.l}</button>`).join("");
-  const vBtns=Array.from({length:max},(_,i)=>`<button class="pv-vnum ${v===i+1?"on":""}" data-v="${i+1}">${i+1}</button>`).join("");
-  const body=kind==="pool"?poolVariant(v):boardVariant(v);
-  const note=kind==="board"?'<p class="pv-note">Each layout keeps the staff list within reach so you’re not scrolling up to grab a name and back down to Ballpark.</p>':'<p class="pv-note">Dual-list and grid takes on the shift-pool review.</p>';
+  const vBtns=Array.from({length:5},(_,i)=>`<button class="pv-vnum ${v===i+1?"on":""}" data-v="${i+1}">${i+1}</button>`).join("");
   root.innerHTML=`<div class="card pad pv-ctrl">
-      <h2 class="staff-h" style="margin:0 0 8px">Screen designs</h2>
-      ${kindBtns}
+      <h2 class="staff-h" style="margin:0 0 8px">Inventory pill designs</h2>
+      <p class="pv-note" style="margin:0 0 4px">Multi‑press counting for Do Inventory: <b>1×</b> here · <b>2×</b> out of service · <b>3×</b> clear. Five looks for the tap‑cycle pill — pick one and I'll make it the real pill.</p>
       <div class="pv-row"><span class="pv-lbl">Device</span><div class="pv-segs">${devBtns}</div></div>
-      <div class="pv-row"><span class="pv-lbl">Variant</span><div class="pv-segs">${vBtns}</div></div>
-      ${note}
+      <div class="pv-row"><span class="pv-lbl">Design</span><div class="pv-segs">${vBtns}</div></div>
     </div>
-    <div class="pv-stage"><div class="pv-dev pv-${dev}"><div class="pv-frame" style="width:${DEV[dev].w}px"><div class="pv-screen pv-k-${kind}">${body}</div></div><div class="pv-cap">${DEV[dev].l} · ${DEV[dev].w}px — variant ${v}</div></div></div>`;
+    <div class="pv-stage"><div class="pv-dev pv-${dev}"><div class="pv-frame" style="width:${DEV[dev].w}px"><div class="pv-screen pv-pill">${pillConcept(v)}</div></div><div class="pv-cap">${DEV[dev].l} · ${DEV[dev].w}px — design ${v}</div></div></div>`;
   $$('#previewRoot .pv-seg[data-dev]').forEach(b=>b.onclick=()=>{dev=b.dataset.dev;render();});
-  $$('#previewRoot .pv-seg[data-kind]').forEach(b=>b.onclick=()=>{kind=b.dataset.kind;v=1;render();});
   $$('#previewRoot .pv-vnum').forEach(b=>b.onclick=()=>{v=+b.dataset.v;render();});
+  $$('#previewRoot .ipv-grid .ipill').forEach(b=>b.onclick=()=>{
+    const nx=b.dataset.s==='idle'?'here':b.dataset.s==='here'?'oos':'idle';
+    const m=ipMeta(nx);b.dataset.s=nx;b.className='ipill st-'+nx;
+    b.querySelector('.ip-ic').textContent=m.ic;b.querySelector('.ip-chip').textContent=m.lbl;});
 }
 /* =========================================================================
    PREVIEW 2 — 5 concepts for the ASSIGN-BOARD tug card, colored by status
