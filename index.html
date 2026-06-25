@@ -86,6 +86,12 @@
   .loc{display:inline-block;background:#eaf1f7;color:var(--navy);font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap}
   .loc.none{background:#f7eaea;color:var(--danger)}
   .item .acts{display:flex;gap:6px}
+  /* wide screens: lay the list out as a grid of cards instead of full-width strips */
+  @media(min-width:680px){#eqList{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}}
+  @media(min-width:1000px){#eqList{grid-template-columns:repeat(3,1fr)}}
+  @media(min-width:1300px){#eqList{grid-template-columns:repeat(4,1fr)}}
+  #eqList .item{align-items:flex-start}
+  #eqList .empty{grid-column:1/-1}
   .iconbtn{background:#f1f4f7;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:15px;color:var(--ink)}
   .iconbtn:active{background:#e4e9ee}
   .empty{text-align:center;color:var(--muted);padding:40px 16px}.empty .big{font-size:40px}
@@ -319,6 +325,16 @@
   .le-none{font-size:12px;color:var(--muted);font-style:italic}
   .le-addrow{display:flex;gap:6px}
   .le-addrow .le-subin{flex:1;padding:8px 10px;font-size:13px}
+  .cfgrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .cfgrow:last-child{border-bottom:none}
+  .cfg-l{font-size:14px;font-weight:600;color:var(--ink);display:flex;flex-direction:column}
+  .cfg-l small{font-weight:500;color:var(--muted);font-size:11.5px;margin-top:2px}
+  .cfg-chk,.tile-chk{width:21px;height:21px;flex:none;accent-color:var(--navy);cursor:pointer}
+  .cfg-shifts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 6px}
+  .cfg-time{display:flex;flex-direction:column;gap:3px}
+  .cfg-time label{font-size:11px;font-weight:700;color:var(--muted);margin:0}
+  .cfg-time input,.cfg-sname{padding:9px 8px;font-size:13px}
+  .cfg-sname{width:100%}
   .m-oos{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.04em;color:#c0271e}
   .sh-loc{margin:0 0 16px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .sh-loc-h{display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;padding:9px 14px;font-size:16px;font-weight:800;letter-spacing:.3px}
@@ -457,6 +473,15 @@
     <div class="toolbar">
       <input id="search" type="search" placeholder="Search tag, type, location…" autocomplete="off" />
       <select id="filterLoc"><option value="">All locations</option></select>
+      <select id="filterType"><option value="">All categories</option></select>
+      <select id="sortBy">
+        <option value="tag">Sort: Tag (A–Z)</option>
+        <option value="type">Sort: Category</option>
+        <option value="location">Sort: Location</option>
+        <option value="updated">Sort: Recently updated</option>
+        <option value="oos">Sort: Out of service first</option>
+        <option value="volt">Sort: Voltage</option>
+      </select>
     </div>
     <p class="count" id="eqCount"></p>
     <ul class="list" id="eqList"></ul>
@@ -501,6 +526,39 @@
       <div class="toolbar" style="margin-top:10px;margin-bottom:0">
         <input id="newEquipLoc" placeholder="Add a location / zone" />
         <button class="btn sm navy" id="addEquipLocBtn" style="width:auto">Add</button>
+      </div>
+    </div>
+
+    <h2 class="section">Equipment Movement tracking</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Choose what gets recorded in the Equipment Movement log and how the day splits into shifts.</p>
+      <div id="moveTrackToggles"></div>
+      <div id="moveShiftCfg" style="margin-top:14px"></div>
+      <label for="moveCapIn" style="margin-top:14px">Keep at most</label>
+      <div class="toolbar" style="margin-bottom:0"><input id="moveCapIn" inputmode="numeric" style="max-width:120px" /><span class="hint" style="align-self:center;margin:0">most recent moves</span></div>
+    </div>
+
+    <h2 class="section">Home screen tiles</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Turn off tiles you don't use to declutter the home screen.</p>
+      <div id="tileToggles"></div>
+    </div>
+
+    <h2 class="section">App passcode</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Unlocks Settings, the inventory location editor, and the movement-log wipe. 3–8 digits.</p>
+      <div class="toolbar" style="margin-bottom:0">
+        <input id="passNew" type="text" inputmode="numeric" placeholder="New passcode" autocomplete="off" maxlength="8" />
+        <button class="btn sm navy" id="passSave" style="width:auto">Update</button>
+      </div>
+    </div>
+
+    <h2 class="section">Header subtitle</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">The small line under the title on the home screen.</p>
+      <div class="toolbar" style="margin-bottom:0">
+        <input id="subEdit" type="text" placeholder="Ground support equipment · staging &amp; audits" autocomplete="off" />
+        <button class="btn sm navy" id="subSave" style="width:auto">Save</button>
       </div>
     </div>
 
@@ -670,6 +728,12 @@ function load(){
   let d=Store.getJSON(KEY,null);
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[]; d.movements||=[]; d.locZones||={};
+  d.hiddenTiles||=[];
+  d.settings=Object.assign({
+    trackInventory:true,trackEdits:true,trackQuickMove:true,trackDeletions:true,trackClears:true,
+    moveCap:300, shiftAM:300,shiftPM:780,shiftNH:1260,
+    shiftNameAM:"AM",shiftNamePM:"PM",shiftNameNH:"Nighthawk", passcode:"3599"
+  }, d.settings||{});
   d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();
     if(/^westpark staging area$/i.test(e.location||""))e.location="WestPark";
     if(/^amelia staging area$/i.test(e.location||"")){e.location="South";e.spot="Staging Area";}}); // caps + location migration
@@ -818,7 +882,7 @@ let curTab="hub";
 function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
   window.scrollTo(0,0);if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
 function goTab(t){showTab(t);
-  if(t==="equipment"){renderList();refreshAudit();updateLockBar();}
+  if(t==="equipment"){refreshLocationFilter();refreshTypeFilter();renderList();refreshAudit();updateLockBar();}
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[]};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();renderInventory();}
   if(t==="movement"){renderMovement();}
   if(t==="staffing"){window.STAFF&&window.STAFF.open();}
@@ -828,7 +892,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -836,7 +900,7 @@ let settingsUnlocked=false;
 const SETTINGS_PASS="3599";
 function openSettingsGate(){
   const g=$("#setGate");g.hidden=false;$("#setgErr").textContent="";const inp=$("#setgIn");inp.value="";setTimeout(()=>inp.focus(),60);
-  const submit=()=>{ if(inp.value===SETTINGS_PASS){ settingsUnlocked=true; g.hidden=true; goTab("settings"); } else { $("#setgErr").textContent="Wrong passcode."; inp.value=""; inp.focus(); } };
+  const submit=()=>{ if(inp.value===curPass()){ settingsUnlocked=true; g.hidden=true; goTab("settings"); } else { $("#setgErr").textContent="Wrong passcode."; inp.value=""; inp.focus(); } };
   $("#setgGo").onclick=submit;
   inp.onkeydown=e=>{ if(e.key==="Enter")submit(); };
   $("#setgCancel").onclick=()=>{ g.hidden=true; showTab("hub"); };
@@ -875,10 +939,17 @@ $("#floatBack").addEventListener("click",goBack);
 
 /* ---- equipment list ---- */
 function renderList(){
-  const q=$("#search").value.trim().toLowerCase(),lf=$("#filterLoc").value;
-  let items=data.equipment.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
+  const q=$("#search").value.trim().toLowerCase(),lf=$("#filterLoc").value,tf=$("#filterType").value,sb=$("#sortBy").value||"tag";
+  let items=data.equipment.slice();
   if(lf)items=items.filter(e=>(e.location||"")===lf);
-  if(q)items=items.filter(e=>[e.tag,e.type,e.location,e.notes].some(v=>(v||"").toLowerCase().includes(q)));
+  if(tf)items=items.filter(e=>(e.type||"")===tf);
+  if(q)items=items.filter(e=>[e.tag,e.type,e.location,e.notes,e.volt].some(v=>(v||"").toLowerCase().includes(q)));
+  const byTag=(a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"});
+  const txt=(a,b,k)=>(a[k]||"").localeCompare(b[k]||"",undefined,{numeric:true,sensitivity:"base"})||byTag(a,b);
+  const cmp={tag:byTag,type:(a,b)=>txt(a,b,"type"),location:(a,b)=>txt(a,b,"location"),volt:(a,b)=>txt(a,b,"volt"),
+    updated:(a,b)=>(b.updated||"").localeCompare(a.updated||"")||byTag(a,b),
+    oos:(a,b)=>(b.oos?1:0)-(a.oos?1:0)||byTag(a,b)};
+  items.sort(cmp[sb]||byTag);
   const list=$("#eqList");
   $("#eqCount").textContent=`${items.length} of ${data.equipment.length} item${data.equipment.length===1?"":"s"}`;
   if(!data.equipment.length){list.innerHTML=`<div class="empty"><div class="big"></div><p>No equipment yet.<br>Tap <b>➕ Add equipment</b>.</p></div>`;return;}
@@ -952,18 +1023,68 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
 })();
 $("#search").addEventListener("input",renderList);
 $("#filterLoc").addEventListener("change",renderList);
+$("#filterType").addEventListener("change",renderList);
+$("#sortBy").addEventListener("change",renderList);
 $("#moveSearch").addEventListener("input",renderMovement);
 $("#moveWipe").addEventListener("click",()=>{
   if(!data.movements.length){toast("Nothing to wipe");return;}
   const pass=prompt("Enter passcode to wipe the movement log:");
   if(pass===null)return;
-  if(pass!==SETTINGS_PASS){toast("Wrong passcode");return;}
+  if(pass!==curPass()){toast("Wrong passcode");return;}
   if(!confirm(`Permanently wipe all ${data.movements.length} logged movement(s)? This cannot be undone.`))return;
   data.movements=[];save();renderMovement();toast("Movement log wiped");});
+/* ---- configurable app settings ---- */
+const HUB_TILES=[["staffing","Manpower / Staffing"],["briefing","Briefing & Focus"],["preview","Preview"],["preview2","Preview 2"],
+  ["inventory","Do Inventory"],["secure","Aircraft Secure Log"],["aircraft","Aircraft Lookup"],["park","Stop Mark Lookup"],
+  ["equipment","Equipment List"],["movement","Equipment Movement"]];
+function renderMoveTrack(){
+  const S=data.settings;
+  const tog=(k,l,d)=>`<label class="cfgrow"><span class="cfg-l">${l}${d?`<small>${d}</small>`:""}</span><input type="checkbox" class="cfg-chk" data-k="${k}" ${S[k]?"checked":""}></label>`;
+  $("#moveTrackToggles").innerHTML=
+    tog("trackInventory","Inventory counts","When you count a location")+
+    tog("trackEdits","Manual edits","Changing a unit's location in its editor")+
+    tog("trackQuickMove","Quick moves","The ⇄ move button on the list")+
+    tog("trackDeletions","Location deletions","Units unassigned when a location is deleted")+
+    tog("trackClears","Clear to unassigned","Units dropped from a location during a recount");
+  const tm=(k,l)=>`<div class="cfg-time"><label>${l} starts</label><input type="time" class="cfg-shift" data-k="${k}" value="${minToTime(S[k])}"></div>`;
+  const nm=(k,ph)=>`<input type="text" class="cfg-sname" data-k="${k}" value="${esc(S[k]||"")}" placeholder="${ph}">`;
+  $("#moveShiftCfg").innerHTML=`<label style="margin-top:0">Shift split (by clock time)</label>
+    <div class="cfg-shifts">${tm("shiftAM","AM")}${tm("shiftPM","PM")}${tm("shiftNH","Nighthawk")}</div>
+    <label>Shift names</label>
+    <div class="cfg-shifts">${nm("shiftNameNH","Nighthawk")}${nm("shiftNameAM","AM")}${nm("shiftNamePM","PM")}</div>`;
+  $("#moveCapIn").value=S.moveCap;
+  $$("#moveTrackToggles .cfg-chk").forEach(c=>c.onchange=()=>{S[c.dataset.k]=c.checked;save();});
+  $$("#moveShiftCfg .cfg-shift").forEach(c=>c.onchange=()=>{S[c.dataset.k]=timeToMin(c.value);save();});
+  $$("#moveShiftCfg .cfg-sname").forEach(c=>c.onchange=()=>{S[c.dataset.k]=c.value.trim()||c.dataset.k;save();});
+  $("#moveCapIn").onchange=()=>{const v=Math.max(10,Math.min(2000,parseInt($("#moveCapIn").value)||300));S.moveCap=v;$("#moveCapIn").value=v;if(data.movements.length>v)data.movements=data.movements.slice(-v);save();};
+}
+function renderTileToggles(){
+  const hidden=new Set(data.hiddenTiles||[]);
+  $("#tileToggles").innerHTML=HUB_TILES.map(([k,l])=>`<label class="cfgrow"><span class="cfg-l">${l}</span><input type="checkbox" class="tile-chk" data-k="${k}" ${hidden.has(k)?"":"checked"}></label>`).join("");
+  $$("#tileToggles .tile-chk").forEach(c=>c.onchange=()=>{
+    const set=new Set(data.hiddenTiles||[]);
+    if(c.checked)set.delete(c.dataset.k);else set.add(c.dataset.k);
+    data.hiddenTiles=[...set];save();applyTileVisibility();});
+}
+function applyTileVisibility(){
+  const hidden=new Set(data.hiddenTiles||[]);
+  $$('#view-hub .hubtile[data-go]').forEach(b=>{if(b.dataset.go==='settings')return;b.style.display=hidden.has(b.dataset.go)?'none':'';});
+  $$('#view-hub .hubgrid').forEach(g=>{const vis=[...g.querySelectorAll('.hubtile')].some(b=>b.style.display!=='none');
+    g.style.display=vis?'':'none';const prev=g.previousElementSibling;if(prev&&prev.classList.contains('hubsec'))prev.style.display=vis?'':'none';});
+}
+$("#passSave").addEventListener("click",()=>{const v=$("#passNew").value.trim();
+  if(!/^\d{3,8}$/.test(v)){toast("Use 3–8 digits");return;}
+  data.settings.passcode=v;save();$("#passNew").value="";toast("Passcode updated");});
+$("#subSave").addEventListener("click",()=>{const v=$("#subEdit").value.trim();
+  data.settings.headerSub=v;save();updateHdr();toast("Subtitle saved");});
 function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
   // only locations you actually have equipment at
   const locs=[...new Set(data.equipment.map(e=>e.location).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
   sel.innerHTML=`<option value="">All locations</option>`+locs.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur;}
+function refreshTypeFilter(){const sel=$("#filterType");if(!sel)return;const cur=sel.value;
+  const types=[...new Set(data.equipment.map(e=>e.type).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+  sel.innerHTML=`<option value="">All categories</option>`+types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
   if([...sel.options].some(o=>o.value===cur))sel.value=cur;}
 
 /* ---- add/edit ---- */
@@ -989,22 +1110,35 @@ $("#cancelEq").addEventListener("click",closeEdit);
 $("#editOverlay").addEventListener("click",e=>{if(e.target.id==="editOverlay")closeEdit();});
 $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toUpperCase();if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
   const p={tag,type:$("#fType").value,location:$("#fLoc").value.trim(),volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
-  if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"";Object.assign(ex,p);if(from!==p.location)logMove(ex,from,p.location);toast("Updated");}
+  if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"";Object.assign(ex,p);if(from!==p.location)logMove(ex,from,p.location,"edit");toast("Updated");}
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
   data.equipment=data.equipment.filter(x=>x.id!==id);save();refreshAll();toast("Deleted");}
 function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;
   const from=e.location||"",loc=prompt(`New location for ${e.tag}:`,e.location||"");if(loc===null)return;
-  const to=loc.trim();e.location=to;e.updated=todayISO();if(from!==to)logMove(e,from,to);save();refreshAll();toast(to?`Moved to ${to}`:"Location cleared");}
-// record a location change for the Movement tab (newest kept, cap 300)
-function logMove(e,from,to){from=(from||"").trim();to=(to||"").trim();if(from===to)return;
+  const to=loc.trim();e.location=to;e.updated=todayISO();if(from!==to)logMove(e,from,to,"quickmove");save();refreshAll();toast(to?`Moved to ${to}`:"Location cleared");}
+// settings helpers
+function curPass(){return (data.settings&&data.settings.passcode)||SETTINGS_PASS;}
+function minToTime(m){m=((Math.round(m)||0)%1440+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
+function timeToMin(t){const p=(t||"").split(":");return (parseInt(p[0])||0)*60+(parseInt(p[1])||0);}
+// record a location change for the Movement tab — honors the tracking settings + retention cap
+function logMove(e,from,to,source){from=(from||"").trim();to=(to||"").trim();if(from===to)return;
+  const S=data.settings||{};source=source||"inventory";
+  if(source==="inventory"){if(!S.trackInventory)return;if(to===""&&!S.trackClears)return;}
+  else if(source==="edit"){if(!S.trackEdits)return;}
+  else if(source==="quickmove"){if(!S.trackQuickMove)return;}
+  else if(source==="delete"){if(!S.trackDeletions)return;}
   const d=new Date(),min=d.getHours()*60+d.getMinutes();
   data.movements.push({id:uid(),tag:e.tag||"",type:e.type||"",from,to,spot:e.spot||"",nose:e.nose||"",oos:!!e.oos,date:todayISO(),ts:Date.now(),min});
-  if(data.movements.length>300)data.movements=data.movements.slice(-300);}
-// shift a movement belongs to, by clock time: NH 2100-0500, AM 0500-1300, PM 1300-2100
+  const cap=Math.max(10,S.moveCap||300);
+  if(data.movements.length>cap)data.movements=data.movements.slice(-cap);}
+// shift a movement belongs to, by configurable clock-time boundaries
 function moveMin(m){if(m.min!=null)return m.min;const d=new Date(m.ts||0);return d.getHours()*60+d.getMinutes();}
-function moveShift(m){const t=moveMin(m);if(t>=1260||t<300)return "Nighthawk";if(t<780)return "AM";return "PM";}
-function moveShiftKey(s){return s==="Nighthawk"?"nh":s==="AM"?"am":"pm";}
+function moveShift(m){const S=data.settings||{},t=moveMin(m);
+  if(t>=(S.shiftNH??1260)||t<(S.shiftAM??300))return S.shiftNameNH||"Nighthawk";
+  if(t<(S.shiftPM??780))return S.shiftNameAM||"AM";
+  return S.shiftNamePM||"PM";}
+function moveShiftKey(s){const S=data.settings||{};return s===(S.shiftNameNH||"Nighthawk")?"nh":s===(S.shiftNameAM||"AM")?"am":"pm";}
 function renderMovement(){
   const q=($("#moveSearch")?.value||"").trim().toLowerCase();
   const list=$("#moveList");if(!list)return;
@@ -1117,7 +1251,7 @@ function renderInvMore(r){
 function openLocEdit(){
   const pass=prompt("Enter passcode to edit locations:");
   if(pass===null)return;
-  if(pass!==SETTINGS_PASS){toast("Wrong passcode");return;}
+  if(pass!==curPass()){toast("Wrong passcode");return;}
   // bake the FULL set of inventory locations (incl. any only referenced by equipment)
   // into the editable list so every tile you see can be renamed or deleted
   data.equipLocs=topLocs().slice(); data.locZones=data.locZones||{};
@@ -1143,7 +1277,7 @@ $("#locEditBody").addEventListener("click",e=>{const t=e.target.closest("button"
   const i=+t.dataset.li,L=data.equipLocs;
   if(t.classList.contains("le-del")){const name=L[i],cnt=data.equipment.filter(eq=>eq.location===name).length;
     if(cnt&&!confirm(`"${name}" has ${cnt} unit${cnt===1?"":"s"} here. Delete this location? Those units move to unassigned (logged in Movement).`))return;
-    data.equipment.forEach(eq=>{if(eq.location===name){const from=eq.location;eq.location="";eq.spot="";eq.nose="";eq.oos=false;eq.updated=todayISO();logMove(eq,from,"");}});
+    data.equipment.forEach(eq=>{if(eq.location===name){const from=eq.location;eq.location="";eq.spot="";eq.nose="";eq.oos=false;eq.updated=todayISO();logMove(eq,from,"","delete");}});
     L.splice(i,1);delete data.locZones[name];}
   else if(t.classList.contains("le-lname")){const old=L[i],v=(prompt("Rename location:",old)||"").trim();if(!v||v===old)return;
     if(L.some((x,j)=>j!==i&&x.toLowerCase()===v.toLowerCase())){toast("Already in the list");return;}
@@ -1263,8 +1397,8 @@ function openInvPop(pill,id,after){
 function commitInv(){
   const loc=inv.loc,n=invSel.size;
   data.equipment.forEach(e=>{
-    if(invSel.has(e.id)){const from=e.location||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();if(from!==loc)logMove(e,from,loc);}
-    else if(e.location===loc){const from=e.location;e.location="";e.oos=false;e.spot="";e.nose="";e.updated=todayISO();logMove(e,from,"");}});
+    if(invSel.has(e.id)){const from=e.location||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();if(from!==loc)logMove(e,from,loc,"inventory");}
+    else if(e.location===loc){const from=e.location;e.location="";e.oos=false;e.spot="";e.nose="";e.updated=todayISO();logMove(e,from,"","inventory");}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
   inv.lastLoc=loc;inv.lastN=n;inv.loc=null;inv.stage="more";renderInventory();
@@ -1843,12 +1977,14 @@ async function autoLoadMaster(){if(data.equipment.length||Store.getRaw(SEEN_KEY,
   if(m&&m.equipment.length){applyMaster(m);refreshAll();toast(`Loaded ${m.equipment.length} items from master list`);}}
 
 /* ---- refresh ---- */
-function refreshAll(){renderList();refreshLocationFilter();updateHdr();}
-function updateHdr(){const n=data.equipment.length,locs=new Set(data.equipment.map(e=>e.location).filter(Boolean)).size;
+function refreshAll(){renderList();refreshLocationFilter();refreshTypeFilter();updateHdr();}
+function updateHdr(){const cust=data.settings&&data.settings.headerSub;
+  if(cust){$("#hdrSub").textContent=cust;return;}
+  const n=data.equipment.length,locs=new Set(data.equipment.map(e=>e.location).filter(Boolean)).size;
   $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} across ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
 
 /* ---- init ---- */
-(async function(){save();if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();autoLoadMaster();})();
+(async function(){save();if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();applyTileVisibility();autoLoadMaster();})();
 if("serviceWorker" in navigator){
   const hadController=!!navigator.serviceWorker.controller;
   let refreshing=false;
