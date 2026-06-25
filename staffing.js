@@ -686,12 +686,13 @@ function rAssign(){
   const areaCards=AREAS.map(a=>{
     const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0,need=min&&list.length<min;
     return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
-      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip" data-area="${esc(a.key)}" data-i="${i}">${esc(p.name)} ✕</span>`).join("")}
+      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip" data-area="${esc(a.key)}" data-i="${i}">${esc(p.name)}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
   // tugs grouped
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
-    return `<div class="tcard ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
+    const stCls=t.oos?'st-oos':(t.gpu==='inop'?'st-inop':'st-ready');  // follow GPU/OOS color logic
+    return `<div class="tcard ${stCls} ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
       <div class="thdr"><span>STUG ${id}${ELECTRIC.has(id)?'<i>⚡ELEC</i>':''}${ty?`<small class="tty">${ty}</small>`:''}</span>
         <span class="thdr-r"><button class="gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" ${t.oos?'disabled':''} title="Ground power">${t.gpu==='inop'?BOLT_X:BOLT}</button>
         <button class="toos" data-oos="${id}">${t.oos?'OOS':'on'}</button>
@@ -708,15 +709,20 @@ function rAssign(){
   }).join("");
   const running=TUGS.filter(id=>tugState(id).running).length;
   ROOT.innerHTML=`
-    <div class="card pad assign-top">
-      <div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
-      <p class="hint" style="margin:2px 0 8px">Tap a name, then tap a tug or area slot. Tap a filled slot to clear it.</p>
-      <div class="pool-groups">${poolHTML}</div>
+    <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
+      <p class="hint" style="margin:2px 0 0">Tap a name, then tap a tug or area slot. Tap a filled slot to clear it.</p></div>
+    <div class="asg2">
+      <div class="asg2-pool card pad">
+        <div class="seg-section">STAFF · ${avail.length} left</div>
+        <div class="pool-groups">${poolHTML}</div>
+      </div>
+      <div class="asg2-board">
+        <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
+        <div class="card pad"><div class="seg-section">TUGS — ${running} running</div>${tugGroups}</div>
+        <div class="card pad"><div class="seg-section">AREAS</div><div class="area-grid">${areaCards}</div></div>
+      </div>
     </div>
-    <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
-    <div class="card pad"><div class="seg-section">TUGS — ${running} running</div>${tugGroups}</div>
-    <div class="card pad"><div class="seg-section">AREAS</div><div class="area-grid">${areaCards}</div></div>
-    <div class="btnrow"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>
+    <div class="btnrow" style="margin-top:10px"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>
     ${back("reconcile","Tugs")}`;
   $$('#staffRoot .abody').forEach(b=>b.onclick=()=>{ SEL=(SEL===b.dataset.emp?null:b.dataset.emp); render(); });
   const place=(setter)=>{ if(!SEL)return; const b=poolFor(ST.shift).find(x=>x.emp===SEL); if(!b)return; setter({name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double}); SEL=null; render(); };
