@@ -702,6 +702,7 @@
       <button class="btn navy" id="saveEq">Save</button>
       <button class="btn ghost" id="cancelEq" style="flex:0 0 110px">Cancel</button>
     </div>
+    <div class="btnrow" id="delEqRow" style="margin-top:8px;display:none"><button class="btn danger" id="deleteEq">Delete equipment</button></div>
   </div>
 </div>
 
@@ -995,7 +996,7 @@ function eqCardHTML(e){
     <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.subtype?`<span class="subt">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="volt">⚡ ${esc(e.volt)}</span>`:""}</div>
     ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
     <div class="acts"><button class="iconbtn act-move" title="Move">⇄</button>
-    <button class="iconbtn act-edit" title="Edit">✎</button><button class="iconbtn act-del" title="Delete">✕</button></div></li>`;
+    <button class="iconbtn act-edit" title="Edit (passcode)">✎</button></div></li>`;
 }
 function renderList(){
   const q=$("#search").value.trim().toLowerCase(),lf=$("#filterLoc").value,tf=$("#filterType").value,sb=$("#sortBy").value||"tag";
@@ -1035,11 +1036,15 @@ function renderList(){
   }).join("");
 }
 $$("#grpSeg .seg").forEach(b=>b.addEventListener("click",()=>{eqGroup=b.dataset.g;eqInitCollapse=true;renderList();}));
+let editUnlocked=false; // session unlock for editing equipment
+function requireEditPass(cb){if(editUnlocked){cb();return;}
+  const p=prompt("Enter passcode to edit equipment:");if(p===null)return;
+  if(p!==curPass()){toast("Wrong passcode");return;}editUnlocked=true;cb();}
 $("#eqList").addEventListener("click",e=>{
   const h=e.target.closest(".eqg-h");if(h){const k=h.dataset.grp;eqCollapsed.has(k)?eqCollapsed.delete(k):eqCollapsed.add(k);renderList();return;}
   const li=e.target.closest(".item");if(!li)return;const id=li.dataset.id;
-  const act=e.target.classList.contains("act-del")?"del":e.target.classList.contains("act-move")?"move":"edit";
-  requireUnlock(()=>{if(act==="del")delEquip(id);else if(act==="move")quickMove(id);else openEdit(id);});});
+  if(e.target.closest(".act-move")){requireUnlock(()=>quickMove(id));return;}
+  if(e.target.closest(".act-edit")){requireEditPass(()=>openEdit(id));return;}});
 /* ---- pattern lock ---- */
 let unlocked=false;
 function isLocked(){return !!data.lockPattern && !unlocked;}
@@ -1210,6 +1215,7 @@ function openEdit(id){editingId=id;
   fillTypeSelect($("#fType"),e?.type||data.types[0]||"");
   fillLocSelect(e?.location||"");
   $("#editTitle").textContent=e?"Edit equipment":"Add equipment";
+  $("#delEqRow").style.display=e?"":"none";
   $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";$("#fVolt").value=e?.volt||"";
   fillSubtypeSelect(e?.type||data.types[0]||"",e?.subtype||"");
   $("#editOverlay").classList.add("open");if(!e)setTimeout(()=>$("#fTag").focus(),120);}
@@ -1223,6 +1229,9 @@ $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toU
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
   data.equipment=data.equipment.filter(x=>x.id!==id);save();refreshAll();toast("Deleted");}
+$("#deleteEq").addEventListener("click",()=>{const id=editingId;if(!id)return;
+  const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}? This can't be undone.`))return;
+  data.equipment=data.equipment.filter(x=>x.id!==id);save();closeEdit();refreshAll();toast("Deleted");});
 function locOptions(cur){const opts=[...new Set([...equipLocs(),...data.equipment.map(e=>e.location).filter(Boolean)])]
     .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
   if(cur&&!opts.includes(cur))opts.unshift(cur);
