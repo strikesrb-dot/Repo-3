@@ -97,9 +97,12 @@
 .pv-ipad .bd5-grid,.pv-desktop .bd5-grid{grid-template-columns:repeat(4,1fr)}
 
 /* ===== Preview 2 — status-colored tug-card concepts ===== */
-.pv-c2 .c-grid{display:grid;grid-template-columns:1fr;gap:8px}
-.pv-ipad .c-grid{grid-template-columns:repeat(2,1fr)}
-.pv-desktop .c-grid{grid-template-columns:repeat(3,1fr)}
+.pv-c2 .c-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pv-ipad .c-grid{grid-template-columns:repeat(3,1fr)}
+.pv-desktop .c-grid{grid-template-columns:repeat(4,1fr)}
+.c-r .c-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cdbl{font-style:normal;font-size:7.5px;font-weight:900;background:#0b3d63;color:#fff;border-radius:3px;padding:0 3px;margin-left:3px}
+.c-r s{text-align:right}.c-r s .cwln{display:block;text-decoration:none;color:#7a3287;font-weight:800;font-size:8px}
 .pv-c2 .ready{--ac:#1e7d46;--bg:#e7f5ec}
 .pv-c2 .inop{--ac:#a8740c;--bg:#fdf2dd}
 .pv-c2 .oos{--ac:#c0271e;--bg:#fbeceb}

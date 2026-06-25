@@ -673,7 +673,9 @@ function rAssign(){
     const groupEnd=toMin(endStr);
     return `<div class="shgrp"><div class="shgrp-h">${esc(st)}-${esc(endStr)}<span>${list.length}</span></div><div class="abody-wrap">${list.map(b=>chip(b,groupEnd)).join("")}</div></div>`;
   }).join(""):'<span class="hint">All assigned.</span>';
-  const slotName=p=>p?`<span class="slot-name">${esc(p.name)}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${p._double?' · Double':''}</span>`:`<span class="slot-empty">tap to fill</span>`;
+  const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
+    const pw=prevWorkLabel(p.emp);
+    return `<span class="slot-name">${esc(p.name)}${p._double?'<em class="sdbl">DBL</em>':''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];

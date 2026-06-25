@@ -126,31 +126,28 @@ function render(){
    ========================================================================= */
 let dev2="phone", v2=1;
 const CT=[
-  {id:1, type:"TBL-400",  st:"ready", dr:"Scott, J.",  ob:"Pete, M.",      h:"05:00-13:00"},
-  {id:17,type:"TBL-280",  st:"ready", dr:"Kull, Fred", ob:"Marmol, Pete",  h:"05:00-13:00"},
-  {id:20,type:"GOLDHOFER",elec:true, st:"inop",  dr:"Torres, Lenny", ob:"Walsh, Kenny", h:"05:00-13:00"},
+  {id:1, type:"TBL-400",  st:"ready", crew:[["DRV","Scott, J.","05:00-13:00",0,0],["OBS","Pete, M.","05:00-13:00",0,0]]},
+  {id:17,type:"TBL-280",  st:"ready", crew:[["DRV","Matthews, S.","05:00-13:00",1,0],["OBS","Mbacke, M.","05:00-13:00",0,1]]},
+  {id:20,type:"GOLDHOFER",elec:true, st:"inop", crew:[["DRV","Torres, L.","05:00-13:00",0,0],["OBS","Walsh, K.","05:00-13:00",1,0]]},
   {id:24,type:"GOLDHOFER",st:"oos"},
-  {id:10,type:"TBL-280",  st:"ready", dr:"Matthews, S.",ob:"Mbacke, M.",   h:"05:00-13:00"},
-  {id:21,type:"GOLDHOFER",st:"inop",  dr:"Williams, T.",ob:"—",            h:"05:00-13:00"},
+  {id:10,type:"TBL-280",  st:"ready", crew:[["DRV","Kull, Fred","04:00-12:00",0,1],["OBS","Marmol, P.","05:00-13:00",0,0]]},
+  {id:21,type:"GOLDHOFER",st:"inop", crew:[["DRV","Williams, T.","05:00-13:00",0,0],["OBS","—","",0,0]]},
 ];
 const STLBL={ready:"Good GPU",inop:"GPU Inop · still ready",oos:"Out of Service"};
+const cr=(role,name,h,dbl,wln)=>`<div class="c-r"><i>${role}</i><span class="c-nm">${esc(name)}${dbl?'<em class="cdbl">DBL</em>':''}</span><s>${esc(h||'')}${wln?'<u class="cwln">last night</u>':''}</s></div>`;
+const crews=x=>x.crew.map(c=>cr(c[0],c[1],c[2],c[3],c[4])).join("");
 function concept(n){
-  const t=CT;
+  const t=CT, body=x=>x.st==='oos'?'<div class="c-oos">Out of Service</div>':crews(x);
   // 1 — colored header bar
-  if(n===1) return `<div class="c-grid">${t.map(x=>`<div class="c1 ${x.st}"><div class="c1-h">STUG ${x.id}${x.elec?' ⚡':''}<u>${x.type}</u><b>${x.st==='ready'?'✓ Good GPU':x.st==='inop'?'GPU Inop':'OOS'}</b></div>
-    ${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr} <s>${x.h}</s></div><div class="c-r"><i>OBS</i>${x.ob} <s>${x.h}</s></div>`}</div>`).join("")}</div>`;
+  if(n===1) return `<div class="c-grid">${t.map(x=>`<div class="c1 ${x.st}"><div class="c1-h">STUG ${x.id}${x.elec?' ⚡':''}<u>${x.type}</u><b>${x.st==='ready'?'✓ Good GPU':x.st==='inop'?'GPU Inop':'OOS'}</b></div>${body(x)}</div>`).join("")}</div>`;
   // 2 — left status stripe
-  if(n===2) return `<div class="c-grid">${t.map(x=>`<div class="c2 ${x.st}"><div class="c2-h">STUG ${x.id}${x.elec?' ⚡':''} <u>${x.type}</u><span class="c2-dot"></span></div>
-    ${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr}</div><div class="c-r"><i>OBS</i>${x.ob}</div><div class="c2-gpu">${STLBL[x.st]}</div>`}</div>`).join("")}</div>`;
+  if(n===2) return `<div class="c-grid">${t.map(x=>`<div class="c2 ${x.st}"><div class="c2-h">STUG ${x.id}${x.elec?' ⚡':''} <u>${x.type}</u><span class="c2-dot"></span></div>${x.st==='oos'?'<div class="c-oos">Out of Service</div>':crews(x)+`<div class="c2-gpu">${STLBL[x.st]}</div>`}</div>`).join("")}</div>`;
   // 3 — status number tile + crew
-  if(n===3) return `<div class="c-grid">${t.map(x=>`<div class="c3 ${x.st}"><div class="c3-tile"><b>${x.id}</b><small>${x.elec?'⚡ ':''}${x.type}</small></div>
-    <div class="c3-b">${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr}</div><div class="c-r"><i>OBS</i>${x.ob}</div><div class="c3-gpu">${STLBL[x.st]}</div>`}</div></div>`).join("")}</div>`;
+  if(n===3) return `<div class="c-grid">${t.map(x=>`<div class="c3 ${x.st}"><div class="c3-tile"><b>${x.id}</b><small>${x.elec?'⚡ ':''}${x.type}</small></div><div class="c3-b">${x.st==='oos'?'<div class="c-oos">Out of Service</div>':crews(x)+`<div class="c3-gpu">${STLBL[x.st]}</div>`}</div></div>`).join("")}</div>`;
   // 4 — full soft tint
-  if(n===4) return `<div class="c-grid">${t.map(x=>`<div class="c4 ${x.st}"><div class="c4-h"><span class="c4-n">${x.id}</span><span class="c4-ty">${x.elec?'⚡ ':''}${x.type}</span><span class="c4-pill">${x.st==='ready'?'GPU ✓':x.st==='inop'?'GPU ✕':'OOS'}</span></div>
-    ${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr} <s>${x.h}</s></div><div class="c-r"><i>OBS</i>${x.ob} <s>${x.h}</s></div>`}</div>`).join("")}</div>`;
+  if(n===4) return `<div class="c-grid">${t.map(x=>`<div class="c4 ${x.st}"><div class="c4-h"><span class="c4-n">${x.id}</span><span class="c4-ty">${x.elec?'⚡ ':''}${x.type}</span><span class="c4-pill">${x.st==='ready'?'GPU ✓':x.st==='inop'?'GPU ✕':'OOS'}</span></div>${body(x)}</div>`).join("")}</div>`;
   // 5 — top accent + gpu pill
-  return `<div class="c-grid">${t.map(x=>`<div class="c5 ${x.st}"><div class="c5-top"></div><div class="c5-h">STUG ${x.id}${x.elec?' ⚡':''}<u>${x.type}</u></div>
-    ${x.st==='oos'?'<div class="c-oos">Out of Service</div>':`<div class="c-r"><i>DRV</i>${x.dr}</div><div class="c-r"><i>OBS</i>${x.ob}</div><div class="c5-pill ${x.st}">${STLBL[x.st]}</div>`}</div>`).join("")}</div>`;
+  return `<div class="c-grid">${t.map(x=>`<div class="c5 ${x.st}"><div class="c5-top"></div><div class="c5-h">STUG ${x.id}${x.elec?' ⚡':''}<u>${x.type}</u></div>${x.st==='oos'?'<div class="c-oos">Out of Service</div>':crews(x)+`<div class="c5-pill ${x.st}">${STLBL[x.st]}</div>`}</div>`).join("")}</div>`;
 }
 function render2(){
   const root=$("#preview2Root");if(!root)return;
