@@ -206,6 +206,15 @@
   details.acItem>summary{list-style:none;padding:12px 14px;cursor:pointer;display:flex}
   details.acItem>summary::-webkit-details-marker{display:none}
   details.acItem[open]>summary{border-bottom:1px solid var(--line)}
+  .ac-main{width:100%}
+  .ac-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .ac-reg{font-size:25px;font-weight:800;letter-spacing:.6px;color:var(--navy);line-height:1.05}
+  .ac-sub{font-size:13px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ac-hint{font-size:11px;color:var(--muted);margin-top:5px}
+  .ac-hint:empty{display:none}
+  .fr-pill{display:inline-flex;align-items:center;gap:6px;flex:none;background:#eef4fb;color:var(--navy);border:1.5px solid #cbdcee;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap}
+  .fr-pill:active{transform:scale(.95)}
+  .fr-pill svg{width:15px;height:15px}
   .specs{padding:10px 14px}
   .specs>div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #eceff2;font-size:14px}
   .specs>div b{color:var(--muted);font-weight:600}
@@ -627,13 +636,20 @@ const TYPE_SPECS={
 };
 function specHtml(s){const row=(l,v)=>v?`<div><b>${l}</b><span>${esc(v)}</span></div>`:"";
   return `<div class="specs">${row("First @ United",s.united)}${row("Seats (United)",s.seats)}${row("Length",s.len)}${row("Wingspan",s.span)}${row("Range",s.range)}${row("Cruise",s.speed)}${row("Engines",s.engines)}${row("MTOW",s.mtow)}${row("Type first flew",s.first)}${s.notes?`<p class="hint" style="margin-top:6px">${esc(s.notes)}</p>`:""}<p class="hint" style="margin-top:4px;font-size:11px">Type-level facts; United configs/specs are approximate.</p></div>`;}
-function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" (")[0]];const hasShip=!!a.ship;
-  return `<details class="item card acItem"><summary>
-  <div class="main"><div class="tag">✈ ${hasShip?"Nose "+esc(a.ship):esc(a.reg||"(no tail)")}</div>
-  <div class="meta">${esc(a.type||"Unknown type")}</div>
-  <div style="margin-top:6px">${hasShip?`<span class="loc">${esc(a.reg||"(no tail)")}</span>`:`<span class="loc">Regional · United Express</span>`}${sp?` <span class="hint" style="font-size:11px">▾ tap for specs</span>`:""}</div></div></summary>
+function acCard(a){const sp=TYPE_SPECS[a.type]||TYPE_SPECS[(a.type||"").split(" (")[0]];const hasShip=!!a.ship;const reg=a.reg||"";
+  const fr=reg?`<a class="fr-pill" href="https://www.flightradar24.com/data/aircraft/${esc(reg.toLowerCase())}" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12a10 10 0 0 1 10-10"/><path d="M6 12a6 6 0 0 1 6-6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M14.5 9.5 21 3"/><path d="M21 3h-4M21 3v4"/></svg>Flight Tracking</a>`:"";
+  return `<details class="item card acItem"><summary><div class="main ac-main">
+    <div class="ac-top">
+      <div class="ac-id">
+        <div class="ac-reg">${esc(reg||"(no tail)")}</div>
+        <div class="ac-sub">✈ ${hasShip?"Nose "+esc(a.ship)+" · ":""}${esc(a.type||"Unknown type")}</div>
+      </div>
+      ${fr}
+    </div>
+    <div class="ac-hint">${sp?"▾ tap for specs":(hasShip?"":"Regional · United Express")}</div>
+  </div></summary>
   ${sp?specHtml(sp):'<p class="hint" style="padding:8px 14px 4px">No spec sheet for this type yet.</p>'}
-  ${a.reg?`<div style="padding:4px 14px 14px"><a class="btn ghost fr24" href="https://www.flightradar24.com/data/aircraft/${esc(a.reg.toLowerCase())}" target="_blank" rel="noopener">Track ${esc(a.reg)} on FlightRadar24 <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></div>`:""}</details>`;}
+  </details>`;}
 function renderAircraftLookup(){
   const el=$("#acFleetN");if(el)el.textContent=`${FLEET.length.toLocaleString()} United aircraft loaded · works offline`;
   const q=($("#acSearch").value||"").trim().toUpperCase();
