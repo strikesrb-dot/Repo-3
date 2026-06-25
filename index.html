@@ -1183,9 +1183,11 @@ function showImagePreview(blob,filename){
   const url=URL.createObjectURL(blob);
   const back=document.createElement('div');back.className='imgprev-back';
   const canShare=navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:'image/png'})]});
+  const fn=String(filename||"");
+  const title=/Staffing/i.test(fn)?"Staffing sheet":/Briefing/i.test(fn)?"Daily Briefing":/equipment/i.test(fn)?"Equipment list":"Image";
   back.innerHTML=`<div class="imgprev">
-    <div class="imgprev-bar"><span>Inventory image</span><button class="imgprev-x" aria-label="Close">✕</button></div>
-    <div class="imgprev-scroll"><img src="${url}" alt="Inventory sheet" /></div>
+    <div class="imgprev-bar"><span>${esc(title)}</span><button class="imgprev-x" aria-label="Close">✕</button></div>
+    <div class="imgprev-scroll"><img src="${url}" alt="${esc(title)}" /></div>
     <div class="imgprev-acts">
       ${canShare?`<button class="btn navy" data-a="share">Share / Save</button>`:`<a class="btn navy" href="${url}" download="${esc(filename)}">Save image</a>`}
       <button class="btn ghost" data-a="done">Done</button>
