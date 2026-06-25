@@ -308,8 +308,11 @@
   .mv-shift.pm{color:#8a4b00;background:#fdeccf}
   .invloc-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .le-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:9px;background:#fff}
-  .le-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .le-lname{font-weight:800;color:var(--ink)}
+  .le-head{display:flex;align-items:center;gap:8px}
+  .le-lname{font-weight:800;color:var(--ink);border:none;background:none;font:inherit;cursor:pointer;padding:0;text-align:left;border-bottom:1px dashed var(--line)}
+  .le-lname:active{opacity:.6}
+  .le-cnt{font-size:11px;font-weight:700;color:var(--muted);background:#eef2f5;border-radius:999px;padding:2px 8px}
+  .le-del{margin-left:auto}
   .le-subs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
   .le-sub{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--navy);background:#eef2f5;border-radius:999px;padding:4px 6px 4px 11px}
   .le-sub .le-subdel{border:none;background:rgba(0,0,0,.06);color:#666;border-radius:50%;width:18px;height:18px;line-height:1;font-size:11px;cursor:pointer;padding:0}
@@ -1107,7 +1110,10 @@ function openLocEdit(){
   const pass=prompt("Enter passcode to edit locations:");
   if(pass===null)return;
   if(pass!==SETTINGS_PASS){toast("Wrong passcode");return;}
-  data.equipLocs=equipLocs().slice(); data.locZones=data.locZones||{};
+  // bake the FULL set of inventory locations (incl. any only referenced by equipment)
+  // into the editable list so every tile you see can be renamed or deleted
+  data.equipLocs=topLocs().slice(); data.locZones=data.locZones||{};
+  save();
   renderLocEdit(); $("#locEditOverlay").classList.add("open");
 }
 function closeLocEdit(){$("#locEditOverlay").classList.remove("open");renderInventory();refreshAll();}
@@ -1115,10 +1121,11 @@ function renderLocEdit(){
   const L=data.equipLocs;
   $("#locEditBody").innerHTML=L.map((l,i)=>{
     const subs=(data.locZones[l]||[]);
+    const cnt=data.equipment.filter(eq=>eq.location===l).length;
     const subHtml=subs.map((s,j)=>`<span class="le-sub">${esc(s)}<button class="le-subdel" data-li="${i}" data-sj="${j}" title="Remove">✕</button></span>`).join("")
       ||`<span class="le-none">No sub-locations</span>`;
     return `<div class="le-row">
-      <div class="le-head"><span class="le-lname">${esc(l)}</span><button class="iconbtn le-del" data-li="${i}" title="Delete location">✕</button></div>
+      <div class="le-head"><button class="le-lname" data-li="${i}" title="Tap to rename">${esc(l)}</button>${cnt?`<span class="le-cnt">${cnt} unit${cnt===1?"":"s"}</span>`:""}<button class="iconbtn le-del" data-li="${i}" title="Delete location">✕</button></div>
       <div class="le-subs">${subHtml}</div>
       <div class="le-addrow"><input class="le-subin" data-li="${i}" placeholder="Add sub-location" autocomplete="off" /><button class="btn sm ghost le-subadd" data-li="${i}" style="width:auto">＋</button></div>
     </div>`;
@@ -1126,9 +1133,14 @@ function renderLocEdit(){
 }
 $("#locEditBody").addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
   const i=+t.dataset.li,L=data.equipLocs;
-  if(t.classList.contains("le-del")){const name=L[i],inUse=data.equipment.some(eq=>eq.location===name);
-    if(inUse&&!confirm(`"${name}" has equipment assigned. Delete it from the list anyway? (equipment keeps its label)`))return;
+  if(t.classList.contains("le-del")){const name=L[i],cnt=data.equipment.filter(eq=>eq.location===name).length;
+    if(cnt&&!confirm(`"${name}" has ${cnt} unit${cnt===1?"":"s"} here. Delete this location? Those units move to unassigned (logged in Movement).`))return;
+    data.equipment.forEach(eq=>{if(eq.location===name){const from=eq.location;eq.location="";eq.spot="";eq.nose="";eq.oos=false;eq.updated=todayISO();logMove(eq,from,"");}});
     L.splice(i,1);delete data.locZones[name];}
+  else if(t.classList.contains("le-lname")){const old=L[i],v=(prompt("Rename location:",old)||"").trim();if(!v||v===old)return;
+    if(L.some((x,j)=>j!==i&&x.toLowerCase()===v.toLowerCase())){toast("Already in the list");return;}
+    L[i]=v;data.equipment.forEach(eq=>{if(eq.location===old){eq.location=v;eq.updated=todayISO();}});
+    if(data.locZones[old]){data.locZones[v]=data.locZones[old];delete data.locZones[old];}}
   else if(t.classList.contains("le-subadd")){const inp=$(`.le-subin[data-li="${i}"]`);const v=(inp?.value||"").trim();if(!v)return;
     const name=L[i];data.locZones[name]=data.locZones[name]||[];
     if(data.locZones[name].some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already listed");return;}
