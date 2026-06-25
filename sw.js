@@ -1,7 +1,7 @@
 /* ELT service worker — network-first with offline cache fallback */
-const CACHE = 'elt-v4';
+const CACHE = 'elt-v5';
 const CORE = ['./', './index.html', './manifest.webmanifest', './aircraft.json', './equipment.json',
-              './staffing.js', './staffing.css', './bids.json', './vendor/pdf.min.mjs', './vendor/pdf.worker.min.mjs',
+              './staffing.js', './staffing.css', './preview.js', './preview.css', './bids.json', './vendor/pdf.min.mjs', './vendor/pdf.worker.min.mjs',
               './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
