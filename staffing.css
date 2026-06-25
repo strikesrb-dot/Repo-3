@@ -138,6 +138,13 @@
 /* early-leave time shown in red (assign pool grouping) */
 .abody .early{color:#c0271e;text-decoration:none;font-weight:800}
 
+/* assign-board move animations (FLIP transforms applied inline by JS) */
+.abody[data-flip],.slot-name[data-flip],.slot-chip[data-flip]{position:relative;will-change:transform}
+.abody.justsel{animation:abPulse .5s ease-out}
+@keyframes abPulse{0%{box-shadow:0 0 0 0 rgba(11,61,99,.55)}100%{box-shadow:0 0 0 14px rgba(11,61,99,0)}}
+.abody.sel{position:relative;z-index:3}            /* in-hand card rides above the rest while it flies */
+.slot-name[data-flip]{display:inline-block}
+
 /* bigger, more readable assigned tug cards */
 .tcard.big .thdr{font-size:15px;padding:9px 12px}
 .tcard.big .thdr .tty{font-size:11px}
