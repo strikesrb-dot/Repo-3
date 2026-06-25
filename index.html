@@ -82,6 +82,7 @@
   .item .tag{font-weight:700;font-size:16px;letter-spacing:.2px}
   .item .meta{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .item .meta .volt{font-size:11px;font-weight:700;color:var(--good);background:var(--good-bg);border-radius:5px;padding:1px 6px;margin-left:7px}
+  .item .meta .subt{font-size:11px;font-weight:700;color:var(--navy);background:#eaf1f7;border-radius:5px;padding:1px 6px;margin-left:7px}
   .item .notes{font-size:13px;color:var(--muted);margin-top:2px}
   .loc{display:inline-block;background:#eaf1f7;color:var(--navy);font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap}
   .loc.none{background:#f7eaea;color:var(--danger)}
@@ -297,6 +298,7 @@
   .m-tag{font-weight:700;color:#1c2530}
   .m-det{font-size:12px;font-weight:600;color:#8a939c}
   .m-volt{font-size:11px;font-weight:700;color:#15622f;background:rgba(30,125,70,.12);border-radius:5px;padding:1px 6px}
+  .m-sub{font-size:11px;font-weight:700;color:var(--navy);background:#eaf1f7;border-radius:5px;padding:1px 6px}
   .mv-date{font-size:12px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin:14px 2px 6px}
   .mv-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
   .mv-row{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow)}
@@ -477,6 +479,7 @@
       <select id="sortBy">
         <option value="tag">Sort: Tag (A–Z)</option>
         <option value="type">Sort: Category</option>
+        <option value="subtype">Sort: Subtype</option>
         <option value="location">Sort: Location</option>
         <option value="updated">Sort: Recently updated</option>
         <option value="oos">Sort: Out of service first</option>
@@ -658,6 +661,8 @@
     <input id="fTag" placeholder="e.g. GP-3081" autocomplete="off" autocapitalize="characters" />
     <label for="fType">Type / category</label>
     <select id="fType"></select>
+    <label for="fSub">Subtype (optional)</label>
+    <input id="fSub" placeholder="e.g. Diesel, 400 Hz, Wide-body" autocomplete="off" />
     <label for="fLoc">Location</label>
     <select id="fLoc"></select>
     <label for="fVolt">Voltage (optional)</label>
@@ -943,10 +948,10 @@ function renderList(){
   let items=data.equipment.slice();
   if(lf)items=items.filter(e=>(e.location||"")===lf);
   if(tf)items=items.filter(e=>(e.type||"")===tf);
-  if(q)items=items.filter(e=>[e.tag,e.type,e.location,e.notes,e.volt].some(v=>(v||"").toLowerCase().includes(q)));
+  if(q)items=items.filter(e=>[e.tag,e.type,e.subtype,e.location,e.notes,e.volt].some(v=>(v||"").toLowerCase().includes(q)));
   const byTag=(a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"});
   const txt=(a,b,k)=>(a[k]||"").localeCompare(b[k]||"",undefined,{numeric:true,sensitivity:"base"})||byTag(a,b);
-  const cmp={tag:byTag,type:(a,b)=>txt(a,b,"type"),location:(a,b)=>txt(a,b,"location"),volt:(a,b)=>txt(a,b,"volt"),
+  const cmp={tag:byTag,type:(a,b)=>txt(a,b,"type"),subtype:(a,b)=>txt(a,b,"subtype"),location:(a,b)=>txt(a,b,"location"),volt:(a,b)=>txt(a,b,"volt"),
     updated:(a,b)=>(b.updated||"").localeCompare(a.updated||"")||byTag(a,b),
     oos:(a,b)=>(b.oos?1:0)-(a.oos?1:0)||byTag(a,b)};
   items.sort(cmp[sb]||byTag);
@@ -957,7 +962,7 @@ function renderList(){
   list.innerHTML=items.map(e=>{
     const loc=e.location?`<span class="loc"> ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
     return `<li class="item card" data-id="${e.id}"><div class="main">
-      <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.volt?`<span class="volt">⚡ ${esc(e.volt)}</span>`:""}</div>
+      <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.subtype?`<span class="subt">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="volt">⚡ ${esc(e.volt)}</span>`:""}</div>
       ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
       <div class="acts"><button class="iconbtn act-move" title="Move">⇄</button>
       <button class="iconbtn act-edit" title="Edit">✎</button><button class="iconbtn act-del" title="Delete">✕</button></div></li>`;
@@ -1103,13 +1108,13 @@ function openEdit(id){editingId=id;
   fillTypeSelect($("#fType"),e?.type||data.types[0]||"");
   fillLocSelect(e?.location||"");
   $("#editTitle").textContent=e?"Edit equipment":"Add equipment";
-  $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";$("#fVolt").value=e?.volt||"";
+  $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";$("#fVolt").value=e?.volt||"";$("#fSub").value=e?.subtype||"";
   $("#editOverlay").classList.add("open");if(!e)setTimeout(()=>$("#fTag").focus(),120);}
 function closeEdit(){$("#editOverlay").classList.remove("open");editingId=null;}
 $("#cancelEq").addEventListener("click",closeEdit);
 $("#editOverlay").addEventListener("click",e=>{if(e.target.id==="editOverlay")closeEdit();});
 $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toUpperCase();if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
-  const p={tag,type:$("#fType").value,location:$("#fLoc").value.trim(),volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
+  const p={tag,type:$("#fType").value,subtype:$("#fSub").value.trim(),location:$("#fLoc").value.trim(),volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
   if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"";Object.assign(ex,p);if(from!==p.location)logMove(ex,from,p.location,"edit");toast("Updated");}
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
@@ -1414,7 +1419,7 @@ function buildInvSheet(locs,mode){mode=mode||invSheetMode;
     const cats=groupByType(items).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"",undefined,{numeric:true,sensitivity:"base"}));
     const body=cats.map(g=>{
       const rows=sortTags(g.items).map(e=>{const d=invDetail(e.spot,e.nose);
-        return `<div class="m-row">${ck?'<span class="m-ck"></span>':""}<span class="m-tag">${esc(e.tag)}</span>${e.volt?`<span class="m-volt">${esc(e.volt)}</span>`:""}${d?`<span class="m-det">${esc(d)}</span>`:""}${e.oos?'<span class="m-oos">OUT OF SERVICE</span>':""}</div>`;}).join("");
+        return `<div class="m-row">${ck?'<span class="m-ck"></span>':""}<span class="m-tag">${esc(e.tag)}</span>${e.subtype?`<span class="m-sub">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="m-volt">${esc(e.volt)}</span>`:""}${d?`<span class="m-det">${esc(d)}</span>`:""}${e.oos?'<span class="m-oos">OUT OF SERVICE</span>':""}</div>`;}).join("");
       return `<div class="m-cat">${esc(g.type)}</div>${rows}`;
     }).join("");
     return `<div class="m-loc">${esc(loc)}<span class="m-locn">${items.length} unit${items.length===1?"":"s"}</span></div>${body}`;
@@ -1450,7 +1455,7 @@ function downloadInvText(locs){
     fmtDate(todayISO())+"  ·  "+locs.length+" location(s)  ·  "+tot+" item(s)"+(oosN?"  ·  "+oosN+" out of service":""),""];
   locs.forEach(loc=>{lines.push(loc.toUpperCase()+" ("+data.equipment.filter(e=>e.location===loc).length+")");
     groupByType(data.equipment.filter(e=>e.location===loc)).forEach(g=>{lines.push("  "+g.type+":");
-      sortTags(g.items).forEach(e=>{const d=invDetail(e.spot,e.nose);lines.push("    "+pre+e.tag+(e.volt?"  ("+e.volt+")":"")+(d?"  ["+d+"]":"")+(e.oos?"  ** OUT OF SERVICE **":""));});});
+      sortTags(g.items).forEach(e=>{const d=invDetail(e.spot,e.nose);lines.push("    "+pre+e.tag+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(d?"  ["+d+"]":"")+(e.oos?"  ** OUT OF SERVICE **":""));});});
     lines.push("");});
   const blob=new Blob([lines.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-inventory-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
