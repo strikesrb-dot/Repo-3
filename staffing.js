@@ -29,8 +29,8 @@ const SUP_DEFAULT=["Sheldon","Paulia","Qua","Mark","Stephanie","Denroy","Earl","
 const MANAGERS=["Steve"];
 const ASSTMGRS=["Jay","Tito"];
 /* roster store (base supervisors + co-signed temporary supervisors) */
-function loadTempSups(){try{return JSON.parse(localStorage.getItem("elt.staff.tempsups")||"[]")||[];}catch(_){return [];}}
-function saveTempSups(l){try{localStorage.setItem("elt.staff.tempsups",JSON.stringify(l));}catch(_){}}
+function loadTempSups(){const d=Store.getJSON("elt.staff.tempsups",[]);return Array.isArray(d)?d:[];}
+function saveTempSups(l){Store.setJSON("elt.staff.tempsups",l);}
 function supervisorList(){ const t=loadTempSups().map(x=>x.name); return [...SUP_DEFAULT,...t.filter(n=>!SUP_DEFAULT.includes(n))]; }
 const SUPERVISORS=supervisorList(); // compatibility (recomputed where it matters via supervisorList())
 function isTempSup(name){ return loadTempSups().some(x=>x.name===name); }
@@ -38,8 +38,8 @@ function rosterAll(){ return [...supervisorList().map(n=>({name:n,role:"Supervis
   ...MANAGERS.map(n=>({name:n,role:"Manager",temp:false})), ...ASSTMGRS.map(n=>({name:n,role:"Assistant Manager",temp:false}))]; }
 
 /* per-person codes (stored hashed, never plaintext) */
-function loadCodes(){try{return JSON.parse(localStorage.getItem("elt.staff.codes")||"{}")||{};}catch(_){return {};}}
-function saveCodes(c){try{localStorage.setItem("elt.staff.codes",JSON.stringify(c));return true;}catch(_){return false;}}
+function loadCodes(){return Store.getJSON("elt.staff.codes",{})||{};}
+function saveCodes(c){return Store.setJSON("elt.staff.codes",c);}
 function hasCode(name){ return !!loadCodes()[name]; }
 function resetCode(name){ const c=loadCodes(); delete c[name]; saveCodes(c); }
 async function hashCode(salt,code){
@@ -202,7 +202,7 @@ function prevWorkLabel(emp){
   if(full) return prev==="NH" ? "Worked last night" : "Worked "+prev;
   return "Worked Partial ("+prev+")";
 }
-function excludeList(){ try{ const d=JSON.parse(localStorage.getItem("elt.staff.exclude")||"null"); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }catch(_){ return EXCLUDE_DEFAULT.slice(); } }
+function excludeList(){ const d=Store.getJSON("elt.staff.exclude",null); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }
 
 /* build the body list (all shifts) from parsed inputs + prompt answers */
 function buildBodies(){
@@ -346,8 +346,8 @@ function assignedCount(){ if(!ST.assign)return 0; let n=0;
   Object.values(ST.assign.tugs).forEach(t=>["DRIVER","OBSERVR"].forEach(r=>t[r]&&n++));
   Object.values(ST.assign.areas).forEach(li=>n+=li.length);
   if(ST.dispatch&&ST.dispatch.name)n++; return n; }
-function loadDrafts(){try{return JSON.parse(localStorage.getItem("elt.staff.drafts")||"[]")||[];}catch(_){return [];}}
-function saveDraftList(l){try{localStorage.setItem("elt.staff.drafts",JSON.stringify(l));return true;}catch(e){return false;}}
+function loadDrafts(){const d=Store.getJSON("elt.staff.drafts",[]);return Array.isArray(d)?d:[];}
+function saveDraftList(l){return Store.setJSON("elt.staff.drafts",l);}
 function saveDraft(){
   if(!ST.parsed||assignedCount()<1)return;
   const date=ST.parsed.date||"",shift=ST.shift,id="D|"+date+"|"+shift;
@@ -722,7 +722,7 @@ const FOCUS_DEFAULT=[
  "Once AC is secured ensure stairs are 5 feet away from the AC.",
  "Report any challenges or equipment shortages to the supervisor.",
  "Complete web-based training when time allows."];
-function loadFocus(){ try{const d=JSON.parse(localStorage.getItem("elt.staff.focus")||"null");return Array.isArray(d)&&d.length?d:FOCUS_DEFAULT.slice();}catch(_){return FOCUS_DEFAULT.slice();} }
+function loadFocus(){ const d=Store.getJSON("elt.staff.focus",null); return Array.isArray(d)&&d.length?d:FOCUS_DEFAULT.slice(); }
 function initBrief(){ if(!ST.brief)ST.brief={weather:"",flight:"",parking:"",safety:"",notes:"",focus:loadFocus()}; }
 function rBrief(){
   const b=ST.brief;
@@ -744,7 +744,7 @@ function rBrief(){
     b.focus=$$("#focusWrap textarea").map(t=>t.value); };
   $("#focusAdd").onclick=()=>{ save(); b.focus.push(""); render(); };
   $$('#staffRoot [data-fdel]').forEach(x=>x.onclick=()=>{ save(); b.focus.splice(+x.dataset.fdel,1); render(); });
-  $("#toGen").onclick=()=>{ save(); localStorage.setItem("elt.staff.focus",JSON.stringify(b.focus.filter(s=>s.trim()))); ST.step="sheet"; render(); };
+  $("#toGen").onclick=()=>{ save(); Store.setJSON("elt.staff.focus",b.focus.filter(s=>s.trim())); ST.step="sheet"; render(); };
   $$('#staffRoot .stp-back').forEach(x=>x.onclick=()=>{ save(); ST.step=x.dataset.to; render(); });
 }
 function tally(abs){const t={VAC:0,DAT:0,CB:0,SICK:0,OUT:0,OJI:0};abs.forEach(a=>{const c=(a.code||"").toUpperCase();
@@ -1000,8 +1000,8 @@ function exportSheetText(){
 }
 
 /* ---- manpower log (history) ---- */
-function loadLog(){try{return JSON.parse(localStorage.getItem("elt.staff.log")||"[]")||[];}catch(_){return [];}}
-function saveLogList(l){try{localStorage.setItem("elt.staff.log",JSON.stringify(l));return true;}catch(e){return false;}}
+function loadLog(){const d=Store.getJSON("elt.staff.log",[]);return Array.isArray(d)?d:[];}
+function saveLogList(l){return Store.setJSON("elt.staff.log",l);}
 function logManpower(){
   const date=ST.parsed?ST.parsed.date:"",shift=ST.shift,a=ST.assign;
   const running=TUGS.filter(id=>tugState(id).running).length, pool=poolFor(shift).length;
@@ -1091,7 +1091,7 @@ function renderBriefTab(){
     b.focus=[...root.querySelectorAll("#tbFocus textarea")].map(t=>t.value); };
   g("tbAdd").onclick=()=>{ save(); b.focus.push(""); renderBriefTab(); };
   root.querySelectorAll("[data-fdel]").forEach(x=>x.onclick=()=>{ save(); b.focus.splice(+x.dataset.fdel,1); renderBriefTab(); });
-  g("tbGen").onclick=()=>{ save(); localStorage.setItem("elt.staff.focus",JSON.stringify(b.focus.filter(s=>s.trim()))); briefTabView="sheet"; renderBriefTab(); };
+  g("tbGen").onclick=()=>{ save(); Store.setJSON("elt.staff.focus",b.focus.filter(s=>s.trim())); briefTabView="sheet"; renderBriefTab(); };
 }
 
 /* expose entry points */

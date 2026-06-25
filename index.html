@@ -572,6 +572,7 @@
 <div id="printArea"></div>
 <div class="toast" id="toast"></div>
 
+<script src="store.js"></script>
 <script>
 "use strict";
 const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v2",SEEN_KEY="elt.seenMaster.v1";
@@ -606,7 +607,7 @@ const DEFAULT_LOCATIONS=LOC_SEED.flatMap(([area,ac,names,region,hidden])=>names.
 
 let data=load();
 function load(){
-  let d=null; try{d=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){console.warn(e);}
+  let d=Store.getJSON(KEY,null);
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[];
   d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();
@@ -636,7 +637,7 @@ function load(){
   }
   return d;
 }
-function save(){localStorage.setItem(KEY,JSON.stringify(data));}
+function save(){Store.setJSON(KEY,data);}
 function uid(){return "e"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);}
 const $=(s,el=document)=>el.querySelector(s);
 const $$=(s,el=document)=>[...el.querySelectorAll(s)];
@@ -671,12 +672,12 @@ function groupByType(items){
 
 /* ---- fleet ---- */
 let FLEET=[],byShip=new Map();
-let fstat={}; try{fstat=JSON.parse(localStorage.getItem("elt.fleet.fstat")||"{}")||{};}catch(e){fstat={};}
+let fstat=Store.getJSON("elt.fleet.fstat",{})||{};
 function effFuture(a){const k=(a.reg||"").toUpperCase();return (k in fstat)?!!fstat[k]:!!a.future;}
-function setFstat(reg,isFuture){fstat[(reg||"").toUpperCase()]=isFuture;localStorage.setItem("elt.fleet.fstat",JSON.stringify(fstat));}
+function setFstat(reg,isFuture){fstat[(reg||"").toUpperCase()]=isFuture;Store.setJSON("elt.fleet.fstat",fstat);}
 function indexFleet(){byShip=new Map();FLEET.forEach(a=>{if(a.ship)byShip.set(String(a.ship),a);});}
-function loadFleetCache(){try{const d=JSON.parse(localStorage.getItem(FLEET_KEY)||"null");if(d&&Array.isArray(d.aircraft)){FLEET=d.aircraft;indexFleet();return true;}}catch(e){}return false;}
-function saveFleetCache(){localStorage.setItem(FLEET_KEY,JSON.stringify({aircraft:FLEET}));}
+function loadFleetCache(){const d=Store.getJSON(FLEET_KEY,null);if(d&&Array.isArray(d.aircraft)){FLEET=d.aircraft;indexFleet();return true;}return false;}
+function saveFleetCache(){Store.setJSON(FLEET_KEY,{aircraft:FLEET});}
 async function fetchFleet(){try{const r=await fetch(FLEET_URL+"?t="+todayISO(),{cache:"no-store"});if(!r.ok)return false;
   const d=await r.json();if(!d||!Array.isArray(d.aircraft))return false;
   FLEET=d.aircraft.map(a=>({ship:String(a.ship||""),reg:(a.reg||"").toUpperCase(),type:a.type||"",future:!!a.future}));indexFleet();saveFleetCache();return true;}catch(e){return false;}}
@@ -1634,27 +1635,27 @@ $("#importBtn").addEventListener("click",()=>$("#importFile").click());
 $("#importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.equipment))throw 0;
     if(!confirm(`Import ${d.equipment.length} items? This replaces your current data.`))return;
-    localStorage.setItem(KEY,JSON.stringify(d));data=load();
+    Store.setJSON(KEY,d);data=load();
     save();refreshAll();renderTypes();renderLocs();fillAreaList();toast("Imported");
   }catch(err){alert("That file isn't a valid backup.");}$("#importFile").value="";};r.readAsText(f);});
 $("#clearBtn").addEventListener("click",()=>{if(!confirm("Delete ALL your data? This cannot be undone."))return;
   if(!confirm("Really delete everything?"))return;
-  localStorage.removeItem(KEY);localStorage.setItem(SEEN_KEY,"1");data=load();
+  Store.del(KEY);Store.setRaw(SEEN_KEY,"1");data=load();
   save();refreshAll();renderTypes();renderLocs();fillAreaList();toast("All data cleared");});
 
 /* ---- master list ---- */
 async function fetchMaster(){try{const r=await fetch(MASTER_URL+"?t="+todayISO(),{cache:"no-store"});
   if(!r.ok)return null;const d=await r.json();return d&&Array.isArray(d.equipment)?d:null;}catch(e){return null;}}
-function applyMaster(m){localStorage.setItem(KEY,JSON.stringify(m));data=load();save();}
+function applyMaster(m){Store.setJSON(KEY,m);data=load();save();}
 $("#syncMaster").addEventListener("click",async()=>{$("#masterStatus").textContent="Checking the page…";
   const m=await fetchMaster();
   if(!m){$("#masterStatus").textContent="No master list yet. Export your data, add it as equipment.json.";return;}
   const n=m.equipment.length;
   if(!data.equipment.length||confirm(`Master list has ${n} item(s). Replace your current data with it?`)){
-    applyMaster(m);localStorage.setItem(SEEN_KEY,"1");refreshAll();renderTypes();renderLocs();fillAreaList();
+    applyMaster(m);Store.setRaw(SEEN_KEY,"1");refreshAll();renderTypes();renderLocs();fillAreaList();
     $("#masterStatus").textContent=`Loaded ${n} item(s) from the master list.`;}});
-async function autoLoadMaster(){if(data.equipment.length||localStorage.getItem(SEEN_KEY))return;
-  const m=await fetchMaster();localStorage.setItem(SEEN_KEY,"1");
+async function autoLoadMaster(){if(data.equipment.length||Store.getRaw(SEEN_KEY,null))return;
+  const m=await fetchMaster();Store.setRaw(SEEN_KEY,"1");
   if(m&&m.equipment.length){applyMaster(m);refreshAll();toast(`Loaded ${m.equipment.length} items from master list`);}}
 
 /* ---- refresh ---- */
