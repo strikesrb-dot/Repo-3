@@ -1551,9 +1551,10 @@ function openInvPop(pill,id,after){
 }
 function commitInv(){
   const loc=inv.loc,n=invSel.size;
+  // additive: only the units you count get placed here. Units you don't tap keep
+  // their current location — a later partial re-count never silently unassigns them.
   data.equipment.forEach(e=>{
-    if(invSel.has(e.id)){const from=e.location||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();if(from!==loc)logMove(e,from,loc,"inventory");}
-    else if(e.location===loc){const from=e.location;e.location="";e.oos=false;e.spot="";e.nose="";e.updated=todayISO();logMove(e,from,"","inventory");}});
+    if(invSel.has(e.id)){const from=e.location||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();if(from!==loc)logMove(e,from,loc,"inventory");}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
   inv.lastLoc=loc;inv.lastN=n;inv.loc=null;inv.stage="more";renderInventory();

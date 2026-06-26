@@ -26,9 +26,9 @@
       "id": "eq30002",
       "tag": "AC2559",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "C4 Hardstand",
       "notes": "",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "spot": "",
       "nose": "",
       "oos": false
@@ -48,9 +48,9 @@
       "id": "eq30004",
       "tag": "AC2552",
       "type": "PCA",
-      "location": "",
+      "location": "C4 Boneyard",
       "notes": "",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "spot": "",
       "nose": "",
       "oos": false
@@ -253,13 +253,15 @@
     {
       "id": "eq30016",
       "tag": "018",
-      "type": "Airbus Stairs",
-      "location": "",
+      "type": "Stairs",
+      "location": "C4 Hardstand",
       "notes": "",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "spot": "",
       "nose": "",
-      "oos": false
+      "oos": false,
+      "subtype": "737",
+      "volt": ""
     },
     {
       "id": "eq30017",
@@ -331,171 +333,223 @@
       "id": "eq3001d",
       "tag": "AC5308",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "C4 Boneyard",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-26",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3001e",
       "tag": "AC5246",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3001f",
       "tag": "AC5318",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30020",
       "tag": "AC5315",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30021",
       "tag": "AC5321",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30022",
       "tag": "AC5401",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30023",
       "tag": "AC5266",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30024",
       "tag": "GP1745",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30025",
       "tag": "GP1052",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30026",
       "tag": "GP8084",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "120KVA",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30027",
       "tag": "GP1045",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30028",
       "tag": "GP2023",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30029",
       "tag": "DA363284X",
       "type": "Stairs",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
-    },
-    {
-      "id": "eq3002a",
-      "tag": "024",
-      "type": "Airbus Stairs",
-      "location": "C4 Hardstand",
-      "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3002b",
       "tag": "023",
       "type": "Airbus Stairs",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3002c",
       "tag": "029",
       "type": "Airbus Stairs",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3002d",
       "tag": "4748249",
       "type": "Stairs",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3002e",
       "tag": "4741091",
       "type": "Stairs",
-      "location": "",
+      "location": "C4 Hardstand",
       "notes": "",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "subtype": "",
-      "volt": ""
+      "volt": "",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3002f",
       "tag": "WS2965",
       "type": "Stairs",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30030",
       "tag": "DA023559",
       "type": "Stairs",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30031",
       "tag": "GP1922",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "90KVA",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30032",
@@ -512,33 +566,49 @@
       "id": "eq30033",
       "tag": "GP0137",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "90KVA",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30034",
       "tag": "AC5035",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30035",
-      "tag": "16",
-      "type": "Airbus Stairs",
-      "location": "C4 Hardstand",
+      "tag": "016",
+      "type": "Stairs",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": "",
+      "subtype": "737",
+      "volt": ""
     },
     {
       "id": "eq30036",
-      "tag": "18",
-      "type": "Airbus Stairs",
-      "location": "C4 Hardstand",
+      "tag": "018",
+      "type": "Stairs",
+      "location": "",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": "",
+      "subtype": "737",
+      "volt": ""
     },
     {
       "id": "eq30037",
@@ -606,9 +676,12 @@
       "id": "eq3003e",
       "tag": "GP1045",
       "type": "Ground Power",
-      "location": "West Park",
+      "location": "C4 Boneyard",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3003f",
@@ -745,11 +818,14 @@
       "id": "eq3004d",
       "tag": "AH0088",
       "type": "PCA",
-      "location": "West Park",
+      "location": "C4 Boneyard",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
-      "volt": ""
+      "volt": "",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3004e",
@@ -813,9 +889,12 @@
       "id": "eq30055",
       "tag": "024",
       "type": "Airbus Stairs",
-      "location": "West Park",
+      "location": "C4 Hardstand",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30056",
@@ -896,7 +975,7 @@
       "id": "eq3005f",
       "tag": "AC5245",
       "type": "PCA",
-      "location": "",
+      "location": "C4",
       "notes": "",
       "updated": "2026-06-25",
       "spot": "",
@@ -907,7 +986,7 @@
       "id": "eq30060",
       "tag": "AC5144",
       "type": "PCA",
-      "location": "",
+      "location": "C4 Boneyard",
       "notes": "",
       "updated": "2026-06-25",
       "spot": "",
@@ -962,7 +1041,7 @@
       "id": "eq30065",
       "tag": "AH0750",
       "type": "PCA",
-      "location": "",
+      "location": "C4 Boneyard",
       "notes": "",
       "updated": "2026-06-25",
       "spot": "",
@@ -975,9 +1054,9 @@
       "id": "eq30066",
       "tag": "AH0131",
       "type": "PCA",
-      "location": "",
+      "location": "C4 Boneyard",
       "notes": "",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "spot": "",
       "nose": "",
       "oos": false,
@@ -988,7 +1067,7 @@
       "id": "eq30067",
       "tag": "AH0703",
       "type": "PCA",
-      "location": "",
+      "location": "C4 Boneyard",
       "notes": "",
       "updated": "2026-06-25",
       "spot": "",
@@ -1012,7 +1091,7 @@
       "id": "eq30069",
       "tag": "AC5095",
       "type": "PCA",
-      "location": "",
+      "location": "C4 Boneyard",
       "notes": "",
       "updated": "2026-06-25",
       "spot": "",
@@ -1023,9 +1102,12 @@
       "id": "eq3006a",
       "tag": "GP0298",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "C4 Hardstand",
       "notes": "90KVA",
-      "updated": "2026-06-25"
+      "updated": "2026-06-26",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3006b",
@@ -1039,9 +1121,12 @@
       "id": "eq3006c",
       "tag": "GP0137",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "C4 Hardstand",
       "notes": "90KVA",
-      "updated": "2026-06-25"
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3006d",
@@ -1181,9 +1266,12 @@
       "id": "eq3007d",
       "tag": "GP1043",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "C4 Hardstand",
       "notes": "120KVA",
-      "updated": "2026-06-25"
+      "updated": "2026-06-26",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq3007e",
@@ -1253,9 +1341,12 @@
       "id": "eq30086",
       "tag": "AC5088",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "C4 Hardstand",
       "notes": "",
-      "updated": "2026-06-25"
+      "updated": "2026-06-26",
+      "oos": false,
+      "spot": "",
+      "nose": ""
     },
     {
       "id": "eq30087",
@@ -1753,6 +1844,29 @@
       "location": "GSE",
       "notes": "180KVA",
       "updated": "2026-06-25"
+    },
+    {
+      "id": "emquaoaba5pg",
+      "tag": "AC2736",
+      "type": "PCA",
+      "subtype": "",
+      "location": "",
+      "volt": "",
+      "notes": "",
+      "updated": "2026-06-25",
+      "oos": false,
+      "spot": "",
+      "nose": ""
+    },
+    {
+      "id": "emquawxs15e0",
+      "tag": "031",
+      "type": "Stairs",
+      "subtype": "737",
+      "location": "",
+      "volt": "",
+      "notes": "",
+      "updated": "2026-06-25"
     }
   ],
   "types": [
@@ -1795,21 +1909,770 @@
       "hidden": false
     },
     {
-      "name": "Ball Park",
-      "area": "Ball Park",
-      "holdsAircraft": false,
-      "region": "",
-      "hidden": false
-    },
-    {
       "name": "GSE",
       "area": "GSE",
       "holdsAircraft": false,
       "region": "",
       "hidden": false
+    },
+    {
+      "name": "Staging Area",
+      "area": "Staging",
+      "holdsAircraft": false,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "AML17",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML18",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML19",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML20",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML21",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML22",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML26",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML27",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML28",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML30",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML31",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML32",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML33",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML33A",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML36",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML36A",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML37",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML38",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "AML38A",
+      "area": "Amelia",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "Amelia Staging Area",
+      "area": "Amelia Staging Area",
+      "holdsAircraft": false,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND1",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND2",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND3",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND4",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND5",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND6",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND7",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND8",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND1A",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND3A",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND5A",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "LIND7A",
+      "area": "Lindy",
+      "holdsAircraft": true,
+      "region": "South",
+      "hidden": false
+    },
+    {
+      "name": "MUR1",
+      "area": "Murphy",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "MUR2",
+      "area": "Murphy",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "MUR3",
+      "area": "Murphy",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "MUR4",
+      "area": "Murphy",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "MUR5",
+      "area": "Murphy",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "MUR6",
+      "area": "Murphy",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "A10-1",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "A10-2",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "A10-3",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "A10-4",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "A10-5",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP1",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP2",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP3",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP4",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP5",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP6",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP7",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP8",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP9",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP10",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP11",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": false
+    },
+    {
+      "name": "BP12",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": true
+    },
+    {
+      "name": "BP13",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": true
+    },
+    {
+      "name": "BP14",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": true
+    },
+    {
+      "name": "BP15",
+      "area": "Ballpark",
+      "holdsAircraft": true,
+      "region": "Ballpark",
+      "hidden": true
+    },
+    {
+      "name": "A12-1",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-2",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-3",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-4",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-5",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-6",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-7",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-8",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-9",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-10",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-11",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "A12-12",
+      "area": "A12 Parking",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "C71R",
+      "area": "C4",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "C71S",
+      "area": "C4",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "C71T",
+      "area": "C4",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "C71V",
+      "area": "C4",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "C71X",
+      "area": "C4",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": false
+    },
+    {
+      "name": "TNPK1",
+      "area": "Turnpike",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": true
+    },
+    {
+      "name": "TNPK2",
+      "area": "Turnpike",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": true
+    },
+    {
+      "name": "TNPK3",
+      "area": "Turnpike",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": true
+    },
+    {
+      "name": "TNPK4",
+      "area": "Turnpike",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": true
+    },
+    {
+      "name": "TNPK5",
+      "area": "Turnpike",
+      "holdsAircraft": true,
+      "region": "",
+      "hidden": true
+    },
+    {
+      "name": "54C",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "54R",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "55L",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "55R",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "56C",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "H52",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "H54B",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "H54C",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "H56C",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "HB1",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "HB2",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "MX1",
+      "area": "Hangar",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "Sierra 1",
+      "area": "Sierra",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "Sierra 2",
+      "area": "Sierra",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "Sierra 3",
+      "area": "Sierra",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP1",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP2",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP3",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP4",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP5",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP6",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP7",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP8",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "UP9",
+      "area": "UPS",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "CL1",
+      "area": "CL",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "CL2",
+      "area": "CL",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
+    },
+    {
+      "name": "CL3",
+      "area": "CL",
+      "holdsAircraft": true,
+      "region": "WestPark",
+      "hidden": false
     }
   ],
-  "locSeedV": 11,
+  "locSeedV": 12,
   "typeSeedV": 2,
   "secureLog": [],
   "equipLocs": [
@@ -1817,138 +2680,258 @@
     "C4 Hardstand",
     "West Park",
     "Ball Park",
-    "GSE"
+    "GSE",
+    "Move Team",
+    "C4",
+    "C4 Boneyard"
   ],
   "movements": [
     {
-      "id": "emqu1w78z552",
-      "tag": "4763513",
-      "type": "Stairs",
-      "from": "",
-      "to": "South",
-      "spot": "",
-      "nose": "",
-      "oos": false,
-      "date": "2026-06-25",
-      "ts": 1782425118131,
-      "min": 1085
-    },
-    {
-      "id": "emqu21rej5g5",
-      "tag": "4763514",
+      "id": "emqualxs7y",
+      "tag": "AC5245",
       "type": "PCA",
       "from": "",
-      "to": "South",
+      "to": "C4",
       "spot": "",
       "nose": "",
       "oos": false,
       "date": "2026-06-25",
-      "ts": 1782425377531,
-      "min": 1089
+      "ts": 1782439755847,
+      "min": 1329
     },
     {
-      "id": "emqu22lyl7pk",
-      "tag": "4763515",
-      "type": "Stairs",
+      "id": "emqualxs77of",
+      "tag": "AC5088",
+      "type": "PCA",
+      "from": "Ball Park",
+      "to": "C4",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782439755847,
+      "min": 1329
+    },
+    {
+      "id": "emquanvcc6ns",
+      "tag": "AC2552",
+      "type": "PCA",
       "from": "",
-      "to": "South",
+      "to": "C4 Boneyard",
       "spot": "",
       "nose": "",
       "oos": false,
       "date": "2026-06-25",
-      "ts": 1782425417133,
-      "min": 1090
+      "ts": 1782439845996,
+      "min": 1330
     },
     {
-      "id": "emqu22ubu63i",
-      "tag": "4763516",
-      "type": "Stairs",
-      "from": "",
-      "to": "South",
-      "spot": "",
-      "nose": "",
-      "oos": false,
-      "date": "2026-06-25",
-      "ts": 1782425427978,
-      "min": 1090
-    },
-    {
-      "id": "emqu26lk83w2",
-      "tag": "4741091",
-      "type": "Stairs",
-      "from": "C4 Hardstand",
-      "to": "C4 Har",
-      "spot": "",
-      "nose": "",
-      "oos": false,
-      "date": "2026-06-25",
-      "ts": 1782425603240,
-      "min": 1093
-    },
-    {
-      "id": "emqu272hb7cd",
-      "tag": "AC5035",
+      "id": "emquanvcc3fj",
+      "tag": "AC5308",
       "type": "PCA",
       "from": "C4 Hardstand",
-      "to": "C4 Hards",
+      "to": "C4 Boneyard",
       "spot": "",
       "nose": "",
       "oos": false,
       "date": "2026-06-25",
-      "ts": 1782425625167,
-      "min": 1093
+      "ts": 1782439845996,
+      "min": 1330
     },
     {
-      "id": "emqu276bp3ug",
-      "tag": "AC5035",
+      "id": "emquanvcd5la",
+      "tag": "AH0131",
       "type": "PCA",
-      "from": "C4 Hards",
+      "from": "",
+      "to": "C4 Boneyard",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782439845997,
+      "min": 1330
+    },
+    {
+      "id": "emquapzcwz2",
+      "tag": "GP1045",
+      "type": "Ground Power",
+      "from": "West Park",
+      "to": "C4 Boneyard",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782439944512,
+      "min": 1332
+    },
+    {
+      "id": "emquapzcw5vk",
+      "tag": "AH0088",
+      "type": "PCA",
+      "from": "West Park",
+      "to": "C4 Boneyard",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782439944512,
+      "min": 1332
+    },
+    {
+      "id": "emquapzcw5b6",
+      "tag": "AC5144",
+      "type": "PCA",
+      "from": "",
+      "to": "C4 Boneyard",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782439944512,
+      "min": 1332
+    },
+    {
+      "id": "emquapzcw3ku",
+      "tag": "AH0750",
+      "type": "PCA",
+      "from": "",
+      "to": "C4 Boneyard",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782439944512,
+      "min": 1332
+    },
+    {
+      "id": "emquapzcw1zo",
+      "tag": "AH0703",
+      "type": "PCA",
+      "from": "",
+      "to": "C4 Boneyard",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782439944512,
+      "min": 1332
+    },
+    {
+      "id": "emquapzcw5mq",
+      "tag": "AC5095",
+      "type": "PCA",
+      "from": "",
+      "to": "C4 Boneyard",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782439944512,
+      "min": 1332
+    },
+    {
+      "id": "emquawlwt14d",
+      "tag": "AC2559",
+      "type": "PCA",
+      "from": "Ball Park",
       "to": "C4 Hardstand",
       "spot": "",
       "nose": "",
       "oos": false,
       "date": "2026-06-25",
-      "ts": 1782425630149,
-      "min": 1093
+      "ts": 1782440253677,
+      "min": 1337
     },
     {
-      "id": "emqu27ryr7i",
+      "id": "emquawlwt4gb",
+      "tag": "018",
+      "type": "Airbus Stairs",
+      "from": "",
+      "to": "C4 Hardstand",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782440253677,
+      "min": 1337
+    },
+    {
+      "id": "emquawlwt4ro",
       "tag": "4741091",
       "type": "Stairs",
-      "from": "C4 Har",
-      "to": "",
-      "spot": "",
-      "nose": "",
-      "oos": false,
-      "date": "2026-06-25",
-      "ts": 1782425658195,
-      "min": 1094
-    },
-    {
-      "id": "emqu2nwfi206",
-      "tag": "PI2509",
-      "type": "Pickup Truck",
-      "from": "Ball Park",
-      "to": "Move Team",
-      "spot": "",
-      "nose": "",
-      "oos": false,
-      "date": "2026-06-25",
-      "ts": 1782426410478,
-      "min": 1106
-    },
-    {
-      "id": "emqu3e97x5f",
-      "tag": "AC2559",
-      "type": "PCA",
       "from": "",
-      "to": "Ball Park",
+      "to": "C4 Hardstand",
       "spot": "",
       "nose": "",
       "oos": false,
       "date": "2026-06-25",
-      "ts": 1782427640109,
-      "min": 1127
+      "ts": 1782440253677,
+      "min": 1337
+    },
+    {
+      "id": "emquawlwt6oj",
+      "tag": "GP0298",
+      "type": "Ground Power",
+      "from": "Ball Park",
+      "to": "C4 Hardstand",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782440253677,
+      "min": 1337
+    },
+    {
+      "id": "emquawlwt6ob",
+      "tag": "GP1043",
+      "type": "Ground Power",
+      "from": "Ball Park",
+      "to": "C4 Hardstand",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782440253677,
+      "min": 1337
+    },
+    {
+      "id": "emquawlwt43r",
+      "tag": "AC5088",
+      "type": "PCA",
+      "from": "C4",
+      "to": "C4 Hardstand",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782440253677,
+      "min": 1337
+    },
+    {
+      "id": "emquazgbp4hl",
+      "tag": "024",
+      "type": "Airbus Stairs",
+      "from": "West Park",
+      "to": "C4 Hardstand",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782440386405,
+      "min": 1339
+    },
+    {
+      "id": "emquazgbpmv",
+      "tag": "GP0137",
+      "type": "Ground Power",
+      "from": "Ball Park",
+      "to": "C4 Hardstand",
+      "spot": "",
+      "nose": "",
+      "oos": false,
+      "date": "2026-06-25",
+      "ts": 1782440386405,
+      "min": 1339
     }
   ],
   "locZones": {},
@@ -1991,5 +2974,6 @@
       "P.A.A.T.S."
     ]
   },
-  "previewSeeded": true
+  "previewSeeded": true,
+  "bpMerged": true
 }
