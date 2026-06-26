@@ -26,10 +26,10 @@
       "id": "eq30002",
       "tag": "AC2559",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "C4",
       "notes": "",
       "updated": "2026-06-26",
-      "spot": "",
+      "spot": "Hardstand",
       "nose": "",
       "oos": false
     },
@@ -48,10 +48,10 @@
       "id": "eq30004",
       "tag": "AC2552",
       "type": "PCA",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
       "updated": "2026-06-26",
-      "spot": "",
+      "spot": "Boneyard",
       "nose": "",
       "oos": false
     },
@@ -254,10 +254,10 @@
       "id": "eq30016",
       "tag": "018",
       "type": "Stairs",
-      "location": "C4 Hardstand",
+      "location": "C4",
       "notes": "",
       "updated": "2026-06-26",
-      "spot": "",
+      "spot": "Hardstand",
       "nose": "",
       "oos": false,
       "subtype": "737",
@@ -333,11 +333,11 @@
       "id": "eq3001d",
       "tag": "AC5308",
       "type": "PCA",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
       "updated": "2026-06-26",
       "oos": false,
-      "spot": "",
+      "spot": "Boneyard",
       "nose": ""
     },
     {
@@ -509,13 +509,13 @@
       "id": "eq3002e",
       "tag": "4741091",
       "type": "Stairs",
-      "location": "C4 Hardstand",
+      "location": "C4",
       "notes": "",
       "updated": "2026-06-26",
       "subtype": "",
       "volt": "",
       "oos": false,
-      "spot": "",
+      "spot": "Hardstand",
       "nose": ""
     },
     {
@@ -676,11 +676,11 @@
       "id": "eq3003e",
       "tag": "GP1045",
       "type": "Ground Power",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "oos": false,
-      "spot": "",
+      "spot": "Boneyard",
       "nose": ""
     },
     {
@@ -818,13 +818,13 @@
       "id": "eq3004d",
       "tag": "AH0088",
       "type": "PCA",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "subtype": "",
       "volt": "",
       "oos": false,
-      "spot": "",
+      "spot": "Boneyard",
       "nose": ""
     },
     {
@@ -889,11 +889,11 @@
       "id": "eq30055",
       "tag": "024",
       "type": "Airbus Stairs",
-      "location": "C4 Hardstand",
+      "location": "C4",
       "notes": "",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "oos": false,
-      "spot": "",
+      "spot": "Hardstand",
       "nose": ""
     },
     {
@@ -986,10 +986,10 @@
       "id": "eq30060",
       "tag": "AC5144",
       "type": "PCA",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
-      "updated": "2026-06-25",
-      "spot": "",
+      "updated": "2026-06-26",
+      "spot": "Boneyard",
       "nose": "",
       "oos": false
     },
@@ -1041,10 +1041,10 @@
       "id": "eq30065",
       "tag": "AH0750",
       "type": "PCA",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
-      "updated": "2026-06-25",
-      "spot": "",
+      "updated": "2026-06-26",
+      "spot": "Boneyard",
       "nose": "",
       "oos": false,
       "subtype": "",
@@ -1054,10 +1054,10 @@
       "id": "eq30066",
       "tag": "AH0131",
       "type": "PCA",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
       "updated": "2026-06-26",
-      "spot": "",
+      "spot": "Boneyard",
       "nose": "",
       "oos": false,
       "subtype": "",
@@ -1067,10 +1067,10 @@
       "id": "eq30067",
       "tag": "AH0703",
       "type": "PCA",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
-      "updated": "2026-06-25",
-      "spot": "",
+      "updated": "2026-06-26",
+      "spot": "Boneyard",
       "nose": "",
       "oos": false,
       "subtype": "",
@@ -1091,10 +1091,10 @@
       "id": "eq30069",
       "tag": "AC5095",
       "type": "PCA",
-      "location": "C4 Boneyard",
+      "location": "C4",
       "notes": "",
-      "updated": "2026-06-25",
-      "spot": "",
+      "updated": "2026-06-26",
+      "spot": "Boneyard",
       "nose": "",
       "oos": false
     },
@@ -1102,11 +1102,11 @@
       "id": "eq3006a",
       "tag": "GP0298",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "C4",
       "notes": "90KVA",
       "updated": "2026-06-26",
       "oos": false,
-      "spot": "",
+      "spot": "Hardstand",
       "nose": ""
     },
     {
@@ -1121,11 +1121,11 @@
       "id": "eq3006c",
       "tag": "GP0137",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "C4",
       "notes": "90KVA",
-      "updated": "2026-06-25",
+      "updated": "2026-06-26",
       "oos": false,
-      "spot": "",
+      "spot": "Hardstand",
       "nose": ""
     },
     {
@@ -1266,11 +1266,11 @@
       "id": "eq3007d",
       "tag": "GP1043",
       "type": "Ground Power",
-      "location": "C4 Hardstand",
+      "location": "C4",
       "notes": "120KVA",
       "updated": "2026-06-26",
       "oos": false,
-      "spot": "",
+      "spot": "Hardstand",
       "nose": ""
     },
     {
@@ -1341,11 +1341,11 @@
       "id": "eq30086",
       "tag": "AC5088",
       "type": "PCA",
-      "location": "C4 Hardstand",
+      "location": "C4",
       "notes": "",
       "updated": "2026-06-26",
       "oos": false,
-      "spot": "",
+      "spot": "Hardstand",
       "nose": ""
     },
     {
@@ -2677,13 +2677,11 @@
   "secureLog": [],
   "equipLocs": [
     "South",
-    "C4 Hardstand",
     "West Park",
     "Ball Park",
     "GSE",
     "Move Team",
-    "C4",
-    "C4 Boneyard"
+    "C4"
   ],
   "movements": [
     {
@@ -2934,7 +2932,12 @@
       "min": 1339
     }
   ],
-  "locZones": {},
+  "locZones": {
+    "C4": [
+      "Hardstand",
+      "Boneyard"
+    ]
+  },
   "hiddenTiles": [
     "preview",
     "preview2"
