@@ -975,7 +975,18 @@ function renderStaffCanvas(){
   return c;
 }
 function canvasToPng(c){return new Promise(res=>c.toBlob(b=>res(b),"image/png"));}
-function exportSheetImage(){ const c=renderStaffCanvas(); c.toBlob(b=>{ if(!b)return alert("Image export failed — use Print."); const name="EWR-AMT-Staffing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
+// trim uniform white margins so the exported image is snipped tight to the content
+function autoCropCanvas(src,pad){
+  try{ const w=src.width,h=src.height,d=src.getContext("2d").getImageData(0,0,w,h).data;
+    let top=h,left=w,right=-1,bottom=-1;const tol=10;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;
+      if(d[i+3]>240&&(d[i]<255-tol||d[i+1]<255-tol||d[i+2]<255-tol)){if(x<left)left=x;if(x>right)right=x;if(y<top)top=y;if(y>bottom)bottom=y;}}
+    if(right<left||bottom<top)return src;
+    pad=pad==null?10:pad;left=Math.max(0,left-pad);top=Math.max(0,top-pad);right=Math.min(w-1,right+pad);bottom=Math.min(h-1,bottom+pad);
+    const cw=right-left+1,ch=bottom-top+1,out=document.createElement("canvas");out.width=cw;out.height=ch;
+    const o=out.getContext("2d");o.fillStyle="#fff";o.fillRect(0,0,cw,ch);o.drawImage(src,left,top,cw,ch,0,0,cw,ch);return out;
+  }catch(_){return src;} }
+function exportSheetImage(){ const c=autoCropCanvas(renderStaffCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed — use Print."); const name="EWR-AMT-Staffing-"+ST.shift+".jpg"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/jpeg",0.92); }
 function renderBriefCanvas(){
   const b=ST.brief||{focus:[]},S=2,W=1100,M=34;
   const oosT=TUGS.filter(id=>tugState(id).oos),inop=TUGS.filter(id=>tugSt(id)==='inop'),sked=TUGS.filter(id=>tugState(id).running).length;
@@ -1025,7 +1036,7 @@ function renderBriefCanvas(){
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
   return c;
 }
-function exportBriefImage(){ const c=renderBriefCanvas(); c.toBlob(b=>{ if(!b)return alert("Image export failed."); const name="Daily-Briefing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
+function exportBriefImage(){ const c=autoCropCanvas(renderBriefCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed."); const name="Daily-Briefing-"+ST.shift+".jpg"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/jpeg",0.92); }
 async function shareSheets(){
   try{
     const [s,br]=await Promise.all([canvasToPng(renderStaffCanvas()),canvasToPng(renderBriefCanvas())]);

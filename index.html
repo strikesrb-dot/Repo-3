@@ -164,6 +164,8 @@
   .imgprev-x{border:none;background:#f1f4f7;border-radius:9px;width:34px;height:34px;font-size:16px;font-weight:800;color:#5a6772;cursor:pointer}
   .imgprev-scroll{overflow:auto;padding:14px;background:#f4f6f8}
   .imgprev-scroll img{width:100%;height:auto;border-radius:10px;box-shadow:0 2px 10px rgba(20,40,70,.12)}
+  .imgprev-hint{font-size:12px;color:var(--muted);text-align:center;margin:0;padding:8px 14px 0}
+  .imgprev-scroll img{cursor:grab}
   .imgprev-acts{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line)}
   .imgprev-acts .btn{flex:1;text-align:center;text-decoration:none}
   /* out-of-service marker on inventory sheets / equipment list */
@@ -1695,13 +1697,15 @@ function downloadInvImage(locs){
 // show the generated PNG inside the app so we never navigate away from the sheet
 function showImagePreview(blob,filename){
   const url=URL.createObjectURL(blob);
-  const back=document.createElement('div');back.className='imgprev-back';
-  const canShare=navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:'image/png'})]});
   const fn=String(filename||"");
+  const mime=/\.jpe?g$/i.test(fn)?'image/jpeg':'image/png';
+  const back=document.createElement('div');back.className='imgprev-back';
+  const canShare=navigator.canShare&&navigator.canShare({files:[new File([blob],filename,{type:mime})]});
   const title=/Staffing/i.test(fn)?"Staffing sheet":/Briefing/i.test(fn)?"Daily Briefing":/equipment/i.test(fn)?"Equipment list":"Image";
   back.innerHTML=`<div class="imgprev">
     <div class="imgprev-bar"><span>${esc(title)}</span><button class="imgprev-x" aria-label="Close">✕</button></div>
-    <div class="imgprev-scroll"><img src="${url}" alt="${esc(title)}" /></div>
+    <div class="imgprev-scroll"><img id="imgprevImg" src="${url}" alt="${esc(title)}" draggable="true" /></div>
+    <p class="imgprev-hint">Drag the image out to a chat, email, or your desktop — or save it.</p>
     <div class="imgprev-acts">
       ${canShare?`<button class="btn navy" data-a="share">Share / Save</button>`:`<a class="btn navy" href="${url}" download="${esc(filename)}">Save image</a>`}
       <button class="btn ghost" data-a="done">Done</button>
@@ -1711,8 +1715,11 @@ function showImagePreview(blob,filename){
   back.querySelector('.imgprev-x').onclick=close;
   back.querySelector('[data-a="done"]').onclick=close;
   back.addEventListener('click',e=>{if(e.target===back)close();});
+  // let the user drag the image straight out to the filesystem / another app (with a real filename)
+  back.querySelector('#imgprevImg').addEventListener('dragstart',e=>{
+    try{e.dataTransfer.setData('DownloadURL',mime+':'+filename+':'+url);e.dataTransfer.effectAllowed='copy';}catch(_){}});
   back.querySelector('[data-a="share"]')?.addEventListener('click',async()=>{
-    try{await navigator.share({files:[new File([blob],filename,{type:'image/png'})],title:'Equipment Inventory'});}
+    try{await navigator.share({files:[new File([blob],filename,{type:mime})],title:title});}
     catch(_){}});
 }
 
