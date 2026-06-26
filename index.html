@@ -702,6 +702,8 @@
     <select id="fSub"></select>
     <label for="fLoc">Location</label>
     <select id="fLoc"></select>
+    <label for="fSpot" id="fSpotLbl">Sub-location</label>
+    <select id="fSpot"></select>
     <label for="fVolt">Voltage (optional)</label>
     <input id="fVolt" placeholder="e.g. 90 kVA, 28.5 V, 400 Hz" autocomplete="off" />
     <label for="fNotes">Notes (optional)</label>
@@ -736,6 +738,8 @@
     <h3 id="moveTitle">Move equipment</h3>
     <label for="moveSel">New location</label>
     <select id="moveSel"></select>
+    <label for="moveSpotSel" id="moveSpotLbl">Sub-location</label>
+    <select id="moveSpotSel"></select>
     <div class="btnrow">
       <button class="btn navy" id="moveGo">Move</button>
       <button class="btn ghost" id="moveCancel" style="flex:0 0 110px">Cancel</button>
@@ -1009,7 +1013,8 @@ let eqGroup="type";              // "type" (hub by category) | "area" | "none"
 let eqCollapsed=new Set();        // collapsed group keys
 let eqInitCollapse=true;          // start every group collapsed when the list (re)opens
 function eqCardHTML(e){
-  const loc=e.location?`<span class="loc"> ${esc(e.location)}</span>`:`<span class="loc none">No location</span>`;
+  const det=invDetail(e.spot,e.nose);
+  const loc=e.location?`<span class="loc"> ${esc(e.location)}${det?` · ${esc(det)}`:""}</span>`:`<span class="loc none">No location</span>`;
   return `<li class="item card" data-id="${e.id}"><div class="main">
     <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.subtype?`<span class="subt">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="volt">⚡ ${esc(e.volt)}</span>`:""}</div>
     ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
@@ -1021,7 +1026,7 @@ function renderList(){
   let items=data.equipment.slice();
   if(lf)items=items.filter(e=>(e.location||"")===lf);
   if(tf)items=items.filter(e=>(e.type||"")===tf);
-  if(q)items=items.filter(e=>[e.tag,e.type,e.subtype,e.location,e.notes,e.volt].some(v=>(v||"").toLowerCase().includes(q)));
+  if(q)items=items.filter(e=>[e.tag,e.type,e.subtype,e.location,e.spot,e.notes,e.volt].some(v=>(v||"").toLowerCase().includes(q)));
   const byTag=(a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"});
   const txt=(a,b,k)=>(a[k]||"").localeCompare(b[k]||"",undefined,{numeric:true,sensitivity:"base"})||byTag(a,b);
   const cmp={tag:byTag,type:(a,b)=>txt(a,b,"type"),subtype:(a,b)=>txt(a,b,"subtype"),location:(a,b)=>txt(a,b,"location"),volt:(a,b)=>txt(a,b,"volt"),
@@ -1229,7 +1234,15 @@ $("#fSub").addEventListener("change",function(){if(this.value!=="__custom__")ret
 function fillLocSelect(val){const opts=[...equipLocs()];if(val&&!opts.includes(val))opts.unshift(val);
   $("#fLoc").innerHTML=`<option value="">— No location —</option>`+opts.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("")+`<option value="__other__">Other…</option>`;
   $("#fLoc").value=val||"";}
-$("#fLoc").addEventListener("change",function(){if(this.value==="__other__"){const v=(prompt("Location:")||"").trim();fillLocSelect(v);}});
+// sub-location dropdown — shown only when the chosen location has sub-locations
+function fillSpotSelect(loc,val){const zones=locZonesFor(loc)||[];
+  const show=zones.length>0;
+  $("#fSpot").style.display=$("#fSpotLbl").style.display=show?"":"none";
+  if(!show){$("#fSpot").innerHTML="";return;}
+  const z=zones.slice();if(val&&!z.includes(val))z.unshift(val);
+  $("#fSpot").innerHTML=`<option value="">— None —</option>`+z.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  $("#fSpot").value=val||"";}
+$("#fLoc").addEventListener("change",function(){if(this.value==="__other__"){const v=(prompt("Location:")||"").trim();fillLocSelect(v);}fillSpotSelect($("#fLoc").value,"");});
 $("#fType").addEventListener("change",function(){if(this.value==="__new__"){
   const v=(prompt("New equipment type / category:")||"").trim();
   if(v&&!data.types.some(t=>t.toLowerCase()===v.toLowerCase())){data.types.push(v);save();}
@@ -1243,13 +1256,15 @@ function openEdit(id){editingId=id;
   $("#delEqRow").style.display=e?"":"none";
   $("#fTag").value=e?.tag||"";$("#fNotes").value=e?.notes||"";$("#fVolt").value=e?.volt||"";
   fillSubtypeSelect(e?.type||data.types[0]||"",e?.subtype||"");
+  fillSpotSelect(e?.location||"",e?.spot||"");
   $("#editOverlay").classList.add("open");if(!e)setTimeout(()=>$("#fTag").focus(),120);}
 function closeEdit(){$("#editOverlay").classList.remove("open");editingId=null;}
 $("#cancelEq").addEventListener("click",closeEdit);
 $("#editOverlay").addEventListener("click",e=>{if(e.target.id==="editOverlay")closeEdit();});
 $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toUpperCase();if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
   const sub=$("#fSub").value==="__custom__"?"":$("#fSub").value;
-  const p={tag,type:$("#fType").value,subtype:sub,location:$("#fLoc").value.trim(),volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
+  const loc=$("#fLoc").value.trim(),spot=(locZonesFor(loc)||[]).length?$("#fSpot").value:"";
+  const p={tag,type:$("#fType").value,subtype:sub,location:loc,spot,volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
   if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"";Object.assign(ex,p);if(from!==p.location)logMove(ex,from,p.location,"edit");toast("Updated");}
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
@@ -1262,14 +1277,24 @@ function locOptions(cur){const opts=[...new Set([...equipLocs(),...data.equipmen
   if(cur&&!opts.includes(cur))opts.unshift(cur);
   return `<option value="">— No location —</option>`+opts.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join("");}
 let moveId=null;
+function fillMoveSpot(loc,val){const zones=locZonesFor(loc)||[];const show=zones.length>0;
+  $("#moveSpotSel").style.display=$("#moveSpotLbl").style.display=show?"":"none";
+  if(!show){$("#moveSpotSel").innerHTML="";return;}
+  const z=zones.slice();if(val&&!z.includes(val))z.unshift(val);
+  $("#moveSpotSel").innerHTML=`<option value="">— None —</option>`+z.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  $("#moveSpotSel").value=val||"";}
 function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;moveId=id;
   $("#moveTitle").textContent=`Move ${e.tag||"unit"}`;
   $("#moveSel").innerHTML=locOptions(e.location||"");$("#moveSel").value=e.location||"";
+  fillMoveSpot(e.location||"",e.spot||"");
   $("#movePickOverlay").classList.add("open");}
 function closeMovePick(){$("#movePickOverlay").classList.remove("open");moveId=null;}
+$("#moveSel").addEventListener("change",()=>fillMoveSpot($("#moveSel").value,""));
 $("#moveGo").addEventListener("click",()=>{const e=data.equipment.find(x=>x.id===moveId);if(!e){closeMovePick();return;}
-  const from=e.location||"",to=$("#moveSel").value;e.location=to;e.updated=todayISO();
-  if(from!==to)logMove(e,from,to,"quickmove");save();refreshAll();closeMovePick();toast(to?`Moved to ${to}`:"Location cleared");});
+  const from=e.location||"",to=$("#moveSel").value,spot=(locZonesFor(to)||[]).length?$("#moveSpotSel").value:"";
+  e.location=to;e.spot=spot;e.updated=todayISO();
+  if(from!==to)logMove(e,from,to,"quickmove");save();refreshAll();closeMovePick();
+  toast(to?`Moved to ${to}${spot?" · "+spot:""}`:"Location cleared");});
 $("#moveCancel").addEventListener("click",closeMovePick);
 $("#movePickOverlay").addEventListener("click",e=>{if(e.target.id==="movePickOverlay")closeMovePick();});
 // settings helpers
@@ -2018,18 +2043,25 @@ function refreshAudit(){const sel=$("#auditLoc"),cur=sel.value;
   const natSort=(a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"});
   const areas=[...new Set(data.equipment.map(e=>e.location).filter(Boolean))].sort(natSort);
   const types=[...new Set(data.equipment.map(e=>e.type).filter(Boolean))].sort(natSort);
+  const subs=[...new Set(data.equipment.filter(e=>e.location&&e.spot).map(e=>e.location+"|"+e.spot))].sort(natSort);
   sel.innerHTML=`<option value="all">— All areas (everything) —</option>`+
     (areas.length?`<optgroup label="By area">`+areas.map(a=>`<option value="area:${esc(a)}">${esc(a)}</option>`).join("")+`</optgroup>`:"")+
+    (subs.length?`<optgroup label="By sub-location">`+subs.map(s=>{const[l,sp]=s.split("|");return `<option value="spot:${esc(s)}">${esc(l)} · ${esc(sp)}</option>`;}).join("")+`</optgroup>`:"")+
     (types.length?`<optgroup label="By category">`+types.map(t=>`<option value="type:${esc(t)}">${esc(t)}</option>`).join("")+`</optgroup>`:"");
   if([...sel.options].some(o=>o.value===cur))sel.value=cur;
   if(!$("#auditDate").value)$("#auditDate").value=todayISO();}
 function auditScope(){const v=$("#auditLoc").value||"all";
   if(v.startsWith("area:"))return {kind:"area",value:v.slice(5)};
   if(v.startsWith("type:"))return {kind:"type",value:v.slice(5)};
+  if(v.startsWith("spot:")){const [loc,sub]=v.slice(5).split("|");return {kind:"spot",value:loc,sub:sub||""};}
   return {kind:"all"};}
 // gather equipment for a scope as {title, mode, groups:[{label,items}]}
 function equipScopeData(scope){
   const natSort=(a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"});
+  if(scope.kind==="spot"){
+    const items=data.equipment.filter(e=>(e.location||"")===scope.value&&(e.spot||"")===scope.sub);
+    return {title:"Equipment — "+scope.value+" · "+scope.sub,mode:"area",groups:[{label:scope.value+" · "+scope.sub,items}]};
+  }
   if(scope.kind==="type"){
     const items=data.equipment.filter(e=>(e.type||"")===scope.value);
     const areas=[...new Set(items.map(e=>e.location||"No location"))].sort(natSort);
@@ -2042,7 +2074,7 @@ function equipScopeData(scope){
 function buildEquipSheetHTML(scope){
   const {title,mode,groups}=equipScopeData(scope);
   const date=fmtDate(todayISO()),by=$("#auditBy")?.value.trim()||"____________";
-  const rowFor=e=>`<tr><td><b>${esc(e.tag)}</b>${e.oos?' <span style="color:#c0271e;font-size:10px;font-weight:800">OOS</span>':""}${e.volt?` <span style="color:#15622f;font-size:10px;font-weight:700">⚡${esc(e.volt)}</span>`:""}</td><td>${esc(e.subtype||e.notes||"")}</td><td class="chk">☐</td></tr>`;
+  const rowFor=e=>{const sp=invDetail(e.spot,e.nose);return `<tr><td><b>${esc(e.tag)}</b>${sp?` <span style="color:#888;font-size:10px">· ${esc(sp)}</span>`:""}${e.oos?' <span style="color:#c0271e;font-size:10px;font-weight:800">OOS</span>':""}${e.volt?` <span style="color:#15622f;font-size:10px;font-weight:700">⚡${esc(e.volt)}</span>`:""}</td><td>${esc(e.subtype||e.notes||"")}</td><td class="chk">☐</td></tr>`;};
   let total=0;
   const blocks=groups.map(g=>{total+=g.items.length;let body;
     if(!g.items.length){body=`<table class="audit"><tbody><tr><td style="text-align:center;color:#888;padding:12px">No equipment.</td></tr></tbody></table>`;}
@@ -2062,9 +2094,10 @@ function downloadEquipText(scope){
   const total=groups.reduce((a,g)=>a+g.items.length,0);
   const L=["========================================","   "+title.toUpperCase(),"========================================",
     fmtDate(todayISO())+"  ·  "+total+" item(s)",""];
+  const sp=e=>{const d=invDetail(e.spot,e.nose);return d?"  ["+d+"]":"";};
   groups.forEach(g=>{L.push(g.label.toUpperCase()+" ("+g.items.length+")");
-    if(mode==="type"){sortTags(g.items).forEach(e=>L.push("    [ ] "+e.tag+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));}
-    else{groupByType(g.items).forEach(c=>{L.push("  "+c.type+":");sortTags(c.items).forEach(e=>L.push("    [ ] "+e.tag+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));});}
+    if(mode==="type"){sortTags(g.items).forEach(e=>L.push("    [ ] "+e.tag+sp(e)+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));}
+    else{groupByType(g.items).forEach(c=>{L.push("  "+c.type+":");sortTags(c.items).forEach(e=>L.push("    [ ] "+e.tag+sp(e)+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));});}
     L.push("");});
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
