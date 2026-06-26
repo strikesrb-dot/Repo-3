@@ -838,20 +838,13 @@ function rSheet(){
       <div class="seg-wrap"><button class="seg ${sheetView==='staff'?'on':''}" data-sv="staff">Staffing sheet</button><button class="seg ${sheetView==='brief'?'on':''}" data-sv="brief">Briefing</button></div>
     </div>
     <div class="sheet-scroll"><div id="staffSheet">${html}</div></div>
-    <div class="card pad no-print">
-      <div class="btnrow"><button class="btn navy" id="shShare">Email / Share both ›</button></div>
-      <div class="btnrow" style="margin-top:8px"><button class="btn good" id="shLog">✓ Log this manpower</button></div>
-      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shImg">Save image</button><button class="btn ghost" id="shPrint">Print / PDF</button></div>
-      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shTxt">Text</button><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button></div>
-      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="shNew">New</button></div>
+    <div class="card pad no-print" style="text-align:center">
+      <button class="btn good" id="shLog" style="width:100%">✓ Log Manpower</button>
+      <p class="hint" style="margin:8px 2px 0">Log this manpower to save it.</p>
+      <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button></div>
     </div>`;
   $$('#staffRoot .seg[data-sv]').forEach(s=>s.onclick=()=>{sheetView=s.dataset.sv;render();});
-  $("#shPrint").onclick=()=>{ $("#printArea").innerHTML=`<div class="sb-print">${buildSheet()}</div><div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); };
-  $("#shImg").onclick=()=>{ sheetView==="staff"?exportSheetImage():exportBriefImage(); };
-  $("#shTxt").onclick=exportSheetText;
-  $("#shShare").onclick=shareSheets;
   $("#shLog").onclick=logManpower;
-  $("#shNew")?.addEventListener("click",()=>{ ST.step="menu"; render(); });
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 function buildSheet(){
@@ -1082,6 +1075,7 @@ function logManpower(){
   if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,snap:null}); if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,img:""}); l=l.slice(0,12); saveLogList(l); } }
   deleteDraft("D|"+date+"|"+shift);   // finalized — drop the draft
   toast("Logged: "+date+" "+shift);
+  logSel=entry.id; ST.step="logs"; render();   // jump to the saved record (image/PDF/share live here)
 }
 let logSel=null;
 function rLogs(){
@@ -1091,11 +1085,15 @@ function rLogs(){
     ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.shift)} manpower <span class="ro-badge">read-only</span></h2></div>
       <div class="muted-row">${esc(e.date||'')} · ${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(e.dispatch||"OPEN")}${e.by?` · by <b>${esc(e.by)}</b>`:''}</div>
       ${e.img?`<div class="sheet-scroll"><img class="log-img" src="${e.img}" alt="staffing sheet"/></div>`:'<p class="hint">Image not stored for this entry.</p>'}
-      <div class="btnrow" style="margin-top:10px">${e.snap?'<button class="btn ghost" id="logImg">Save image</button><button class="btn ghost" id="logPdf">PDF / Print</button>':''}</div>
+      ${e.snap?`<div class="btnrow" style="margin-top:10px"><button class="btn navy" id="logShare">Email / Share both ›</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logImg">Save image</button><button class="btn ghost" id="logPdf">PDF / Print</button></div>
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logTxt">Text</button></div>`:''}
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button><button class="btn ghost" id="logDel">Delete</button></div>`);
     $("#logBack").onclick=()=>{logSel=null;render();};
     $("#logDel").onclick=()=>{saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render();};
     $("#logImg")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetImage()));
+    $("#logTxt")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetText()));
+    $("#logShare")?.addEventListener("click",()=>withSnapshot(e.snap,()=>shareSheets()));
     $("#logPdf")?.addEventListener("click",()=>withSnapshot(e.snap,()=>{ $("#printArea").innerHTML=`<div class="sb-print">${buildSheet()}</div><div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); }));
     return;
   }
