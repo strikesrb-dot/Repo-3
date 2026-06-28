@@ -644,6 +644,45 @@ function rReconcile(){
 let SEL=null; // selected pool entry key
 let poolCollapsed=new Set(); // collapsed staff hour-groups (by start time)
 let showUnusedTugs=false;    // hide not-in-service tugs on the board unless toggled
+/* auto-assign modes + dual-area (purple) people */
+let autoMode=null;            // null | 'tug' | 'remote'
+let autoPick=[];             // emps multi-selected in auto mode (ordered)
+let autoStep=0;              // remote: index into REMOTE_ORDER
+let dualArea=new Set();       // emps allowed in up to 2 areas (shown purple)
+const REMOTE_ORDER=["Ballpark","WestPark","APU","South Team","Terminal B"];
+function empAreaCount(emp){let n=0;Object.values(ST.assign.areas).forEach(list=>list.forEach(p=>{if(p.emp===emp)n++;}));return n;}
+function empInTug(emp){return Object.values(ST.assign.tugs).some(t=>["DRIVER","OBSERVR"].some(r=>t[r]&&t[r].emp===emp));}
+function availBody(b){const emp=b.emp;if(dispEmp()===emp)return false;if(empInTug(emp))return false;const ac=empAreaCount(emp);if(ac===0)return true;return dualArea.has(emp)&&ac<2;} // purple people stay until in 2 areas
+function mkBody(b){return b?{name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double}:null;}
+function poolTapDual(emp){dualArea.has(emp)?dualArea.delete(emp):dualArea.add(emp);render();}
+function autoPairTugs(){
+  const items=autoPick.map(e=>poolFor(ST.shift).find(b=>b.emp===e)).filter(Boolean);
+  const used=new Set(),pairs=[];
+  for(let i=0;i<items.length;i++){ if(used.has(i))continue; used.add(i); let j=-1;
+    for(let k=i+1;k<items.length;k++){ if(!used.has(k)&&items[k].hours===items[i].hours){j=k;break;} } // shift parity first
+    if(j<0)for(let k=i+1;k<items.length;k++){ if(!used.has(k)){j=k;break;} }                            // else next available
+    if(j>=0)used.add(j); pairs.push([items[i],j>=0?items[j]:null]); }
+  const free=TUGS.filter(id=>{const t=tugState(id);if(!t.running)return false;const c=ST.assign.tugs[id]||{};return !c.DRIVER&&!c.OBSERVR;});
+  let n=0; pairs.forEach((p,idx)=>{const id=free[idx];if(id==null)return;ST.assign.tugs[id]={DRIVER:mkBody(p[0]),OBSERVR:mkBody(p[1])};n++;});
+  autoMode=null;autoPick=[];render();
+  toast(n?`Paired ${n} tug${n>1?'s':''}`+(pairs.length>n?` · ${pairs.length-n} pair(s) had no free tug`:""):"No free tugs available");
+}
+function autoNextRemote(){
+  const area=REMOTE_ORDER[autoStep],list=ST.assign.areas[area]=ST.assign.areas[area]||[];
+  autoPick.forEach(emp=>{ if(list.some(p=>p.emp===emp))return; const b=poolFor(ST.shift).find(x=>x.emp===emp); if(b)list.push(mkBody(b)); });
+  autoPick=[]; autoStep++;
+  if(autoStep>=REMOTE_ORDER.length){autoMode=null;autoStep=0;toast("Auto remote complete");}
+  render();
+}
+function autoBar(){
+  if(autoMode==="tug")
+    return `<div class="autobar"><div class="ab-msg"><b>AUTO MODE · TUG</b><small>Tap people to pair into tugs (in order) — <span id="abCount">${autoPick.length}</span> picked</small></div>
+      <div class="ab-acts"><button class="btn ghost" id="abCancel">Cancel</button><button class="btn good" id="abGo">Pair up ›</button></div></div>`;
+  const area=REMOTE_ORDER[autoStep],ar=AREAS.find(a=>a.key===area),min=ar&&ar.min?ar.min[ST.shift]:0;
+  const lbl=area==="South Team"?"SOUTH":area==="Terminal B"?"TB":area.toUpperCase();
+  return `<div class="autobar"><div class="ab-msg"><b>AUTO MODE — PICK YOUR ${min} ${lbl} ${min===1?"PERSON":"PEOPLE"}</b><small><span id="abCount">${autoPick.length}</span> picked · step ${autoStep+1} of ${REMOTE_ORDER.length}</small></div>
+    <div class="ab-acts"><button class="btn ghost" id="abCancel">Cancel</button><button class="btn good" id="abNext">${autoStep<REMOTE_ORDER.length-1?"Next ›":"Finish"}</button></div></div>`;
+}
 function initAssign(){
   if(!ST.assign){ ST.assign={ tugs:{}, areas:{} }; AREAS.forEach(a=>ST.assign.areas[a.key]=[]); }
   if(!ST.dispatch){ const d=dispatchCandidates(ST.shift).find(x=>x.avail); ST.dispatch=d?{name:d.name,emp:d.emp,custom:false}:{name:"",emp:"",custom:false}; }
@@ -666,15 +705,15 @@ const POWER='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke=
 const ovh=m=>(m/60).toFixed(1).replace('.0','');
 function rAssign(){
   const pool=poolFor(ST.shift);
-  const used=assignedEmps();
-  const avail=pool.filter(b=>!used.has(b.emp));
+  const avail=pool.filter(availBody);
   // group by START time so doubles & prev-shift workers sit with their base-shift peers
   const toMin=t=>{const m=(t||"").match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):9999;};
   const chip=(b,groupEnd)=>{const pw=prevWorkLabel(b.emp), fwd=!pw&&worksNext(b.emp);
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=toMin(e)<groupEnd;                         // leaves before the group's latest end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
-    return `<button class="abody ${SEL===b.emp?'sel':''} ${fwd?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${fwd?'<em>DBL</em>':''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+    const ac=empAreaCount(b.emp);
+    return `<button class="abody ${SEL===b.emp?'sel':''} ${dualArea.has(b.emp)?'dual':''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${fwd?'<em>DBL</em>':''}${dualArea.has(b.emp)&&ac>0?`<em class="a2">${ac}/2</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const grp={};avail.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
   const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
   const poolHTML=avail.length?gkeys.map(st=>{
@@ -727,10 +766,11 @@ function rAssign(){
   const running=TUGS.filter(id=>tugState(id).running).length;
   ROOT.innerHTML=`
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
-      <p class="hint" style="margin:2px 0 0">Tap a name, then tap a tug or area slot. Tap a filled slot to clear it.</p></div>
+      <p class="hint" style="margin:2px 0 0">${autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. <b>Double-tap</b> a name to make it purple (can go in 2 areas).'}</p></div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
+        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto: Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto: Remote</button></div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
       <div class="asg2-board">
@@ -740,8 +780,20 @@ function rAssign(){
       </div>
     </div>
     <div class="btnrow" style="margin-top:10px"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>
-    ${back("reconcile","Tugs")}`;
-  $$('#staffRoot .abody').forEach(b=>b.onclick=()=>{ SEL=(SEL===b.dataset.emp?null:b.dataset.emp); render(); });
+    ${back("reconcile","Tugs")}
+    ${autoMode?'<div class="autobar-spacer"></div>'+autoBar():''}`;
+  // pool chip: single tap = select / auto-pick (class-only update so taps stay instant
+  // and double-tap still works) · double tap = toggle purple (2-area)
+  const poolEl=$('#staffRoot .pool-groups');
+  poolEl?.addEventListener('click',ev=>{ const chip=ev.target.closest('.abody'); if(!chip)return; const emp=chip.dataset.emp;
+    if(autoMode){ const i=autoPick.indexOf(emp); i>=0?autoPick.splice(i,1):autoPick.push(emp); chip.classList.toggle('apick',autoPick.includes(emp)); const cc=$('#abCount'); if(cc)cc.textContent=autoPick.length; }
+    else { if(SEL===emp){SEL=null;chip.classList.remove('sel');} else { SEL=emp; $$('#staffRoot .abody.sel').forEach(c=>c.classList.remove('sel')); chip.classList.add('sel'); } } });
+  poolEl?.addEventListener('dblclick',ev=>{ const chip=ev.target.closest('.abody'); if(!chip)return; poolTapDual(chip.dataset.emp); });
+  $("#autoTug")?.addEventListener("click",()=>{ autoMode=autoMode==='tug'?null:'tug'; autoPick=[]; SEL=null; render(); });
+  $("#autoRemote")?.addEventListener("click",()=>{ autoMode=autoMode==='remote'?null:'remote'; autoStep=0; autoPick=[]; SEL=null; render(); });
+  $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
+  $("#abGo")?.addEventListener("click",autoPairTugs);
+  $("#abNext")?.addEventListener("click",autoNextRemote);
   $$('#staffRoot .shgrp-h[data-grp]').forEach(h=>h.onclick=()=>{ const g=h.dataset.grp; poolCollapsed.has(g)?poolCollapsed.delete(g):poolCollapsed.add(g); render(); });
   const place=(setter)=>{ if(!SEL)return; const b=poolFor(ST.shift).find(x=>x.emp===SEL); if(!b)return; setter({name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double}); SEL=null; render(); };
   $("#dispSel")?.addEventListener("change",e=>{ const v=e.target.value;
@@ -756,7 +808,7 @@ function rAssign(){
   $$('#staffRoot .tcard.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
   $("#toggleUnused")?.addEventListener("click",()=>{ showUnusedTugs=!showUnusedTugs; render(); });
   $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
-  $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>ST.assign.areas[k].push(p)); });
+  $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>{ if(!ST.assign.areas[k].some(x=>x.emp===p.emp))ST.assign.areas[k].push(p); }); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; ST.assign.areas[k].splice(i,1); render(); });
   $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="sheet"; render(); };  // briefing is edited in its own tab, not here
   saveDraft();

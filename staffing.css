@@ -339,3 +339,22 @@
 .bid-line b{font-weight:800}
 .prow.open{background:#f5f9fc;border-radius:9px;padding-left:8px;padding-right:6px}
 .prow.open .bid-line{display:block}
+
+/* ===== Auto-assign modes + dual-area (purple) people ===== */
+.auto-btns{display:flex;gap:6px;margin:0 0 8px}
+.auto-btns .btn.sm{flex:1;width:auto;padding:8px 6px;font-size:12px}
+.auto-btns .btn.sm.on{background:#0b3d63;border-color:#0b3d63;color:#fff}
+.abody.dual{background:#f3e9fb;border-color:#9a4dbf;color:#6b1f8f}
+.abody.dual span{color:#8a4baf}
+.abody.dual.sel{background:#6b1f8f;border-color:#6b1f8f;color:#fff}
+.abody.dual.sel span{color:rgba(255,255,255,.85)}
+.abody .a2{background:#9a4dbf}
+.abody.apick{outline:3px solid #0b3d63;outline-offset:1px}
+.autobar-spacer{height:74px}
+.autobar{position:fixed;left:0;right:0;bottom:0;z-index:350;background:#0b3d63;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;box-shadow:0 -6px 18px rgba(0,0,0,.28)}
+.autobar .ab-msg b{font-size:13.5px;display:block;letter-spacing:.4px}
+.autobar .ab-msg small{font-size:11px;opacity:.85}
+.autobar .ab-acts{display:flex;gap:8px;flex:none}
+.autobar .btn{width:auto;padding:10px 15px}
+
+.abody{touch-action:manipulation}
