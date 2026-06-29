@@ -372,6 +372,10 @@
 .abody .prt{background:#c98a00;color:#fff;font-style:normal;font-size:8px;font-weight:900;letter-spacing:.04em;border-radius:4px;padding:1px 4px;margin-left:5px;vertical-align:1px}
 .abody.partial{border-style:dashed;border-color:#d9a528}
 .tag.pt{background:#fcefcf;color:#9a6b00}
+.pool-sub{display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#9a6b00}
+.pool-sub::before{content:"";flex:0 0 16px;height:2px;border-radius:2px;background:#e3c873}
+.pool-sub span{flex:1;border-bottom:1px dashed #e3c873;padding-bottom:3px}
+.pool-sub b{background:#fcefcf;color:#9a6b00;border-radius:999px;padding:1px 9px;font-size:11px}
 .prow.partial .prow-main>div>b::after{content:"";}
 .prow.partial{box-shadow:inset 3px 0 0 #d9a528}
 .tdbl{display:block;width:100%;margin-top:6px;border:1px dashed var(--line);background:#fff;border-radius:8px;padding:5px;font-size:10.5px;font-weight:800;color:#67727e;cursor:pointer;letter-spacing:.03em}
