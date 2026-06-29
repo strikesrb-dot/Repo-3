@@ -813,7 +813,7 @@ function load(){
   let d=Store.getJSON(KEY,null);
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[]; d.movements||=[]; d.locZones||={};
-  d.hiddenTiles||=[]; d.subtypes||={};
+  d.hiddenTiles||=[]; d.subtypes||={}; d._tomb||={};
   // one-time: hide the Preview tiles by default (re-show them via Settings → Home screen tiles)
   if(!d.previewSeeded){["preview","preview2"].forEach(k=>{if(!d.hiddenTiles.includes(k))d.hiddenTiles.push(k);});d.previewSeeded=true;}
   d.settings=Object.assign({
@@ -868,14 +868,22 @@ function configRow(){const o={id:"config",when:data._t||0};CFG_FIELDS.forEach(k=
 function applyConfigRow(r){if(!r)return;CFG_FIELDS.forEach(k=>{if(k in r)data[k]=r[k];});data._t=r.when||data._t||0;_cfgSig=configSig();}
 let _siteSyncT=null,_siteBusy=false;
 function scheduleSiteSync(){ if(!window.SYNC||!window.SYNC.on())return; clearTimeout(_siteSyncT); _siteSyncT=setTimeout(()=>syncSite(),1200); }
+// deletions sync as tombstones ({del:true}) so they propagate instead of being re-added by another device
+function rowsWithTomb(list,tomb){ const r=(list||[]).map(e=>({...e,when:e.when||0})); (tomb||[]).forEach(t=>r.push({id:t.id,del:true,when:t.when||0})); return r; }
+function splitRows(arr,liveCap){ let live=[],tomb=[]; (arr||[]).forEach(e=>{ if(!e||!e.id)return; if(e.del)tomb.push({id:e.id,when:e.when||0}); else live.push(e); });
+  if(liveCap&&live.length>liveCap)live=live.sort((a,b)=>(b.when||b.ts||0)-(a.when||a.ts||0)).slice(0,liveCap);
+  if(tomb.length>1000)tomb=tomb.sort((a,b)=>(b.when||0)-(a.when||0)).slice(0,1000);
+  return {live,tomb}; }
+function tombstone(id,kind){ data._tomb=data._tomb||{}; (data._tomb[kind]=data._tomb[kind]||[]).push({id,when:Date.now()}); if(window.SYNC)window.SYNC.push(kind,id,{id,del:true,when:Date.now()}); }
 async function syncSite(force){
   if(_siteBusy||!window.SYNC||!window.SYNC.on())return false;
   _siteBusy=true; let changed=false;
   try{
     const moveCap=Math.max(50,(data.settings&&data.settings.moveCap)||300);
+    data._tomb=data._tomb||{};
     changed=await window.SYNC.shared("equip",   ()=>data.equipment, arr=>{data.equipment=arr;persist();}, 100000)||changed;
-    changed=await window.SYNC.shared("emove",    ()=>data.movements, arr=>{data.movements=arr;persist();}, moveCap)||changed;
-    changed=await window.SYNC.shared("esecure",  ()=>data.secureLog, arr=>{data.secureLog=arr;persist();}, 500)||changed;
+    changed=await window.SYNC.shared("emove",    ()=>rowsWithTomb(data.movements,data._tomb.emove), arr=>{const s=splitRows(arr,moveCap);data.movements=s.live;data._tomb.emove=s.tomb;persist();}, 5000)||changed;
+    changed=await window.SYNC.shared("esecure",  ()=>rowsWithTomb(data.secureLog,data._tomb.esecure), arr=>{const s=splitRows(arr,2000);data.secureLog=s.live;data._tomb.esecure=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("config",   ()=>[configRow()], arr=>{applyConfigRow(arr[0]);persist();}, 1)||changed;
   }catch(_){}
   _siteBusy=false;
@@ -1194,6 +1202,7 @@ $("#moveWipe").addEventListener("click",()=>{
   if(pass===null)return;
   if(pass!==curPass()){toast("Wrong passcode");return;}
   if(!confirm(`Permanently wipe all ${data.movements.length} logged movement(s)? This cannot be undone.`))return;
+  data.movements.forEach(m=>{if(m.id)tombstone(m.id,"emove");});  // tombstone so the wipe sticks across devices
   data.movements=[];save();renderMovement();toast("Movement log wiped");});
 /* ---- configurable app settings ---- */
 const HUB_TILES=[["staffing","Manpower / Staffing"],["briefing","Briefing & Focus"],["preview","Preview"],["preview2","Preview 2"],
@@ -1819,7 +1828,7 @@ function renderSecHome(r){
   $("#secImg")?.addEventListener("click",downloadSecureImage);
   $("#secTxt")?.addEventListener("click",downloadSecureText);
   $$(".sec-del",r).forEach(b=>b.addEventListener("click",e=>{const li=e.target.closest("[data-id]");
-    if(confirm("Delete this entry?")){data.secureLog=data.secureLog.filter(x=>x.id!==li.dataset.id);save();renderSecure();}}));
+    if(confirm("Delete this entry?")){const id=li.dataset.id;data.secureLog=data.secureLog.filter(x=>x.id!==id);tombstone(id,"esecure");save();renderSecure();}}));
   $$(".sec-edit",r).forEach(b=>b.addEventListener("click",e=>{const li=e.target.closest("[data-id]");
     const en=data.secureLog.find(x=>x.id===li.dataset.id);if(!en)return;
     sec={stage:"details",id:en.id,area:en.area,spot:en.spot,ac:en.ac?{...en.ac}:null,reasons:en.reasons?en.reasons.slice():(en.reason?[en.reason]:[]),name:en.name||"",time:en.time||"",comment:en.comment||""};
