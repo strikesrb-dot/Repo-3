@@ -157,6 +157,8 @@
   .invpop .nosehit span{font-weight:600;color:var(--muted);font-size:12px}
   .selpill .pillspot{font-size:10px;font-weight:700;color:var(--muted);background:#eef2f5;border-radius:6px;padding:2px 5px;margin-left:1px}
   .selpill.on .pillspot{color:#15622f;background:rgba(30,125,70,.14)}
+  .selpill .pill-spotbtn{font-size:10px;font-weight:800;color:#15622f;background:#fff;border:1px dashed var(--good);border-radius:7px;padding:2px 7px;margin-top:1px;cursor:pointer}
+  .selpill .pill-spotbtn:active{transform:scale(.94)}
   .selpill.oos .pillspot{color:#b3251d;background:rgba(217,52,43,.12)}
   /* in-app image preview (keeps you on the sheet, no navigation away) */
   .imgprev-back{position:fixed;inset:0;z-index:400;background:rgba(12,24,40,.6);display:flex;align-items:center;justify-content:center;padding:16px;animation:invFade .15s ease}
@@ -1611,11 +1613,11 @@ $("#locEditOverlay").addEventListener("click",e=>{if(e.target.id==="locEditOverl
 function renderInvSelect(r){
   invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map(); // start fresh — no auto-highlight
   // locations with sub-locations or a nose number still use the tap-menu so detail is captured;
-  // simple locations use the fast multi-press cycle: 1× here · 2× out of service · 3× clear
-  const detailed=!!locZonesFor(inv.loc)||needsNose(inv.loc,null);
+  // every location uses the fast multi-press cycle: 1× here · 2× out of service · 3× clear
+  const canSpot=!!locZonesFor(inv.loc)||needsNose(inv.loc,null);   // spot/nose is optional, set via the chip
   r.innerHTML=`<div class="card pad">
     <div class="m-loc">${esc(inv.loc)}<span class="m-locn" id="invSelN"></span></div>
-    <p class="hint" style="margin:2px 0 0">${detailed?"Tap a unit, then pick its spot and confirm it's here or out of service.":"Tap to count — <b>1×</b> here · <b>2×</b> out of service · <b>3×</b> clear."}</p>
+    <p class="hint" style="margin:2px 0 0">Tap to count — <b>1×</b> here · <b>2×</b> out of service · <b>3×</b> clear.${canSpot?' Tap the <b>spot</b> chip to add a spot/nose.':''}</p>
     <input id="invSearch" type="search" placeholder="Filter…" autocomplete="off" style="margin:11px 0 2px" />
     <div id="invList" style="margin-top:6px"></div></div>`;
   function paint(){
@@ -1629,15 +1631,19 @@ function renderInvSelect(r){
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
       return `<div class="m-cat">${esc(g.type)}${sel?`<span class="m-catn">${sel} here</span>`:""}</div>`+
         `<div class="pillgrid">`+its.map(e=>{const oos=invOos.has(e.id),on=invSel.has(e.id),det=invDetail(invSpot.get(e.id),invNose.get(e.id));
-          return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${det?`<span class="pillspot">${esc(det)}</span>`:""}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div>`;
+          const spotChip=(on&&!oos&&canSpot)?`<span class="pill-spotbtn" data-spot="${e.id}">${det?esc(det):'＋ spot'}</span>`:(det?`<span class="pillspot">${esc(det)}</span>`:"");
+          return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${spotChip}${oos?'<span class="oostag">OUT OF SERVICE</span>':''}</button>`;}).join("")+`</div>`;
     }).join(""):`<p class="hint" style="padding:10px 2px">Nothing left to count here — all units are accounted for at other locations.</p>`;
     const n=invSel.size;$("#invSelN").textContent=n?n+" selected":"";
     $("#wizNext").textContent=`✓ Save ${n} ›`;
   }
-  $("#invList").addEventListener("click",e=>{const li=e.target.closest(".selpill[data-id]");if(!li)return;
+  $("#invList").addEventListener("click",e=>{
+    // optional spot/nose chip (only on "here" units at spot locations) opens the picker — never forced
+    const sb=e.target.closest(".pill-spotbtn");
+    if(sb){openInvPop(sb.closest(".selpill"),sb.dataset.spot,paint);return;}
+    const li=e.target.closest(".selpill[data-id]");if(!li)return;
     const id=li.dataset.id;
-    if(detailed){openInvPop(li,id,paint);return;}
-    // multi-press cycle: none → here → out of service → none
+    // standard multi-press cycle everywhere: none → here → out of service → none
     const here=invSel.has(id)&&!invOos.has(id);
     if(!invSel.has(id)){invSel.add(id);invOos.delete(id);}
     else if(here){invOos.add(id);}
