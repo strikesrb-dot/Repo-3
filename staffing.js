@@ -367,16 +367,43 @@ function assignedCount(){ if(!ST.assign)return 0; let n=0;
   Object.values(ST.assign.tugs).forEach(t=>["DRIVER","OBSERVR"].forEach(r=>t[r]&&n++));
   Object.values(ST.assign.areas).forEach(li=>n+=li.length);
   if(ST.dispatch&&ST.dispatch.name)n++; return n; }
+/* ---- team sync (shared logs + drafts via Supabase REST) ---- */
+const SUPA_URL="https://diqqjyryhzpzlrivupef.supabase.co/rest/v1";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpcXFqeXJ5aHpwemxyaXZ1cGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2OTQzMzIsImV4cCI6MjA5ODI3MDMzMn0.o2ew-zOD5R1w3fzpUYScOLVEehvCpVQ-89MsOHjgYHI";
+if(!Store.getJSON("elt.sync.cfg",null))Store.setJSON("elt.sync.cfg",{on:true,url:SUPA_URL,key:SUPA_KEY});
+function syncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{};return {on:c.on!==false,url:c.url||SUPA_URL,key:c.key||SUPA_KEY};}
+function syncOn(){const c=syncCfg();return !!(c.on&&c.url&&c.key);}
+function supaUrl(path){return syncCfg().url.replace(/\/+$/,"")+"/"+path;}
+function supaHdr(extra){const c=syncCfg();return Object.assign({apikey:c.key,Authorization:"Bearer "+c.key,"Content-Type":"application/json"},extra||{});}
+async function pushRow(kind,id,data){ if(!syncOn())return; try{ await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify([{id,kind,data}])}); }catch(_){ } }
+async function delRow(id){ if(!syncOn())return; try{ await fetch(supaUrl("manpower_shared?id=eq."+encodeURIComponent(id)),{method:"DELETE",headers:supaHdr()}); }catch(_){ } }
+async function pullKind(kind){ if(!syncOn())return null; try{ const r=await fetch(supaUrl("manpower_shared?kind=eq."+kind+"&select=id,data"),{headers:supaHdr()}); if(!r.ok)return null; return await r.json(); }catch(_){ return null; } }
+// two-way merge: newest `when` wins both directions, then upload anything we have that's newer/missing
+async function syncShared(kind,load,saveFn,cap){
+  if(!syncOn())return false;
+  const rows=await pullKind(kind); if(rows===null)return false;
+  const remote={}; rows.forEach(r=>{const e=r.data; if(e&&e.id)remote[e.id]=e;});
+  const map={}; load().forEach(e=>map[e.id]=e); let changed=false;
+  Object.values(remote).forEach(e=>{const cur=map[e.id]; if(!cur||(e.when||0)>(cur.when||0)){ if(cur&&!e.img&&cur.img)e.img=cur.img; map[e.id]=e; changed=true; }});
+  const toPush=Object.values(map).filter(e=>{const r=remote[e.id];return !r||(e.when||0)>(r.when||0);}).map(e=>({id:e.id,kind,data:e}));
+  if(changed)saveFn(Object.values(map).sort((a,b)=>(b.when||0)-(a.when||0)).slice(0,cap));
+  if(toPush.length){ try{ await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify(toPush)}); }catch(_){ } }
+  return changed;
+}
+let _logPull=0,_draftPull=0;
+async function syncLogs(force){ const n=Date.now(); if(!force&&n-_logPull<2500)return false; _logPull=n; const c=await syncShared("log",loadLog,saveLogList,24); if(c&&(ST.step==="logs"||ST.step==="menu"))render(); return c; }
+async function syncDrafts(force){ const n=Date.now(); if(!force&&n-_draftPull<2500)return false; _draftPull=n; const c=await syncShared("draft",loadDrafts,saveDraftList,6); if(c&&(ST.step==="drafts"||ST.step==="menu"))render(); return c; }
 function loadDrafts(){const d=Store.getJSON("elt.staff.drafts",[]);return Array.isArray(d)?d:[];}
 function saveDraftList(l){return Store.setJSON("elt.staff.drafts",l);}
 function saveDraft(){
   if(!ST.parsed||assignedCount()<1)return;
   const date=ST.parsed.date||"",shift=ST.shift,id="D|"+date+"|"+shift;
-  const entry={id,date,shift,when:Date.now(),count:assignedCount(),step:ST.step,snap:snapshot()};
+  const entry={id,date,shift,when:Date.now(),count:assignedCount(),step:ST.step,snap:snapshot(),by:AUTH?AUTH.name:""};
   let l=loadDrafts().filter(e=>e.id!==id);l.unshift(entry);l=l.slice(0,6);
   if(!saveDraftList(l)){l=l.slice(0,3);saveDraftList(l);}
+  pushRow("draft",id,entry);
 }
-function deleteDraft(id){ saveDraftList(loadDrafts().filter(e=>e.id!==id)); }
+function deleteDraft(id){ saveDraftList(loadDrafts().filter(e=>e.id!==id)); delRow(id); }
 
 /* ---- step: auth (who's running this shift + code) ---- */
 let AUTH=null;                  // {name, role, temp} for this app session
@@ -479,6 +506,7 @@ function rAuth(){
 
 /* ---- step: menu (Create / Past / Draft) ---- */
 function rMenu(){
+  syncLogs();syncDrafts();   // refresh team data in the background
   const logs=loadLog().length, drafts=loadDrafts().length;
   ROOT.innerHTML=card(`
     <div class="pool-head"><h2 class="staff-h" style="margin:0">Manpower / Staffing</h2>
@@ -500,6 +528,7 @@ function rMenu(){
 
 /* ---- step: drafts ---- */
 function rDrafts(){
+  syncDrafts();
   const list=loadDrafts();
   const ord={AM:0,PM:1,NH:2};
   ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">Draft manpowers</h2><span class="cnt">${list.length}</span></div>
@@ -1148,15 +1177,17 @@ function logManpower(){
   let img="";try{const src=renderStaffCanvas();const w=1000,h=Math.round(src.height/src.width*w);
     const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);
     img=c.toDataURL("image/jpeg",0.85);}catch(_){}
-  const entry={id:date+"|"+shift,date,shift,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",by:AUTH?AUTH.name:"",img,snap:snapshot()};
+  const entry={id:date+"|"+shift,date,shift,when:Date.now(),pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",by:AUTH?AUTH.name:"",img,snap:snapshot()};
   let l=loadLog().filter(e=>e.id!==entry.id);l.unshift(entry);l=l.slice(0,24);
   if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,snap:null}); if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,img:""}); l=l.slice(0,12); saveLogList(l); } }
+  pushRow("log",entry.id,entry);      // share with the team
   deleteDraft("D|"+date+"|"+shift);   // finalized — drop the draft
   toast("Logged: "+date+" "+shift);
   logSel=entry.id; ST.step="logs"; render();   // jump to the saved record (image/PDF/share live here)
 }
 let logSel=null;
 function rLogs(){
+  if(!logSel)syncLogs();
   const list=loadLog();
   if(logSel){const e=list.find(x=>x.id===logSel);
     if(!e){logSel=null;return rLogs();}
@@ -1169,7 +1200,7 @@ function rLogs(){
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logTxt">Text</button></div>`:'<p class="hint">This entry has no saved board, so it can\'t be reopened.</p>'}
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button><button class="btn ghost" id="logDel">Delete</button></div>`);
     $("#logBack").onclick=()=>{logSel=null;render();};
-    $("#logDel").onclick=()=>{saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render();};
+    $("#logDel").onclick=()=>{delRow(logSel);saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render();};
     $("#logEdit")?.addEventListener("click",()=>{ applySnapshot(e.snap); ST._tugSeeded=true; logSel=null; ST.step="assign"; render(); }); // reopen the saved board to edit (re-log to overwrite)
     $("#logImg")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetImage()));
     $("#logTxt")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetText()));
@@ -1241,7 +1272,7 @@ function renderBriefTab(){
 
 /* expose entry points */
 window.STAFF={
-  open:()=>{ loadBids(); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
+  open:()=>{ loadBids(); syncLogs(true); syncDrafts(true); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
   roster:()=>rosterAll(),
   hasCode:n=>hasCode(n),
   resetCode:n=>{ resetCode(n); },

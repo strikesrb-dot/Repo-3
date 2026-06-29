@@ -667,6 +667,21 @@
       <div id="supCodes"></div>
     </div>
 
+    <h2 class="section">Team sync (online)</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Shares logged &amp; draft manpowers across supervisors so everyone sees the same history. Turn off to go fully local (offline).</p>
+      <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Online sync<small id="syncStatus"></small></span><input type="checkbox" id="syncOnChk" class="cfg-chk"></label>
+      <details style="margin-top:6px">
+        <summary style="font-weight:700;color:var(--navy);cursor:pointer;font-size:13px">Backend (advanced)</summary>
+        <label for="syncUrl" style="margin-top:8px">Supabase REST URL</label>
+        <input id="syncUrl" autocomplete="off" placeholder="https://xxxx.supabase.co/rest/v1" />
+        <label for="syncKey">anon public key</label>
+        <input id="syncKey" autocomplete="off" placeholder="eyJ…" />
+        <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="syncTest">Test connection</button><button class="btn navy" id="syncSave" style="flex:0 0 110px">Save</button></div>
+        <p class="hint" id="syncMsg" style="margin-bottom:0"></p>
+      </details>
+    </div>
+
     <h2 class="section">Master list (shared on the page)</h2>
     <div class="card pad">
       <p class="hint" style="margin-top:0">To make your list global: <b>Export all data</b>, save as <code>equipment.json</code>, add it to the repo. New phones auto-load it.</p>
@@ -965,7 +980,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -1207,6 +1222,14 @@ $("#addSubtypeBtn").addEventListener("click",()=>{const cat=$("#subtypeCat").val
   if(data.subtypes[cat].some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already listed");return;}
   data.subtypes[cat].push(v);$("#newSubtype").value="";save();renderSubtypePresets();toast("Subtype added");});
 $("#newSubtype").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addSubtypeBtn").click();});
+function renderSyncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{on:true,url:"",key:""};
+  $("#syncOnChk").checked=c.on!==false;$("#syncUrl").value=c.url||"";$("#syncKey").value=c.key||"";
+  $("#syncStatus").textContent=(c.on!==false)?(c.url?" · sharing with the team":" · no backend set"):" · off (local only)";}
+$("#syncOnChk").addEventListener("change",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.on=$("#syncOnChk").checked;Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast(c.on?"Online sync on":"Online sync off — local only");});
+$("#syncSave").addEventListener("click",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.url=$("#syncUrl").value.trim();c.key=$("#syncKey").value.trim();Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast("Sync backend saved");});
+$("#syncTest").addEventListener("click",async()=>{const url=$("#syncUrl").value.trim(),key=$("#syncKey").value.trim();$("#syncMsg").textContent="Testing…";
+  try{const r=await fetch(url.replace(/\/+$/,"")+"/manpower_shared?select=id&limit=1",{headers:{apikey:key,Authorization:"Bearer "+key}});
+    $("#syncMsg").textContent=r.ok?"✓ Connected — table reachable.":"✗ HTTP "+r.status+" "+(await r.text()).slice(0,120);}catch(e){$("#syncMsg").textContent="✗ "+(e.message||e);}});
 $("#passSave").addEventListener("click",()=>{const v=$("#passNew").value.trim();
   if(!/^\d{3,8}$/.test(v)){toast("Use 3–8 digits");return;}
   data.settings.passcode=v;save();$("#passNew").value="";toast("Passcode updated");});
