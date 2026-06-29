@@ -655,8 +655,8 @@ function rPool(){
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;};
   const full=pool.filter(b=>tier(b)==='full'), parts=pool.filter(b=>tier(b)==='part'), ones=pool.filter(b=>tier(b)==='one');
   ROOT.innerHTML=card(`
-    <div class="pool-head"><h2 class="staff-h" style="margin:0">${ST.shift} pool</h2><span class="cnt">${pool.length}</span></div>
-    <div class="pool-tiers"><span class="pt-f">Full <b>${full.length}</b></span><span class="pt-p">Partial <b>${parts.length}</b></span><span class="pt-o">1 hr <b>${ones.length}</b></span></div>
+    <div class="pool-head"><h2 class="staff-h" style="margin:0">${ST.shift} pool</h2>
+      <div class="pool-tiers"><span class="pt-f">Full <b>${full.length}</b></span><span class="pt-p">Partial <b>${parts.length}</b></span><span class="pt-o">1 hr <b>${ones.length}</b></span></div></div>
     <div class="muted-row">Dispatcher candidate: ${dispLine}</div>
     <p class="hint" style="margin:0 0 6px">Tap a name to see their bid hours &amp; days off.</p>
     <div class="prow-wrap">${full.map(row).join("")||(parts.length||ones.length?'':'<p class="hint">No one in this shift.</p>')}</div>
