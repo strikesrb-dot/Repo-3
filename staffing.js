@@ -47,8 +47,8 @@ function rosterAll(){ return [...supervisorList().map(n=>({name:n,role:"Supervis
 /* per-person codes (stored hashed, never plaintext) */
 function loadCodes(){return Store.getJSON("elt.staff.codes",{})||{};}
 function saveCodes(c){return Store.setJSON("elt.staff.codes",c);}
-function hasCode(name){ return !!loadCodes()[name]; }
-function resetCode(name){ const c=loadCodes(); delete c[name]; saveCodes(c); }
+function hasCode(name){ const e=loadCodes()[name]; return !!(e&&e.hash); }   // tombstones (reset) carry no hash
+function resetCode(name){ const c=loadCodes(); const when=Date.now(); c[name]={reset:true,when}; saveCodes(c); /* persist a local tombstone so the reset propagates instead of being resurrected by another device */ pushRow("code","C|"+name,{id:"C|"+name,name,reset:true,when}); }
 async function hashCode(salt,code){
   try{ const data=new TextEncoder().encode(salt+"|"+code);
     const buf=await crypto.subtle.digest("SHA-256",data);
@@ -56,8 +56,8 @@ async function hashCode(salt,code){
   catch(_){ let h=0; const s=salt+"|"+code; for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;} return "f"+h.toString(16); }
 }
 function randSalt(){ const a=new Uint8Array(8); (crypto.getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=i*7)); return [...a].map(b=>b.toString(16).padStart(2,"0")).join(""); }
-async function setCode(name,code){ const c=loadCodes(); const salt=randSalt(); c[name]={salt,hash:await hashCode(salt,code)}; return saveCodes(c); }
-async function checkCode(name,code){ const e=loadCodes()[name]; if(!e)return false; return (await hashCode(e.salt,code))===e.hash; }
+async function setCode(name,code){ const c=loadCodes(); const salt=randSalt(); const when=Date.now(); c[name]={salt,hash:await hashCode(salt,code),when}; const ok=saveCodes(c); pushRow("code","C|"+name,{id:"C|"+name,name,salt,hash:c[name].hash,when}); return ok; }
+async function checkCode(name,code){ const e=loadCodes()[name]; if(!e||!e.hash)return false; return (await hashCode(e.salt,code))===e.hash; }
 const EXCLUDE_DEFAULT=["Bonet, Christopher","Vizcaino, Angel","Dickey, Todd","Mendes","Stephens, Kevin"];
 const OUT_CODES=new Set(["VC","OUT","DTO","HOLT","DATV","DO","SICK","SICK ","CB","SKU","SKUS","Partial DTO","Shift Trade","HOLF","HOLM","JD","MD","DATC","DAT3","C4D","HODV"]);
 const WORKED_CODES=new Set(["DTW","HWP","HWFT"]);
@@ -414,7 +414,11 @@ async function syncShared(kind,load,saveFn,cap){
   if(toPush.length){ try{ await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify(toPush)}); }catch(_){ } }
   return changed;
 }
-let _logPull=0,_draftPull=0;
+// per-person codes as sync rows: tombstones (reset:true) carry no hash and clear the code everywhere
+function loadCodeRows(){ const c=loadCodes(); return Object.keys(c).map(name=>{const e=c[name];return e.reset?{id:"C|"+name,name,reset:true,when:e.when||0}:{id:"C|"+name,name,salt:e.salt,hash:e.hash,when:e.when||0};}); }
+function saveCodeRows(arr){ const c={}; arr.forEach(e=>{ if(!e||!e.name)return; if(e.reset)c[e.name]={reset:true,when:e.when||0}; else if(e.hash)c[e.name]={salt:e.salt,hash:e.hash,when:e.when||0}; }); return saveCodes(c); }
+let _logPull=0,_draftPull=0,_codePull=0;
+async function syncCodes(force){ const n=Date.now(); if(!force&&n-_codePull<2500)return false; _codePull=n; const c=await syncShared("code",loadCodeRows,saveCodeRows,300); if(c&&ST.step==="auth")render(); return c; }
 async function syncLogs(force){ const n=Date.now(); if(!force&&n-_logPull<2500)return false; _logPull=n; const c=await syncShared("log",loadLog,saveLogList,24); if(c&&(ST.step==="logs"||ST.step==="menu"))render(); return c; }
 async function syncDrafts(force){ const n=Date.now(); if(!force&&n-_draftPull<2500)return false; _draftPull=n; const c=await syncShared("draft",loadDrafts,saveDraftList,6); if(c&&(ST.step==="drafts"||ST.step==="menu"))render(); return c; }
 function loadDrafts(){const d=Store.getJSON("elt.staff.drafts",[]);return Array.isArray(d)?d:[];}
@@ -513,6 +517,7 @@ function rAuth(){
     return;
   }
   // pick role + name
+  syncCodes();   // refresh shared codes so saved codes from other devices are recognized
   const roles=["Supervisor","Manager","Assistant Manager"];
   const seg=roles.map(r=>`<button class="seg ${authRole===r?'on':''}" data-role="${r}">${r==="Assistant Manager"?"Asst Mgr":r}</button>`).join("");
   const names=rosterAll().filter(r=>r.role===authRole);
@@ -1313,9 +1318,10 @@ function renderBriefTab(){
 
 /* expose entry points */
 window.STAFF={
-  open:()=>{ loadBids(); syncLogs(true); syncDrafts(true); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
+  open:()=>{ loadBids(); syncLogs(true); syncDrafts(true); syncCodes(true); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
   roster:()=>rosterAll(),
   hasCode:n=>hasCode(n),
+  syncCodes:()=>syncCodes(true),
   resetCode:n=>{ resetCode(n); },
   removeTempSup:n=>{ saveTempSups(loadTempSups().filter(x=>x.name!==n)); if(AUTH&&AUTH.name===n)AUTH=null; },
   who:()=>AUTH?AUTH.name:""

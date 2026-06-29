@@ -1009,6 +1009,8 @@ function openSettingsGate(){
 }
 function renderSupCodes(){
   const wrap=$("#supCodes"); if(!wrap||!window.STAFF||!window.STAFF.roster)return;
+  // pull the latest shared codes so "code set / no code" reflects every device, then re-render if it changed
+  if(window.STAFF.syncCodes)window.STAFF.syncCodes().then(changed=>{ if(changed&&document.querySelector("#supCodes"))renderSupCodes(); });
   const roster=window.STAFF.roster();
   wrap.innerHTML=roster.map(r=>{const set=window.STAFF.hasCode(r.name);
     return `<div class="supc-row"><div><b>${r.name}</b> <span class="supc-role">${r.role}${r.temp?' · temp':''}</span> ${set?'<span class="supc-set">code set</span>':'<span class="supc-unset">no code</span>'}</div>
