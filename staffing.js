@@ -309,11 +309,17 @@ function buildDoubles(){
 /* dispatch candidate for the shift from the DISPATCH section */
 function dispatchCandidates(shift){
   const {mpRecs}=ST.parsed;
-  // include a dispatcher if their shift is the primary OR they work through it (core overlap >60min)
-  // e.g. Menendez bid 20:00–06:00 → primary PM but works the whole NH core, so he's an NH candidate too
-  return mpRecs.filter(r=>r.sec==="DISPATCH"&&r.start)
-    .filter(r=>shiftsFor(r).some(x=>x.sh===shift))
-    .map(r=>({...r,avail:!r.code||WORKED_CODES.has(r.code),sh:shift}));
+  // A dispatcher is a candidate for the shift they actually WORK, not just where their
+  // start time happens to land. They qualify for a shift if they cover ≥4h of its core,
+  // or if it's their single dominant (most-worked) shift — so a 20:00–06:00 bid is a
+  // Nighthawk candidate only (it only clips 1h of the PM core), not a PM one.
+  return mpRecs.filter(r=>r.sec==="DISPATCH"&&r.start).filter(r=>{
+    const p=ivl(r.start,r.end); if(!p)return primaryShift(r.start)===shift;
+    const ovs=SHIFTS.map(s=>({s,ov:ovl(p,SHIFT_CORE[s])}));
+    const here=ovs.find(x=>x.s===shift); if(!here||here.ov<=0)return false;
+    const max=Math.max(...ovs.map(x=>x.ov));
+    return here.ov>=240 || here.ov===max;   // ≥4h of this shift, or it's their dominant shift
+  }).map(r=>({...r,avail:!r.code||WORKED_CODES.has(r.code),sh:shift}));
 }
 /* who was scheduled for the shift but isn't in the pool, and why (code) */
 function calloutReason(emp){ const r=(ST.parsed.coRows||[]).find(x=>x.emp===emp); return r?(/(sick)/i.test(r.reason)?"SICK":(r.reason||"OUT")):""; }
