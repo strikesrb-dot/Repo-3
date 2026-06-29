@@ -662,6 +662,12 @@
       <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
     </div>
 
+    <h2 class="section">Manpower</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Past manpowers are read-only by default. Turn this on to allow deleting them from the Past view (removes the entry for the whole team).</p>
+      <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Allow deleting past manpowers<small id="logDelStatus"></small></span><input type="checkbox" id="allowLogDel" class="cfg-chk"></label>
+    </div>
+
     <h2 class="section">Supervisor codes</h2>
     <div class="card pad">
       <p class="hint" style="margin-top:0">Each supervisor sets their own code the first time they open Manpower. Reset a code here if someone forgot theirs — they'll create a new one next time.</p>
@@ -1029,7 +1035,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -1057,8 +1063,16 @@ function renderSupCodes(){
 $("#addBtn").addEventListener("click",()=>requireUnlock(()=>openEdit(null)));
 function updateBackBtn(){$("#homeBtn").hidden=(curTab==="hub");updateFloatBack();}
 function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&$("#wizFoot").hidden);}
-$("#homeBtn").addEventListener("click",()=>showTab("hub"));
-$("#hdrTitle")?.addEventListener("click",()=>showTab("hub"));
+// leaving a half-built manpower board should warn (it auto-saves as a draft) and reset it so you return to the start
+function goHome(){
+  if(curTab==="staffing"&&window.STAFF&&window.STAFF.inProgress&&window.STAFF.inProgress()){
+    if(!confirm("Leave this manpower? Your progress on this board will be lost (it's kept as a draft you can resume)."))return;
+    window.STAFF.discard&&window.STAFF.discard();
+  }
+  showTab("hub");
+}
+$("#homeBtn").addEventListener("click",goHome);
+$("#hdrTitle")?.addEventListener("click",goHome);
 function invStepBack(){const s=inv.stage;
   if(s==="select"||s==="sheet"||s==="more"){closeInvPop();inv.stage="loc";renderInventory();return;}
   showTab("hub");}
@@ -1073,6 +1087,7 @@ function goBack(){
   if(curTab==="inventory")return invStepBack();
   if(curTab==="park")return parkBack();
   if(curTab==="secure")return secBack();
+  if(curTab==="staffing")return goHome();
   showTab("hub");}
 $("#floatBack").addEventListener("click",goBack);
 
@@ -1280,6 +1295,8 @@ function renderSyncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{on:true,ur
 $("#syncOnChk").addEventListener("change",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.on=$("#syncOnChk").checked;Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast(c.on?"Online sync on":"Online sync off — local only");});
 function renderDemoCfg(){const on=!!Store.getJSON("elt.demo",false);$("#demoChk").checked=on;$("#demoStatus").textContent=on?" · on — names masked":" · off — real names";document.body.classList.toggle("demo-on",on);}
 $("#demoChk").addEventListener("change",()=>{const on=$("#demoChk").checked;Store.setJSON("elt.demo",on);renderDemoCfg();toast(on?"Demo mode on — names masked":"Demo mode off");});
+function renderLogDelCfg(){const on=!!(data.settings&&data.settings.allowLogDelete);$("#allowLogDel").checked=on;$("#logDelStatus").textContent=on?" · on — Delete shown":" · off — read-only";}
+$("#allowLogDel").addEventListener("change",()=>{data.settings.allowLogDelete=$("#allowLogDel").checked;save();renderLogDelCfg();toast(data.settings.allowLogDelete?"Past manpowers can be deleted":"Past manpowers are read-only");});
 $("#syncSave").addEventListener("click",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.url=$("#syncUrl").value.trim();c.key=$("#syncKey").value.trim();Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast("Sync backend saved");});
 $("#syncTest").addEventListener("click",async()=>{const url=$("#syncUrl").value.trim(),key=$("#syncKey").value.trim();$("#syncMsg").textContent="Testing…";
   try{const r=await fetch(url.replace(/\/+$/,"")+"/manpower_shared?select=id&limit=1",{headers:{apikey:key,Authorization:"Bearer "+key}});

@@ -1239,6 +1239,8 @@ function logManpower(){
   logSel=entry.id; ST.step="logs"; render();   // jump to the saved record (image/PDF/share live here)
 }
 let logSel=null;
+// deleting past manpowers is off by default — enabled via Settings (shared app setting)
+function logDeleteAllowed(){ try{ const d=Store.getJSON("elt.data.v1",null); return !!(d&&d.settings&&d.settings.allowLogDelete); }catch(_){ return false; } }
 function rLogs(){
   if(!logSel)syncLogs();
   const list=loadLog();
@@ -1251,9 +1253,9 @@ function rLogs(){
       <div class="btnrow" style="margin-top:8px"><button class="btn navy" id="logShare">Email / Share both ›</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logImg">Save image</button><button class="btn ghost" id="logPdf">PDF / Print</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logTxt">Text</button></div>`:'<p class="hint">This entry has no saved board, so it can\'t be reopened.</p>'}
-      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button><button class="btn ghost" id="logDel">Delete</button></div>`);
+      <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button>${logDeleteAllowed()?'<button class="btn ghost" id="logDel">Delete</button>':''}</div>`);
     $("#logBack").onclick=()=>{logSel=null;render();};
-    $("#logDel").onclick=()=>{delRow(logSel);saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render();};
+    $("#logDel")?.addEventListener("click",()=>{ if(!confirm("Delete this past manpower? It will be removed for the whole team."))return; delRow(logSel);saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render(); });
     $("#logEdit")?.addEventListener("click",()=>{ applySnapshot(e.snap); ST._tugSeeded=true; logSel=null; ST.step="assign"; render(); }); // reopen the saved board to edit (re-log to overwrite)
     $("#logImg")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetImage()));
     $("#logTxt")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetText()));
@@ -1327,6 +1329,9 @@ function renderBriefTab(){
 window.STAFF={
   open:()=>{ loadBids(); syncLogs(true); syncDrafts(true); syncCodes(true); syncTempSups(true); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
   roster:()=>rosterAll(),
+  // mid-build of a board (past the menu) → leaving should warn; discard resets to the start
+  inProgress:()=>["upload","shift","setup","pool","reconcile","assign","sheet","brief"].includes(ST.step),
+  discard:()=>{ ST.step=AUTH?"menu":"auth"; if(!AUTH){authView="pick";authPick=null;authErr="";} },
   hasCode:n=>hasCode(n),
   syncCodes:()=>syncCodes(true),
   syncRoster:()=>syncTempSups(true),
