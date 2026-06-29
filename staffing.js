@@ -417,8 +417,14 @@ async function syncShared(kind,load,saveFn,cap){
 // per-person codes as sync rows: tombstones (reset:true) carry no hash and clear the code everywhere
 function loadCodeRows(){ const c=loadCodes(); return Object.keys(c).map(name=>{const e=c[name];return e.reset?{id:"C|"+name,name,reset:true,when:e.when||0}:{id:"C|"+name,name,salt:e.salt,hash:e.hash,when:e.when||0};}); }
 function saveCodeRows(arr){ const c={}; arr.forEach(e=>{ if(!e||!e.name)return; if(e.reset)c[e.name]={reset:true,when:e.when||0}; else if(e.hash)c[e.name]={salt:e.salt,hash:e.hash,when:e.when||0}; }); return saveCodes(c); }
-let _logPull=0,_draftPull=0,_codePull=0;
+// temporary supervisors as sync rows (union by name)
+function loadTempRows(){ return loadTempSups().map(x=>({id:"T|"+x.name,name:x.name,by:x.by||"",when:x.when||0})); }
+function saveTempRows(arr){ const seen=new Set(),out=[]; arr.forEach(e=>{ if(e&&e.name&&!seen.has(e.name)){seen.add(e.name);out.push({name:e.name,by:e.by||"",when:e.when||0});} }); return saveTempSups(out); }
+let _logPull=0,_draftPull=0,_codePull=0,_tempPull=0;
 async function syncCodes(force){ const n=Date.now(); if(!force&&n-_codePull<2500)return false; _codePull=n; const c=await syncShared("code",loadCodeRows,saveCodeRows,300); if(c&&ST.step==="auth")render(); return c; }
+async function syncTempSups(force){ const n=Date.now(); if(!force&&n-_tempPull<2500)return false; _tempPull=n; const c=await syncShared("tempsup",loadTempRows,saveTempRows,100); if(c&&ST.step==="auth")render(); return c; }
+// generic sync primitives so the equipment side (index.html) can share the same backend
+window.SYNC={ on:()=>syncOn(), shared:(kind,load,save,cap)=>syncShared(kind,load,save,cap), push:(k,id,d)=>pushRow(k,id,d), del:id=>delRow(id) };
 async function syncLogs(force){ const n=Date.now(); if(!force&&n-_logPull<2500)return false; _logPull=n; const c=await syncShared("log",loadLog,saveLogList,24); if(c&&(ST.step==="logs"||ST.step==="menu"))render(); return c; }
 async function syncDrafts(force){ const n=Date.now(); if(!force&&n-_draftPull<2500)return false; _draftPull=n; const c=await syncShared("draft",loadDrafts,saveDraftList,6); if(c&&(ST.step==="drafts"||ST.step==="menu"))render(); return c; }
 function loadDrafts(){const d=Store.getJSON("elt.staff.drafts",[]);return Array.isArray(d)?d:[];}
@@ -510,14 +516,15 @@ function rAuth(){
       if(!signer){authErr="Pick an approving supervisor.";return render();}
       if(!hasCode(signer)){authErr=signer+" hasn't set up a code yet — they must sign in once first.";return render();}
       if(!(await checkCode(signer,code))){authErr="That supervisor's code is incorrect.";return render();}
-      const l=loadTempSups(); l.push({name:authTemp.name,by:signer,when:Date.now()}); saveTempSups(l);
+      const tw=Date.now(); const l=loadTempSups(); l.push({name:authTemp.name,by:signer,when:tw}); saveTempSups(l);
+      pushRow("tempsup","T|"+authTemp.name,{id:"T|"+authTemp.name,name:authTemp.name,by:signer,when:tw});
       authenticate(authTemp.name,"Supervisor",true);
     };
     $$('#staffRoot .auth-back').forEach(b=>b.onclick=()=>{authView="tempname";authErr="";render();});
     return;
   }
   // pick role + name
-  syncCodes();   // refresh shared codes so saved codes from other devices are recognized
+  syncCodes(); syncTempSups();   // refresh shared codes & temp supervisors from other devices
   const roles=["Supervisor","Manager","Assistant Manager"];
   const seg=roles.map(r=>`<button class="seg ${authRole===r?'on':''}" data-role="${r}">${r==="Assistant Manager"?"Asst Mgr":r}</button>`).join("");
   const names=rosterAll().filter(r=>r.role===authRole);
@@ -1318,12 +1325,13 @@ function renderBriefTab(){
 
 /* expose entry points */
 window.STAFF={
-  open:()=>{ loadBids(); syncLogs(true); syncDrafts(true); syncCodes(true); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
+  open:()=>{ loadBids(); syncLogs(true); syncDrafts(true); syncCodes(true); syncTempSups(true); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
   roster:()=>rosterAll(),
   hasCode:n=>hasCode(n),
   syncCodes:()=>syncCodes(true),
+  syncRoster:()=>syncTempSups(true),
   resetCode:n=>{ resetCode(n); },
-  removeTempSup:n=>{ saveTempSups(loadTempSups().filter(x=>x.name!==n)); if(AUTH&&AUTH.name===n)AUTH=null; },
+  removeTempSup:n=>{ saveTempSups(loadTempSups().filter(x=>x.name!==n)); delRow("T|"+n); if(AUTH&&AUTH.name===n)AUTH=null; },
   who:()=>AUTH?AUTH.name:""
 };
 window.BRIEF={ open:()=>{ loadBids(); briefTabView="edit"; renderBriefTab(); } };

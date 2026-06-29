@@ -670,7 +670,7 @@
 
     <h2 class="section">Team sync (online)</h2>
     <div class="card pad">
-      <p class="hint" style="margin-top:0">Shares logged &amp; draft manpowers across supervisors so everyone sees the same history. Turn off to go fully local (offline).</p>
+      <p class="hint" style="margin-top:0">Shares the whole site across supervisors — manpower logs &amp; drafts, sign-in codes, the equipment list, inventory, movement &amp; secure logs, and settings. Everyone sees the same data. Demo mode stays local to each device. Turn off to go fully local (offline).</p>
       <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Online sync<small id="syncStatus"></small></span><input type="checkbox" id="syncOnChk" class="cfg-chk"></label>
       <details style="margin-top:6px">
         <summary style="font-weight:700;color:var(--navy);cursor:pointer;font-size:13px">Backend (advanced)</summary>
@@ -856,7 +856,32 @@ function load(){
   }
   return d;
 }
-function save(){Store.setJSON(KEY,data);}
+// config = everything except the per-entry lists (equipment/movements/secureLog), which sync per item
+const CFG_FIELDS=["types","subtypes","locations","locZones","equipLocs","spotAircraft","settings","hiddenTiles","previewSeeded","typeSeedV","locSeedV"];
+function configSig(){return JSON.stringify(CFG_FIELDS.map(k=>data[k]));}
+let _cfgSig=null,cfgReady=false;   // cfgReady gates _t bumps so boot/master-load isn't mistaken for a user edit
+function persist(){Store.setJSON(KEY,data);}   // raw write — no timestamp bump, no push (used by sync merge)
+function save(){ const sig=configSig(); if(cfgReady&&_cfgSig!==null&&sig!==_cfgSig)data._t=Date.now(); _cfgSig=sig; persist(); scheduleSiteSync(); }
+
+/* ---- whole-site team sync (equipment, inventory, movements, secure log, settings) ---- */
+function configRow(){const o={id:"config",when:data._t||0};CFG_FIELDS.forEach(k=>o[k]=data[k]);return o;}
+function applyConfigRow(r){if(!r)return;CFG_FIELDS.forEach(k=>{if(k in r)data[k]=r[k];});data._t=r.when||data._t||0;_cfgSig=configSig();}
+let _siteSyncT=null,_siteBusy=false;
+function scheduleSiteSync(){ if(!window.SYNC||!window.SYNC.on())return; clearTimeout(_siteSyncT); _siteSyncT=setTimeout(()=>syncSite(),1200); }
+async function syncSite(force){
+  if(_siteBusy||!window.SYNC||!window.SYNC.on())return false;
+  _siteBusy=true; let changed=false;
+  try{
+    const moveCap=Math.max(50,(data.settings&&data.settings.moveCap)||300);
+    changed=await window.SYNC.shared("equip",   ()=>data.equipment, arr=>{data.equipment=arr;persist();}, 100000)||changed;
+    changed=await window.SYNC.shared("emove",    ()=>data.movements, arr=>{data.movements=arr;persist();}, moveCap)||changed;
+    changed=await window.SYNC.shared("esecure",  ()=>data.secureLog, arr=>{data.secureLog=arr;persist();}, 500)||changed;
+    changed=await window.SYNC.shared("config",   ()=>[configRow()], arr=>{applyConfigRow(arr[0]);persist();}, 1)||changed;
+  }catch(_){}
+  _siteBusy=false;
+  if(changed){ try{refreshAll();}catch(_){} if(curTab==="settings"&&typeof settingsUnlocked!=="undefined"&&settingsUnlocked&&typeof goTab==="function")goTab("settings"); }
+  return changed;
+}
 function uid(){return "e"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);}
 const $=(s,el=document)=>el.querySelector(s);
 const $$=(s,el=document)=>[...el.querySelectorAll(s)];
@@ -984,6 +1009,8 @@ let curTab="hub";
 function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
   window.scrollTo(0,0);if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
 function goTab(t){showTab(t);
+  // pull team changes when opening a synced area
+  if(["equipment","inventory","movement","secure","settings"].includes(t))syncSite();
   if(t==="equipment"){eqInitCollapse=true;refreshLocationFilter();refreshTypeFilter();renderList();refreshAudit();updateLockBar();}
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[]};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();renderInventory();}
   if(t==="movement"){renderMovement();}
@@ -1307,7 +1334,7 @@ $("#editOverlay").addEventListener("click",e=>{if(e.target.id==="editOverlay")cl
 $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toUpperCase();if(!tag){toast("Enter an asset tag / ID");$("#fTag").focus();return;}
   const sub=$("#fSub").value==="__custom__"?"":$("#fSub").value;
   const loc=$("#fLoc").value.trim(),spot=(locZonesFor(loc)||[]).length?$("#fSpot").value:"";
-  const p={tag,type:$("#fType").value,subtype:sub,location:loc,spot,volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO()};
+  const p={tag,type:$("#fType").value,subtype:sub,location:loc,spot,volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO(),when:Date.now()};
   if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"";Object.assign(ex,p);if(from!==p.location)logMove(ex,from,p.location,"edit");toast("Updated");}
   else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
@@ -1335,7 +1362,7 @@ function closeMovePick(){$("#movePickOverlay").classList.remove("open");moveId=n
 $("#moveSel").addEventListener("change",()=>fillMoveSpot($("#moveSel").value,""));
 $("#moveGo").addEventListener("click",()=>{const e=data.equipment.find(x=>x.id===moveId);if(!e){closeMovePick();return;}
   const from=e.location||"",to=$("#moveSel").value,spot=(locZonesFor(to)||[]).length?$("#moveSpotSel").value:"";
-  e.location=to;e.spot=spot;e.updated=todayISO();
+  e.location=to;e.spot=spot;e.updated=todayISO();e.when=Date.now();
   if(from!==to)logMove(e,from,to,"quickmove");save();refreshAll();closeMovePick();
   toast(to?`Moved to ${to}${spot?" · "+spot:""}`:"Location cleared");});
 $("#moveCancel").addEventListener("click",closeMovePick);
@@ -1500,11 +1527,11 @@ $("#locEditBody").addEventListener("click",e=>{const t=e.target.closest("button"
   const i=+t.dataset.li,L=data.equipLocs;
   if(t.classList.contains("le-del")){const name=L[i],cnt=data.equipment.filter(eq=>eq.location===name).length;
     if(cnt&&!confirm(`"${name}" has ${cnt} unit${cnt===1?"":"s"} here. Delete this location? Those units move to unassigned (logged in Movement).`))return;
-    data.equipment.forEach(eq=>{if(eq.location===name){const from=eq.location;eq.location="";eq.spot="";eq.nose="";eq.oos=false;eq.updated=todayISO();logMove(eq,from,"","delete");}});
+    data.equipment.forEach(eq=>{if(eq.location===name){const from=eq.location;eq.location="";eq.spot="";eq.nose="";eq.oos=false;eq.updated=todayISO();eq.when=Date.now();logMove(eq,from,"","delete");}});
     L.splice(i,1);delete data.locZones[name];}
   else if(t.classList.contains("le-lname")){const old=L[i],v=(prompt("Rename location:",old)||"").trim();if(!v||v===old)return;
     if(L.some((x,j)=>j!==i&&x.toLowerCase()===v.toLowerCase())){toast("Already in the list");return;}
-    L[i]=v;data.equipment.forEach(eq=>{if(eq.location===old){eq.location=v;eq.updated=todayISO();}});
+    L[i]=v;data.equipment.forEach(eq=>{if(eq.location===old){eq.location=v;eq.updated=todayISO();eq.when=Date.now();}});
     if(data.locZones[old]){data.locZones[v]=data.locZones[old];delete data.locZones[old];}}
   else if(t.classList.contains("le-subadd")){const inp=$(`.le-subin[data-li="${i}"]`);const v=(inp?.value||"").trim();if(!v)return;
     const name=L[i];data.locZones[name]=data.locZones[name]||[];
@@ -1526,7 +1553,7 @@ function mergeLoc(name){
   if(!data.equipLocs.some(x=>x.toLowerCase()===parent.toLowerCase()))data.equipLocs.push(parent);
   data.locZones[parent]=data.locZones[parent]||[];
   if(!data.locZones[parent].some(x=>x.toLowerCase()===sub.toLowerCase()))data.locZones[parent].push(sub);
-  data.equipment.forEach(e=>{if((e.location||"")===name){e.location=parent;e.spot=sub;e.updated=todayISO();}});
+  data.equipment.forEach(e=>{if((e.location||"")===name){e.location=parent;e.spot=sub;e.updated=todayISO();e.when=Date.now();}});
   data.equipLocs=data.equipLocs.filter(x=>x!==name);delete data.locZones[name];
   save();renderLocEdit();refreshAll();toast(`Merged ${name} → ${parent} · ${sub}`);
 }
@@ -1639,7 +1666,7 @@ function commitInv(){
   // additive: only the units you count get placed here. Units you don't tap keep
   // their current location — a later partial re-count never silently unassigns them.
   data.equipment.forEach(e=>{
-    if(invSel.has(e.id)){const from=e.location||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();if(from!==loc)logMove(e,from,loc,"inventory");}});
+    if(invSel.has(e.id)){const from=e.location||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();e.when=Date.now();if(from!==loc)logMove(e,from,loc,"inventory");}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
   inv.lastLoc=loc;inv.lastN=n;inv.loc=null;inv.stage="more";renderInventory();
@@ -1870,7 +1897,7 @@ function renderSecDetails(r){
     const fields={area:sec.area,spot:sec.spot,ac:sec.ac,reasons:sec.reasons.slice(),reason:sec.reasons.join(", "),
       name:(sec.name||"").trim(),time:sec.time||nowHHMM(),comment:(sec.comment||"").trim()};
     if(sec.id){const en=data.secureLog.find(x=>x.id===sec.id);if(en)Object.assign(en,fields);}
-    else data.secureLog.push({id:uid(),...fields,date:todayISO()});
+    else data.secureLog.push({id:uid(),...fields,date:todayISO(),when:Date.now()});
     save();const edited=!!sec.id;sec=newSec();renderSecure();toast(edited?"Saved":"Logged");
   });
 }
@@ -2287,7 +2314,12 @@ function updateHdr(){const cust=data.settings&&data.settings.headerSub;
   $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} across ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
 
 /* ---- init ---- */
-(async function(){save();document.body.classList.toggle("demo-on",demoOn());if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();applyTileVisibility();autoLoadMaster();})();
+(async function(){save();document.body.classList.toggle("demo-on",demoOn());if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();applyTileVisibility();
+  await autoLoadMaster();
+  // boot settled: baseline the config signature so only genuine edits from here bump the sync timestamp
+  _cfgSig=configSig(); cfgReady=true;
+  // initial team pull once staffing.js has exposed window.SYNC
+  setTimeout(()=>{ if(window.SYNC&&window.SYNC.on())syncSite(true); },1500);})();
 if("serviceWorker" in navigator){
   const hadController=!!navigator.serviceWorker.controller;
   let refreshing=false;
