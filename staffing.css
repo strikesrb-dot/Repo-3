@@ -364,3 +364,14 @@
 .auto-btns .btn.sm{flex:1 1 30%;min-width:96px}
 .auto-btns .btn.sm.on.purple{background:#6b1f8f;border-color:#6b1f8f}
 .autobar.multi{background:#6b1f8f}
+
+/* multi-select highlight, partial badge, double-tug */
+.abody.multisel{background:#6b1f8f;border-color:#6b1f8f;color:#fff}
+.abody.multisel span{color:rgba(255,255,255,.85)}
+.abody.multisel .pw{background:rgba(255,255,255,.22);color:#fff}
+.abody .prt{background:#c98a00;color:#fff;font-style:normal;font-size:8px;font-weight:900;letter-spacing:.04em;border-radius:4px;padding:1px 4px;margin-left:5px;vertical-align:1px}
+.abody.partial{border-style:dashed;border-color:#d9a528}
+.tdbl{display:block;width:100%;margin-top:6px;border:1px dashed var(--line);background:#fff;border-radius:8px;padding:5px;font-size:10.5px;font-weight:800;color:#67727e;cursor:pointer;letter-spacing:.03em}
+.tdbl.on{background:#eaf3ff;border-color:#0b3d63;border-style:solid;color:#0b3d63}
+.tcard.dbltug{box-shadow:inset 0 0 0 2px #0b3d63}
+.dbltag{background:#0b3d63;color:#fff;font-size:9px;font-weight:900;border-radius:4px;padding:1px 5px;margin-left:6px}
