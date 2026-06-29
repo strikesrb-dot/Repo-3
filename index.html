@@ -151,6 +151,11 @@
   .invpop .spotwrap{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:46vh;overflow:auto;padding:2px}
   .invpop .spotbtn{border:1.5px solid var(--line);border-radius:10px;padding:12px 3px;font-size:14px;font-weight:800;text-align:center;cursor:pointer;color:var(--ink);background:#fff}
   .invpop .spotbtn:active{transform:scale(.95)}
+  .invpop .spotbtn.ac{border-color:#cfe0f0;background:#f5f9fd}
+  .invpop .spotbtn.sel{border-color:var(--good);background:var(--good-bg);color:#15622f}
+  .invpop .spotscroll{max-height:52vh;overflow:auto;display:flex;flex-direction:column;gap:4px}
+  .invpop .spotscroll .spotwrap{max-height:none;overflow:visible}
+  .invpop .popgrp{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;margin:6px 2px 0;text-align:left}
   .invpop #invNoseInput{margin:2px 0}
   .invpop .nosesug{display:flex;flex-direction:column;gap:4px;max-height:34vh;overflow:auto}
   .invpop .nosehit{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 11px;font-size:14px;font-weight:700;text-align:left;cursor:pointer;color:var(--ink)}
@@ -1614,7 +1619,7 @@ function renderInvSelect(r){
   invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map(); // start fresh — no auto-highlight
   // locations with sub-locations or a nose number still use the tap-menu so detail is captured;
   // every location uses the fast multi-press cycle: 1× here · 2× out of service · 3× clear
-  const canSpot=!!locZonesFor(inv.loc)||needsNose(inv.loc,null);   // spot/nose is optional, set via the chip
+  const canSpot=invLocSpots(inv.loc).length>0||needsNose(inv.loc,null);   // spot/nose is optional, set via the chip
   r.innerHTML=`<div class="card pad">
     <div class="m-loc">${esc(inv.loc)}<span class="m-locn" id="invSelN"></span></div>
     <p class="hint" style="margin:2px 0 0">Tap to count — <b>1×</b> here · <b>2×</b> out of service · <b>3×</b> clear.${canSpot?' Tap the <b>spot</b> chip to add a spot/nose.':''}</p>
@@ -1661,43 +1666,49 @@ function paintNoseSug(pop,q){const box=pop.querySelector("#invNoseSug");if(!box)
   const res=FLEET.filter(a=>String(a.ship).startsWith(digits)).slice(0,6);
   box.innerHTML=res.map(a=>`<button class="nosehit" data-ship="${esc(String(a.ship))}"><b>${esc(String(a.ship))}</b> <span>${esc(a.type||"")}${a.reg?" · "+esc(a.reg):""}</span></button>`).join("");
   box.querySelectorAll(".nosehit").forEach(b=>b.onclick=()=>{const ni=pop.querySelector("#invNoseInput");if(ni)ni.value=b.dataset.ship;box.innerHTML="";});}
+// all spots that belong to a top-level inventory location: real seeded/added spots from
+// data.locations (matched by area OR region) plus any user sub-locations from locZones
+function invLocSpots(loc){
+  const out=[],seen=new Set();
+  const add=(name,area,ac)=>{const k=(name||"").toLowerCase();if(name&&!seen.has(k)){seen.add(k);out.push({name,area:area||loc,holdsAircraft:!!ac});}};
+  visLocs().forEach(l=>{if(l.region===loc||l.area===loc)add(l.name,l.area,l.holdsAircraft);});
+  (data.locZones&&data.locZones[loc]||[]).forEach(z=>add(z,loc,false));
+  return out.sort((a,b)=>(a.area||"").localeCompare(b.area||"")||a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:"base"}));
+}
 function openInvPop(pill,id,after){
   closeInvPop();
   const e=data.equipment.find(x=>x.id===id);if(!e)return;
-  const zones=locZonesFor(inv.loc); // South etc. → pick area (+spot) before here/OOS
-  const st={step:zones?"zone":"status",zone:null,spot:null,nose:""};
+  const spots=invLocSpots(inv.loc);                 // ALL spots for this area, shown at once
+  const st={step:spots.length?"spot":"status",spot:null,spotObj:null,nose:""};
   const back=document.createElement("div");back.className="invpop-back";
   back.addEventListener("click",ev=>{if(ev.target===back)closeInvPop();});
   const pop=document.createElement("div");pop.className="invpop";
   back.appendChild(pop);document.body.appendChild(back);
+  const askNose=()=>st.spotObj?st.spotObj.holdsAircraft:needsNose(inv.loc,null);
   const finish=oos=>{const ni=pop.querySelector("#invNoseInput");if(ni)st.nose=ni.value.trim();
     invSel.add(id);if(oos)invOos.add(id);else invOos.delete(id);
-    if(zones){invSpot.set(id,st.spot?st.zone+" "+st.spot:st.zone);}else invSpot.delete(id);
-    if(needsNose(inv.loc,st.zone)&&st.nose)invNose.set(id,st.nose);else invNose.delete(id);
+    if(st.spot)invSpot.set(id,st.spot);else invSpot.delete(id);
+    if(askNose()&&st.nose)invNose.set(id,st.nose);else invNose.delete(id);
     closeInvPop();after&&after();};
   const remove=()=>{invSel.delete(id);invOos.delete(id);invSpot.delete(id);invNose.delete(id);closeInvPop();after&&after();};
   function draw(){
     const on=invSel.has(id),oos=invOos.has(id);
-    if(st.step==="zone"){
-      pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")} — area</div>`+
-        zones.map(z=>`<button class="zonebtn" data-z="${esc(z)}">${esc(z)}</button>`).join("")+
+    if(st.step==="spot"){
+      const groups={},order=[];spots.forEach(s=>{if(!groups[s.area]){groups[s.area]=[];order.push(s.area);}groups[s.area].push(s);});
+      const body=order.map(a=>`<div class="popgrp">${esc(a)}</div><div class="spotwrap">`+
+        groups[a].map(s=>`<button class="spotbtn ${s.holdsAircraft?'ac':''} ${st.spot===s.name?'sel':''}" data-s="${esc(s.name)}">${esc(s.name)}</button>`).join("")+`</div>`).join("");
+      pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")} — which spot?</div><div class="spotscroll">${body}</div>`+
+        `<button class="confirmbtn" data-a="nospot">No specific spot · just here</button>`+
         (on||oos?`<button class="rmbtn" data-a="rm">Remove from inventory</button>`:"");
-      pop.querySelectorAll("[data-z]").forEach(b=>b.onclick=()=>{st.zone=b.dataset.z;
-        const sp=zoneSpots(st.zone);if(sp&&sp.length){st.step="spot";}else{st.spot=null;st.step="status";}draw();});
-    }else if(st.step==="spot"){
-      const sp=zoneSpots(st.zone)||[];
-      pop.innerHTML=`<div class="pophead">${esc(st.zone)} — which spot?</div>`+
-        `<div class="spotwrap">`+sp.map(s=>`<button class="spotbtn" data-s="${esc(s)}">${esc(s)}</button>`).join("")+`</div>`+
-        `<button class="rmbtn" data-a="zback">‹ Back</button>`;
-      pop.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{st.spot=b.dataset.s;st.step="status";draw();});
+      pop.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{st.spot=b.dataset.s;st.spotObj=spots.find(x=>x.name===st.spot)||null;st.step="status";draw();});
+      pop.querySelector('[data-a="nospot"]').onclick=()=>{st.spot=null;st.spotObj=null;finish(false);};
     }else{
-      const where=zones?(st.spot?st.zone+" "+st.spot:st.zone):null;
-      const nose=needsNose(inv.loc,st.zone);
-      pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")}${where?` · ${esc(where)}`:""}</div>`+
+      const nose=askNose();
+      pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")}${st.spot?` · ${esc(st.spot)}`:""}</div>`+
         (nose?`<input id="invNoseInput" inputmode="numeric" autocomplete="off" placeholder="Aircraft nose # (from fleet)" value="${esc(st.nose||"")}" /><div id="invNoseSug" class="nosesug"></div>`:"")+
         `<button class="confirmbtn" data-a="here">✓ It's here</button>`+
         `<button class="oosbtn" data-a="oos">⊘ Out of service</button>`+
-        (zones?`<button class="rmbtn" data-a="sback">‹ Back</button>`
+        (spots.length?`<button class="rmbtn" data-a="sback">‹ Back to spots</button>`
               :(on||oos?`<button class="rmbtn" data-a="rm">Remove</button>`:""));
       const ni=pop.querySelector("#invNoseInput");
       if(ni)ni.oninput=()=>{st.nose=ni.value.trim();paintNoseSug(pop,ni.value);};
@@ -1705,8 +1716,7 @@ function openInvPop(pill,id,after){
     pop.querySelector('[data-a="here"]')&&(pop.querySelector('[data-a="here"]').onclick=()=>finish(false));
     pop.querySelector('[data-a="oos"]')&&(pop.querySelector('[data-a="oos"]').onclick=()=>finish(true));
     pop.querySelector('[data-a="rm"]')&&(pop.querySelector('[data-a="rm"]').onclick=remove);
-    pop.querySelector('[data-a="zback"]')&&(pop.querySelector('[data-a="zback"]').onclick=()=>{st.step="zone";draw();});
-    pop.querySelector('[data-a="sback"]')&&(pop.querySelector('[data-a="sback"]').onclick=()=>{const ni=pop.querySelector("#invNoseInput");if(ni)st.nose=ni.value.trim();st.step=zoneSpots(st.zone)?"spot":"zone";draw();});
+    pop.querySelector('[data-a="sback"]')&&(pop.querySelector('[data-a="sback"]').onclick=()=>{const ni=pop.querySelector("#invNoseInput");if(ni)st.nose=ni.value.trim();st.step="spot";draw();});
     pop.querySelector("#invNoseInput")?.focus();
   }
   draw();
