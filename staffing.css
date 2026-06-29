@@ -375,3 +375,11 @@
 .tdbl.on{background:#eaf3ff;border-color:#0b3d63;border-style:solid;color:#0b3d63}
 .tcard.dbltug{box-shadow:inset 0 0 0 2px #0b3d63}
 .dbltag{background:#0b3d63;color:#fff;font-size:9px;font-weight:900;border-radius:4px;padding:1px 5px;margin-left:6px}
+
+/* shift picker step */
+.shift-pick{display:flex;flex-direction:column;gap:10px}
+.shift-opt{display:flex;align-items:baseline;gap:12px;width:100%;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:16px 18px;cursor:pointer;text-align:left}
+.shift-opt b{font-size:19px;font-weight:900;color:var(--ink)}
+.shift-opt span{font-size:13px;color:var(--muted);font-weight:600}
+.shift-opt.on{border-color:var(--navy);background:#eef3f9}
+.shift-opt:active{transform:scale(.99)}

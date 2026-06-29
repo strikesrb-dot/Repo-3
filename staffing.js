@@ -337,7 +337,7 @@ function absenceTally(){
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
-  ({auth:rAuth,menu:rMenu,upload:rUpload,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts}[ST.step]||rMenu)();
+  ({auth:rAuth,menu:rMenu,upload:rUpload,shift:rShift,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts}[ST.step]||rMenu)();
 }
 function card(inner){return `<div class="card pad">${inner}</div>`;}
 function staffModal(html){
@@ -547,11 +547,22 @@ async function doBuild(){
     const date=dm||"";
     ST.parsed={ mpRecs:parseManpower(mpToks), otRecs:parseOT(otToks), coRows:parseCallout(coText,date), date };
     ST.tug={};ST._tugSeeded=false;ST.dispatch=null;ST.assign=null;ST.brief=null;ST.bodies=null;
-    ST.step="setup";render();
+    ST.step="shift";render();
   }catch(err){ msg.innerHTML=`<span style="color:var(--danger)">Couldn't read a file: ${esc(err.message||err)}</span>`; }
 }
 
-/* ---- step: setup (shift, tugs, prompts, supervisors) ---- */
+/* ---- step: shift (pick the shift this manpower is for) ---- */
+const SHIFT_FULL={AM:"Morning",PM:"Afternoon",NH:"Nighthawk"};
+function rShift(){
+  ROOT.innerHTML=card(`
+    <h2 class="staff-h">What shift are you doing?</h2>
+    <p class="hint" style="margin:0 0 14px">Pick the shift this manpower is for.</p>
+    <div class="shift-pick">${SHIFTS.map(s=>`<button class="shift-opt ${ST.shift===s?'on':''}" data-sh="${s}"><b>${s==='NH'?'NH (Nighthawk)':s}</b><span>${s==='NH'?'':esc(SHIFT_FULL[s])}</span></button>`).join("")}</div>
+    ${back("upload","Files")}`);
+  $$('#staffRoot .shift-opt').forEach(b=>b.onclick=()=>{ ST.shift=b.dataset.sh; ST.step="setup"; render(); });
+  $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
+}
+/* ---- step: setup (tugs, prompts, supervisors) ---- */
 function rSetup(){
   const p=ST.parsed;
   const tgts=promptTargets();
