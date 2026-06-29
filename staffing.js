@@ -646,20 +646,24 @@ function rPool(){
   const pool=poolFor(ST.shift);
   const disp=dispatchCandidates(ST.shift);
   const dispLine=disp.length?disp.map(d=>`${esc(nm(d.name))}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
-  const row=b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const partial=(b.ov||0)<240;
-    return `<div class="prow prow-tap ${partial?'partial':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
-      ${fwd?'<span class="tag db">Double</span>':''}${partial?'<span class="tag pt">Partial</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
+  // bucket by how much of the shift core each person actually works
+  const tier=b=>{const ov=b.ov||0; return ov>=240?'full':(ov>60?'part':'one');};
+  const row=b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const tr=tier(b);
+    return `<div class="prow prow-tap ${tr!=='full'?'partial':''} ${tr==='one'?'onehour':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
+      ${fwd?'<span class="tag db">Double</span>':''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
       <div class="bid-line">${bid?`Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b>`:'<span class="hint">No bid on file</span>'}</div></div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;};
-  const full=pool.filter(b=>(b.ov||0)>=240), partials=pool.filter(b=>(b.ov||0)<240);
-  const fullRows=full.map(row).join(""), partRows=partials.map(row).join("");
+  const full=pool.filter(b=>tier(b)==='full'), parts=pool.filter(b=>tier(b)==='part'), ones=pool.filter(b=>tier(b)==='one');
   ROOT.innerHTML=card(`
     <div class="pool-head"><h2 class="staff-h" style="margin:0">${ST.shift} pool</h2><span class="cnt">${pool.length}</span></div>
+    <div class="pool-tiers"><span class="pt-f">Full <b>${full.length}</b></span><span class="pt-p">Partial <b>${parts.length}</b></span><span class="pt-o">1 hr <b>${ones.length}</b></span></div>
     <div class="muted-row">Dispatcher candidate: ${dispLine}</div>
     <p class="hint" style="margin:0 0 6px">Tap a name to see their bid hours &amp; days off.</p>
-    <div class="prow-wrap">${fullRows||(partials.length?'':'<p class="hint">No one in this shift.</p>')}</div>
-    ${partials.length?`<div class="pool-sub"><span>Partial · under 4h this shift</span><b>${partials.length}</b></div>
-    <div class="prow-wrap partial-wrap">${partRows}</div>`:''}
+    <div class="prow-wrap">${full.map(row).join("")||(parts.length||ones.length?'':'<p class="hint">No one in this shift.</p>')}</div>
+    ${parts.length?`<div class="pool-sub"><span>Partial · 1–4h this shift</span><b>${parts.length}</b></div>
+    <div class="prow-wrap partial-wrap">${parts.map(row).join("")}</div>`:''}
+    ${ones.length?`<div class="pool-sub one"><span>One hour · barely on this shift</span><b>${ones.length}</b></div>
+    <div class="prow-wrap partial-wrap">${ones.map(row).join("")}</div>`:''}
     <div class="btnrow" style="margin-top:12px"><button class="btn navy" id="toAssign">Assign the board ›</button></div>
     ${back("setup","Setup")}`);
   $$('#staffRoot .prow-tap').forEach(r=>r.addEventListener("click",e=>{ if(e.target.closest(".xrem"))return; r.classList.toggle("open"); }));
