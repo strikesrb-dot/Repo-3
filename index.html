@@ -879,11 +879,16 @@ function load(){
     const seen=new Set(),el=[];(d.equipLocs||[]).forEach(x=>{const n=normLoc(x);if(n&&!seen.has(n)){seen.add(n);el.push(n);}});d.equipLocs=el;
     const z={};Object.keys(d.locZones||{}).forEach(k=>{const n=normLoc(k);const cur=z[n]||[];(d.locZones[k]||[]).forEach(s=>{if(!cur.some(x=>x.toLowerCase()===String(s).toLowerCase()))cur.push(s);});z[n]=cur;});d.locZones=z;
     d.locations.forEach(l=>{l.area=normLoc(l.area);});
-    d._t=Date.now();   // deliberate edit → make the normalized config win across devices
+    // NOTE: do not bump d._t here — normalization is deterministic and is re-applied on load + at the
+    // sync ingest boundary, so it must NOT make a freshly-booted device's config "win" over a teammate's.
     d.locNormV=1;
   }
+  // give every unit a sync timestamp. Items edited by older code only set `updated` (a date),
+  // so equal when=0 meant their changes never won the merge — derive when from updated as a floor.
+  d.equipment.forEach(e=>{ if(!e.when){ const u=e.updated?Date.parse(e.updated+"T12:00:00"):0; e.when=(u&&!isNaN(u))?u:1; } });
   return d;
 }
+function eqBackfillWhen(e){ if(e&&!e.when){ const u=e.updated?Date.parse(e.updated+"T12:00:00"):0; e.when=(u&&!isNaN(u))?u:1; } return e; }
 // config = everything except the per-entry lists (equipment/movements/secureLog), which sync per item
 const CFG_FIELDS=["types","subtypes","locations","locZones","equipLocs","spotAircraft","settings","hiddenTiles","previewSeeded","typeSeedV","locSeedV"];
 function configSig(){return JSON.stringify(CFG_FIELDS.map(k=>data[k]));}
@@ -914,7 +919,7 @@ async function syncSite(force){
   try{
     const moveCap=Math.max(50,(data.settings&&data.settings.moveCap)||300);
     data._tomb=data._tomb||{};
-    changed=await window.SYNC.shared("equip",   ()=>data.equipment, arr=>{data.equipment=arr.map(e=>{if(e&&e.location)e.location=normLoc(e.location);return e;});persist();}, 100000)||changed;
+    changed=await window.SYNC.shared("equip",   ()=>data.equipment.map(eqBackfillWhen), arr=>{data.equipment=arr.map(e=>{eqBackfillWhen(e);if(e&&e.location)e.location=normLoc(e.location);return e;});persist();}, 100000)||changed;
     changed=await window.SYNC.shared("emove",    ()=>rowsWithTomb(data.movements,data._tomb.emove), arr=>{const s=splitRows(arr,moveCap);data.movements=s.live;data._tomb.emove=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("esecure",  ()=>rowsWithTomb(data.secureLog,data._tomb.esecure), arr=>{const s=splitRows(arr,2000);data.secureLog=s.live;data._tomb.esecure=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("config",   ()=>[configRow()], arr=>{applyConfigRow(arr[0]);persist();}, 1)||changed;
@@ -1170,7 +1175,9 @@ function renderList(){
 }
 $$("#grpSeg .seg").forEach(b=>b.addEventListener("click",()=>{eqGroup=b.dataset.g;eqInitCollapse=true;renderList();}));
 let editUnlocked=false; // session unlock for editing equipment
-function requireEditPass(cb){if(editUnlocked){cb();return;}
+function requireEditPass(cb){
+  if(editUnlocked||unlocked){cb();return;}          // edit mode (pattern unlock) already authorizes — no second prompt
+  if(data.lockPattern){requireUnlock(cb);return;}   // a lock pattern is the gate when one is set
   const p=prompt("Enter passcode to edit equipment:");if(p===null)return;
   if(p!==curPass()){toast("Wrong passcode");return;}editUnlocked=true;cb();}
 $("#eqList").addEventListener("click",e=>{
