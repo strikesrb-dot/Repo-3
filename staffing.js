@@ -6,6 +6,13 @@
 const $=(s,el=document)=>el.querySelector(s);
 const $$=(s,el=document)=>[...el.querySelectorAll(s)];
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- demo mode (mask real people-names for screen-sharing/sales) ---------- */
+const FAKE_LAST=["Anderson","Brooks","Carter","Diaz","Evans","Flores","Garcia","Hayes","Irwin","Jones","Kelly","Lopez","Morgan","Nguyen","Ortiz","Patel","Quinn","Reyes","Santos","Torres","Underwood","Vance","Walker","Young","Zimmer"];
+function hashStr(s){let h=0;for(let i=0;i<(s||"").length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+function fakeName(real){if(!real)return real;const h=hashStr(real);const last=FAKE_LAST[h%FAKE_LAST.length];const ini=String.fromCharCode(65+(Math.floor(h/FAKE_LAST.length)%26));return last+", "+ini+".";}
+function demoOn(){return !!Store.getJSON("elt.demo",false);}
+function nm(name){return (demoOn()&&name)?fakeName(name):name;}
 const UP=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
 const CK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
@@ -302,8 +309,11 @@ function buildDoubles(){
 /* dispatch candidate for the shift from the DISPATCH section */
 function dispatchCandidates(shift){
   const {mpRecs}=ST.parsed;
-  return mpRecs.filter(r=>r.sec==="DISPATCH"&&r.start).map(r=>({...r,avail:!r.code||WORKED_CODES.has(r.code),sh:primaryShift(r.start)}))
-    .filter(d=>d.sh===shift);
+  // include a dispatcher if their shift is the primary OR they work through it (core overlap >60min)
+  // e.g. Menendez bid 20:00–06:00 → primary PM but works the whole NH core, so he's an NH candidate too
+  return mpRecs.filter(r=>r.sec==="DISPATCH"&&r.start)
+    .filter(r=>shiftsFor(r).some(x=>x.sh===shift))
+    .map(r=>({...r,avail:!r.code||WORKED_CODES.has(r.code),sh:shift}));
 }
 /* who was scheduled for the shift but isn't in the pool, and why (code) */
 function calloutReason(emp){ const r=(ST.parsed.coRows||[]).find(x=>x.emp===emp); return r?(/(sick)/i.test(r.reason)?"SICK":(r.reason||"OUT")):""; }
@@ -469,7 +479,7 @@ function rAuth(){
       <label class="fld-l">Approving supervisor</label>
       <select id="signSel" class="code-in txt">
         <option value="">— select —</option>
-        ${signers.map(r=>`<option value="${esc(r.name)}" ${authTemp.signer===r.name?'selected':''}>${esc(r.name)}${r.temp?' (temp)':''}</option>`).join("")}
+        ${signers.map(r=>`<option value="${esc(r.name)}" ${authTemp.signer===r.name?'selected':''}>${esc(nm(r.name))}${r.temp?' (temp)':''}</option>`).join("")}
       </select>
       <label class="fld-l">Their code</label>
       <input id="signCode" class="code-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />
@@ -492,10 +502,10 @@ function rAuth(){
   const roles=["Supervisor","Manager","Assistant Manager"];
   const seg=roles.map(r=>`<button class="seg ${authRole===r?'on':''}" data-role="${r}">${r==="Assistant Manager"?"Asst Mgr":r}</button>`).join("");
   const names=rosterAll().filter(r=>r.role===authRole);
-  const chips=names.map(r=>`<button class="auth-name" data-name="${esc(r.name)}">${esc(r.name)}${r.temp?'<i>temp</i>':''}${hasCode(r.name)?'':'<u>set up</u>'}</button>`).join("");
+  const chips=names.map(r=>`<button class="auth-name" data-name="${esc(r.name)}">${esc(nm(r.name))}${r.temp?'<i>temp</i>':''}${hasCode(r.name)?'':'<u>set up</u>'}</button>`).join("");
   ROOT.innerHTML=card(`
     <h2 class="staff-h">Who's running this shift?</h2>
-    <p class="hint" style="margin:0 0 10px">Pick your name, then enter your code. ${AUTH?`<br>Signed in as <b>${esc(AUTH.name)}</b>.`:''}</p>
+    <p class="hint" style="margin:0 0 10px">Pick your name, then enter your code. ${AUTH?`<br>Signed in as <b>${esc(nm(AUTH.name))}</b>.`:''}</p>
     <div class="seg-wrap auth-seg">${seg}</div>
     <div class="auth-names">${chips||'<p class="hint">No one here.</p>'}</div>
     ${authRole==="Supervisor"?'<button class="btn ghost" id="addTemp" style="margin-top:12px">＋ Temporary supervisor (co-signed)</button>':''}`);
@@ -510,7 +520,7 @@ function rMenu(){
   const logs=loadLog().length, drafts=loadDrafts().length;
   ROOT.innerHTML=card(`
     <div class="pool-head"><h2 class="staff-h" style="margin:0">Manpower / Staffing</h2>
-      ${AUTH?`<button class="who-chip" id="mpSwitch">${esc(AUTH.name)}${AUTH.temp?' · temp':''} · switch</button>`:''}</div>
+      ${AUTH?`<button class="who-chip" id="mpSwitch">${esc(nm(AUTH.name))}${AUTH.temp?' · temp':''} · switch</button>`:''}</div>
     <p class="hint" style="margin:0 0 12px">Build tonight's board, pick up a draft, or look back at a past shift.</p>
     <div class="mp-menu">
       <button class="mp-tile create" id="mpCreate">
@@ -596,10 +606,10 @@ function rSetup(){
   const p=ST.parsed;
   const tgts=promptTargets();
   const seg=SHIFTS.map(s=>`<button class="seg ${ST.shift===s?'on':''}" data-sh="${s}">${s}</button>`).join("");
-  const chip=(list,sel,attr)=>list.map(n=>`<button class="chip pick ${sel.includes(n)?'on':''}" ${attr}="${esc(n)}">${esc(n)}${sel.includes(n)?' ✓':''}</button>`).join("");
+  const chip=(list,sel,attr)=>list.map(n=>`<button class="chip pick ${sel.includes(n)?'on':''}" ${attr}="${esc(n)}">${esc(nm(n))}${sel.includes(n)?' ✓':''}</button>`).join("");
   const promptRows=tgts.map(t=>{
     const on=!!ST.prompts[t.key];
-    return `<div class="prow"><div><b>${esc(t.name.replace(' +TrainingOJT',''))}</b> <span class="hint">${t.kind==='trainee'?'training':'exclusion'} · ${esc(t.hours)}</span></div>
+    return `<div class="prow"><div><b>${esc(nm(t.name.replace(' +TrainingOJT','')))}</b> <span class="hint">${t.kind==='trainee'?'training':'exclusion'} · ${esc(t.hours)}</span></div>
       <button class="yn ${on?'on':''}" data-pk="${esc(t.key)}">${on?'Available ✓':'Add?'}</button></div>`;
   }).join("")||`<p class="hint" style="margin:0">No trainees or exclusion-list people on the sheet.</p>`;
   ROOT.innerHTML=card(`
@@ -611,7 +621,7 @@ function rSetup(){
     <label class="fld-l">Availability checks</label>
     <div class="prow-wrap">${promptRows}</div>
     <label class="fld-l">Supervisor(s) on shift</label><div class="chips">${chip(supervisorList(),ST.supers,'data-sup')}</div>
-    <label class="fld-l">Manager / Asst</label><div class="chips">${MANAGERS.map(n=>`<button class="chip pick ${ST.manager===n?'on':''}" data-mgr="${esc(n)}">${esc(n)}${ST.manager===n?' ✓':''}</button>`).join("")} ${chip(ASSTMGRS,ST.asst,'data-asst')}</div>
+    <label class="fld-l">Manager / Asst</label><div class="chips">${MANAGERS.map(n=>`<button class="chip pick ${ST.manager===n?'on':''}" data-mgr="${esc(n)}">${esc(nm(n))}${ST.manager===n?' ✓':''}</button>`).join("")} ${chip(ASSTMGRS,ST.asst,'data-asst')}</div>
     <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="toPool">Review pool ›</button></div>
     ${back("upload","Files")}`);
   $$('#staffRoot .seg[data-sh]').forEach(b=>b.onclick=()=>{ST.shift=b.dataset.sh;render();});
@@ -629,10 +639,10 @@ function rSetup(){
 function rPool(){
   const pool=poolFor(ST.shift);
   const disp=dispatchCandidates(ST.shift);
-  const dispLine=disp.length?disp.map(d=>`${esc(d.name)}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
-  const rows=pool.map(b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);
-    return `<div class="prow prow-tap" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(b.name)}</b> <span class="hint">${esc(b.hours)}</span>
-      ${fwd?'<span class="tag db">Double</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
+  const dispLine=disp.length?disp.map(d=>`${esc(nm(d.name))}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
+  const rows=pool.map(b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const partial=(b.ov||0)<240;
+    return `<div class="prow prow-tap ${partial?'partial':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
+      ${fwd?'<span class="tag db">Double</span>':''}${partial?'<span class="tag pt">Partial</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
       <div class="bid-line">${bid?`Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b>`:'<span class="hint">No bid on file</span>'}</div></div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;}).join("");
   ROOT.innerHTML=card(`
@@ -763,7 +773,7 @@ function rAssign(){
     const early=toMin(e)<groupEnd;                         // leaves before the group's latest end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
     const isSel=SEL===b.emp, partial=(b.ov||0)<240, ac=empAreaCount(b.emp);
-    return `<button class="abody ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''}" data-emp="${esc(b.emp)}">${esc(b.name)}${fwd?'<em>DBL</em>':''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+    return `<button class="abody ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''}" data-emp="${esc(b.emp)}">${esc(nm(b.name))}${fwd?'<em>DBL</em>':''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const grp={};avail.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
   const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
   const poolHTML=avail.length?gkeys.map(st=>{
@@ -775,20 +785,20 @@ function rAssign(){
   }).join(""):'<span class="hint">All assigned.</span>';
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
-    return `<span class="slot-name">${esc(p.name)}${fwd?'<em class="sdbl">DBL</em>':''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
+    return `<span class="slot-name">${esc(nm(p.name))}${fwd?'<em class="sdbl">DBL</em>':''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
   const dispBox=`<select id="dispSel">
       <option value="">— none / OPEN —</option>
-      ${opts.map(n=>`<option value="${esc(n)}" ${cur===n&&!custom?'selected':''}>${esc(n)}</option>`).join("")}
+      ${opts.map(n=>`<option value="${esc(n)}" ${cur===n&&!custom?'selected':''}>${esc(nm(n))}</option>`).join("")}
       <option value="__custom" ${custom?'selected':''}>Custom…</option>
     </select>${custom?`<input id="dispCustom" placeholder="Type dispatcher name" value="${esc(cur)}" autocomplete="off" />`:''}`;
   // areas
   const areaCards=AREAS.map(a=>{
     const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0,need=min&&list.length<min;
     return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
-      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip" data-area="${esc(a.key)}" data-i="${i}">${esc(p.name)}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
+      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip" data-area="${esc(a.key)}" data-i="${i}">${esc(nm(p.name))}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
   // tugs grouped
@@ -928,7 +938,7 @@ function buildBriefing(){
     <div class="bf-card"><div class="bf-h">Move Team Staffing Count</div>
       <table class="bf-tbl"><thead><tr><th>Shift</th><th>Available</th><th>Max tugs</th><th>VAC | DAT | CB</th><th>SICK | OUT | OJI</th></tr></thead>
       <tbody>${rows.map(r=>`<tr><td><b>${r.sh}</b></td><td>${r.n}</td><td>${r.max}</td><td>${r.t.VAC} | ${r.t.DAT} | ${r.t.CB}</td><td>${r.t.SICK} | ${r.t.OUT} | ${r.t.OJI}</td></tr>`).join("")}</tbody></table>
-      <div class="bf-mgr">MGR <b>${esc(ST.manager||"—")}</b> · ASST <b>${esc(ST.asst.join(", ")||"—")}</b> · SUP <b>${esc(ST.supers.join(", ")||"—")}</b></div>
+      <div class="bf-mgr">MGR <b>${esc(nm(ST.manager)||"—")}</b> · ASST <b>${esc(ST.asst.map(nm).join(", ")||"—")}</b> · SUP <b>${esc(ST.supers.map(nm).join(", ")||"—")}</b></div>
     </div>
     <div class="bf-card"><div class="bf-h">Briefing Focus Items</div>
       <ol class="bf-focus">${(b.focus||[]).filter(s=>s.trim()).map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div>
@@ -955,12 +965,12 @@ function rSheet(){
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 function buildSheet(){
-  const a=ST.assign, dn=ST.dispatch&&ST.dispatch.name?esc(ST.dispatch.name):'<span class="sb-oos">OPEN</span>';
+  const a=ST.assign, dn=ST.dispatch&&ST.dispatch.name?esc(nm(ST.dispatch.name)):'<span class="sb-oos">OPEN</span>';
   const crew=p=>{ if(!p)return ""; const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
-    return `${esc(p.name)}${fwd?' <b class="sb-db">DBL</b>':''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
+    return `${esc(nm(p.name))}${fwd?' <b class="sb-db">DBL</b>':''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
     return `<div class="sb-area"><div class="sb-area-h">${esc(k)}${min?` <span>${list.length}/${min}</span>`:''}</div>
-      <div class="sb-area-b">${list.map(p=>`<div>${esc(p.name)}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
+      <div class="sb-area-b">${list.map(p=>`<div>${esc(nm(p.name))}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
   const tugCell=id=>{const t=tugState(id),c=a.tugs[id]||{},ty=tugType(id);
     const bolt=t.gpu==='inop'?`<span class="sb-bolt inop">${BOLT_X}</span>`:`<span class="sb-bolt ok">${BOLT}</span>`;
     return `<div class="sb-tug ${t.oos?'oos':''}"><div class="sb-tug-h">STUG ${id}${ELECTRIC.has(id)?'<b>w</b>':''}${ty?`<u>${ty}</u>`:''} ${t.oos?'':bolt}${t.oos?'<span class="sb-oos">OUT OF SERVICE</span>':''}</div>
@@ -996,11 +1006,11 @@ function drawBolt(ctx,x,y,inop){ // small lightning at (x,y) top-left ~13x15
 function renderStaffCanvas(){
   const a=ST.assign,S=2,W=1180,M=26,gap=8;
   const boxes=[];
-  AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:x.key,n:list.map(p=>p.name),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
-  const dn=ST.dispatch&&ST.dispatch.name?ST.dispatch.name:"";
+  AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:x.key,n:list.map(p=>nm(p.name)),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
+  const dn=ST.dispatch&&ST.dispatch.name?nm(ST.dispatch.name):"";
   boxes.push({t:"DISPATCHER",n:[dn||"OPEN"],navy:true,open:!dn});
-  boxes.push({t:"SUPERVISORS",n:ST.supers.slice()});
-  boxes.push({t:"MANAGERS",n:[ST.manager,...ST.asst].filter(Boolean)});
+  boxes.push({t:"SUPERVISORS",n:ST.supers.map(nm)});
+  boxes.push({t:"MANAGERS",n:[ST.manager,...ST.asst].filter(Boolean).map(nm)});
   const cols=5,brows=Math.ceil(boxes.length/cols),bandW=W-2*M,bw=(bandW-(cols-1)*gap)/cols;
   const maxN=Math.max(2,...boxes.map(b=>b.n.length)),bh=22+maxN*16+6;
   const railW=24,gx0=M+railW+gap,tgW=W-2*M-2*(railW+gap);
@@ -1055,7 +1065,7 @@ function renderStaffCanvas(){
           const p=cr[role];if(!p){ctx.fillStyle="#cdd5dc";ctx.font=FA("600 12px");ctx.fillText("—",x+62,yk);return;}
           const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
           const tag=pw||(fwd?"DBL":"");
-          ctx.font=FA("700 13px");const nmw=ctx.measureText(p.name).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(p.name,tw-(tag?180:150),FA("700 13px")),x+62,yk);
+          ctx.font=FA("700 13px");const _pn=nm(p.name);const nmw=ctx.measureText(_pn).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(_pn,tw-(tag?180:150),FA("700 13px")),x+62,yk);
           ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+62+Math.min(nmw,tw-(tag?182:152))+7,yk);
           if(tag){ctx.font=FA("800 8px");ctx.fillStyle=pw?"#7a3287":"#0b3d63";ctx.textAlign="right";ctx.fillText(tag,x+tw-6,yk);ctx.textAlign="left";} });
       }
@@ -1150,18 +1160,18 @@ async function shareSheets(){
 function exportSheetText(){
   const a=ST.assign,L=[];
   L.push("EWR AMT STAFFING — "+ST.shift);L.push("=".repeat(30));
-  L.push("DISPATCHER: "+(ST.dispatch&&ST.dispatch.name?ST.dispatch.name:"OPEN"));
-  if(ST.supers.length)L.push("SUPERVISORS: "+ST.supers.join(", "));
-  const mgr=[ST.manager,...ST.asst].filter(Boolean);if(mgr.length)L.push("MANAGERS: "+mgr.join(", "));
+  L.push("DISPATCHER: "+(ST.dispatch&&ST.dispatch.name?nm(ST.dispatch.name):"OPEN"));
+  if(ST.supers.length)L.push("SUPERVISORS: "+ST.supers.map(nm).join(", "));
+  const mgr=[ST.manager,...ST.asst].filter(Boolean);if(mgr.length)L.push("MANAGERS: "+mgr.map(nm).join(", "));
   L.push("");L.push("AREAS:");
-  AREAS.forEach(ar=>{const list=a.areas[ar.key]||[];if(list.length||ar.min)L.push("  "+ar.key+(ar.min?" ("+list.length+"/"+ar.min[ST.shift]+")":"")+": "+(list.map(p=>p.name).join(", ")||"—"));});
+  AREAS.forEach(ar=>{const list=a.areas[ar.key]||[];if(list.length||ar.min)L.push("  "+ar.key+(ar.min?" ("+list.length+"/"+ar.min[ST.shift]+")":"")+": "+(list.map(p=>nm(p.name)).join(", ")||"—"));});
   L.push("");L.push("TUGS:");
   TUG_GROUPS.forEach(g=>{const ids=g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});if(!ids.length)return;
     L.push(" ["+g.label+"]");ids.forEach(id=>{const t=tugState(id),ty=tugType(id)?" "+tugType(id):"";if(t.oos){L.push("  STUG "+id+ty+": OUT OF SERVICE");return;}
     const cr=a.tugs[id]||{},gp=t.gpu==='inop'?" [GP INOP]":"";
-    L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+ty+gp+": DRIVER "+(cr.DRIVER?cr.DRIVER.name+" "+cr.DRIVER.start+"-"+cr.DRIVER.end:"—")+" / OBSERVR "+(cr.OBSERVR?cr.OBSERVR.name+" "+cr.OBSERVR.start+"-"+cr.OBSERVR.end:"—"));});});
+    L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+ty+gp+": DRIVER "+(cr.DRIVER?nm(cr.DRIVER.name)+" "+cr.DRIVER.start+"-"+cr.DRIVER.end:"—")+" / OBSERVR "+(cr.OBSERVR?nm(cr.OBSERVR.name)+" "+cr.OBSERVR.start+"-"+cr.OBSERVR.end:"—"));});});
   const ab=absentFor(ST.shift);
-  if(ab.length){L.push("");L.push("NOT HERE:");ab.forEach(x=>L.push("  "+x.name+" — "+x.code));}
+  if(ab.length){L.push("");L.push("NOT HERE:");ab.forEach(x=>L.push("  "+nm(x.name)+" — "+x.code));}
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),el=document.createElement("a");
   el.href=u;el.download="EWR-AMT-Staffing-"+ST.shift+".txt";document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(u);
 }
@@ -1192,7 +1202,7 @@ function rLogs(){
   if(logSel){const e=list.find(x=>x.id===logSel);
     if(!e){logSel=null;return rLogs();}
     ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.shift)} manpower <span class="ro-badge">read-only</span></h2></div>
-      <div class="muted-row">${esc(e.date||'')} · ${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(e.dispatch||"OPEN")}${e.by?` · by <b>${esc(e.by)}</b>`:''}</div>
+      <div class="muted-row">${esc(e.date||'')} · ${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(nm(e.dispatch)||"OPEN")}${e.by?` · by <b>${esc(nm(e.by))}</b>`:''}</div>
       ${e.img?`<div class="sheet-scroll"><img class="log-img" src="${e.img}" alt="staffing sheet"/></div>`:'<p class="hint">Image not stored for this entry.</p>'}
       ${e.snap?`<div class="btnrow" style="margin-top:10px"><button class="btn good" id="logEdit">✎ Reopen &amp; edit</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn navy" id="logShare">Email / Share both ›</button></div>
@@ -1215,7 +1225,7 @@ function rLogs(){
     <p class="hint" style="margin:0 0 8px">Read-only — tap a shift to view its sheet, image &amp; PDF.</p>
     ${list.length?dates.map(d=>`<div class="log-day"><div class="log-date">${esc(d)}</div>
       <div class="log-shifts">${["AM","PM","NH"].map(sh=>{const e=byDate[d].find(x=>x.shift===sh);
-        return e?`<button class="log-row shift-${sh}" data-id="${esc(e.id)}"><b>${sh}</b><span>${e.pool} pool · ${e.crews||0}/${e.running} tugs${e.by?' · '+esc(e.by):''}</span></button>`
+        return e?`<button class="log-row shift-${sh}" data-id="${esc(e.id)}"><b>${sh}</b><span>${e.pool} pool · ${e.crews||0}/${e.running} tugs${e.by?' · '+esc(nm(e.by)):''}</span></button>`
           :`<div class="log-row empty"><b>${sh}</b><span>not logged</span></div>`;}).join("")}</div>
     </div>`).join(""):'<p class="hint">Nothing logged yet. Generate a board and tap “Log this manpower”.</p>'}
     <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="menu">‹ Back</button></div>`);

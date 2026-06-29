@@ -106,6 +106,7 @@
   @media(min-width:1300px){.eqgrid{grid-template-columns:repeat(4,1fr)}}
   .eqgrid .item{align-items:flex-start}
   .eqgroup .eqg-h{display:flex;align-items:center;gap:9px;width:100%;background:#eef3f7;border:1px solid var(--line);border-radius:12px;padding:11px 14px;cursor:pointer;margin-bottom:11px}
+  body.demo-on::after{content:"DEMO";position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:9000;background:#7a3287;color:#fff;font-weight:900;font-size:11px;letter-spacing:.12em;padding:4px 14px;border-radius:999px;box-shadow:0 3px 10px rgba(0,0,0,.25);pointer-events:none;opacity:.9}
   .eqg-name{font-weight:800;color:var(--navy);font-size:15px;text-transform:uppercase;letter-spacing:.3px}
   .eqg-n{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);background:#fff;border-radius:999px;padding:2px 10px}
   .eqg-ca{color:var(--navy);font-weight:800;width:14px;text-align:center}
@@ -682,6 +683,12 @@
       </details>
     </div>
 
+    <h2 class="section">Demo mode (mask names)</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Replaces every real person's name with a stable fake one (e.g. <b>Torres, K.</b>) across the pool, board, sheets and logs — so you can screen-share or pitch the tool to your company without exposing anyone. The same real name always maps to the same fake name. Turn off to show real names again. Nothing is changed in your saved data.</p>
+      <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Demo mode<small id="demoStatus"></small></span><input type="checkbox" id="demoChk" class="cfg-chk"></label>
+    </div>
+
     <h2 class="section">Master list (shared on the page)</h2>
     <div class="card pad">
       <p class="hint" style="margin-top:0">To make your list global: <b>Export all data</b>, save as <code>equipment.json</code>, add it to the repo. New phones auto-load it.</p>
@@ -858,6 +865,13 @@ function todayISO(){const d=new Date();return new Date(d.getTime()-d.getTimezone
 function fmtDate(iso){if(!iso)return "";const d=new Date(iso+"T00:00:00");return isNaN(d)?iso:d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});}
 let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2200);}
 
+/* ---- demo mode (mask real people-names; mirrors staffing.js) ---- */
+const _FAKE_LAST=["Anderson","Brooks","Carter","Diaz","Evans","Flores","Garcia","Hayes","Irwin","Jones","Kelly","Lopez","Morgan","Nguyen","Ortiz","Patel","Quinn","Reyes","Santos","Torres","Underwood","Vance","Walker","Young","Zimmer"];
+function _hashStr(s){let h=0;for(let i=0;i<(s||"").length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+function _fakeName(real){if(!real)return real;const h=_hashStr(real);const last=_FAKE_LAST[h%_FAKE_LAST.length];const ini=String.fromCharCode(65+(Math.floor(h/_FAKE_LAST.length)%26));return last+", "+ini+".";}
+function demoOn(){return !!Store.getJSON("elt.demo",false);}
+function nm(name){return (demoOn()&&name)?_fakeName(name):name;}
+
 /* ---- location helpers ---- */
 function locNames(){return data.locations.map(l=>l.name);}
 function locObj(n){return data.locations.find(l=>l.name===n);}
@@ -980,7 +994,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -1226,6 +1240,8 @@ function renderSyncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{on:true,ur
   $("#syncOnChk").checked=c.on!==false;$("#syncUrl").value=c.url||"";$("#syncKey").value=c.key||"";
   $("#syncStatus").textContent=(c.on!==false)?(c.url?" · sharing with the team":" · no backend set"):" · off (local only)";}
 $("#syncOnChk").addEventListener("change",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.on=$("#syncOnChk").checked;Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast(c.on?"Online sync on":"Online sync off — local only");});
+function renderDemoCfg(){const on=!!Store.getJSON("elt.demo",false);$("#demoChk").checked=on;$("#demoStatus").textContent=on?" · on — names masked":" · off — real names";document.body.classList.toggle("demo-on",on);}
+$("#demoChk").addEventListener("change",()=>{const on=$("#demoChk").checked;Store.setJSON("elt.demo",on);renderDemoCfg();toast(on?"Demo mode on — names masked":"Demo mode off");});
 $("#syncSave").addEventListener("click",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.url=$("#syncUrl").value.trim();c.key=$("#syncKey").value.trim();Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast("Sync backend saved");});
 $("#syncTest").addEventListener("click",async()=>{const url=$("#syncUrl").value.trim(),key=$("#syncKey").value.trim();$("#syncMsg").textContent="Testing…";
   try{const r=await fetch(url.replace(/\/+$/,"")+"/manpower_shared?select=id&limit=1",{headers:{apikey:key,Authorization:"Bearer "+key}});
@@ -1756,7 +1772,7 @@ function renderSecure(){const r=$("#secRoot");
   ({home:renderSecHome,area:renderSecArea,spot:renderSecSpot,aircraft:renderSecAircraft,details:renderSecDetails}[sec.stage]||renderSecHome)(r);}
 function secCard(e){return `<li class="item card" data-id="${esc(e.id)}"><div class="main">
   <div class="tag">${esc(e.spot||"")}${e.ac&&e.ac.ship?` · ✈ Nose ${esc(e.ac.ship)}`:""}</div>
-  <div class="meta">${esc(e.reason||"")}${e.name?` — ${esc(e.name)}`:""} · ${esc(e.time||"")}${e.date?` · ${esc(fmtDate(e.date))}`:""}</div>
+  <div class="meta">${esc(e.reason||"")}${e.name?` — ${esc(nm(e.name))}`:""} · ${esc(e.time||"")}${e.date?` · ${esc(fmtDate(e.date))}`:""}</div>
   ${e.comment?`<div class="notes"> ${esc(e.comment)}</div>`:""}
   <div style="margin-top:4px"><span class="loc">${esc(e.area||"")}</span>${e.ac&&e.ac.reg?` <span class="loc">${esc(e.ac.reg)}</span>`:""}</div>
   </div><div class="acts"><button class="iconbtn sec-edit" title="Edit">✎</button><button class="iconbtn sec-del" title="Delete">✕</button></div></li>`;}
@@ -1860,7 +1876,7 @@ function buildSecureSheet(){
   const date=fmtDate(todayISO()),log=data.secureLog;
   const rows=log.length?log.map((e,i)=>`<tr><td class="num">${i+1}</td><td>${esc(e.area||"")}</td><td><b>${esc(e.spot||"")}</b></td>
     <td>${e.ac&&e.ac.ship?esc(e.ac.ship):"—"}</td><td>${e.ac&&e.ac.reg?esc(e.ac.reg):""}</td><td>${e.ac&&e.ac.type?esc(e.ac.type):""}</td>
-    <td>${esc(e.reason||"")}${e.name?" — "+esc(e.name):""}</td><td>${esc(e.time||"")}</td><td>${esc(e.comment||"")}</td></tr>`).join("")
+    <td>${esc(e.reason||"")}${e.name?" — "+esc(nm(e.name)):""}</td><td>${esc(e.time||"")}</td><td>${esc(e.comment||"")}</td></tr>`).join("")
     :`<tr><td colspan="9" style="text-align:center;color:#888;padding:14px">No entries.</td></tr>`;
   return `<div class="sheet-head"><div><div class="title">Aircraft Secure Log</div>
       <div style="font-size:13px;color:#555">${log.length} entr${log.length===1?"y":"ies"}</div></div>
@@ -1904,7 +1920,7 @@ function downloadSecureText(){
   const lines=["AIRCRAFT SECURE LOG — "+fmtDate(todayISO()),"========================================",""];
   data.secureLog.forEach((e,i)=>{lines.push(`${i+1}. ${e.area||""} / ${e.spot||""}`);
     if(e.ac&&e.ac.ship)lines.push(`   Aircraft: Nose ${e.ac.ship}${e.ac.reg?" / "+e.ac.reg:""}${e.ac.type?" / "+e.ac.type:""}`);
-    lines.push(`   Responsible: ${e.reason||""}${e.name?" ("+e.name+")":""}`);
+    lines.push(`   Responsible: ${e.reason||""}${e.name?" ("+nm(e.name)+")":""}`);
     lines.push(`   Time: ${e.time||""}`);
     if(e.comment)lines.push(`   Comment: ${e.comment}`);
     lines.push("");});
@@ -2269,7 +2285,7 @@ function updateHdr(){const cust=data.settings&&data.settings.headerSub;
   $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} across ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
 
 /* ---- init ---- */
-(async function(){save();if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();applyTileVisibility();autoLoadMaster();})();
+(async function(){save();document.body.classList.toggle("demo-on",demoOn());if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();applyTileVisibility();autoLoadMaster();})();
 if("serviceWorker" in navigator){
   const hadController=!!navigator.serviceWorker.controller;
   let refreshing=false;
