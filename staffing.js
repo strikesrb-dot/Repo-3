@@ -675,6 +675,9 @@ function autoNextRemote(){
   render();
 }
 function autoBar(){
+  if(autoMode==="multi")
+    return `<div class="autobar multi"><div class="ab-msg"><b>MULTI ASSIGN</b><small>Tap names to turn them purple — they can go in up to 2 areas · ${dualArea.size} purple</small></div>
+      <div class="ab-acts"><button class="btn good" id="abCancel">Done ✓</button></div></div>`;
   if(autoMode==="tug")
     return `<div class="autobar"><div class="ab-msg"><b>AUTO MODE · TUG</b><small>Tap people to pair into tugs (in order) — <span id="abCount">${autoPick.length}</span> picked</small></div>
       <div class="ab-acts"><button class="btn ghost" id="abCancel">Cancel</button><button class="btn good" id="abGo">Pair up ›</button></div></div>`;
@@ -766,11 +769,11 @@ function rAssign(){
   const running=TUGS.filter(id=>tugState(id).running).length;
   ROOT.innerHTML=`
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
-      <p class="hint" style="margin:2px 0 0">${autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. <b>Double-tap</b> a name to make it purple (can go in 2 areas).'}</p></div>
+      <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. Use <b>Multi Assign</b> to mark people for 2 areas.'}</p></div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
-        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto: Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto: Remote</button></div>
+        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button></div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
       <div class="asg2-board">
@@ -782,15 +785,15 @@ function rAssign(){
     <div class="btnrow" style="margin-top:10px"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>
     ${back("reconcile","Tugs")}
     ${autoMode?'<div class="autobar-spacer"></div>'+autoBar():''}`;
-  // pool chip: single tap = select / auto-pick (class-only update so taps stay instant
-  // and double-tap still works) · double tap = toggle purple (2-area)
+  // pool chip tap depends on mode: multi = toggle purple · tug/remote = pick · normal = select
   const poolEl=$('#staffRoot .pool-groups');
   poolEl?.addEventListener('click',ev=>{ const chip=ev.target.closest('.abody'); if(!chip)return; const emp=chip.dataset.emp;
-    if(autoMode){ const i=autoPick.indexOf(emp); i>=0?autoPick.splice(i,1):autoPick.push(emp); chip.classList.toggle('apick',autoPick.includes(emp)); const cc=$('#abCount'); if(cc)cc.textContent=autoPick.length; }
-    else { if(SEL===emp){SEL=null;chip.classList.remove('sel');} else { SEL=emp; $$('#staffRoot .abody.sel').forEach(c=>c.classList.remove('sel')); chip.classList.add('sel'); } } });
-  poolEl?.addEventListener('dblclick',ev=>{ const chip=ev.target.closest('.abody'); if(!chip)return; poolTapDual(chip.dataset.emp); });
+    if(autoMode==='multi'){ poolTapDual(emp); return; }
+    if(autoMode==='tug'||autoMode==='remote'){ const i=autoPick.indexOf(emp); i>=0?autoPick.splice(i,1):autoPick.push(emp); chip.classList.toggle('apick',autoPick.includes(emp)); const cc=$('#abCount'); if(cc)cc.textContent=autoPick.length; return; }
+    if(SEL===emp){SEL=null;chip.classList.remove('sel');} else { SEL=emp; $$('#staffRoot .abody.sel').forEach(c=>c.classList.remove('sel')); chip.classList.add('sel'); } });
   $("#autoTug")?.addEventListener("click",()=>{ autoMode=autoMode==='tug'?null:'tug'; autoPick=[]; SEL=null; render(); });
   $("#autoRemote")?.addEventListener("click",()=>{ autoMode=autoMode==='remote'?null:'remote'; autoStep=0; autoPick=[]; SEL=null; render(); });
+  $("#autoMulti")?.addEventListener("click",()=>{ autoMode=autoMode==='multi'?null:'multi'; autoPick=[]; SEL=null; render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);

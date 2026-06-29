@@ -358,3 +358,9 @@
 .autobar .btn{width:auto;padding:10px 15px}
 
 .abody{touch-action:manipulation}
+
+/* multi-assign (purple) tweaks */
+.auto-btns{flex-wrap:wrap}
+.auto-btns .btn.sm{flex:1 1 30%;min-width:96px}
+.auto-btns .btn.sm.on.purple{background:#6b1f8f;border-color:#6b1f8f}
+.autobar.multi{background:#6b1f8f}
