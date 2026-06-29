@@ -338,6 +338,8 @@
   .mv-path{margin-top:4px;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
   .mv-arrow{color:var(--navy);font-weight:800}
   .mv-det{font-size:12px;font-weight:600;color:#8a939c}
+  .mv-fs{font-size:12px;font-weight:600;color:#8a939c}
+  .mv-src{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--navy);background:#eef2f5;border-radius:4px;padding:1px 6px;margin-left:auto}
   .mv-none{color:var(--muted);font-style:italic}
   .mv-shift{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:3px 9px;margin:10px 2px 6px}
   .mv-shift.nh{color:#2c2660;background:#e6e3f5}
@@ -1386,8 +1388,8 @@ $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toU
   const sub=$("#fSub").value==="__custom__"?"":$("#fSub").value;
   const loc=$("#fLoc").value.trim(),spot=(locZonesFor(loc)||[]).length?$("#fSpot").value:"";
   const p={tag,type:$("#fType").value,subtype:sub,location:loc,spot,volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO(),when:Date.now()};
-  if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"";Object.assign(ex,p);if(from!==p.location)logMove(ex,from,p.location,"edit");toast("Updated");}
-  else{data.equipment.push({id:uid(),...p});toast("Added");}save();closeEdit();refreshAll();});
+  if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"",fromSpot=ex.spot||"";Object.assign(ex,p);logMove(ex,from,p.location,"edit",fromSpot);toast("Updated");}
+  else{const ni={id:uid(),...p};data.equipment.push(ni);if(ni.location)logMove(ni,"",ni.location,"add","");toast("Added");}save();closeEdit();refreshAll();});
 function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
   data.equipment=data.equipment.filter(x=>x.id!==id);save();refreshAll();toast("Deleted");}
 $("#deleteEq").addEventListener("click",()=>{const id=editingId;if(!id)return;
@@ -1412,9 +1414,9 @@ function quickMove(id){const e=data.equipment.find(x=>x.id===id);if(!e)return;mo
 function closeMovePick(){$("#movePickOverlay").classList.remove("open");moveId=null;}
 $("#moveSel").addEventListener("change",()=>fillMoveSpot($("#moveSel").value,""));
 $("#moveGo").addEventListener("click",()=>{const e=data.equipment.find(x=>x.id===moveId);if(!e){closeMovePick();return;}
-  const from=e.location||"",to=$("#moveSel").value,spot=(locZonesFor(to)||[]).length?$("#moveSpotSel").value:"";
+  const from=e.location||"",fromSpot=e.spot||"",to=$("#moveSel").value,spot=(locZonesFor(to)||[]).length?$("#moveSpotSel").value:"";
   e.location=to;e.spot=spot;e.updated=todayISO();e.when=Date.now();
-  if(from!==to)logMove(e,from,to,"quickmove");save();refreshAll();closeMovePick();
+  logMove(e,from,to,"quickmove",fromSpot);save();refreshAll();closeMovePick();
   toast(to?`Moved to ${to}${spot?" · "+spot:""}`:"Location cleared");});
 $("#moveCancel").addEventListener("click",closeMovePick);
 $("#movePickOverlay").addEventListener("click",e=>{if(e.target.id==="movePickOverlay")closeMovePick();});
@@ -1423,14 +1425,17 @@ function curPass(){return (data.settings&&data.settings.passcode)||SETTINGS_PASS
 function minToTime(m){m=((Math.round(m)||0)%1440+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
 function timeToMin(t){const p=(t||"").split(":");return (parseInt(p[0])||0)*60+(parseInt(p[1])||0);}
 // record a location change for the Movement tab — honors the tracking settings + retention cap
-function logMove(e,from,to,source){from=(from||"").trim();to=(to||"").trim();if(from===to)return;
+function logMove(e,from,to,source,fromSpot){from=(from||"").trim();to=(to||"").trim();
+  const toSpot=(e.spot||"").trim();fromSpot=(fromSpot||"").trim();
+  if(from===to&&fromSpot===toSpot)return;   // nothing actually moved (same location AND same spot)
   const S=data.settings||{};source=source||"inventory";
   if(source==="inventory"){if(!S.trackInventory)return;if(to===""&&!S.trackClears)return;}
   else if(source==="edit"){if(!S.trackEdits)return;}
+  else if(source==="add"){if(S.trackEdits===false)return;}   // adding a unit with a location = a placement
   else if(source==="quickmove"){if(!S.trackQuickMove)return;}
   else if(source==="delete"){if(!S.trackDeletions)return;}
   const d=new Date(),min=d.getHours()*60+d.getMinutes();
-  data.movements.push({id:uid(),tag:e.tag||"",type:e.type||"",from,to,spot:e.spot||"",nose:e.nose||"",oos:!!e.oos,date:todayISO(),ts:Date.now(),min});
+  data.movements.push({id:uid(),tag:e.tag||"",type:e.type||"",from,to,fromSpot,spot:toSpot,nose:e.nose||"",oos:!!e.oos,source,date:todayISO(),ts:Date.now(),min});
   const cap=Math.max(10,S.moveCap||300);
   if(data.movements.length>cap)data.movements=data.movements.slice(-cap);}
 // shift a movement belongs to, by configurable clock-time boundaries
@@ -1447,11 +1452,13 @@ function renderMovement(){
   if(q)mv=mv.filter(m=>[m.tag,m.type,m.from,m.to].some(v=>(v||"").toLowerCase().includes(q)));
   if(!data.movements.length){list.innerHTML=`<div class="empty"><p>No movements logged yet.<br>Counting equipment during inventory will record location changes here.</p></div>`;return;}
   if(!mv.length){list.innerHTML=`<div class="empty"><p>Nothing matches your search.</p></div>`;return;}
+  const SRCLBL={add:"added",inventory:"inventory",quickmove:"moved",edit:"edited",delete:"removed"};
   const row=m=>{
     const det=invDetail(m.spot,m.nose);
-    const from=m.from?esc(m.from):'<span class="mv-none">unassigned</span>';
+    const from=(m.from?esc(m.from):'<span class="mv-none">unassigned</span>')+(m.fromSpot?` <span class="mv-fs">${esc(m.fromSpot)}</span>`:"");
     const to=m.to?esc(m.to):'<span class="mv-none">unassigned</span>';
-    return `<li class="mv-row"><div class="mv-main"><span class="mv-tag">${esc(m.tag)}</span>${m.type?`<span class="mv-type">${esc(m.type)}</span>`:""}${m.oos?'<span class="mv-oos">OOS</span>':""}</div>
+    const tag=SRCLBL[m.source]?`<span class="mv-src">${SRCLBL[m.source]}</span>`:"";
+    return `<li class="mv-row"><div class="mv-main"><span class="mv-tag">${esc(m.tag)}</span>${m.type?`<span class="mv-type">${esc(m.type)}</span>`:""}${m.oos?'<span class="mv-oos">OOS</span>':""}${tag}</div>
       <div class="mv-path">${from} <span class="mv-arrow">→</span> ${to}${det?`<span class="mv-det">${esc(det)}</span>`:""}</div></li>`;};
   const byDate={};mv.forEach(m=>{(byDate[m.date]=byDate[m.date]||[]).push(m);});
   list.innerHTML=Object.keys(byDate).map(d=>{
@@ -1726,7 +1733,7 @@ function commitInv(){
   // additive: only the units you count get placed here. Units you don't tap keep
   // their current location — a later partial re-count never silently unassigns them.
   data.equipment.forEach(e=>{
-    if(invSel.has(e.id)){const from=e.location||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();e.when=Date.now();if(from!==loc)logMove(e,from,loc,"inventory");}});
+    if(invSel.has(e.id)){const from=e.location||"",fromSpot=e.spot||"";e.location=loc;e.oos=invOos.has(e.id);e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();e.when=Date.now();logMove(e,from,loc,"inventory",fromSpot);}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
   save();refreshLocationFilter();
   inv.lastLoc=loc;inv.lastN=n;inv.loc=null;inv.stage="more";renderInventory();
