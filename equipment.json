@@ -625,7 +625,7 @@
       "id": "eq30038",
       "tag": "GP1080",
       "type": "Ground Power",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -633,7 +633,7 @@
       "id": "eq30039",
       "tag": "GP1938",
       "type": "Ground Power",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "120KVA",
       "updated": "2026-06-25"
     },
@@ -641,7 +641,7 @@
       "id": "eq3003a",
       "tag": "GP2668",
       "type": "Ground Power",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -660,7 +660,7 @@
       "id": "eq3003c",
       "tag": "GP2043",
       "type": "Ground Power",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -668,7 +668,7 @@
       "id": "eq3003d",
       "tag": "GP9737",
       "type": "Ground Power",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -700,7 +700,7 @@
       "id": "eq30040",
       "tag": "AC5343",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -708,7 +708,7 @@
       "id": "eq30041",
       "tag": "AC5341",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -716,7 +716,7 @@
       "id": "eq30042",
       "tag": "AC5237",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -724,7 +724,7 @@
       "id": "eq30043",
       "tag": "AC2737",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -732,7 +732,7 @@
       "id": "eq30044",
       "tag": "AH0073",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
@@ -742,7 +742,7 @@
       "id": "eq30045",
       "tag": "AH0058",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "HEAT",
@@ -752,7 +752,7 @@
       "id": "eq30046",
       "tag": "AH0099",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
@@ -762,7 +762,7 @@
       "id": "eq30047",
       "tag": "GP8860",
       "type": "Ground Power",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -770,7 +770,7 @@
       "id": "eq30048",
       "tag": "GP2042",
       "type": "Ground Power",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -778,7 +778,7 @@
       "id": "eq30049",
       "tag": "AH0090",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
@@ -788,7 +788,7 @@
       "id": "eq3004a",
       "tag": "AH0072",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "HEAT",
@@ -798,7 +798,7 @@
       "id": "eq3004b",
       "tag": "AH0089",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
@@ -808,7 +808,7 @@
       "id": "eq3004c",
       "tag": "AH0040",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
@@ -831,7 +831,7 @@
       "id": "eq3004e",
       "tag": "AH0091",
       "type": "PCA",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
@@ -841,7 +841,7 @@
       "id": "eq3004f",
       "tag": "NM2418",
       "type": "Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -849,7 +849,7 @@
       "id": "eq30050",
       "tag": "4739706",
       "type": "Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -857,7 +857,7 @@
       "id": "eq30051",
       "tag": "WS366439",
       "type": "Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -865,7 +865,7 @@
       "id": "eq30052",
       "tag": "002",
       "type": "Airbus Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -873,7 +873,7 @@
       "id": "eq30053",
       "tag": "003",
       "type": "Airbus Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -881,7 +881,7 @@
       "id": "eq30054",
       "tag": "015",
       "type": "Airbus Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -900,7 +900,7 @@
       "id": "eq30056",
       "tag": "021",
       "type": "Airbus Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -908,7 +908,7 @@
       "id": "eq30057",
       "tag": "040",
       "type": "Airbus Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -916,7 +916,7 @@
       "id": "eq30058",
       "tag": "014",
       "type": "Airbus Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -935,7 +935,7 @@
       "id": "eq3005a",
       "tag": "0320",
       "type": "Stairs",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -943,7 +943,7 @@
       "id": "eq3005b",
       "tag": "MS9616",
       "type": "Stair Truck",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -951,7 +951,7 @@
       "id": "eq3005c",
       "tag": "MS8861",
       "type": "Stair Truck",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -959,7 +959,7 @@
       "id": "eq3005d",
       "tag": "MS0531",
       "type": "Stair Truck",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -967,7 +967,7 @@
       "id": "eq3005e",
       "tag": "FT2433",
       "type": "Ballpark Tug",
-      "location": "West Park",
+      "location": "WestPark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1113,7 +1113,7 @@
       "id": "eq3006b",
       "tag": "GP1104",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1132,7 +1132,7 @@
       "id": "eq3006d",
       "tag": "GP1859",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1140,7 +1140,7 @@
       "id": "eq3006e",
       "tag": "GP1922",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "90KVA",
       "updated": "2026-06-25"
     },
@@ -1148,7 +1148,7 @@
       "id": "eq3006f",
       "tag": "GP0961",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "120KVA",
       "updated": "2026-06-25"
     },
@@ -1156,7 +1156,7 @@
       "id": "eq30070",
       "tag": "GP1048",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "120KVA",
       "updated": "2026-06-25"
     },
@@ -1164,7 +1164,7 @@
       "id": "eq30071",
       "tag": "GP1731",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1172,7 +1172,7 @@
       "id": "eq30072",
       "tag": "GP1083",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1180,7 +1180,7 @@
       "id": "eq30073",
       "tag": "GP1078",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1188,7 +1188,7 @@
       "id": "eq30074",
       "tag": "GP1050",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1196,7 +1196,7 @@
       "id": "eq30075",
       "tag": "GP3435",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "120KVA",
       "updated": "2026-06-25"
     },
@@ -1204,7 +1204,7 @@
       "id": "eq30076",
       "tag": "GP1081",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1212,7 +1212,7 @@
       "id": "eq30077",
       "tag": "GP1738",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1220,7 +1220,7 @@
       "id": "eq30078",
       "tag": "GP1044",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "120KVA",
       "updated": "2026-06-25"
     },
@@ -1228,7 +1228,7 @@
       "id": "eq30079",
       "tag": "GP1076",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1236,7 +1236,7 @@
       "id": "eq3007a",
       "tag": "GP1103",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1277,7 +1277,7 @@
       "id": "eq3007e",
       "tag": "GP1082",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1285,7 +1285,7 @@
       "id": "eq3007f",
       "tag": "GP1732",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "No KVA tag",
       "updated": "2026-06-25"
     },
@@ -1293,7 +1293,7 @@
       "id": "eq30080",
       "tag": "GP3343",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "90KVA",
       "updated": "2026-06-25"
     },
@@ -1301,7 +1301,7 @@
       "id": "eq30081",
       "tag": "GP1052",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1309,7 +1309,7 @@
       "id": "eq30082",
       "tag": "GP3050",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "180KVA",
       "updated": "2026-06-25"
     },
@@ -1317,7 +1317,7 @@
       "id": "eq30083",
       "tag": "GP1914",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1325,7 +1325,7 @@
       "id": "eq30084",
       "tag": "GP2023",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1333,7 +1333,7 @@
       "id": "eq30085",
       "tag": "GP1742",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "K80KVA",
       "updated": "2026-06-25"
     },
@@ -1352,7 +1352,7 @@
       "id": "eq30087",
       "tag": "AC5342",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1360,7 +1360,7 @@
       "id": "eq30088",
       "tag": "AC5344",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1368,7 +1368,7 @@
       "id": "eq30089",
       "tag": "AC2740",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1376,7 +1376,7 @@
       "id": "eq3008a",
       "tag": "AC5120",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1384,7 +1384,7 @@
       "id": "eq3008b",
       "tag": "AC5058",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1392,7 +1392,7 @@
       "id": "eq3008c",
       "tag": "AC5400",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1411,7 +1411,7 @@
       "id": "eq3008e",
       "tag": "GP3433",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1419,7 +1419,7 @@
       "id": "eq3008f",
       "tag": "GP3050",
       "type": "Ground Power",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1427,7 +1427,7 @@
       "id": "eq30090",
       "tag": "AC5043",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1435,7 +1435,7 @@
       "id": "eq30091",
       "tag": "AC5314",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1443,7 +1443,7 @@
       "id": "eq30092",
       "tag": "AC5080",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1451,7 +1451,7 @@
       "id": "eq30093",
       "tag": "AC5063",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1459,7 +1459,7 @@
       "id": "eq30094",
       "tag": "AC5049",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1467,7 +1467,7 @@
       "id": "eq30095",
       "tag": "AC2709",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1475,7 +1475,7 @@
       "id": "eq30096",
       "tag": "AC5067",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1483,7 +1483,7 @@
       "id": "eq30097",
       "tag": "AC5060",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1491,7 +1491,7 @@
       "id": "eq30098",
       "tag": "AC5044",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1499,7 +1499,7 @@
       "id": "eq30099",
       "tag": "AC5064",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1507,7 +1507,7 @@
       "id": "eq3009a",
       "tag": "4749091",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1515,7 +1515,7 @@
       "id": "eq3009b",
       "tag": "4749092",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1523,7 +1523,7 @@
       "id": "eq3009c",
       "tag": "4749089",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1531,7 +1531,7 @@
       "id": "eq3009d",
       "tag": "4749090",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1539,7 +1539,7 @@
       "id": "eq3009e",
       "tag": "WS025061",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1547,7 +1547,7 @@
       "id": "eq3009f",
       "tag": "WS366768",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1555,7 +1555,7 @@
       "id": "eq300a0",
       "tag": "WS366775",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1563,7 +1563,7 @@
       "id": "eq300a1",
       "tag": "WS023682",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1571,7 +1571,7 @@
       "id": "eq300a2",
       "tag": "WS366771",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1579,7 +1579,7 @@
       "id": "eq300a3",
       "tag": "WS366770",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1587,7 +1587,7 @@
       "id": "eq300a4",
       "tag": "WS366772",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1595,7 +1595,7 @@
       "id": "eq300a5",
       "tag": "WS366774",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1603,7 +1603,7 @@
       "id": "eq300a6",
       "tag": "WS366773",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1611,7 +1611,7 @@
       "id": "eq300a7",
       "tag": "WS366769",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1619,7 +1619,7 @@
       "id": "eq300a8",
       "tag": "WS2967",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1627,7 +1627,7 @@
       "id": "eq300a9",
       "tag": "WS2964",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1635,7 +1635,7 @@
       "id": "eq300aa",
       "tag": "WS2966",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1643,7 +1643,7 @@
       "id": "eq300ab",
       "tag": "AH0059",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "HEAT",
@@ -1653,7 +1653,7 @@
       "id": "eq300ac",
       "tag": "AH0052",
       "type": "PCA",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
@@ -1663,7 +1663,7 @@
       "id": "eq300ad",
       "tag": "FT0542",
       "type": "Ballpark Tug",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1682,7 +1682,7 @@
       "id": "eq300af",
       "tag": "FT0540",
       "type": "Ballpark Tug",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1690,7 +1690,7 @@
       "id": "eq300b0",
       "tag": "HT0940",
       "type": "Ballpark Tug",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "Ice Cream Truck",
@@ -1700,7 +1700,7 @@
       "id": "eq300b1",
       "tag": "FT0541",
       "type": "Ballpark Tug",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1708,7 +1708,7 @@
       "id": "eq300b2",
       "tag": "FT0558",
       "type": "Ballpark Tug",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1716,7 +1716,7 @@
       "id": "eq300b3",
       "tag": "FT0538",
       "type": "Ballpark Tug",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1735,7 +1735,7 @@
       "id": "eq300b5",
       "tag": "PI3343",
       "type": "Pickup Truck",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "",
@@ -1745,7 +1745,7 @@
       "id": "eq300b6",
       "tag": "4751105",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1753,7 +1753,7 @@
       "id": "eq300b7",
       "tag": "4751103",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1761,7 +1761,7 @@
       "id": "eq300b8",
       "tag": "BP#02",
       "type": "Stairs",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25"
     },
@@ -1779,7 +1779,7 @@
       "id": "eq300ba",
       "tag": "CT6250",
       "type": "Ballpark Tug",
-      "location": "Ball Park",
+      "location": "Ballpark",
       "notes": "",
       "updated": "2026-06-25",
       "subtype": "Electric",
@@ -1896,7 +1896,7 @@
     },
     {
       "name": "West Park",
-      "area": "West Park",
+      "area": "WestPark",
       "holdsAircraft": false,
       "region": "",
       "hidden": false
@@ -2677,8 +2677,8 @@
   "secureLog": [],
   "equipLocs": [
     "South",
-    "West Park",
-    "Ball Park",
+    "WestPark",
+    "Ballpark",
     "GSE",
     "Move Team",
     "C4"

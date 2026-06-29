@@ -795,6 +795,9 @@ function mapType(t){t=t||"";
   if(/ground power|gpu|\bgp\b/i.test(t))return "GPUs";
   if(/pca|air condition|heat|\bac\b|\bah\b/i.test(t))return "PCA/AC/HEAT Unit";
   return t;}
+// canonical no-space spelling used across staffing/Secure/Park; collapses legacy "Ball Park"/"West Park"
+const LOC_ALIAS={"ball park":"Ballpark","ballpark":"Ballpark","west park":"WestPark","westpark":"WestPark"};
+function normLoc(s){const t=(s||"").trim();return LOC_ALIAS[t.toLowerCase()]||t;}
 const LOC_SEED_V=12; // bumped: re-merge built-in spots (Ballpark BP1-11/A10, Amelia, Lindy…) dropped when a same-version master was loaded
 function R(pre,a,b){const o=[];for(let i=a;i<=b;i++)o.push(pre+i);return o;}
 const LOC_SEED=[
@@ -860,6 +863,16 @@ function load(){
     if(bpSpots.length)d.locations=d.locations.filter(l=>!(/^ball ?park$/i.test(l.name)&&l.area==="Ballpark"));
     d.bpMerged=true;
   }
+  // one-time: collapse spaced "Ball Park"/"West Park" into the canonical no-space form used
+  // everywhere else (staffing areas, Secure/Park) so Inventory shows one tile, not two
+  if((d.locNormV||0)<1){
+    d.equipment.forEach(e=>{if(e.location){const n=normLoc(e.location);if(n!==e.location){e.location=n;e.when=Date.now();}}});
+    const seen=new Set(),el=[];(d.equipLocs||[]).forEach(x=>{const n=normLoc(x);if(n&&!seen.has(n)){seen.add(n);el.push(n);}});d.equipLocs=el;
+    const z={};Object.keys(d.locZones||{}).forEach(k=>{const n=normLoc(k);const cur=z[n]||[];(d.locZones[k]||[]).forEach(s=>{if(!cur.some(x=>x.toLowerCase()===String(s).toLowerCase()))cur.push(s);});z[n]=cur;});d.locZones=z;
+    d.locations.forEach(l=>{l.area=normLoc(l.area);});
+    d._t=Date.now();   // deliberate edit → make the normalized config win across devices
+    d.locNormV=1;
+  }
   return d;
 }
 // config = everything except the per-entry lists (equipment/movements/secureLog), which sync per item
@@ -871,7 +884,12 @@ function save(){ const sig=configSig(); if(cfgReady&&_cfgSig!==null&&sig!==_cfgS
 
 /* ---- whole-site team sync (equipment, inventory, movements, secure log, settings) ---- */
 function configRow(){const o={id:"config",when:data._t||0};CFG_FIELDS.forEach(k=>o[k]=data[k]);return o;}
-function applyConfigRow(r){if(!r)return;CFG_FIELDS.forEach(k=>{if(k in r)data[k]=r[k];});data._t=r.when||data._t||0;_cfgSig=configSig();}
+function applyConfigRow(r){if(!r)return;CFG_FIELDS.forEach(k=>{if(k in r)data[k]=r[k];});
+  // normalize incoming location names so a not-yet-updated device can't reintroduce "Ball Park"/"West Park"
+  if(Array.isArray(data.equipLocs)){const seen=new Set(),el=[];data.equipLocs.forEach(x=>{const n=normLoc(x);if(n&&!seen.has(n)){seen.add(n);el.push(n);}});data.equipLocs=el;}
+  if(data.locZones){const z={};Object.keys(data.locZones).forEach(k=>{const n=normLoc(k);const cur=z[n]||[];(data.locZones[k]||[]).forEach(s=>{if(!cur.some(x=>x.toLowerCase()===String(s).toLowerCase()))cur.push(s);});z[n]=cur;});data.locZones=z;}
+  if(Array.isArray(data.locations))data.locations.forEach(l=>{l.area=normLoc(l.area);});
+  data._t=r.when||data._t||0;_cfgSig=configSig();}
 let _siteSyncT=null,_siteBusy=false;
 function scheduleSiteSync(){ if(!window.SYNC||!window.SYNC.on())return; clearTimeout(_siteSyncT); _siteSyncT=setTimeout(()=>syncSite(),1200); }
 // deletions sync as tombstones ({del:true}) so they propagate instead of being re-added by another device
@@ -887,7 +905,7 @@ async function syncSite(force){
   try{
     const moveCap=Math.max(50,(data.settings&&data.settings.moveCap)||300);
     data._tomb=data._tomb||{};
-    changed=await window.SYNC.shared("equip",   ()=>data.equipment, arr=>{data.equipment=arr;persist();}, 100000)||changed;
+    changed=await window.SYNC.shared("equip",   ()=>data.equipment, arr=>{data.equipment=arr.map(e=>{if(e&&e.location)e.location=normLoc(e.location);return e;});persist();}, 100000)||changed;
     changed=await window.SYNC.shared("emove",    ()=>rowsWithTomb(data.movements,data._tomb.emove), arr=>{const s=splitRows(arr,moveCap);data.movements=s.live;data._tomb.emove=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("esecure",  ()=>rowsWithTomb(data.secureLog,data._tomb.esecure), arr=>{const s=splitRows(arr,2000);data.secureLog=s.live;data._tomb.esecure=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("config",   ()=>[configRow()], arr=>{applyConfigRow(arr[0]);persist();}, 1)||changed;
