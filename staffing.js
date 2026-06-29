@@ -216,6 +216,14 @@ const NEXT_SHIFT={AM:"PM",PM:"NH",NH:"AM"};
 function worksNext(emp){ const nx=NEXT_SHIFT[ST.shift]; if(!nx||!emp)return false;
   let ov=0; (ST.bodies||[]).filter(b=>b.emp===emp).forEach(b=>{const p=ivl(b.start,b.end); if(p)ov+=ovl(p,SHIFT_CORE[nx]);});
   return Math.min(ov,480)>=45; }
+// on a double = finishing the previous shift OR rolling into the next one
+function onDouble(emp){ return !!emp&&(worksNext(emp)||!!prevWorkLabel(emp)); }
+// leaves before the shift's standard end (not staying the full shift) → flag red
+function leavesEarly(o){ if(!o)return false;
+  const h=o._hours||o.hours||((o.start&&o.end)?o.start+"-"+o.end:"");
+  const start=o.start||(h.split("-")[0]||""), end=o.end||(h.split("-")[1]||"");
+  const pv=ivl(start,end); if(!pv)return false;
+  return pv[1] < SHIFT_CORE[ST.shift][1]-30; }
 function excludeList(){ const d=Store.getJSON("elt.staff.exclude",null); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }
 
 /* build the body list (all shifts) from parsed inputs + prompt answers */
@@ -708,6 +716,7 @@ function rReconcile(){
 let SEL=null; // selected pool entry key
 let poolCollapsed=new Set(); // collapsed staff hour-groups (by start time)
 let showUnusedTugs=false;    // hide not-in-service tugs on the board unless toggled
+let poolDoublesFirst=false;  // group people on a double into a priority block at the top
 /* auto-assign modes + multi-assign (one person → 2 places) */
 let autoMode=null;            // null | 'tug' | 'remote' | 'multi'
 let autoPick=[];             // emps multi-selected in tug/remote auto modes (ordered)
@@ -782,24 +791,31 @@ function rAssign(){
   const avail=pool.filter(availBody);
   // group by START time so doubles & prev-shift workers sit with their base-shift peers
   const toMin=t=>{const m=(t||"").match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):9999;};
-  const chip=(b,groupEnd)=>{const pw=prevWorkLabel(b.emp), fwd=!pw&&worksNext(b.emp);
+  const chip=b=>{const pw=prevWorkLabel(b.emp), fwd=!pw&&worksNext(b.emp);
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
-    const early=toMin(e)<groupEnd;                         // leaves before the group's latest end → flag red
+    const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
     const isSel=SEL===b.emp, partial=(b.ov||0)<240, ac=empAreaCount(b.emp);
-    return `<button class="abody ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''}" data-emp="${esc(b.emp)}">${esc(nm(b.name))}${fwd?'<em>DBL</em>':''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
-  const grp={};avail.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
-  const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
-  const poolHTML=avail.length?gkeys.map(st=>{
-    const list=grp[st];
-    const endStr=list.reduce((mx,x)=>{const e=(x.hours||"").split("-")[1]||"";return toMin(e)>toMin(mx)?e:mx;},"00:00");
-    const groupEnd=toMin(endStr);
-    const col=poolCollapsed.has(st);
-    return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(st)}"><span class="shg-ca">${col?'▸':'▾'}</span>${esc(st)}-${esc(endStr)}<span>${list.length}</span></div><div class="abody-wrap">${list.map(b=>chip(b,groupEnd)).join("")}</div></div>`;
-  }).join(""):'<span class="hint">All assigned.</span>';
+    return `<button class="abody ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="${early?'early':''}">${esc(nm(b.name))}</span>${fwd?'<em>DBL</em>':''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+  const shgrp=(key,label,list)=>{const col=poolCollapsed.has(key);
+    return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(key)}"><span class="shg-ca">${col?'▸':'▾'}</span>${label}<span>${list.length}</span></div><div class="abody-wrap">${list.map(chip).join("")}</div></div>`;};
+  let poolHTML;
+  if(!avail.length){ poolHTML='<span class="hint">All assigned.</span>'; }
+  else {
+    const dbls=poolDoublesFirst?avail.filter(b=>onDouble(b.emp)):[];
+    const rest=poolDoublesFirst?avail.filter(b=>!onDouble(b.emp)):avail;
+    const grp={};rest.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
+    const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
+    const restHTML=gkeys.map(st=>{const list=grp[st];
+      const endStr=list.reduce((mx,x)=>{const e=(x.hours||"").split("-")[1]||"";return toMin(e)>toMin(mx)?e:mx;},"00:00");
+      return shgrp(st,`${esc(st)}-${esc(endStr)}`,list);
+    }).join("");
+    const dblHTML=dbls.length?`<div class="dblgrp-wrap">${shgrp("__dbl",'★ Doubles · priority',dbls)}</div>`:'';
+    poolHTML=dblHTML+restHTML;
+  }
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
-    const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
-    return `<span class="slot-name">${esc(nm(p.name))}${fwd?'<em class="sdbl">DBL</em>':''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
+    const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
+    return `<span class="slot-name ${early?'early':''}">${esc(nm(p.name))}${fwd?'<em class="sdbl">DBL</em>':''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
@@ -812,7 +828,7 @@ function rAssign(){
   const areaCards=AREAS.map(a=>{
     const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0,need=min&&list.length<min;
     return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
-      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip" data-area="${esc(a.key)}" data-i="${i}">${esc(nm(p.name))}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
+      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip ${leavesEarly(p)?'early':''}" data-area="${esc(a.key)}" data-i="${i}">${esc(nm(p.name))}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
   // tugs grouped
@@ -846,7 +862,7 @@ function rAssign(){
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
-        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button></div>
+        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button><button class="btn ghost sm ${poolDoublesFirst?'on':''}" id="dblFirst">★ Doubles first</button></div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
       <div class="asg2-board">
@@ -867,6 +883,7 @@ function rAssign(){
   $("#autoTug")?.addEventListener("click",()=>{ autoMode=autoMode==='tug'?null:'tug'; autoPick=[]; SEL=null; render(); });
   $("#autoRemote")?.addEventListener("click",()=>{ autoMode=autoMode==='remote'?null:'remote'; autoStep=0; autoPick=[]; SEL=null; render(); });
   $("#autoMulti")?.addEventListener("click",()=>{ autoMode=autoMode==='multi'?null:'multi'; autoPick=[]; SEL=null; render(); });
+  $("#dblFirst")?.addEventListener("click",()=>{ poolDoublesFirst=!poolDoublesFirst; render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);

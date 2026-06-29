@@ -139,8 +139,13 @@
 .rt-e{font-size:9.5px;font-weight:900;letter-spacing:.04em;background:#fde68a;color:#7a4d00;border-radius:5px;padding:1px 6px}
 /* electric tugs are flagged by the ELECTRIC badge only — no tile tint/border */
 
-/* early-leave time shown in red (assign pool grouping) */
+/* early-leave (not staying the full shift) shown in red across the assign screen */
 .abody .early{color:#c0271e;text-decoration:none;font-weight:800}
+.slot-name.early,.slot-name.early *{color:#c0271e}
+.slot-chip.early{color:#c0271e;border-color:#e7a59f;background:#fdeceb}
+.dblgrp-wrap .shgrp-h{color:#7a3287}
+.dblgrp-wrap .shgrp-h span{background:#f3e0f5;color:#7a3287}
+.dblgrp-wrap{border:1px solid #ecd6f1;background:#faf3fc;border-radius:12px;padding:8px 10px 4px;margin-bottom:10px}
 
 /* compact assigned tug cards */
 .tcard .thdr{font-size:12px;padding:5px 9px}
