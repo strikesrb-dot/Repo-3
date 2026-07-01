@@ -396,10 +396,6 @@
 .pool-tiers .pt-o{background:#fbe0d6;color:#b1481f}
 .prow.partial .prow-main>div>b::after{content:"";}
 .prow.partial{box-shadow:inset 3px 0 0 #d9a528}
-.tdbl{display:block;width:100%;margin-top:6px;border:1px dashed var(--line);background:#fff;border-radius:8px;padding:5px;font-size:10.5px;font-weight:800;color:#67727e;cursor:pointer;letter-spacing:.03em}
-.tdbl.on{background:#eaf3ff;border-color:#0b3d63;border-style:solid;color:#0b3d63}
-.tcard.dbltug{box-shadow:inset 0 0 0 2px #0b3d63}
-.dbltag{background:#0b3d63;color:#fff;font-size:9px;font-weight:900;border-radius:4px;padding:1px 5px;margin-left:6px}
 
 /* shift picker step */
 .shift-pick{display:flex;flex-direction:column;gap:10px}

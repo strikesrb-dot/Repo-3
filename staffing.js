@@ -824,14 +824,6 @@ function autoNextRemote(){
   if(autoStep>=REMOTE_ORDER.length){autoMode=null;autoStep=0;toast("Auto remote complete");}
   render();
 }
-function fillDoubleTugs(){
-  const dbl=(ST.assign.dblTugs||[]).filter(id=>tugState(id).running);
-  if(!dbl.length){toast("Mark a tug as double first (2× on the tug)");return;}
-  const avail=poolFor(ST.shift).filter(availBody).filter(b=>worksNext(b.emp)).sort((a,b)=>(a.hours||"").localeCompare(b.hours||"")); // doubles, parity-sorted
-  let bi=0;
-  dbl.forEach(id=>{const c=ST.assign.tugs[id]=ST.assign.tugs[id]||{};["DRIVER","OBSERVR"].forEach(role=>{ if(c[role])return; if(bi<avail.length){c[role]=mkBody(avail[bi]);bi++;} });});
-  render(); toast(bi?`Placed ${bi} double${bi>1?'s':''} into double tug${dbl.length>1?'s':''}`:"No unassigned doubles in the pool");
-}
 function autoBar(){
   if(autoMode==="multi")
     return `<div class="autobar multi"><div class="ab-msg"><b>MULTI ASSIGN</b><small>Tap a name, then tap two places — they stay in the pool until placed twice</small></div>
@@ -914,17 +906,15 @@ function rAssign(){
   }).join("");
   // tugs grouped
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
-    const isDbl=(ST.assign.dblTugs||[]).includes(id);
     const stCls=t.oos?'st-oos':(t.gpu==='inop'?'st-inop':'st-ready');  // follow GPU/OOS color logic
-    return `<div class="tcard ${stCls} ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''} ${isDbl?'dbltug':''}">
-      <div class="thdr"><span class="thdr-l">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}${isDbl?'<b class="dbltag">2×</b>':''}</span>
+    return `<div class="tcard ${stCls} ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
+      <div class="thdr"><span class="thdr-l">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span>
         <span class="thdr-r">${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}
         <button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button>
         <button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button></span></div>
       ${t.oos?`<div class="oosbar"><span class="haz">✕</span> OUT OF SERVICE</div>`:
         `<div class="trow ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(crew.DRIVER)}</div>
-         <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>
-         <button class="tdbl ${isDbl?'on':''}" data-dbl="${id}">${isDbl?'✓ Double tug':'2× Double tug'}</button>`}
+         <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>`}
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
   const mutedCard=id=>`<div class="tcard muted" data-add="${id}"><div class="thdr"><span class="thdr-l">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span><span class="muse">+ add</span></div><div class="muted-b">Not in service · tap to add</div></div>`;
@@ -943,7 +933,7 @@ function rAssign(){
   const secMove=sec=>`<span class="sec-move"><button class="sec-mv" data-mv="${sec}" data-dir="-1" title="Move up">▲</button><button class="sec-mv" data-mv="${sec}" data-dir="1" title="Move down">▼</button></span>`;
   const secs={
     dispatch:`<div class="card pad" data-sec="dispatch"><div class="sec-head"><div class="seg-section">DISPATCH (1 per shift)</div>${secMove("dispatch")}</div><div class="disp-box">${dispBox}</div></div>`,
-    tugs:`<div class="card pad" data-sec="tugs"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="tugs"><span class="sec-ca">${tugsOpen?'▾':'▸'}</span>TUGS — ${running} running</button>${secMove("tugs")}</div>${tugsOpen?`${tugGroups}${tugToggle}${(ST.assign.dblTugs||[]).length?` <button class="btn ghost sm" id="fillDbl" style="margin-top:10px;width:auto">⤵ Fill double tugs with doubles</button>`:''}`:''}</div>`,
+    tugs:`<div class="card pad" data-sec="tugs"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="tugs"><span class="sec-ca">${tugsOpen?'▾':'▸'}</span>TUGS — ${running} running</button>${secMove("tugs")}</div>${tugsOpen?`${tugGroups}${tugToggle}`:''}</div>`,
     areas:`<div class="card pad" data-sec="areas"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="areas"><span class="sec-ca">${areasOpen?'▾':'▸'}</span>REMOTES / AREAS</button>${secMove("areas")}</div>${areasOpen?`<div class="area-grid">${areaCards}</div>`:''}</div>`
   };
   ROOT.innerHTML=`
@@ -979,8 +969,6 @@ function rAssign(){
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);
-  $$('#staffRoot .tdbl').forEach(b=>b.onclick=()=>{ const id=+b.dataset.dbl; ST.assign.dblTugs=ST.assign.dblTugs||[]; const i=ST.assign.dblTugs.indexOf(id); i>=0?ST.assign.dblTugs.splice(i,1):ST.assign.dblTugs.push(id); render(); });
-  $("#fillDbl")?.addEventListener("click",fillDoubleTugs);
   $$('#staffRoot .shgrp-h[data-grp]').forEach(h=>h.onclick=()=>{ const g=h.dataset.grp; poolCollapsed.has(g)?poolCollapsed.delete(g):poolCollapsed.add(g); render(); });
   // placing keeps the selection in multi mode so the same person can go in a 2nd spot (auto-clears at 2 areas)
   const selName=()=>{ const b=SEL&&poolFor(ST.shift).find(x=>x.emp===SEL); return b?nm(b.name):""; };
