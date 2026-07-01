@@ -982,8 +982,6 @@ function rAssign(){
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
-        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button></div>
-        <div class="filt-row">${tggl('dblFirst',poolDoubles,'Doubles')}${tggl('priorFirst',poolWorkedPrior,'Worked prior')}</div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
       <div class="asg2-board">${dispSec}${hubBar}${activeSec}</div>
