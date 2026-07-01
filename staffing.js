@@ -898,7 +898,9 @@ function rAssign(){
     const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
     const isSel=SEL===b.emp, partial=isPartial(b), ac=empAreaCount(b.emp);
-    return `<button class="abody ${poolShiftClass(b)} ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="${early?'early':''}">${esc(nm(b.name))}</span>${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+    // cube: name (top) · shift times (middle) · DBL-until + prior-shift note (bottom, centred)
+    const foot=`${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}${pw?`<i class="pw">${esc(pw)}</i>`:''}`;
+    return `<button class="abody ${poolShiftClass(b)} ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="cb-name ${early?'early':''}">${esc(nm(b.name))}</span><span class="cb-hrs">${hrs}</span><span class="cb-foot">${foot}</span></button>`;};
   const shgrp=(key,label,list)=>{const col=poolCollapsed.has(key);
     return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(key)}"><span class="shg-ca">${col?'▸':'▾'}</span>${label}<span>${list.length}</span></div><div class="abody-wrap">${list.map(chip).join("")}</div></div>`;};
   const byName=list=>list.slice().sort((a,b)=>normName(a.name).localeCompare(normName(b.name)));

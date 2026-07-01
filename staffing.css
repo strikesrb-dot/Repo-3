@@ -531,12 +531,16 @@
 .pool-legend .lg-std::before{background:#0d9488}
 .pool-legend .lg-non::before{background:#e5484d}
 .pool-legend .lg-part::before{background:#262b30;border:1.5px dashed #262b30}
-.pool-cubes{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
-#staffRoot .pool-cubes .abody{width:100%;min-width:0;aspect-ratio:1;align-items:center;justify-content:center;text-align:center;gap:3px;padding:6px}
-.pool-cubes .abody>span:first-child{font-size:12px;line-height:1.15;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
-.pool-cubes .abody span{margin-top:0;font-size:10.5px}
-.pool-cubes .abody .prt{display:none}          /* colour already shows partial — drop the redundant text badge */
-.pool-cubes .abody em{margin-left:0}
+.pool-cubes{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:6px}
+/* square-ish cube: name top · shift middle · DBL/prior bottom (grows if a note wraps) */
+#staffRoot .pool-cubes .abody{width:100%;min-width:0;min-height:112px;aspect-ratio:1;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:3px;padding:8px 6px}
+.pool-cubes .cb-name{font-size:12px;font-weight:800;line-height:1.15;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pool-cubes .cb-hrs{font-size:11.5px;font-weight:800;color:var(--muted)}   /* full HH:MM–HH:MM, centred */
+/* empty footer stays as a zero-height anchor at the bottom so the shift time keeps the middle */
+.pool-cubes .cb-foot{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;min-height:0}
+.pool-cubes .cb-foot em{margin:0;white-space:normal;line-height:1.2}                    /* DBL until HH:MM */
+.pool-cubes .cb-foot .pw{display:block;margin:0;font-size:9px;padding:1px 6px}           /* Worked AM / prior-shift */
+.abody.sel .cb-hrs{color:rgba(255,255,255,.85)}
 /* shift-type colour edge + faint tint (kept subtle so names stay readable) */
 .abody.sh-std{border-color:#0d9488;background:#f0fbfa;box-shadow:inset 4px 0 0 #0d9488}
 .abody.sh-nonstd{border-color:#e5484d;background:#fef2f1;box-shadow:inset 4px 0 0 #e5484d}
