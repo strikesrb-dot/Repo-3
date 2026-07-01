@@ -934,22 +934,23 @@ function rAssign(){
       <div class="aslots">${list.map((p,i)=>`<span class="slot-chip ${leavesEarly(p)?'early':''}" data-area="${esc(a.key)}" data-i="${i}">${esc(nm(p.name))}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
-  // tugs grouped
-  // compact "strip": one slim box per tug — status shown as a coloured left edge, Driver/Observer
-  // side-by-side, controls inline. Packs ~2× the tugs per screen vs the old stacked cards.
+  // tugs — "Concept 3" card: a colour-status tile (STUG # + type + GPU state) on the LEFT,
+  // driver/observer crew stacked on the RIGHT. Green=ready · amber=GPU inop · red=OOS.
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
-    const stCls=t.oos?'st-oos':(t.gpu==='inop'?'st-inop':'st-ready');  // follow GPU/OOS color logic
+    const stCls=t.oos?'st-oos':(t.gpu==='inop'?'st-inop':'st-ready');
+    const stLbl=t.oos?'':(t.gpu==='inop'?'GPU Inop · still ready':'Good GPU');
     const ctl=`${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}<button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button><button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button>`;
-    return `<div class="tstrip ${stCls} ${t.oos?'oos':''}">
-      <div class="ts-top"><span class="ts-id">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}${ty?`<span class="ts-ty">${ty}</span>`:''}</span><span class="ts-ctl">${ctl}</span></div>
-      ${t.oos?`<div class="ts-oos"><span class="haz">✕</span> OUT OF SERVICE</div>`:
-        `<div class="ts-crew">
-          <div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><b>D</b>${slotName(crew.DRIVER)}</div>
-          <div class="ts-slot ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><b>O</b>${slotName(crew.OBSERVR)}</div>
-        </div>`}
+    return `<div class="tc3 ${stCls} ${t.oos?'oos':''}">
+      <div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b><small>${esc(ty||'')}</small></div>
+      <div class="tc3-b">
+        ${t.oos?`<div class="tc3-oos"><span class="haz">✕</span> OUT OF SERVICE</div>`:
+          `<div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><b>D</b>${slotName(crew.DRIVER)}</div>
+           <div class="ts-slot ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><b>O</b>${slotName(crew.OBSERVR)}</div>`}
+        <div class="tc3-foot"><span class="tc3-gpu">${stLbl}</span><span class="tc3-ctl">${ctl}</span></div>
+      </div>
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
-  const mutedCard=id=>`<div class="tstrip muted" data-add="${id}"><span class="ts-id">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span><span class="muse">＋ add</span></div>`;
+  const mutedCard=id=>`<div class="tc3 muted" data-add="${id}"><div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b><small>${esc(tugType(id)||'')}</small></div><div class="tc3-b"><span class="muse">＋ add to board</span></div></div>`;
   const tugGroups=TUG_GROUPS.map(g=>{
     const ids=showUnusedTugs?g.ids:g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
     if(!ids.length)return "";
@@ -974,12 +975,10 @@ function rAssign(){
   const activeSec=asgSec==='areas'
     ? `<div class="card pad hub-body"><div class="area-grid">${areaCards}</div></div>`
     : `<div class="card pad hub-body">${tugGroups}${tugToggle}</div>`;
-  ROOT.innerHTML=`<div class="board-theme theme-${cfg.theme}">
+  ROOT.innerHTML=`<div class="board-theme theme-front">
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}${AUTH&&AUTH.name?` <span class="by-who">· by ${esc(nm(AUTH.name))}</span>`:''}</h2><span class="cnt">${avail.length} left</span></div>
       <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or remote slot.'}</p>
-      ${missHTML}
-      <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}</div>
-      ${themePicker()}</div>
+      ${missHTML}</div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
@@ -987,7 +986,7 @@ function rAssign(){
         <div class="filt-row">${tggl('dblFirst',poolDoubles,'Doubles')}${tggl('priorFirst',poolWorkedPrior,'Worked prior')}</div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
-      <div class="asg2-board dens-${cfg.density}">${dispSec}${hubBar}${activeSec}</div>
+      <div class="asg2-board">${dispSec}${hubBar}${activeSec}</div>
     </div>
     ${back("reconcile","Tugs")}
     <div class="asg-footspace"></div>
@@ -1024,7 +1023,7 @@ function rAssign(){
     const who=selName(); place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); if(who)logAct("Assigned to STUG "+id,who+" · "+role); }); // tap filled slot = pick up & move
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
-  $$('#staffRoot .tstrip.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
+  $$('#staffRoot .tc3.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
   $("#toggleUnused")?.addEventListener("click",()=>{ showUnusedTugs=!showUnusedTugs; render(); });
   $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; const who=selName(); place(p=>{ if(!ST.assign.areas[k].some(x=>x.emp===p.emp))ST.assign.areas[k].push(p); }); if(who)logAct("Assigned to "+k,who); });

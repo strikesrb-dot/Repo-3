@@ -531,11 +531,11 @@
 .pool-legend .lg-std::before{background:#0d9488}
 .pool-legend .lg-non::before{background:#e5484d}
 .pool-legend .lg-part::before{background:#262b30;border:1.5px dashed #262b30}
-.pool-cubes{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:6px}
-/* square-ish cube: name top · shift middle · DBL/prior bottom (grows if a note wraps) */
-#staffRoot .pool-cubes .abody{width:100%;min-width:0;min-height:112px;aspect-ratio:1;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:3px;padding:8px 6px}
-.pool-cubes .cb-name{font-size:12px;font-weight:800;line-height:1.15;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.pool-cubes .cb-hrs{font-size:11.5px;font-weight:800;color:var(--muted)}   /* full HH:MM–HH:MM, centred */
+.pool-cubes{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:5px}
+/* small square cube: name top · shift middle · DBL/prior bottom (grows if a note wraps) */
+#staffRoot .pool-cubes .abody{width:100%;min-width:0;min-height:84px;aspect-ratio:1;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:2px;padding:6px 4px}
+.pool-cubes .cb-name{font-size:11px;font-weight:800;line-height:1.12;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pool-cubes .cb-hrs{font-size:10.5px;font-weight:800;color:var(--muted)}   /* full HH:MM–HH:MM, centred */
 /* empty footer stays as a zero-height anchor at the bottom so the shift time keeps the middle */
 .pool-cubes .cb-foot{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;min-height:0}
 .pool-cubes .cb-foot em{margin:0;white-space:normal;line-height:1.2}                    /* DBL until HH:MM */
@@ -556,8 +556,40 @@
 .hub-tab.on .hub-n.bad{background:#ffd9d4;color:#7a1710}
 .hub-body{padding-top:12px}
 
-/* ===== compact tug strips (redesigned assign board) ===== */
-.tug-strips{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));align-items:start}
+/* ===== Concept-3 tug card: colour status tile (left) + crew stacked (right) ===== */
+.tug-strips{display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));align-items:start}
+.tc3{display:flex;border:1.5px solid var(--line);border-radius:11px;overflow:hidden;background:#fff}
+.tc3.st-ready{--ac:#1e7d46}
+.tc3.st-inop{--ac:#a8740c}
+.tc3.st-oos{--ac:#c0271e}
+.tc3.oos{opacity:.9}
+.tc3-tile{background:var(--ac);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 12px;min-width:66px;flex:none;gap:2px}
+.tc3-tile b{font-size:23px;font-weight:900;line-height:1;display:flex;align-items:center;gap:3px}
+.tc3-tile b i{font-style:normal;font-size:8px;font-weight:900;background:rgba(255,255,255,.28);border-radius:3px;padding:1px 3px}
+.tc3-tile small{font-size:7.5px;font-weight:800;opacity:.92;text-align:center;letter-spacing:.03em}
+.tc3-b{flex:1;min-width:0;display:flex;flex-direction:column}
+.tc3-b .ts-slot{border-top:none}
+.tc3-b .ts-slot+.ts-slot{border-left:none;border-top:1px solid #eef1f4}
+.tc3-oos{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:12px 10px;font-size:11px;font-weight:800;letter-spacing:.04em;color:#c0271e;background:repeating-linear-gradient(45deg,#fbeceb,#fbeceb 8px,#f7dedb 8px,#f7dedb 16px)}
+.tc3-oos .haz{color:#fff;background:#c0271e;border-radius:4px;padding:0 5px;font-weight:900}
+.tc3-foot{display:flex;align-items:center;gap:6px;padding:4px 6px 4px 9px;border-top:1px solid #eef1f4;margin-top:auto}
+.tc3-gpu{font-size:9.5px;font-weight:800;color:var(--ac);flex:1;min-width:0}
+.tc3-ctl{display:flex;align-items:center;gap:3px;flex:none}
+.tc3-ctl .ticon{border:none;border-radius:6px;width:26px;height:22px;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;background:#eef1f4;color:#5a6772;line-height:0}
+.tc3-ctl .ticon svg{display:block}
+.tc3-ctl .ticon:active{transform:scale(.9)}
+.tc3-ctl .gpubtn.ok{color:#1e7d46}
+.tc3-ctl .gpubtn.inop{color:#fff;background:#a8740c}
+.tc3-ctl .toos.isoos{width:auto;padding:0 8px;font-size:10px;font-weight:900;background:#c0271e;color:#fff}
+.tc3-ctl .thide{color:#9aa6b1}
+.tc3.muted{opacity:.55;cursor:pointer}
+.tc3.muted .tc3-tile{background:#9aa6b1}
+.tc3.muted .tc3-b{flex-direction:row;align-items:center;justify-content:center;padding:8px}
+.tc3.muted .muse{font-size:11px;font-weight:800;color:#7a8792}
+.tc3.muted:active{transform:scale(.99)}
+
+/* ===== compact tug strips (legacy, kept for reference) ===== */
+.tstrip{border:1.5px solid var(--line);border-left-width:5px;border-radius:10px;overflow:hidden;background:#fff}
 .tstrip{border:1.5px solid var(--line);border-left-width:5px;border-radius:10px;overflow:hidden;background:#fff}
 .tstrip.st-ready{border-left-color:#1e7d46}
 .tstrip.st-inop{border-left-color:#e0a52e}
