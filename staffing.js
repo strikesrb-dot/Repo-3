@@ -787,20 +787,18 @@ let poolDoubles=false;       // filter the pool to forward doubles only
 let poolWorkedPrior=false;   // filter the pool to people who worked the previous shift
 let tugsOpen=true, areasOpen=true;   // collapsible board sections
 // per-device board layout: density + section order (the "adjust to my like" controls)
-function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; return {density:c.density||"normal",order:ord,toggle:c.toggle==='min'?'min':'modern'}; }
-// a boolean control drawn in the chosen toggle style — modern sliding switch or minimalist pill
-function tggl(id,on,label){ const s=boardCfg().toggle;
-  return s==='min'
+const BOARD_THEMES=["front","modern","minimal"];
+const THEME_LABEL={front:"Front end",modern:"Modern",minimal:"Minimal"};
+function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; return {density:c.density||"normal",order:ord,theme:BOARD_THEMES.includes(c.theme)?c.theme:"front"}; }
+// a boolean control drawn in the active theme's toggle style (minimal = flat pill, else sliding switch)
+function tggl(id,on,label){ const min=boardCfg().theme==='minimal';
+  return min
     ? `<button class="mintggl ${on?'on':''}" id="${id}"><span class="mintggl-dot"></span>${esc(label)}</button>`
     : `<button class="mtggl ${on?'on':''}" id="${id}"><span class="mtggl-track"><span class="mtggl-knob"></span></span><span class="mtggl-lbl">${esc(label)}</span></button>`; }
-// the two style options rendered AS examples of themselves, so the picker previews both
-function toggleStylePicker(){ const s=boardCfg().toggle;
-  const ex=(kind,on)=>kind==='min'
-    ? `<span class="mintggl on"><span class="mintggl-dot"></span>Minimal</span>`
-    : `<span class="mtggl on"><span class="mtggl-track"><span class="mtggl-knob"></span></span><span class="mtggl-lbl">Modern</span></span>`;
-  return `<div class="tgstyle-row"><span class="dens-l">Toggle style</span>`+
-    `<button class="tgpick ${s==='modern'?'sel':''}" data-tg="modern">${ex('modern',true)}</button>`+
-    `<button class="tgpick ${s==='min'?'sel':''}" data-tg="min">${ex('min',true)}</button></div>`; }
+// whole-screen style switcher — Front end (current), Modern, Minimal
+function themePicker(){ const th=boardCfg().theme;
+  return `<div class="theme-row"><span class="dens-l">Screen style</span>`+
+    BOARD_THEMES.map(t=>`<button class="theme-btn ${th===t?'on':''}" data-theme="${t}">${esc(THEME_LABEL[t])}</button>`).join("")+`</div>`; }
 function setBoardCfg(patch){ Store.setJSON("elt.staff.board",Object.assign(boardCfg(),patch)); }
 function moveSection(sec,dir){ const c=boardCfg(),o=c.order.slice(),i=o.indexOf(sec),j=i+dir; if(i<0||j<0||j>=o.length)return; const t=o[i];o[i]=o[j];o[j]=t; setBoardCfg({order:o}); render(); }
 // what still needs filling on the board — shown so the user always sees what's missing
@@ -956,12 +954,12 @@ function rAssign(){
     tugs:`<div class="card pad" data-sec="tugs"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="tugs"><span class="sec-ca">${tugsOpen?'▾':'▸'}</span>TUGS — ${running} running</button>${secMove("tugs")}</div>${tugsOpen?`${tugGroups}${tugToggle}`:''}</div>`,
     areas:`<div class="card pad" data-sec="areas"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="areas"><span class="sec-ca">${areasOpen?'▾':'▸'}</span>REMOTES / AREAS</button>${secMove("areas")}</div>${areasOpen?`<div class="area-grid">${areaCards}</div>`:''}</div>`
   };
-  ROOT.innerHTML=`
+  ROOT.innerHTML=`<div class="board-theme theme-${cfg.theme}">
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
       <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. Use <b>Multi Assign</b> to mark people for 2 areas.'}</p>
       ${missHTML}
       <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}<span class="dens-hint">▲▼ on a section reorders it</span></div>
-      ${toggleStylePicker()}</div>
+      ${themePicker()}</div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
@@ -973,7 +971,8 @@ function rAssign(){
     </div>
     ${back("reconcile","Tugs")}
     <div class="asg-footspace"></div>
-    ${autoMode?'<div class="autobar-spacer"></div>'+autoBar():`<div class="asg-generate"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>`}`;
+    ${autoMode?'<div class="autobar-spacer"></div>'+autoBar():`<div class="asg-generate"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>`}
+  </div>`;
   // pool chip tap depends on mode: multi/normal = select · tug/remote = pick
   const poolEl=$('#staffRoot .pool-groups');
   poolEl?.addEventListener('click',ev=>{ const chip=ev.target.closest('.abody'); if(!chip)return; const emp=chip.dataset.emp;
@@ -988,7 +987,7 @@ function rAssign(){
   $$('#staffRoot .sec-toggle').forEach(b=>b.onclick=()=>{ if(b.dataset.sec==='tugs')tugsOpen=!tugsOpen; else areasOpen=!areasOpen; render(); });
   $$('#staffRoot .sec-mv').forEach(b=>b.onclick=e=>{ e.stopPropagation(); moveSection(b.dataset.mv,+b.dataset.dir); });
   $$('#staffRoot .dens-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({density:b.dataset.dens}); render(); });
-  $$('#staffRoot .tgpick').forEach(b=>b.onclick=()=>{ setBoardCfg({toggle:b.dataset.tg}); render(); });
+  $$('#staffRoot .theme-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({theme:b.dataset.theme}); render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);

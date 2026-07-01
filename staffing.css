@@ -469,12 +469,53 @@
 .mintggl.on{border-color:var(--navy);color:var(--ink)}
 .mintggl.on .mintggl-dot{background:var(--navy);border-color:var(--navy);box-shadow:inset 0 0 0 2px #fff}
 .mintggl:active{transform:scale(.97)}
-/* style picker — each option previews its own style */
-.tgstyle-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}
-.tgpick{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:5px 12px 5px 8px;background:#fff;cursor:pointer}
-.tgpick.sel{border-color:var(--navy);background:#f2f6fb}
-.tgpick .mtggl,.tgpick .mintggl{pointer-events:none}
-.tgpick .mintggl{border:none;padding:0;background:none}
+/* whole-screen theme picker */
+.theme-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.theme-btn{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:5px 14px;font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer}
+.theme-btn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+
+/* ============ SCREEN THEMES (whole assign board) ============ */
+/* — MODERN: rounded, soft shadows, pill buttons, gentle gradients — */
+.theme-modern .card{border-radius:18px;box-shadow:0 6px 22px rgba(10,25,45,.07);border-color:#e9edf1}
+.theme-modern .asg2-top{background:linear-gradient(135deg,#ffffff,#f4f8fd)}
+.theme-modern .staff-h{font-size:21px}
+.theme-modern .cnt{background:linear-gradient(135deg,#12508a,#0b3d63);color:#fff}
+.theme-modern .seg-section{color:var(--navy)}
+.theme-modern .tstrip{border-radius:14px;box-shadow:0 3px 10px rgba(10,25,45,.06);transition:transform .12s,box-shadow .12s}
+.theme-modern .tstrip:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(10,25,45,.11)}
+.theme-modern .ts-top{background:linear-gradient(180deg,#fbfdff,#f3f8fc)}
+.theme-modern .acard{border-radius:14px;box-shadow:0 3px 10px rgba(10,25,45,.05)}
+.theme-modern .abody{border-radius:12px}
+.theme-modern .btn.ghost{border-radius:999px}
+.theme-modern .dens-btn,.theme-modern .theme-btn{border-radius:999px}
+.theme-modern .slot-chip{border-radius:999px}
+.theme-modern .asg-generate .btn.navy{border-radius:999px;box-shadow:0 8px 22px rgba(11,61,99,.32)}
+.theme-modern .asg-missing{border-radius:14px}
+
+/* — MINIMAL: flat, hairline borders, monochrome, lots of whitespace — */
+.theme-minimal .card{border-radius:6px;box-shadow:none;border-color:#e6e9ec}
+.theme-minimal .asg2-top{background:#fff}
+.theme-minimal .staff-h{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.theme-minimal .seg-section{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:#9aa6b1;font-weight:800}
+.theme-minimal .cnt{background:none;color:#9aa6b1;font-weight:700;padding:0}
+.theme-minimal .asg-missing{border-radius:5px;background:#fff;border-color:#eceff2;color:#6b7580}
+.theme-minimal .asg-missing.ok{background:#fff;border-color:#eceff2;color:#6b7580}
+.theme-minimal .asg-missing span{background:#f4f6f8;border-color:#e6e9ec;color:#6b7580}
+.theme-minimal .tstrip{border-radius:4px;border:1px solid #e6e9ec;border-left:2px solid #cfd6dc;box-shadow:none}
+.theme-minimal .ts-top{background:none}
+.theme-minimal .ts-id{color:#2b333a}
+.theme-minimal .ts-ty{color:#aab4bd}
+.theme-minimal .ts-ctl .ticon{background:none;border:1px solid #e6e9ec;color:#7a8792}
+.theme-minimal .ts-ctl .gpubtn.inop,.theme-minimal .ts-ctl .toos.isoos{border:none}
+.theme-minimal .acard{border-radius:4px;box-shadow:none;border-color:#e6e9ec}
+.theme-minimal .abody{border-radius:4px;border-color:#e6e9ec;box-shadow:none}
+.theme-minimal .slot-chip{border-radius:4px}
+.theme-minimal .btn.ghost{border-radius:5px;border-color:#e6e9ec;background:#fff;box-shadow:none;font-weight:700;color:#5a6772}
+.theme-minimal .btn.ghost.on{background:#2b333a;border-color:#2b333a;color:#fff}
+.theme-minimal .dens-btn,.theme-minimal .theme-btn{border-radius:5px}
+.theme-minimal .dens-btn.on,.theme-minimal .theme-btn.on{background:#2b333a;border-color:#2b333a}
+.theme-minimal .asg-generate .btn.navy{border-radius:5px;background:#2b333a;box-shadow:none}
+.theme-minimal .tug-gtitle{color:#9aa6b1}
 
 /* ===== compact tug strips (redesigned assign board) ===== */
 .tug-strips{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));align-items:start}
