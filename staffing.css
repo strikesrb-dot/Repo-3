@@ -453,6 +453,29 @@
 #staffRoot .asg2-board.dens-normal .area-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 #staffRoot .asg2-board.dens-large .area-grid{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
 
+/* ===== toggle controls — modern sliding switch vs minimalist pill ===== */
+.filt-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+/* modern: iOS-style track + knob */
+.mtggl{display:inline-flex;align-items:center;gap:9px;border:none;background:none;cursor:pointer;font-size:12.5px;font-weight:800;color:var(--muted);padding:4px 2px;-webkit-tap-highlight-color:transparent}
+.mtggl-track{position:relative;width:38px;height:22px;border-radius:999px;background:#d4dae0;transition:background .18s;flex:none}
+.mtggl-knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(10,25,45,.28);transition:transform .18s}
+.mtggl.on{color:var(--ink)}
+.mtggl.on .mtggl-track{background:var(--navy)}
+.mtggl.on .mtggl-knob{transform:translateX(16px)}
+.mtggl:active .mtggl-knob{width:21px}
+/* minimalist: flat pill with a fill dot */
+.mintggl{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;background:#fff;cursor:pointer;font-size:12.5px;font-weight:800;color:var(--muted);-webkit-tap-highlight-color:transparent}
+.mintggl-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid #c3ccd4;flex:none;transition:all .15s}
+.mintggl.on{border-color:var(--navy);color:var(--ink)}
+.mintggl.on .mintggl-dot{background:var(--navy);border-color:var(--navy);box-shadow:inset 0 0 0 2px #fff}
+.mintggl:active{transform:scale(.97)}
+/* style picker — each option previews its own style */
+.tgstyle-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:8px}
+.tgpick{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:5px 12px 5px 8px;background:#fff;cursor:pointer}
+.tgpick.sel{border-color:var(--navy);background:#f2f6fb}
+.tgpick .mtggl,.tgpick .mintggl{pointer-events:none}
+.tgpick .mintggl{border:none;padding:0;background:none}
+
 /* ===== compact tug strips (redesigned assign board) ===== */
 .tug-strips{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));align-items:start}
 .tstrip{border:1.5px solid var(--line);border-left-width:5px;border-radius:10px;overflow:hidden;background:#fff}

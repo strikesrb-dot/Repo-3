@@ -787,7 +787,20 @@ let poolDoubles=false;       // filter the pool to forward doubles only
 let poolWorkedPrior=false;   // filter the pool to people who worked the previous shift
 let tugsOpen=true, areasOpen=true;   // collapsible board sections
 // per-device board layout: density + section order (the "adjust to my like" controls)
-function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; return {density:c.density||"normal",order:ord}; }
+function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; return {density:c.density||"normal",order:ord,toggle:c.toggle==='min'?'min':'modern'}; }
+// a boolean control drawn in the chosen toggle style — modern sliding switch or minimalist pill
+function tggl(id,on,label){ const s=boardCfg().toggle;
+  return s==='min'
+    ? `<button class="mintggl ${on?'on':''}" id="${id}"><span class="mintggl-dot"></span>${esc(label)}</button>`
+    : `<button class="mtggl ${on?'on':''}" id="${id}"><span class="mtggl-track"><span class="mtggl-knob"></span></span><span class="mtggl-lbl">${esc(label)}</span></button>`; }
+// the two style options rendered AS examples of themselves, so the picker previews both
+function toggleStylePicker(){ const s=boardCfg().toggle;
+  const ex=(kind,on)=>kind==='min'
+    ? `<span class="mintggl on"><span class="mintggl-dot"></span>Minimal</span>`
+    : `<span class="mtggl on"><span class="mtggl-track"><span class="mtggl-knob"></span></span><span class="mtggl-lbl">Modern</span></span>`;
+  return `<div class="tgstyle-row"><span class="dens-l">Toggle style</span>`+
+    `<button class="tgpick ${s==='modern'?'sel':''}" data-tg="modern">${ex('modern',true)}</button>`+
+    `<button class="tgpick ${s==='min'?'sel':''}" data-tg="min">${ex('min',true)}</button></div>`; }
 function setBoardCfg(patch){ Store.setJSON("elt.staff.board",Object.assign(boardCfg(),patch)); }
 function moveSection(sec,dir){ const c=boardCfg(),o=c.order.slice(),i=o.indexOf(sec),j=i+dir; if(i<0||j<0||j>=o.length)return; const t=o[i];o[i]=o[j];o[j]=t; setBoardCfg({order:o}); render(); }
 // what still needs filling on the board — shown so the user always sees what's missing
@@ -947,11 +960,13 @@ function rAssign(){
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
       <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. Use <b>Multi Assign</b> to mark people for 2 areas.'}</p>
       ${missHTML}
-      <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}<span class="dens-hint">▲▼ on a section reorders it</span></div></div>
+      <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}<span class="dens-hint">▲▼ on a section reorders it</span></div>
+      ${toggleStylePicker()}</div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
-        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button><button class="btn ghost sm ${poolDoubles?'on':''}" id="dblFirst">★ Doubles</button><button class="btn ghost sm ${poolWorkedPrior?'on':''}" id="priorFirst">◀ Worked prior</button></div>
+        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button></div>
+        <div class="filt-row">${tggl('dblFirst',poolDoubles,'Doubles')}${tggl('priorFirst',poolWorkedPrior,'Worked prior')}</div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
       <div class="asg2-board dens-${cfg.density}">${cfg.order.map(k=>secs[k]).join("")}</div>
@@ -973,6 +988,7 @@ function rAssign(){
   $$('#staffRoot .sec-toggle').forEach(b=>b.onclick=()=>{ if(b.dataset.sec==='tugs')tugsOpen=!tugsOpen; else areasOpen=!areasOpen; render(); });
   $$('#staffRoot .sec-mv').forEach(b=>b.onclick=e=>{ e.stopPropagation(); moveSection(b.dataset.mv,+b.dataset.dir); });
   $$('#staffRoot .dens-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({density:b.dataset.dens}); render(); });
+  $$('#staffRoot .tgpick').forEach(b=>b.onclick=()=>{ setBoardCfg({toggle:b.dataset.tg}); render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);
