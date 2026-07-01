@@ -345,6 +345,19 @@
   .mv-shift.nh{color:#2c2660;background:#e6e3f5}
   .mv-shift.am{color:#15622f;background:var(--good-bg)}
   .mv-shift.pm{color:#8a4b00;background:#fdeccf}
+  /* end of shift report */
+  .eos-top{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+  .eos-date span,.eos-shift span{display:block;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .eos-date input{padding:9px 10px;font-size:14px}
+  .eos-sec{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--navy);border-bottom:1.5px solid var(--line);padding-bottom:4px;margin:14px 0 6px}
+  .eos-row{display:flex;align-items:center;gap:10px;padding:4px 0}
+  .eos-l{flex:0 0 44%;font-size:13.5px;font-weight:700;color:var(--ink)}
+  .eos-row.red .eos-l{color:#c0271e}
+  .eos-in{flex:1;min-width:0;padding:8px 10px;font-size:14px;border:1px solid var(--line);border-radius:8px}
+  .eos-row.red .eos-in{border-color:#e7a59f}
+  .eos-op{width:100%;padding:10px;font-size:14px;border:1px solid var(--line);border-radius:10px;resize:vertical}
+  .eos-ph{font-weight:800;color:#0b3d63;margin:12px 0 3px;text-decoration:underline}
+  .eos-pl{margin:1px 0}
   .invloc-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .le-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:9px;background:#fff}
   .le-head{display:flex;align-items:center;gap:8px}
@@ -457,6 +470,7 @@
     <div class="hubgrid">
       <button class="hubtile" data-go="staffing"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Manpower / Staffing</button>
       <button class="hubtile" data-go="briefing"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span>Briefing &amp; Focus</button>
+      <button class="hubtile" data-go="eos"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>End of Shift Report</button>
       <button class="hubtile" data-go="preview"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>Preview</button>
       <button class="hubtile" data-go="preview2"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="20"/></svg></span>Preview 2</button>
     </div>
@@ -477,6 +491,8 @@
       <button class="hubtile" data-go="settings"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>Settings</button>
     </div>
   </section>
+
+  <section id="view-eos" class="view"><div id="eosRoot"></div></section>
 
   <section id="view-movement" class="view">
     <h2 class="section">Equipment Movement</h2>
@@ -831,7 +847,7 @@ function load(){
   let d=Store.getJSON(KEY,null);
   if(!d)d={};
   d.equipment||=[]; d.types||=DEFAULT_TYPES.slice(); d.spotAircraft||={}; d.secureLog||=[]; d.movements||=[]; d.locZones||={};
-  d.hiddenTiles||=[]; d.subtypes||={}; d._tomb||={};
+  d.hiddenTiles||=[]; d.subtypes||={}; d._tomb||={}; d.eos||={};
   // one-time: hide the Preview tiles by default (re-show them via Settings → Home screen tiles)
   if(!d.previewSeeded){["preview","preview2"].forEach(k=>{if(!d.hiddenTiles.includes(k))d.hiddenTiles.push(k);});d.previewSeeded=true;}
   d.settings=Object.assign({
@@ -1060,6 +1076,7 @@ function goTab(t){showTab(t);
   if(t==="equipment"){eqInitCollapse=true;refreshLocationFilter();refreshTypeFilter();renderList();refreshAudit();updateLockBar();}
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[]};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();renderInventory();}
   if(t==="movement"){renderMovement();}
+  if(t==="eos"){renderEos();}
   if(t==="staffing"){window.STAFF&&window.STAFF.open();}
   if(t==="briefing"){window.BRIEF&&window.BRIEF.open();}
   if(t==="preview"){window.PREVIEW&&window.PREVIEW.open();}
@@ -1254,7 +1271,7 @@ $("#moveWipe").addEventListener("click",()=>{
   data.movements.forEach(m=>{if(m.id)tombstone(m.id,"emove");});  // tombstone so the wipe sticks across devices
   data.movements=[];save();renderMovement();toast("Movement log wiped");});
 /* ---- configurable app settings ---- */
-const HUB_TILES=[["staffing","Manpower / Staffing"],["briefing","Briefing & Focus"],["preview","Preview"],["preview2","Preview 2"],
+const HUB_TILES=[["staffing","Manpower / Staffing"],["briefing","Briefing & Focus"],["eos","End of Shift Report"],["preview","Preview"],["preview2","Preview 2"],
   ["inventory","Do Inventory"],["secure","Aircraft Secure Log"],["aircraft","Aircraft Lookup"],["park","Stop Mark Lookup"],
   ["equipment","Equipment List"],["movement","Equipment Movement"]];
 function renderMoveTrack(){
@@ -1452,6 +1469,128 @@ function moveShift(m){const S=data.settings||{},t=moveMin(m);
   if(t<(S.shiftPM??780))return S.shiftNameAM||"AM";
   return S.shiftNamePM||"PM";}
 function moveShiftKey(s){const S=data.settings||{};return s===(S.shiftNameNH||"Nighthawk")?"nh":s===(S.shiftNameAM||"AM")?"am":"pm";}
+
+/* ===================== END OF SHIFT REPORT ===================== */
+const EOS_DEF_OP="All moves completed on time with no significant impact to the On Time Operation.";
+function shiftKeyForMin(t){const S=data.settings||{};if(t>=(S.shiftNH??1260)||t<(S.shiftAM??300))return "NH";if(t<(S.shiftPM??780))return "AM";return "PM";}
+function eosCurShift(){const d=new Date();return shiftKeyForMin(d.getHours()*60+d.getMinutes());}
+function addDaysISO(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}
+// does a dated event (min = minutes past midnight) fall in the target date's shift? (NH spans midnight)
+function inShiftWindow(mDate,min,date,shift){ if(min==null||!mDate)return false; const S=data.settings||{};
+  if(shift!=="NH")return mDate===date&&shiftKeyForMin(min)===shift;
+  if(mDate===date&&min<(S.shiftAM??300))return true;
+  if(mDate===addDaysISO(date,-1)&&min>=(S.shiftNH??1260))return true;
+  return false; }
+function eosManpower(date,shift){const l=Store.getJSON("elt.staff.log",[]);return (Array.isArray(l)?l:[]).find(e=>e.date===date&&e.shift===shift)||null;}
+function eosMoves(date,shift){return data.movements.filter(m=>inShiftWindow(m.date,moveMin(m),date,shift));}
+// auto-fill values pulled from the logged manpower board + movement log + out-of-service equipment
+function eosAuto(date,shift){
+  const mp=eosManpower(date,shift), snap=mp&&mp.snap;
+  const moves=eosMoves(date,shift), oos=data.equipment.filter(e=>e.oos);
+  const isPCA=t=>/pca|air|heat/i.test(t||"");
+  const pcAir=oos.filter(e=>isPCA(e.type)).map(e=>e.tag), other=oos.filter(e=>!isPCA(e.type)).map(e=>e.tag);
+  let tugsOos=[],gpuOos=[];
+  if(snap&&snap.tug)Object.keys(snap.tug).forEach(id=>{const s=snap.tug[id];if(s==="oos")tugsOos.push(id);else if(s==="inop")gpuOos.push(id);});
+  return {
+    supervisors:snap?((snap.supers||[]).join(" & ")):"",
+    manager:snap?(snap.manager||""):"",
+    asst:snap?((snap.asst||[]).join(", ")):"",
+    dispatcher:mp?(mp.dispatch||""):"",
+    agentCount:mp&&mp.pool!=null?String(mp.pool):"",
+    tugsOnShift:mp&&mp.running!=null?String(mp.running):"",
+    totalMoves:String(moves.length),
+    tugsOos:tugsOos.join(", "),
+    gpuOos:gpuOos.join(", "),
+    pcAirOos:pcAir.length?pcAir.join(", "):"None Reported",
+    otherIssues:other.join(", ")
+  };
+}
+let eos={date:todayISO(),shift:eosCurShift()};
+function eosKey(){return eos.date+"|"+eos.shift;}
+function eosEnsure(){ data.eos=data.eos||{}; if(!data.eos[eosKey()]){ data.eos[eosKey()]=Object.assign({weather:"",paats:"",tocs:"Yes",tbRepos:"",starTow:"",opSummary:EOS_DEF_OP},eosAuto(eos.date,eos.shift)); save(); } return data.eos[eosKey()]; }
+function eosRefresh(){ const r=eosEnsure(); Object.assign(r,eosAuto(eos.date,eos.shift)); save(); renderEos(); toast("Pulled latest from manpower, movements & OOS list"); }
+const EOS_FIELDS=[
+  {sec:"Shift Info"},
+  {k:"weather",l:"Weather Conditions"},{k:"supervisors",l:"Supervisors"},{k:"manager",l:"Manager"},{k:"asst",l:"Assistant Managers"},{k:"dispatcher",l:"Dispatcher"},
+  {sec:"Staffing & Equipment Summary"},
+  {k:"agentCount",l:"Agent Count"},{k:"tugsOnShift",l:"Tugs on Shift"},{k:"paats",l:"PAATs Ready"},{k:"tocs",l:"TOCs Assigned"},{k:"totalMoves",l:"Total Shift Moves"},{k:"tbRepos",l:"Terminal B Repos"},{k:"starTow",l:"Star Tow-Up"},
+  {sec:"Equipment Status"},
+  {k:"tugsOos",l:"Tugs Out of Service",red:true},{k:"gpuOos",l:"TUG GPU Units Out of Service"},{k:"pcAirOos",l:"PC Air Units Out of Service"},{k:"otherIssues",l:"Other Equipment Issues",red:true}
+];
+function renderEos(){
+  const r=$("#eosRoot");if(!r)return;
+  const d=eosEnsure();
+  const seg=["AM","PM","NH"].map(s=>`<button class="seg ${eos.shift===s?'on':''}" data-eshift="${s}">${s==="NH"?"NH":s}</button>`).join("");
+  const rows=EOS_FIELDS.map(f=>{
+    if(f.sec)return `<div class="eos-sec">${esc(f.sec)}</div>`;
+    return `<label class="eos-row ${f.red?'red':''}"><span class="eos-l">${esc(f.l)}</span><input class="eos-in" data-k="${f.k}" value="${esc(d[f.k]||"")}" autocomplete="off" /></label>`;
+  }).join("");
+  const mp=eosManpower(eos.date,eos.shift);
+  r.innerHTML=`<div class="card pad">
+    <div class="pool-head"><h2 class="staff-h" style="margin:0">End of Shift Report</h2></div>
+    <p class="hint" style="margin:2px 0 10px">EWR Move Team — Shift EWR Report. Auto-filled from the logged manpower, movement log &amp; out-of-service list${mp?"":' <b>(no manpower logged for this shift yet — fields you can\'t auto-fill are blank)</b>'}.</p>
+    <div class="eos-top">
+      <label class="eos-date"><span>Date</span><input type="date" id="eosDate" value="${esc(eos.date)}" /></label>
+      <div class="eos-shift"><span>Shift</span><div class="seg-wrap">${seg}</div></div>
+    </div>
+    <button class="btn ghost sm" id="eosRefresh" style="width:auto;margin:0 0 8px">↻ Pull latest from app</button>
+    <div class="eos-form">${rows}</div>
+    <div class="eos-sec">Operational Summary</div>
+    <textarea id="eosOp" class="eos-op" rows="3">${esc(d.opSummary||"")}</textarea>
+    <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="eosShare">Share ›</button></div>
+    <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="eosImg">Save image</button><button class="btn ghost" id="eosPdf">PDF / Print</button><button class="btn ghost" id="eosTxt">Text</button></div>
+  </div>`;
+  $("#eosDate").onchange=e=>{eos.date=e.target.value||todayISO();renderEos();};
+  $$('#eosRoot .seg[data-eshift]').forEach(b=>b.onclick=()=>{eos.shift=b.dataset.eshift;renderEos();});
+  $("#eosRefresh").onclick=eosRefresh;
+  $$('#eosRoot .eos-in').forEach(i=>i.oninput=()=>{eosEnsure()[i.dataset.k]=i.value;save();});
+  $("#eosOp").oninput=()=>{eosEnsure().opSummary=$("#eosOp").value;save();};
+  $("#eosTxt").onclick=()=>eosDownloadText();
+  $("#eosImg").onclick=()=>eosDownloadImage();
+  $("#eosPdf").onclick=()=>{$("#printArea").innerHTML=buildEosHTML();window.print();};
+  $("#eosShare").onclick=eosShare;
+}
+function eosTitle(){return "EWR Move Team — Shift EWR Report"; }
+function buildEosHTML(){const d=eosEnsure(),date=fmtDate(eos.date);
+  const field=(l,v,red)=>`<div class="eos-pl"><b>${esc(l)}:</b> <span${red?' style="color:#c0271e;font-weight:700"':''}>${esc(v||"—")}</span></div>`;
+  const grp=arr=>arr.map(f=>field(f.l,d[f.k],f.red)).join("");
+  const S=f=>EOS_FIELDS.filter(x=>!x.sec).filter(f);
+  return `<div class="sheet-head"><div><div class="title">${esc(eosTitle())}</div>
+      <div style="font-size:13px;color:#555">Date: <b>${esc(date)}</b> &nbsp;·&nbsp; Shift: <b>${esc(eos.shift)}</b></div></div></div>
+    <div style="font-size:14px;line-height:1.9;margin-top:8px">
+      <div class="eos-ph">Shift Info</div>${grp(EOS_FIELDS.slice(1,6))}
+      <div class="eos-ph">Staffing &amp; Equipment Summary</div>${grp(EOS_FIELDS.slice(7,14))}
+      <div class="eos-ph">Equipment Status</div>${grp(EOS_FIELDS.slice(15))}
+      <div class="eos-ph">Operational Summary</div><div class="eos-pl">${esc(d.opSummary||"")}</div>
+    </div>
+    <p style="font-size:12px;color:#777;margin-top:12px">Generated ${esc(fmtDate(todayISO()))}.</p>`;
+}
+function eosLines(){const d=eosEnsure();const L=[];
+  L.push(eosTitle().toUpperCase());L.push("Date: "+fmtDate(eos.date)+"    Shift: "+eos.shift);L.push("");
+  const f=(l,k)=>L.push(l+": "+(d[k]||""));
+  ["weather:Weather Conditions","supervisors:Supervisors","manager:Manager","asst:Assistant Managers","dispatcher:Dispatcher"].forEach(x=>{const[k,l]=x.split(":");f(l,k);});
+  L.push("");L.push("STAFFING & EQUIPMENT SUMMARY");
+  [["agentCount","Agent Count"],["tugsOnShift","Tugs on Shift"],["paats","PAATs Ready"],["tocs","TOCs Assigned"],["totalMoves","Total Shift Moves"],["tbRepos","Terminal B Repos"],["starTow","Star Tow-Up"]].forEach(([k,l])=>f(l,k));
+  L.push("");L.push("EQUIPMENT STATUS");
+  [["tugsOos","Tugs Out of Service"],["gpuOos","TUG GPU Units Out of Service"],["pcAirOos","PC Air Units Out of Service"],["otherIssues","Other Equipment Issues"]].forEach(([k,l])=>f(l,k));
+  L.push("");L.push("OPERATIONAL SUMMARY");L.push(d.opSummary||"");
+  return L;}
+function eosDownloadText(){const blob=new Blob([eosLines().join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=u;a.download=`EWR-Shift-Report-${eos.date}-${eos.shift}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
+function eosDownloadImage(){const d=eosEnsure();
+  const items=[{t:eosTitle(),b:true,size:28},{t:"Date: "+fmtDate(eos.date)+"   ·   Shift: "+eos.shift,size:18,color:"#555"},{gap:10}];
+  const sec=t=>{items.push({sep:true});items.push({t:t,b:true,size:20,color:"#0b3d63"});};
+  const line=(l,k,red)=>items.push({t:l+": "+(d[k]||"—"),size:18,color:red&&d[k]?"#c0271e":"#111"});
+  ["weather:Weather Conditions","supervisors:Supervisors","manager:Manager","asst:Assistant Managers","dispatcher:Dispatcher"].forEach(x=>{const[k,l]=x.split(":");line(l,k);});
+  sec("Staffing & Equipment Summary");
+  [["agentCount","Agent Count"],["tugsOnShift","Tugs on Shift"],["paats","PAATs Ready"],["tocs","TOCs Assigned"],["totalMoves","Total Shift Moves"],["tbRepos","Terminal B Repos"],["starTow","Star Tow-Up"]].forEach(([k,l])=>line(l,k));
+  sec("Equipment Status");
+  line("Tugs Out of Service","tugsOos",true);line("TUG GPU Units Out of Service","gpuOos");line("PC Air Units Out of Service","pcAirOos");line("Other Equipment Issues","otherIssues",true);
+  sec("Operational Summary");items.push({t:d.opSummary||"",size:18});
+  pngFromItems(`EWR-Shift-Report-${eos.date}-${eos.shift}.png`,items);}
+async function eosShare(){const text=eosLines().join("\n");
+  try{ if(navigator.share){await navigator.share({title:eosTitle(),text});return;} }catch(err){ if(String(err).indexOf("AbortError")>=0)return; }
+  try{await navigator.clipboard.writeText(text);toast("Report copied to clipboard");}catch(_){eosDownloadText();}}
 function renderMovement(){
   const q=($("#moveSearch")?.value||"").trim().toLowerCase();
   const list=$("#moveList");if(!list)return;
