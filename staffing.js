@@ -232,8 +232,11 @@ function worksNext(emp){ const nx=NEXT_SHIFT[ST.shift]; if(!nx||!emp)return fals
   return Math.min(ov,480)>=45; }
 // on a double = finishing the previous shift OR rolling into the next one
 function onDouble(emp){ return !!emp&&(worksNext(emp)||!!prevWorkLabel(emp)); }
-// end time of a forward double (when they're on until), from the combined work window
-function dblUntil(emp){ const d=ST.dbl&&ST.dbl[emp]; return (d&&d.double&&d.combo)?d.combo[1]:""; }
+// end time of a forward double (when they're on until), from the combined work window.
+// Derive it straight from the person's blocks so the "until <time>" always shows whenever
+// the DBL badge does — the stricter double-detector (>60m into the next shift) would otherwise
+// leave a time off for someone who only rolls ~1h past their shift.
+function dblUntil(emp){ if(!emp)return ""; const blocks=(ST.bodies||[]).filter(b=>b.emp===emp); if(!blocks.length)return ""; const w=comboWin(blocks); return w?w[1]:""; }
 function dblLabel(emp){ const u=dblUntil(emp); return u?("DBL until "+u):"DBL"; }
 // leaves before the shift's standard end (not staying the full shift) → flag red
 function leavesEarly(o){ if(!o)return false;
