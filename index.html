@@ -50,6 +50,9 @@
   /* 13" iPad (portrait ~1032 / landscape ~1366) gets more room */
   @media (min-width:820px){ main{max-width:980px;padding:18px} }
   @media (min-width:1200px){ main{max-width:1180px;padding:22px} }
+  /* the assign/staffing board packs tug + area cards, so let it use the full width
+     on big screens instead of leaving dead gutters (other tabs stay comfortably narrow) */
+  @media (min-width:1100px){ body[data-tab="staffing"] main{max-width:none;padding-left:20px;padding-right:20px} }
   .view{display:none}.view.active{display:block}
   h2.section{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 4px 8px}
   #view-settings .section{cursor:pointer;user-select:none;display:flex;align-items:center;gap:10px;
@@ -1122,7 +1125,7 @@ function acToggleFut(btn){const live=btn.dataset.cur==="1";setFstat(btn.dataset.
 
 /* ---- tabs ---- */
 let curTab="hub";
-function showTab(n){curTab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
+function showTab(n){curTab=n;document.body.dataset.tab=n;$$(".view").forEach(v=>v.classList.remove("active"));$("#view-"+n)?.classList.add("active");
   window.scrollTo(0,0);if(n!=="inventory")$("#wizFoot").hidden=true;updateBackBtn();}
 function goTab(t){showTab(t);
   // pull team changes when opening a synced area
