@@ -848,15 +848,19 @@
 "use strict";
 const KEY="elt.data.v1",FLEET_KEY="elt.fleet.v2",SEEN_KEY="elt.seenMaster.v1";
 const MASTER_URL="equipment.json",FLEET_URL="aircraft.json";
-const DEFAULT_TYPES=["Stairs","GPUs","PCA/AC/HEAT Unit","Stair Truck"];
+const DEFAULT_TYPES=["Stairs","Ground Power","PCA","Stair Truck"];
 const TYPE_SEED_V=1;
-// map any legacy equipment type into the four move-team categories
+// map any legacy equipment type into the move-team categories (only used for first-time/unseeded data)
 function mapType(t){t=t||"";
   if(/stair\s*truck/i.test(t))return "Stair Truck";
   if(/stair/i.test(t))return "Stairs";
-  if(/ground power|gpu|\bgp\b/i.test(t))return "GPUs";
-  if(/pca|air condition|heat|\bac\b|\bah\b/i.test(t))return "PCA/AC/HEAT Unit";
+  if(/ground\s*power|gpu|\bgp\b/i.test(t))return "Ground Power";
+  if(/pca|air condition|heat|\bac\b|\bah\b/i.test(t))return "PCA";
   return t;}
+// TARGETED consolidation of exact duplicate type names (keeps distinct types like "Airbus Stairs", "Ballpark Tug").
+// AC/HEAT units live under PCA as a subtype rather than as their own type.
+const TYPE_ALIAS={"gpus":"Ground Power","gpu":"Ground Power","ground power unit":"Ground Power","pca/ac/heat unit":"PCA","pca/ac/heat":"PCA"};
+function normType(t){const s=(t||"").trim();return TYPE_ALIAS[s.toLowerCase()]||s;}
 // canonical no-space spelling used across staffing/Secure/Park; collapses legacy "Ball Park"/"West Park"
 const LOC_ALIAS={"ball park":"Ballpark","ballpark":"Ballpark","west park":"WestPark","westpark":"WestPark"};
 function normLoc(s){const t=(s||"").trim();return LOC_ALIAS[t.toLowerCase()]||t;}
@@ -895,13 +899,23 @@ function load(){
   d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();
     if(/^westpark staging area$/i.test(e.location||""))e.location="WestPark";
     if(/^amelia staging area$/i.test(e.location||"")){e.location="South";e.spot="Staging Area";}}); // caps + location migration
-  // one-time remap of equipment types into the four move-team categories
+  // one-time remap of equipment types into the move-team categories (first-time/unseeded data only)
   if((d.typeSeedV||0)<TYPE_SEED_V){
     d.equipment.forEach(e=>{e.type=mapType(e.type);});
     const seen=new Set(),merged=[];
     DEFAULT_TYPES.forEach(t=>{if(!seen.has(t)){seen.add(t);merged.push(t);}});
     (d.types||[]).forEach(t=>{const m=mapType(t);if(!seen.has(m)){seen.add(m);merged.push(m);}});
     d.types=merged; d.typeSeedV=TYPE_SEED_V;
+  }
+  // one-time targeted consolidation of duplicate type names (GPUs→Ground Power, PCA→PCA/AC/HEAT Unit)
+  if(!d.typeMergeV){
+    d.equipment.forEach(e=>{const m=normType(e.type);if(m!==e.type){e.type=m;e.when=Date.now();}});
+    // AC-prefixed PCA units are AC & HEAT units — file them under that sub-label
+    d.equipment.forEach(e=>{if(e.type==="PCA"&&/^AC/i.test(e.tag||"")&&!(e.subtype||"").trim()){e.subtype="AC & HEAT";e.when=Date.now();}});
+    if(Array.isArray(d.types)){const seen=new Set(),tt=[];d.types.forEach(t=>{const m=normType(t);if(m&&!seen.has(m)){seen.add(m);tt.push(m);}});d.types=tt;}
+    if(d.subtypes){const sz={};Object.keys(d.subtypes).forEach(k=>{const m=normType(k);sz[m]=[...new Set([...(sz[m]||[]),...(d.subtypes[k]||[])])];});d.subtypes=sz;}
+    d.subtypes=d.subtypes||{}; d.subtypes["PCA"]=[...new Set([...(d.subtypes["PCA"]||[]),"AC & HEAT"])];
+    d.typeMergeV=1;
   }
   d.equipLocs=Array.isArray(d.equipLocs)&&d.equipLocs.length?d.equipLocs:["South","C4","Ballpark","WestPark"];
   d.locations=(d.locations&&d.locations.length?d.locations:DEFAULT_LOCATIONS.slice())
@@ -956,6 +970,9 @@ function applyConfigRow(r){if(!r)return;CFG_FIELDS.forEach(k=>{if(k in r)data[k]
   if(Array.isArray(data.equipLocs)){const seen=new Set(),el=[];data.equipLocs.forEach(x=>{const n=normLoc(x);if(n&&!seen.has(n)){seen.add(n);el.push(n);}});data.equipLocs=el;}
   if(data.locZones){const z={};Object.keys(data.locZones).forEach(k=>{const n=normLoc(k);const cur=z[n]||[];(data.locZones[k]||[]).forEach(s=>{if(!cur.some(x=>x.toLowerCase()===String(s).toLowerCase()))cur.push(s);});z[n]=cur;});data.locZones=z;}
   if(Array.isArray(data.locations))data.locations.forEach(l=>{l.area=normLoc(l.area);});
+  // consolidate incoming duplicate types (GPUs→Ground Power, PCA/AC/HEAT Unit→PCA) — keeps distinct types intact
+  if(Array.isArray(data.types)){const seen=new Set(),tt=[];data.types.forEach(t=>{const m=normType(t);if(m&&!seen.has(m)){seen.add(m);tt.push(m);}});data.types=tt;}
+  if(data.subtypes){const sz={};Object.keys(data.subtypes).forEach(k=>{const m=normType(k);sz[m]=[...new Set([...(sz[m]||[]),...(data.subtypes[k]||[])])];});data.subtypes=sz;}
   data._t=r.when||data._t||0;_cfgSig=configSig();}
 let _siteSyncT=null,_siteBusy=false;
 function scheduleSiteSync(){ if(!window.SYNC||!window.SYNC.on())return; clearTimeout(_siteSyncT); _siteSyncT=setTimeout(()=>syncSite(),1200); }
@@ -972,7 +989,7 @@ async function syncSite(force){
   try{
     const moveCap=Math.max(50,(data.settings&&data.settings.moveCap)||300);
     data._tomb=data._tomb||{};
-    changed=await window.SYNC.shared("equip",   ()=>data.equipment.map(eqBackfillWhen), arr=>{data.equipment=arr.map(e=>{eqBackfillWhen(e);if(e&&e.location)e.location=normLoc(e.location);return e;});persist();}, 100000)||changed;
+    changed=await window.SYNC.shared("equip",   ()=>data.equipment.map(eqBackfillWhen), arr=>{data.equipment=arr.map(e=>{eqBackfillWhen(e);if(e&&e.location)e.location=normLoc(e.location);if(e){e.type=normType(e.type);if(e.type==="PCA"&&/^AC/i.test(e.tag||"")&&!(e.subtype||"").trim())e.subtype="AC & HEAT";}return e;});persist();}, 100000)||changed;
     changed=await window.SYNC.shared("emove",    ()=>rowsWithTomb(data.movements,data._tomb.emove), arr=>{const s=splitRows(arr,moveCap);data.movements=s.live;data._tomb.emove=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("esecure",  ()=>rowsWithTomb(data.secureLog,data._tomb.esecure), arr=>{const s=splitRows(arr,2000);data.secureLog=s.live;data._tomb.esecure=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("config",   ()=>[configRow()], arr=>{applyConfigRow(arr[0]);persist();}, 1)||changed;

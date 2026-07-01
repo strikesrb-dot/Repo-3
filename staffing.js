@@ -31,10 +31,11 @@ const AREAS=[ // min staffing per shift; null = supervisor discretion
   {key:"WestPark",  min:{AM:2,PM:2,NH:2}},
   {key:"South Team",min:{AM:2,PM:2,NH:2}},
   {key:"Terminal B",min:{AM:1,PM:2,NH:1}},
-  {key:"APU",       min:{AM:1,PM:1,NH:1}},
+  {key:"APU",       min:{AM:1,PM:1,NH:1}, label:"APU/T.O.C.S"},
   {key:"Support",   min:null},
   {key:"C4",        min:null},
 ];
+const areaLabel=k=>{const a=AREAS.find(x=>x.key===k);return a&&a.label?a.label:k;};
 const SUP_DEFAULT=["Sheldon","Paulia","Qua","Mark","Stephanie","Denroy","Earl","John","Juan"];
 const MANAGERS=["Steve"];
 const ASSTMGRS=["Jay","Tito"];
@@ -780,6 +781,10 @@ let showUnusedTugs=false;    // hide not-in-service tugs on the board unless tog
 let poolDoubles=false;       // filter the pool to forward doubles only
 let poolWorkedPrior=false;   // filter the pool to people who worked the previous shift
 let tugsOpen=true, areasOpen=true;   // collapsible board sections
+// per-device board layout: density + section order (the "adjust to my like" controls)
+function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; return {density:c.density||"normal",order:ord}; }
+function setBoardCfg(patch){ Store.setJSON("elt.staff.board",Object.assign(boardCfg(),patch)); }
+function moveSection(sec,dir){ const c=boardCfg(),o=c.order.slice(),i=o.indexOf(sec),j=i+dir; if(i<0||j<0||j>=o.length)return; const t=o[i];o[i]=o[j];o[j]=t; setBoardCfg({order:o}); render(); }
 // what still needs filling on the board — shown so the user always sees what's missing
 function missingItems(){
   const a=ST.assign; if(!a)return []; const out=[];
@@ -903,7 +908,7 @@ function rAssign(){
   // areas
   const areaCards=AREAS.map(a=>{
     const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0,need=min&&list.length<min;
-    return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
+    return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.label||a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
       <div class="aslots">${list.map((p,i)=>`<span class="slot-chip ${leavesEarly(p)?'early':''}" data-area="${esc(a.key)}" data-i="${i}">${esc(nm(p.name))}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
@@ -934,21 +939,25 @@ function rAssign(){
   const running=TUGS.filter(id=>tugState(id).running).length;
   const miss=missingItems();
   const missHTML=miss.length?`<div class="asg-missing"><b>Still missing:</b> ${miss.map(m=>`<span>${esc(m)}</span>`).join("")}</div>`:`<div class="asg-missing ok">✓ Nothing outstanding — minimums met.</div>`;
+  const cfg=boardCfg();
+  const secMove=sec=>`<span class="sec-move"><button class="sec-mv" data-mv="${sec}" data-dir="-1" title="Move up">▲</button><button class="sec-mv" data-mv="${sec}" data-dir="1" title="Move down">▼</button></span>`;
+  const secs={
+    dispatch:`<div class="card pad" data-sec="dispatch"><div class="sec-head"><div class="seg-section">DISPATCH (1 per shift)</div>${secMove("dispatch")}</div><div class="disp-box">${dispBox}</div></div>`,
+    tugs:`<div class="card pad" data-sec="tugs"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="tugs"><span class="sec-ca">${tugsOpen?'▾':'▸'}</span>TUGS — ${running} running</button>${secMove("tugs")}</div>${tugsOpen?`${tugGroups}${tugToggle}${(ST.assign.dblTugs||[]).length?` <button class="btn ghost sm" id="fillDbl" style="margin-top:10px;width:auto">⤵ Fill double tugs with doubles</button>`:''}`:''}</div>`,
+    areas:`<div class="card pad" data-sec="areas"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="areas"><span class="sec-ca">${areasOpen?'▾':'▸'}</span>REMOTES / AREAS</button>${secMove("areas")}</div>${areasOpen?`<div class="area-grid">${areaCards}</div>`:''}</div>`
+  };
   ROOT.innerHTML=`
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
       <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. Use <b>Multi Assign</b> to mark people for 2 areas.'}</p>
-      ${missHTML}</div>
+      ${missHTML}
+      <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}<span class="dens-hint">▲▼ on a section reorders it</span></div></div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
         <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button><button class="btn ghost sm ${poolDoubles?'on':''}" id="dblFirst">★ Doubles</button><button class="btn ghost sm ${poolWorkedPrior?'on':''}" id="priorFirst">◀ Worked prior</button></div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
-      <div class="asg2-board">
-        <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
-        <div class="card pad"><button class="seg-section sec-toggle" data-sec="tugs"><span class="sec-ca">${tugsOpen?'▾':'▸'}</span>TUGS — ${running} running</button>${tugsOpen?`${tugGroups}${tugToggle}${(ST.assign.dblTugs||[]).length?` <button class="btn ghost sm" id="fillDbl" style="margin-top:10px;width:auto">⤵ Fill double tugs with doubles</button>`:''}`:''}</div>
-        <div class="card pad"><button class="seg-section sec-toggle" data-sec="areas"><span class="sec-ca">${areasOpen?'▾':'▸'}</span>REMOTES / AREAS</button>${areasOpen?`<div class="area-grid">${areaCards}</div>`:''}</div>
-      </div>
+      <div class="asg2-board dens-${cfg.density}">${cfg.order.map(k=>secs[k]).join("")}</div>
     </div>
     ${back("reconcile","Tugs")}
     <div class="asg-footspace"></div>
@@ -965,6 +974,8 @@ function rAssign(){
   $("#dblFirst")?.addEventListener("click",()=>{ poolDoubles=!poolDoubles; render(); });
   $("#priorFirst")?.addEventListener("click",()=>{ poolWorkedPrior=!poolWorkedPrior; render(); });
   $$('#staffRoot .sec-toggle').forEach(b=>b.onclick=()=>{ if(b.dataset.sec==='tugs')tugsOpen=!tugsOpen; else areasOpen=!areasOpen; render(); });
+  $$('#staffRoot .sec-mv').forEach(b=>b.onclick=e=>{ e.stopPropagation(); moveSection(b.dataset.mv,+b.dataset.dir); });
+  $$('#staffRoot .dens-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({density:b.dataset.dens}); render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);
@@ -1083,7 +1094,7 @@ function buildSheet(){
   const crew=p=>{ if(!p)return ""; const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
     return `${esc(nm(p.name))}${fwd?` <b class="sb-db">${esc(dblLabel(p.emp))}</b>`:''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
-    return `<div class="sb-area"><div class="sb-area-h">${esc(k)}${min?` <span>${list.length}/${min}</span>`:''}</div>
+    return `<div class="sb-area"><div class="sb-area-h">${esc(areaLabel(k))}${min?` <span>${list.length}/${min}</span>`:''}</div>
       <div class="sb-area-b">${list.map(p=>`<div>${esc(nm(p.name))}${(p._hours||(p.start&&p.end))?` <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>`:''}${(!prevWorkLabel(p.emp)&&worksNext(p.emp))?` <b class="sb-db">${esc(dblLabel(p.emp))}</b>`:''}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
   const tugCell=id=>{const t=tugState(id),c=a.tugs[id]||{},ty=tugType(id);
     const bolt=t.gpu==='inop'?`<span class="sb-bolt inop">${BOLT_X}</span>`:`<span class="sb-bolt ok">${BOLT}</span>`;
@@ -1120,7 +1131,7 @@ function drawBolt(ctx,x,y,inop){ // small lightning at (x,y) top-left ~13x15
 function renderStaffCanvas(){
   const a=ST.assign,S=2,W=1180,M=26,gap=8;
   const boxes=[];
-  AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:x.key,n:list.map(p=>{const h=p._hours||(p.start&&p.end?p.start+"-"+p.end:"");const du=(!prevWorkLabel(p.emp)&&worksNext(p.emp))?dblUntil(p.emp):"";return nm(p.name)+(h?"  "+h:"")+(du?"  DBL→"+du:"");}),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
+  AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:areaLabel(x.key),n:list.map(p=>{const h=p._hours||(p.start&&p.end?p.start+"-"+p.end:"");const du=(!prevWorkLabel(p.emp)&&worksNext(p.emp))?dblUntil(p.emp):"";return nm(p.name)+(h?"  "+h:"")+(du?"  DBL→"+du:"");}),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
   const dn=ST.dispatch&&ST.dispatch.name?nm(ST.dispatch.name):"";
   boxes.push({t:"DISPATCHER",n:[dn||"OPEN"],navy:true,open:!dn});
   boxes.push({t:"SUPERVISORS",n:ST.supers.map(nm)});
