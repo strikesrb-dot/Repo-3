@@ -366,7 +366,7 @@ function absenceTally(){
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
-  ({auth:rAuth,menu:rMenu,upload:rUpload,shift:rShift,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts}[ST.step]||rMenu)();
+  ({auth:rAuth,menu:rMenu,upload:rUpload,shift:rShift,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts,activity:rActivity}[ST.step]||rMenu)();
 }
 function card(inner){return `<div class="card pad">${inner}</div>`;}
 function staffModal(html){
@@ -444,11 +444,22 @@ function saveDraft(){
 }
 function deleteDraft(id){ saveDraftList(loadDrafts().filter(e=>e.id!==id)); delRow(id); }
 
+/* ---- activity log: a track record of who did what, when ---- */
+function loadActivity(){const d=Store.getJSON("elt.staff.activity",[]);return Array.isArray(d)?d:[];}
+function logAct(kind,detail){ try{
+  const l=loadActivity();
+  l.unshift({ts:Date.now(),by:AUTH?AUTH.name:"",shift:ST.shift||"",kind,detail:detail||""});
+  Store.setJSON("elt.staff.activity",l.slice(0,400));
+}catch(_){ } }
+function fmtClock(ts){ if(!ts)return ""; const d=new Date(ts); let h=d.getHours(),m=d.getMinutes(); const ap=h<12?"AM":"PM"; h=h%12||12; return h+":"+String(m).padStart(2,"0")+" "+ap; }
+function fmtDur(ms){ if(!ms||ms<0)return ""; const m=Math.round(ms/60000); if(m<60)return m+" min"; return Math.floor(m/60)+"h "+(m%60)+"m"; }
+
 /* ---- step: auth (who's running this shift + code) ---- */
 let AUTH=null;                  // {name, role, temp} for this app session
 let authView="pick", authRole="Supervisor", authPick=null, authErr="", authTemp={name:"",signer:""};
 function authenticate(name,role,temp){
   AUTH={name,role,temp:!!temp}; authErr=""; authView="pick"; authPick=null; authTemp={name:"",signer:""};
+  logAct("Signed in",role);
   if(role==="Supervisor"){ if(!ST.supers||!ST.supers.length)ST.supers=[name]; else if(!ST.supers.includes(name))ST.supers=[name,...ST.supers]; }
   else if(role==="Manager"){ ST.manager=name; }
   else if(role==="Assistant Manager"){ if(!ST.asst.includes(name))ST.asst=[...ST.asst,name]; }
@@ -560,13 +571,35 @@ function rMenu(){
         <span class="mp-ic">✎</span><span class="mp-tx"><b>Draft Manpowers</b><span>${drafts?drafts+" saved · resume where you left off":"Nothing in progress"}</span></span><span class="mp-n">${drafts||""}</span></button>
       <button class="mp-tile" id="mpPast">
         <span class="mp-ic">🗂</span><span class="mp-tx"><b>Past Manpowers</b><span>${logs?logs+" logged · AM · PM · NH (read-only)":"Nothing logged yet"}</span></span><span class="mp-n">${logs||""}</span></button>
+      <button class="mp-tile" id="mpActivity">
+        <span class="mp-ic">🕘</span><span class="mp-tx"><b>Activity Log</b><span>Track record of who did what &amp; when</span></span></button>
     </div>`);
-  $("#mpCreate").onclick=()=>{ ST.files={mp:null,ot:null,co:null}; ST.parsed=null; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST.dispatch=null; ST.step="upload"; render(); };
+  $("#mpCreate").onclick=()=>{ ST.files={mp:null,ot:null,co:null}; ST.parsed=null; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST.dispatch=null; ST.startedAt=Date.now(); logAct("Started manpower",""); ST.step="upload"; render(); };
   $("#mpDraft").onclick=()=>{ ST.step="drafts"; render(); };
   $("#mpPast").onclick=()=>{ ST.step="logs"; render(); };
+  $("#mpActivity").onclick=()=>{ ST.step="activity"; render(); };
   $("#mpSwitch")?.addEventListener("click",()=>{ AUTH=null; authView="pick"; authPick=null; ST.step="auth"; render(); });
 }
 
+/* ---- step: activity log (track record of user actions) ---- */
+function rActivity(){
+  const acts=loadActivity();
+  const dayKey=ts=>{const d=new Date(ts);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);};
+  const byDay={},order=[];
+  acts.forEach(a=>{const k=dayKey(a.ts);if(!byDay[k]){byDay[k]=[];order.push(k);}byDay[k].push(a);});
+  const body=order.length?order.map(k=>{
+    const rows=byDay[k].map(a=>`<div class="act-row"><span class="act-t">${esc(fmtClock(a.ts))}</span>
+      <span class="act-b"><b>${esc(a.kind)}</b>${a.detail?` — ${esc(a.detail)}`:''}${a.by?`<span class="act-by">${esc(nm(a.by))}${a.shift?" · "+esc(a.shift):""}</span>`:''}</span></div>`).join("");
+    return `<div class="act-day">${esc(fmtDayLabel(k))}</div>${rows}`;
+  }).join(""):'<p class="hint" style="margin:0">No activity recorded yet.</p>';
+  ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">Activity log</h2><span class="cnt">${acts.length}</span></div>
+    <p class="hint" style="margin:2px 0 10px">Track record of manpower actions — sign-ins, assignments, dispatcher, logging, edits — newest first.</p>
+    <div class="act-wrap">${body}</div>
+    <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="menu">‹ Back</button>${acts.length?'<button class="btn ghost" id="actClear">Clear log</button>':''}</div>`);
+  $("#actClear")?.addEventListener("click",()=>{ const p=prompt("Enter the settings passcode to clear the activity log:"); if(p===null)return; if(p.trim()!==settingsPass()){alert("Incorrect passcode.");return;} Store.setJSON("elt.staff.activity",[]); render(); });
+  $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
+}
+function fmtDayLabel(iso){const d=new Date(iso+"T00:00:00");return isNaN(d)?iso:d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});}
 /* ---- step: drafts ---- */
 function rDrafts(){
   syncDrafts();
@@ -888,9 +921,9 @@ function rAssign(){
         <div class="card pad"><div class="seg-section">AREAS</div><div class="area-grid">${areaCards}</div></div>
       </div>
     </div>
-    <div class="btnrow" style="margin-top:10px"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>
     ${back("reconcile","Tugs")}
-    ${autoMode?'<div class="autobar-spacer"></div>'+autoBar():''}`;
+    <div class="asg-footspace"></div>
+    ${autoMode?'<div class="autobar-spacer"></div>'+autoBar():`<div class="asg-generate"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>`}`;
   // pool chip tap depends on mode: multi/normal = select · tug/remote = pick
   const poolEl=$('#staffRoot .pool-groups');
   poolEl?.addEventListener('click',ev=>{ const chip=ev.target.closest('.abody'); if(!chip)return; const emp=chip.dataset.emp;
@@ -908,21 +941,23 @@ function rAssign(){
   $("#fillDbl")?.addEventListener("click",fillDoubleTugs);
   $$('#staffRoot .shgrp-h[data-grp]').forEach(h=>h.onclick=()=>{ const g=h.dataset.grp; poolCollapsed.has(g)?poolCollapsed.delete(g):poolCollapsed.add(g); render(); });
   // placing keeps the selection in multi mode so the same person can go in a 2nd spot (auto-clears at 2 areas)
+  const selName=()=>{ const b=SEL&&poolFor(ST.shift).find(x=>x.emp===SEL); return b?nm(b.name):""; };
   const place=(setter)=>{ if(!SEL)return; const emp=SEL,b=poolFor(ST.shift).find(x=>x.emp===emp); if(!b)return; setter(mkBody(b)); if(autoMode!=='multi'||empAreaCount(emp)>=2)SEL=null; render(); };
   $("#dispSel")?.addEventListener("change",e=>{ const v=e.target.value;
     if(v==="__custom"){ST.dispatch={name:custom?cur:"",emp:"",custom:true};}
     else{ const m=pool.find(b=>normName(b.name)===normName(v)); ST.dispatch=v?{name:v,emp:m?m.emp:"",custom:false}:{name:"",emp:"",custom:false}; }
-    render(); });
+    if(ST.dispatch&&ST.dispatch.name)logAct("Set dispatcher",nm(ST.dispatch.name)); render(); });
   $("#dispCustom")?.addEventListener("input",e=>{ ST.dispatch={name:e.target.value,emp:"",custom:true}; });
   $$('#staffRoot .trow').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
-    if(t[role]){const p=t[role];t[role]=null;SEL=p.emp;render();return;} place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); }); // tap filled slot = pick up & move
+    if(t[role]){const p=t[role];t[role]=null;SEL=p.emp;logAct("Removed from STUG "+id,nm(p.name)+" · "+role);render();return;}
+    const who=selName(); place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); if(who)logAct("Assigned to STUG "+id,who+" · "+role); }); // tap filled slot = pick up & move
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
   $$('#staffRoot .tcard.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
   $("#toggleUnused")?.addEventListener("click",()=>{ showUnusedTugs=!showUnusedTugs; render(); });
   $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
-  $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; place(p=>{ if(!ST.assign.areas[k].some(x=>x.emp===p.emp))ST.assign.areas[k].push(p); }); });
-  $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; const p=ST.assign.areas[k][i]; ST.assign.areas[k].splice(i,1); if(p)SEL=p.emp; render(); }); // remove = pick up & move
+  $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; const who=selName(); place(p=>{ if(!ST.assign.areas[k].some(x=>x.emp===p.emp))ST.assign.areas[k].push(p); }); if(who)logAct("Assigned to "+k,who); });
+  $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; const p=ST.assign.areas[k][i]; ST.assign.areas[k].splice(i,1); if(p){SEL=p.emp;logAct("Removed from "+k,nm(p.name));} render(); }); // remove = pick up & move
   $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="sheet"; render(); };  // briefing is edited in its own tab, not here
   saveDraft();
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
@@ -1236,11 +1271,13 @@ function logManpower(){
   let img="";try{const src=renderStaffCanvas();const w=1000,h=Math.round(src.height/src.width*w);
     const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);
     img=c.toDataURL("image/jpeg",0.85);}catch(_){}
-  const entry={id:date+"|"+shift,date,shift,when:Date.now(),pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",by:AUTH?AUTH.name:"",img,snap:snapshot()};
+  const finishedAt=Date.now();
+  const entry={id:date+"|"+shift,date,shift,when:finishedAt,startedAt:ST.startedAt||null,finishedAt,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",by:AUTH?AUTH.name:"",img,snap:snapshot()};
   let l=loadLog().filter(e=>e.id!==entry.id);l.unshift(entry);l=l.slice(0,24);
   if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,snap:null}); if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,img:""}); l=l.slice(0,12); saveLogList(l); } }
   pushRow("log",entry.id,entry);      // share with the team
   deleteDraft("D|"+date+"|"+shift);   // finalized — drop the draft
+  logAct("Logged manpower",shift+" · "+assignedCount()+" assigned");
   toast("Logged: "+date+" "+shift);
   logSel=entry.id; ST.step="logs"; render();   // jump to the saved record (image/PDF/share live here)
 }
@@ -1267,6 +1304,7 @@ function rLogs(){
     if(!e){logSel=null;return rLogs();}
     ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.shift)} manpower <span class="ro-badge">read-only</span></h2></div>
       <div class="muted-row">${esc(e.date||'')} · ${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(nm(e.dispatch)||"OPEN")}${e.by?` · by <b>${esc(nm(e.by))}</b>`:''}</div>
+      ${(e.startedAt||e.finishedAt)?`<div class="muted-row">${e.startedAt?`Started <b>${esc(fmtClock(e.startedAt))}</b>`:''}${e.finishedAt?`${e.startedAt?' · ':''}Finished <b>${esc(fmtClock(e.finishedAt))}</b>`:''}${(e.startedAt&&e.finishedAt)?` · took ${esc(fmtDur(e.finishedAt-e.startedAt))}`:''}</div>`:''}
       ${e.img?`<div class="sheet-scroll"><img class="log-img" src="${e.img}" alt="staffing sheet"/></div>`:'<p class="hint">Image not stored for this entry.</p>'}
       ${e.snap?`<div class="btnrow" style="margin-top:10px"><button class="btn good" id="logEdit">✎ Reopen &amp; edit</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn navy" id="logShare">Email / Share both ›</button></div>
@@ -1275,7 +1313,7 @@ function rLogs(){
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button>${logDeleteAllowed()?'<button class="btn ghost" id="logDel">Delete</button>':''}</div>`);
     $("#logBack").onclick=()=>{logSel=null;render();};
     $("#logDel")?.addEventListener("click",()=>{ if(!confirm("Delete this past manpower? It will be removed for the whole team."))return; delRow(logSel);saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render(); });
-    $("#logEdit")?.addEventListener("click",async()=>{ if(!(await unlockLogEdit(e)))return; applySnapshot(e.snap); ST._tugSeeded=true; logSel=null; ST.step="assign"; render(); }); // reopen the saved board to edit (re-log to overwrite)
+    $("#logEdit")?.addEventListener("click",async()=>{ if(!(await unlockLogEdit(e)))return; logAct("Reopened manpower",e.shift+" "+(e.date||"")); applySnapshot(e.snap); ST._tugSeeded=true; logSel=null; ST.step="assign"; render(); }); // reopen the saved board to edit (re-log to overwrite)
     $("#logImg")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetImage()));
     $("#logTxt")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetText()));
     $("#logShare")?.addEventListener("click",()=>withSnapshot(e.snap,()=>shareSheets()));

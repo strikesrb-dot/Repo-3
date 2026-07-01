@@ -357,6 +357,15 @@
   .hist-top{font-size:14px;color:var(--ink)}
   .hist-meta{margin-top:2px;font-size:12px;color:var(--muted)}
   .hist-reason{margin-top:3px;font-size:12.5px;color:#b3251d;font-weight:600}
+  .gse-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
+  .gse-row{border:1px solid var(--line);border-left:4px solid var(--danger);border-radius:12px;padding:11px 13px;background:#fff;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .gse-main{flex:1;min-width:0}
+  .gse-tag{font-weight:800;color:var(--ink);font-size:15px}
+  .gse-type{font-size:12px;font-weight:600;color:var(--muted);margin-left:8px}
+  .gse-reason{margin-top:2px;font-size:13.5px;color:#b3251d;font-weight:600}
+  .gse-meta{margin-top:2px;font-size:12px;color:var(--muted)}
+  .gse-acts{display:flex;gap:6px;flex-wrap:wrap}
+  .gse-acts .btn{width:auto}
   .mv-shift{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:3px 9px;margin:10px 2px 6px}
   .mv-shift.nh{color:#2c2660;background:#e6e3f5}
   .mv-shift.am{color:#15622f;background:var(--good-bg)}
@@ -494,6 +503,7 @@
     <div class="hubgrid">
       <button class="hubtile" data-go="inventory"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg></span>Do Inventory</button>
       <button class="hubtile" data-go="secure"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>Aircraft Secure Log</button>
+      <button class="hubtile" data-go="gse"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>GSE Out of Service</button>
     </div>
     <div class="hubsec">Lookups &amp; Lists</div>
     <div class="hubgrid">
@@ -509,6 +519,8 @@
   </section>
 
   <section id="view-eos" class="view"><div id="eosRoot"></div></section>
+
+  <section id="view-gse" class="view"><div id="gseRoot"></div></section>
 
   <section id="view-movement" class="view">
     <h2 class="section">Equipment Movement</h2>
@@ -1093,6 +1105,7 @@ function goTab(t){showTab(t);
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[],by:(data.invLastBy||"")};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();invReason=new Map();renderInventory();}
   if(t==="movement"){renderMovement();}
   if(t==="eos"){renderEos();}
+  if(t==="gse"){renderGse();}
   if(t==="staffing"){window.STAFF&&window.STAFF.open();}
   if(t==="briefing"){window.BRIEF&&window.BRIEF.open();}
   if(t==="preview"){window.PREVIEW&&window.PREVIEW.open();}
@@ -1289,7 +1302,7 @@ $("#moveWipe").addEventListener("click",()=>{
   data.movements=[];save();renderMovement();toast("Movement log wiped");});
 /* ---- configurable app settings ---- */
 const HUB_TILES=[["staffing","Manpower / Staffing"],["briefing","Briefing & Focus"],["eos","End of Shift Report"],["preview","Preview"],["preview2","Preview 2"],
-  ["inventory","Do Inventory"],["secure","Aircraft Secure Log"],["aircraft","Aircraft Lookup"],["park","Stop Mark Lookup"],
+  ["inventory","Do Inventory"],["secure","Aircraft Secure Log"],["gse","GSE Out of Service"],["aircraft","Aircraft Lookup"],["park","Stop Mark Lookup"],
   ["equipment","Equipment List"],["movement","Equipment Movement"]];
 function renderMoveTrack(){
   const S=data.settings;
@@ -1904,26 +1917,66 @@ function openInvPop(pill,id,after){
 }
 // why a unit is out of service — quick options + a free-text box
 const OOS_REASONS=["Flat tire","Won't start","Battery / charge","Ground power inop","Hydraulic leak","Brakes","Engine / mechanical","Body damage","Awaiting parts","Fluids / oil","PM / service due"];
-function openOosReason(pill,id,after){
-  closeInvPop();
-  const e=data.equipment.find(x=>x.id===id);if(!e)return;
+// reusable "why out of service?" picker (quick chips + free text). onSave(reasonText) on save; opts.onCancel on cancel.
+function pickReason(tag,current,onSave,opts){
+  opts=opts||{};closeInvPop();
   const back=document.createElement("div");back.className="invpop-back";
-  back.addEventListener("click",ev=>{if(ev.target===back){closeInvPop();after&&after();}});
-  const pop=document.createElement("div");pop.className="invpop";
-  back.appendChild(pop);document.body.appendChild(back);
-  const cur=invReason.get(id)||e.oosReason||"";
-  pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")} — why out of service?</div>
+  back.addEventListener("click",ev=>{if(ev.target===back){closeInvPop();opts.onCancel&&opts.onCancel();}});
+  const pop=document.createElement("div");pop.className="invpop";back.appendChild(pop);document.body.appendChild(back);
+  pop.innerHTML=`<div class="pophead">${esc(tag||"unit")} — why out of service?</div>
     <div class="oosr-wrap">${OOS_REASONS.map(r=>`<button class="oosr" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
-    <input id="oosText" placeholder="Details / other reason…" value="${esc(cur)}" autocomplete="off" />
-    <button class="confirmbtn" data-a="save">✓ Save reason</button>
-    <button class="rmbtn" data-a="skip">Skip for now</button>`;
+    <input id="oosText" placeholder="Details / other reason…" value="${esc(current||"")}" autocomplete="off" />
+    <button class="confirmbtn" data-a="save">${esc(opts.saveLabel||"✓ Save reason")}</button>
+    <button class="rmbtn" data-a="cancel">${esc(opts.cancelLabel||"Cancel")}</button>`;
   const ti=pop.querySelector("#oosText");
   pop.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{const r=b.dataset.r;const parts=ti.value.split(/,\s*/).map(s=>s.trim()).filter(Boolean);
     if(parts.includes(r))ti.value=parts.filter(x=>x!==r).join(", ");else{parts.push(r);ti.value=parts.join(", ");}ti.focus();});
-  pop.querySelector('[data-a="save"]').onclick=()=>{const v=ti.value.trim();if(v)invReason.set(id,v);else invReason.delete(id);closeInvPop();after&&after();};
-  pop.querySelector('[data-a="skip"]').onclick=()=>{closeInvPop();after&&after();};
+  pop.querySelector('[data-a="save"]').onclick=()=>{const v=ti.value.trim();closeInvPop();onSave(v);};
+  pop.querySelector('[data-a="cancel"]').onclick=()=>{closeInvPop();opts.onCancel&&opts.onCancel();};
   setTimeout(()=>ti.focus(),60);
 }
+function openOosReason(pill,id,after){const e=data.equipment.find(x=>x.id===id);if(!e)return;
+  pickReason(e.tag,invReason.get(id)||e.oosReason||"",v=>{if(v)invReason.set(id,v);else invReason.delete(id);after&&after();},{cancelLabel:"Skip for now",onCancel:after});
+}
+/* ---- GSE: out-of-service registry ---- */
+function gseList(){return data.equipment.filter(e=>e.oos).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"")||(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));}
+function gseWho(){return (window.STAFF&&window.STAFF.who&&window.STAFF.who())||"";}
+function setEqOos(id,on,reason,by){const e=data.equipment.find(x=>x.id===id);if(!e)return;
+  const fromOos=!!e.oos;e.oos=!!on;e.oosReason=on?(reason||e.oosReason||""):"";e.updated=todayISO();e.when=Date.now();
+  logMove(e,e.location||"",e.location||"","edit",e.spot||"",by||gseWho(),fromOos);save();renderGse();refreshAll();}
+function gseDownloadText(){const list=gseList();const L=["GSE OUT OF SERVICE — "+fmtDate(todayISO()),"====================================",""];
+  list.forEach((e,i)=>{L.push(`${i+1}. ${e.tag||""}${e.type?" ("+e.type+")":""}`);L.push(`   Reason: ${e.oosReason||"—"}`);if(e.location)L.push(`   Location: ${e.location}`);L.push("");});
+  if(!list.length)L.push("(none out of service)");
+  const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=u;a.download=`GSE-OOS-${todayISO()}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
+function renderGse(){const r=$("#gseRoot");if(!r)return;
+  const list=gseList();
+  const rows=list.map(e=>{const ev=eqHistory(e).find(m=>m.oos);
+    return `<li class="gse-row" data-id="${esc(e.id)}"><div class="gse-main">
+      <div class="gse-tag">${esc(e.tag||"(no tag)")}${e.type?`<span class="gse-type">${esc(e.type)}</span>`:""}</div>
+      <div class="gse-reason">⊘ ${esc(e.oosReason||"no reason recorded — tap Reason")}</div>
+      <div class="gse-meta">${e.location?esc(e.location):"no location"}${ev?` · since ${esc(fmtDate(ev.date))}${ev.by?" · "+esc(nm(ev.by)):""}`:""}</div></div>
+      <div class="gse-acts"><button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn good sm gse-back" data-id="${esc(e.id)}">✓ In service</button></div></li>`;}).join("")
+    ||`<p class="hint" style="text-align:center;padding:22px">Nothing is out of service right now.</p>`;
+  r.innerHTML=`<div class="card pad">
+    <div class="pool-head"><h2 class="staff-h" style="margin:0">GSE — Out of Service</h2><span class="cnt">${list.length}</span></div>
+    <p class="hint" style="margin:2px 0 10px">Every unit currently out of service and why. Add one below, or mark units during Do Inventory.</p>
+    <label class="inv-by"><span>Mark a unit out of service</span><input id="gseAdd" placeholder="Type a tag…" autocomplete="off" list="gseTags" /></label>
+    <datalist id="gseTags">${data.equipment.filter(e=>!e.oos).map(e=>`<option value="${esc(e.tag)}">`).join("")}</datalist>
+    <ul class="gse-list">${rows}</ul>
+    ${list.length?`<div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="gseTxt">↓ Text list</button></div>`:""}</div>`;
+  $("#gseAdd").addEventListener("change",ev=>{const tag=ev.target.value.trim().toUpperCase();if(!tag)return;ev.target.value="";
+    const eq=data.equipment.find(x=>(x.tag||"").toUpperCase()===tag);
+    if(!eq){toast("No unit with that tag");return;}
+    if(eq.oos){toast(eq.tag+" is already out of service");return;}
+    pickReason(eq.tag,"",v=>setEqOos(eq.id,true,v));});
+  $$("#gseRoot .gse-edit").forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
+    pickReason(eq.tag,eq.oosReason||"",v=>{eq.oosReason=v;e_when(eq);save();renderGse();});});
+  $$("#gseRoot .gse-back").forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
+    if(confirm(`Return ${eq.tag||"this unit"} to service?`))setEqOos(eq.id,false,"");});
+  $("#gseTxt")?.addEventListener("click",gseDownloadText);
+}
+function e_when(e){e.updated=todayISO();e.when=Date.now();}
 function commitInv(){
   const loc=inv.loc,n=invSel.size;
   if(inv.by)data.invLastBy=inv.by;
