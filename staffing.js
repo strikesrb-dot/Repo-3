@@ -789,7 +789,8 @@ let tugsOpen=true, areasOpen=true;   // collapsible board sections
 // per-device board layout: density + section order (the "adjust to my like" controls)
 const BOARD_THEMES=["front","modern","minimal"];
 const THEME_LABEL={front:"Front end",modern:"Modern",minimal:"Minimal"};
-function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; return {density:c.density||"normal",order:ord,theme:BOARD_THEMES.includes(c.theme)?c.theme:"front"}; }
+const LAYOUT_NAME={1:"Sidebar",2:"Pool right",3:"Pool top",4:"Pool bottom",5:"Wide pool",6:"Narrow pool",7:"Split board",8:"Tug list",9:"Board first",10:"Single stack"};
+function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; const lay=(+c.layout>=1&&+c.layout<=10)?+c.layout:1; return {density:c.density||"normal",order:ord,theme:BOARD_THEMES.includes(c.theme)?c.theme:"front",layout:lay}; }
 // a boolean control drawn in the active theme's toggle style (minimal = flat pill, else sliding switch)
 function tggl(id,on,label){ const min=boardCfg().theme==='minimal';
   return min
@@ -799,6 +800,10 @@ function tggl(id,on,label){ const min=boardCfg().theme==='minimal';
 function themePicker(){ const th=boardCfg().theme;
   return `<div class="theme-row"><span class="dens-l">Screen style</span>`+
     BOARD_THEMES.map(t=>`<button class="theme-btn ${th===t?'on':''}" data-theme="${t}">${esc(THEME_LABEL[t])}</button>`).join("")+`</div>`; }
+// 10 arrangement presets — same components, rearranged (pool position, section flow, tug packing)
+function layoutPicker(){ const ly=boardCfg().layout;
+  let btns=""; for(let n=1;n<=10;n++)btns+=`<button class="lay-btn ${ly===n?'on':''}" data-lay="${n}" title="${esc(LAYOUT_NAME[n])}">${n}</button>`;
+  return `<div class="lay-row"><span class="dens-l">Layout</span>${btns}<span class="lay-name">${esc(LAYOUT_NAME[ly])}</span></div>`; }
 function setBoardCfg(patch){ Store.setJSON("elt.staff.board",Object.assign(boardCfg(),patch)); }
 function moveSection(sec,dir){ const c=boardCfg(),o=c.order.slice(),i=o.indexOf(sec),j=i+dir; if(i<0||j<0||j>=o.length)return; const t=o[i];o[i]=o[j];o[j]=t; setBoardCfg({order:o}); render(); }
 // what still needs filling on the board — shown so the user always sees what's missing
@@ -954,12 +959,13 @@ function rAssign(){
     tugs:`<div class="card pad" data-sec="tugs"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="tugs"><span class="sec-ca">${tugsOpen?'▾':'▸'}</span>TUGS — ${running} running</button>${secMove("tugs")}</div>${tugsOpen?`${tugGroups}${tugToggle}`:''}</div>`,
     areas:`<div class="card pad" data-sec="areas"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="areas"><span class="sec-ca">${areasOpen?'▾':'▸'}</span>REMOTES / AREAS</button>${secMove("areas")}</div>${areasOpen?`<div class="area-grid">${areaCards}</div>`:''}</div>`
   };
-  ROOT.innerHTML=`<div class="board-theme theme-${cfg.theme}">
+  ROOT.innerHTML=`<div class="board-theme theme-${cfg.theme} lay-${cfg.layout}">
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
       <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. Use <b>Multi Assign</b> to mark people for 2 areas.'}</p>
       ${missHTML}
       <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}<span class="dens-hint">▲▼ on a section reorders it</span></div>
-      ${themePicker()}</div>
+      ${themePicker()}
+      ${layoutPicker()}</div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
@@ -988,6 +994,7 @@ function rAssign(){
   $$('#staffRoot .sec-mv').forEach(b=>b.onclick=e=>{ e.stopPropagation(); moveSection(b.dataset.mv,+b.dataset.dir); });
   $$('#staffRoot .dens-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({density:b.dataset.dens}); render(); });
   $$('#staffRoot .theme-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({theme:b.dataset.theme}); render(); });
+  $$('#staffRoot .lay-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({layout:+b.dataset.lay}); render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);

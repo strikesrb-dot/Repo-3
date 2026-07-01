@@ -517,6 +517,41 @@
 .theme-minimal .asg-generate .btn.navy{border-radius:5px;background:#2b333a;box-shadow:none}
 .theme-minimal .tug-gtitle{color:#9aa6b1}
 
+/* ============ LAYOUT PRESETS (10 arrangements of the same board) ============ */
+.lay-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:8px}
+.lay-btn{min-width:30px;height:30px;border:1.5px solid var(--line);background:#fff;border-radius:8px;font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer;padding:0 4px}
+.lay-btn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.lay-name{font-size:12px;font-weight:800;color:var(--navy);margin-left:4px}
+@media (min-width:820px){
+  /* 2 · pool on the right */
+  .board-theme.lay-2 .asg2{grid-template-columns:1fr 340px}
+  .board-theme.lay-2 .asg2-pool{order:2}
+  .board-theme.lay-2 .asg2-board{order:1}
+  /* 3 · pool as a full-width bar on top */
+  .board-theme.lay-3 .asg2{grid-template-columns:1fr}
+  .board-theme.lay-3 .asg2-pool{position:static;max-height:36vh;margin-bottom:12px}
+  /* 4 · pool docked at the bottom */
+  .board-theme.lay-4 .asg2{grid-template-columns:1fr}
+  .board-theme.lay-4 .asg2-pool{order:2;position:sticky;top:auto;bottom:8px;max-height:40vh;margin-top:12px}
+  .board-theme.lay-4 .asg2-board{order:1}
+  /* 5 · extra-wide pool on the left */
+  .board-theme.lay-5 .asg2{grid-template-columns:660px 1fr}
+  /* 6 · narrow pool on the left */
+  .board-theme.lay-6 .asg2{grid-template-columns:240px 1fr}
+  /* 7 · split board — sections tile in two columns, tugs spans full width */
+  .board-theme.lay-7 .asg2-board{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+  .board-theme.lay-7 .asg2-board>[data-sec="tugs"]{grid-column:1 / -1}
+  /* 9 · board first, narrow pool on the right */
+  .board-theme.lay-9 .asg2{grid-template-columns:1fr 280px}
+  .board-theme.lay-9 .asg2-pool{order:2}
+  .board-theme.lay-9 .asg2-board{order:1}
+  /* 10 · single full-width stack (pool on top, static) */
+  .board-theme.lay-10 .asg2{grid-template-columns:1fr}
+  .board-theme.lay-10 .asg2-pool{position:static;max-height:none;margin-bottom:12px}
+}
+/* 8 · tugs as a single-column list (beats the density auto-fill grid) */
+#staffRoot .board-theme.lay-8 .asg2-board .tug-strips{grid-template-columns:1fr}
+
 /* ===== compact tug strips (redesigned assign board) ===== */
 .tug-strips{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));align-items:start}
 .tstrip{border:1.5px solid var(--line);border-left-width:5px;border-radius:10px;overflow:hidden;background:#fff}
