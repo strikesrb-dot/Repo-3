@@ -10,9 +10,11 @@ const esc=s=>(s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt
 /* ---------- demo mode (mask real people-names for screen-sharing/sales) ---------- */
 const FAKE_LAST=["Anderson","Brooks","Carter","Diaz","Evans","Flores","Garcia","Hayes","Irwin","Jones","Kelly","Lopez","Morgan","Nguyen","Ortiz","Patel","Quinn","Reyes","Santos","Torres","Underwood","Vance","Walker","Young","Zimmer"];
 function hashStr(s){let h=0;for(let i=0;i<(s||"").length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
-function fakeName(real){if(!real)return real;const h=hashStr(real);const last=FAKE_LAST[h%FAKE_LAST.length];const ini=String.fromCharCode(65+(Math.floor(h/FAKE_LAST.length)%26));return last+", "+ini+".";}
+function fakeName(real){if(!real)return real;const h=hashStr(real);const last=FAKE_LAST[h%FAKE_LAST.length];const ini=String.fromCharCode(65+(Math.floor(h/FAKE_LAST.length)%26));return ini+". "+last;}
 function demoOn(){return !!Store.getJSON("elt.demo",false);}
-function nm(name){return (demoOn()&&name)?fakeName(name):name;}
+// display names as "First Last" (stored as "Last, First" from eTA); leave single-word / comma-less names as-is
+function firstLast(name){const s=(name||"").trim();const i=s.indexOf(",");if(i<0)return s;const last=s.slice(0,i).trim(),first=s.slice(i+1).trim();return first?first+" "+last:last;}
+function nm(name){if(!name)return name;return demoOn()?fakeName(name):firstLast(name);}
 const UP=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
 const CK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
@@ -218,6 +220,9 @@ function worksNext(emp){ const nx=NEXT_SHIFT[ST.shift]; if(!nx||!emp)return fals
   return Math.min(ov,480)>=45; }
 // on a double = finishing the previous shift OR rolling into the next one
 function onDouble(emp){ return !!emp&&(worksNext(emp)||!!prevWorkLabel(emp)); }
+// end time of a forward double (when they're on until), from the combined work window
+function dblUntil(emp){ const d=ST.dbl&&ST.dbl[emp]; return (d&&d.double&&d.combo)?d.combo[1]:""; }
+function dblLabel(emp){ const u=dblUntil(emp); return u?("DBL until "+u):"DBL"; }
 // leaves before the shift's standard end (not staying the full shift) → flag red
 function leavesEarly(o){ if(!o)return false;
   const h=o._hours||o.hours||((o.start&&o.end)?o.start+"-"+o.end:"");
@@ -670,7 +675,7 @@ function rPool(){
   const tier=b=>{const ov=b.ov||0; return ov>=240?'full':(ov>60?'part':'one');};
   const row=b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const tr=tier(b);
     return `<div class="prow prow-tap ${tr!=='full'?'partial':''} ${tr==='one'?'onehour':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
-      ${fwd?'<span class="tag db">Double</span>':''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
+      ${fwd?`<span class="tag db">${esc(dblLabel(b.emp))}</span>`:''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
       <div class="bid-line">${bid?`Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b>`:'<span class="hint">No bid on file</span>'}</div></div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;};
   const full=pool.filter(b=>tier(b)==='full'), parts=pool.filter(b=>tier(b)==='part'), ones=pool.filter(b=>tier(b)==='one');
@@ -808,7 +813,7 @@ function rAssign(){
     const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
     const isSel=SEL===b.emp, partial=(b.ov||0)<240, ac=empAreaCount(b.emp);
-    return `<button class="abody ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="${early?'early':''}">${esc(nm(b.name))}</span>${fwd?'<em>DBL</em>':''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+    return `<button class="abody ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="${early?'early':''}">${esc(nm(b.name))}</span>${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const shgrp=(key,label,list)=>{const col=poolCollapsed.has(key);
     return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(key)}"><span class="shg-ca">${col?'▸':'▾'}</span>${label}<span>${list.length}</span></div><div class="abody-wrap">${list.map(chip).join("")}</div></div>`;};
   let poolHTML;
@@ -827,7 +832,7 @@ function rAssign(){
   }
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
-    return `<span class="slot-name ${early?'early':''}">${esc(nm(p.name))}${fwd?'<em class="sdbl">DBL</em>':''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
+    return `<span class="slot-name ${early?'early':''}">${esc(nm(p.name))}${fwd?`<em class="sdbl">${esc(dblLabel(p.emp))}</em>`:''}</span><span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
@@ -1010,10 +1015,10 @@ function rSheet(){
 function buildSheet(){
   const a=ST.assign, dn=ST.dispatch&&ST.dispatch.name?esc(nm(ST.dispatch.name)):'<span class="sb-oos">OPEN</span>';
   const crew=p=>{ if(!p)return ""; const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
-    return `${esc(nm(p.name))}${fwd?' <b class="sb-db">DBL</b>':''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
+    return `${esc(nm(p.name))}${fwd?` <b class="sb-db">${esc(dblLabel(p.emp))}</b>`:''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
     return `<div class="sb-area"><div class="sb-area-h">${esc(k)}${min?` <span>${list.length}/${min}</span>`:''}</div>
-      <div class="sb-area-b">${list.map(p=>`<div>${esc(nm(p.name))}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
+      <div class="sb-area-b">${list.map(p=>`<div>${esc(nm(p.name))}${(p._hours||(p.start&&p.end))?` <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>`:''}${(!prevWorkLabel(p.emp)&&worksNext(p.emp))?` <b class="sb-db">${esc(dblLabel(p.emp))}</b>`:''}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
   const tugCell=id=>{const t=tugState(id),c=a.tugs[id]||{},ty=tugType(id);
     const bolt=t.gpu==='inop'?`<span class="sb-bolt inop">${BOLT_X}</span>`:`<span class="sb-bolt ok">${BOLT}</span>`;
     return `<div class="sb-tug ${t.oos?'oos':''}"><div class="sb-tug-h">STUG ${id}${ELECTRIC.has(id)?'<b>w</b>':''}${ty?`<u>${ty}</u>`:''} ${t.oos?'':bolt}${t.oos?'<span class="sb-oos">OUT OF SERVICE</span>':''}</div>
@@ -1049,7 +1054,7 @@ function drawBolt(ctx,x,y,inop){ // small lightning at (x,y) top-left ~13x15
 function renderStaffCanvas(){
   const a=ST.assign,S=2,W=1180,M=26,gap=8;
   const boxes=[];
-  AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:x.key,n:list.map(p=>nm(p.name)),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
+  AREAS.forEach(x=>{const list=(a.areas[x.key]||[]);boxes.push({t:x.key,n:list.map(p=>{const h=p._hours||(p.start&&p.end?p.start+"-"+p.end:"");const du=(!prevWorkLabel(p.emp)&&worksNext(p.emp))?dblUntil(p.emp):"";return nm(p.name)+(h?"  "+h:"")+(du?"  DBL→"+du:"");}),sub:x.min?list.length+"/"+x.min[ST.shift]:"disc"});});
   const dn=ST.dispatch&&ST.dispatch.name?nm(ST.dispatch.name):"";
   boxes.push({t:"DISPATCHER",n:[dn||"OPEN"],navy:true,open:!dn});
   boxes.push({t:"SUPERVISORS",n:ST.supers.map(nm)});
@@ -1107,7 +1112,8 @@ function renderStaffCanvas(){
           ctx.font=FA("800 9px");ctx.fillStyle="#90a0ad";ctx.textAlign="left";ctx.fillText(role,x+7,yk);
           const p=cr[role];if(!p){ctx.fillStyle="#cdd5dc";ctx.font=FA("600 12px");ctx.fillText("—",x+62,yk);return;}
           const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
-          const tag=pw||(fwd?"DBL":"");
+          const du=fwd?dblUntil(p.emp):"";
+          const tag=pw||(fwd?(du?"DBL "+du:"DBL"):"");
           ctx.font=FA("700 13px");const _pn=nm(p.name);const nmw=ctx.measureText(_pn).width;ctx.fillStyle="#1c2530";ctx.fillText(clip(_pn,tw-(tag?180:150),FA("700 13px")),x+62,yk);
           ctx.font=FA("600 10px");ctx.fillStyle="#90a0ad";ctx.fillText(p.start+"-"+p.end,x+62+Math.min(nmw,tw-(tag?182:152))+7,yk);
           if(tag){ctx.font=FA("800 8px");ctx.fillStyle=pw?"#7a3287":"#0b3d63";ctx.textAlign="right";ctx.fillText(tag,x+tw-6,yk);ctx.textAlign="left";} });
@@ -1241,6 +1247,19 @@ function logManpower(){
 let logSel=null;
 // deleting past manpowers is off by default — enabled via Settings (shared app setting)
 function logDeleteAllowed(){ try{ const d=Store.getJSON("elt.data.v1",null); return !!(d&&d.settings&&d.settings.allowLogDelete); }catch(_){ return false; } }
+function settingsPass(){ try{ const d=Store.getJSON("elt.data.v1",null); return (d&&d.settings&&d.settings.passcode)||""; }catch(_){ return ""; } }
+// a logged manpower may only be reopened by its creator (their code) or the settings passcode
+async function unlockLogEdit(entry){
+  const creator=(entry&&entry.by)||"";
+  if(AUTH&&creator&&normName(AUTH.name)===normName(creator))return true;   // the creator is signed in
+  const who=creator?nm(creator)+"'s":"this";
+  const code=prompt(who+" manpower — enter "+(creator?nm(creator)+"'s code":"the")+" or the settings passcode to edit:");
+  if(code===null)return false;
+  const pass=settingsPass();
+  const okOwner=creator?await checkCode(creator,code):false;
+  if(okOwner||(pass&&code.trim()===pass))return true;
+  alert("Incorrect code."); return false;
+}
 function rLogs(){
   if(!logSel)syncLogs();
   const list=loadLog();
@@ -1256,7 +1275,7 @@ function rLogs(){
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button>${logDeleteAllowed()?'<button class="btn ghost" id="logDel">Delete</button>':''}</div>`);
     $("#logBack").onclick=()=>{logSel=null;render();};
     $("#logDel")?.addEventListener("click",()=>{ if(!confirm("Delete this past manpower? It will be removed for the whole team."))return; delRow(logSel);saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render(); });
-    $("#logEdit")?.addEventListener("click",()=>{ applySnapshot(e.snap); ST._tugSeeded=true; logSel=null; ST.step="assign"; render(); }); // reopen the saved board to edit (re-log to overwrite)
+    $("#logEdit")?.addEventListener("click",async()=>{ if(!(await unlockLogEdit(e)))return; applySnapshot(e.snap); ST._tugSeeded=true; logSel=null; ST.step="assign"; render(); }); // reopen the saved board to edit (re-log to overwrite)
     $("#logImg")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetImage()));
     $("#logTxt")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetText()));
     $("#logShare")?.addEventListener("click",()=>withSnapshot(e.snap,()=>shareSheets()));
