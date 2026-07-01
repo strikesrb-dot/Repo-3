@@ -229,7 +229,9 @@ function prevWorkShort(emp){ const l=prevWorkLabel(emp); return l?l.replace(/^Wo
 const NEXT_SHIFT={AM:"PM",PM:"NH",NH:"AM"};
 function worksNext(emp){ const nx=NEXT_SHIFT[ST.shift]; if(!nx||!emp)return false;
   let ov=0; (ST.bodies||[]).filter(b=>b.emp===emp).forEach(b=>{const p=ivl(b.start,b.end); if(p)ov+=ovl(p,SHIFT_CORE[nx]);});
-  return Math.min(ov,480)>=45; }
+  // must work a real chunk of the next shift to count as a double — someone whose shift just
+  // spills ~1h past into the next window (e.g. 14:00–22:00 → 1h of Nighthawk) is NOT a double
+  return Math.min(ov,480)>120; }
 // on a double = finishing the previous shift OR rolling into the next one
 function onDouble(emp){ return !!emp&&(worksNext(emp)||!!prevWorkLabel(emp)); }
 // end time of a forward double (when they're on until), from the combined work window.
@@ -908,24 +910,26 @@ function rAssign(){
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
   // tugs grouped
+  // compact "strip": one slim box per tug — status shown as a coloured left edge, Driver/Observer
+  // side-by-side, controls inline. Packs ~2× the tugs per screen vs the old stacked cards.
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
     const stCls=t.oos?'st-oos':(t.gpu==='inop'?'st-inop':'st-ready');  // follow GPU/OOS color logic
-    return `<div class="tcard ${stCls} ${t.oos?'oos':''} ${t.gpu==='inop'?'gpinop':''}">
-      <div class="thdr"><span class="thdr-l">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span>
-        <span class="thdr-r">${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}
-        <button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button>
-        <button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button></span></div>
-      ${t.oos?`<div class="oosbar"><span class="haz">✕</span> OUT OF SERVICE</div>`:
-        `<div class="trow ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><i>DRIVER</i>${slotName(crew.DRIVER)}</div>
-         <div class="trow ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><i>OBSERVR</i>${slotName(crew.OBSERVR)}</div>`}
+    const ctl=`${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}<button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button><button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button>`;
+    return `<div class="tstrip ${stCls} ${t.oos?'oos':''}">
+      <div class="ts-top"><span class="ts-id">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}${ty?`<span class="ts-ty">${ty}</span>`:''}</span><span class="ts-ctl">${ctl}</span></div>
+      ${t.oos?`<div class="ts-oos"><span class="haz">✕</span> OUT OF SERVICE</div>`:
+        `<div class="ts-crew">
+          <div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><b>D</b>${slotName(crew.DRIVER)}</div>
+          <div class="ts-slot ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><b>O</b>${slotName(crew.OBSERVR)}</div>
+        </div>`}
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
-  const mutedCard=id=>`<div class="tcard muted" data-add="${id}"><div class="thdr"><span class="thdr-l">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span><span class="muse">+ add</span></div><div class="muted-b">Not in service · tap to add</div></div>`;
+  const mutedCard=id=>`<div class="tstrip muted" data-add="${id}"><span class="ts-id">STUG ${id}${ELECTRIC.has(id)?'<i>E</i>':''}</span><span class="muse">＋ add</span></div>`;
   const tugGroups=TUG_GROUPS.map(g=>{
     const ids=showUnusedTugs?g.ids:g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
     if(!ids.length)return "";
     const cells=ids.map(id=>{const t=tugState(id);return (t.running||t.oos)?tugCard(id):mutedCard(id);});
-    return `<div class="tug-gtitle">STUG ${g.label}${tugType(g.ids[0])?` · ${tugType(g.ids[0])}`:''}</div><div class="tug-grid">${cells.join("")}</div>`;
+    return `<div class="tug-gtitle">STUG ${g.label}${tugType(g.ids[0])?` · ${tugType(g.ids[0])}`:''}</div><div class="tug-strips">${cells.join("")}</div>`;
   }).join("")||'<p class="hint" style="margin:4px 0">No tugs in service — show unused to add one.</p>';
   const unusedN=TUGS.filter(id=>tugState(id).unset).length;
   const tugToggle=unusedN?`<button class="btn ghost sm" id="toggleUnused" style="margin-top:10px;width:auto">${showUnusedTugs?'Hide unused tugs':'＋ Show '+unusedN+' unused tug'+(unusedN>1?'s':'')}</button>`:'';
@@ -981,12 +985,12 @@ function rAssign(){
     else{ const m=pool.find(b=>normName(b.name)===normName(v)); ST.dispatch=v?{name:v,emp:m?m.emp:"",custom:false}:{name:"",emp:"",custom:false}; }
     if(ST.dispatch&&ST.dispatch.name)logAct("Set dispatcher",nm(ST.dispatch.name)); render(); });
   $("#dispCustom")?.addEventListener("input",e=>{ ST.dispatch={name:e.target.value,emp:"",custom:true}; });
-  $$('#staffRoot .trow').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
+  $$('#staffRoot .ts-slot').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
     if(t[role]){const p=t[role];t[role]=null;SEL=p.emp;logAct("Removed from STUG "+id,nm(p.name)+" · "+role);render();return;}
     const who=selName(); place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); if(who)logAct("Assigned to STUG "+id,who+" · "+role); }); // tap filled slot = pick up & move
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
-  $$('#staffRoot .tcard.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
+  $$('#staffRoot .tstrip.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
   $("#toggleUnused")?.addEventListener("click",()=>{ showUnusedTugs=!showUnusedTugs; render(); });
   $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; const who=selName(); place(p=>{ if(!ST.assign.areas[k].some(x=>x.emp===p.emp))ST.assign.areas[k].push(p); }); if(who)logAct("Assigned to "+k,who); });

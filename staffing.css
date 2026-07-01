@@ -446,11 +446,42 @@
 .sec-mv{border:1px solid var(--line);background:#fff;border-radius:7px;width:26px;height:24px;font-size:11px;font-weight:800;color:var(--navy);cursor:pointer;line-height:1}
 .sec-mv:active{transform:scale(.9)}
 /* density → responsive card min-width (beats the column media-queries) */
-#staffRoot .asg2-board.dens-compact .tug-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
-#staffRoot .asg2-board.dens-normal .tug-grid{grid-template-columns:repeat(auto-fill,minmax(215px,1fr))}
-#staffRoot .asg2-board.dens-large .tug-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+#staffRoot .asg2-board.dens-compact .tug-strips{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+#staffRoot .asg2-board.dens-normal .tug-strips{grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+#staffRoot .asg2-board.dens-large .tug-strips{grid-template-columns:repeat(auto-fill,minmax(430px,1fr))}
 #staffRoot .asg2-board.dens-compact .area-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 #staffRoot .asg2-board.dens-normal .area-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 #staffRoot .asg2-board.dens-large .area-grid{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
-.asg2-board.dens-compact .trow{padding:6px 8px;font-size:12px}
-.asg2-board.dens-compact .thdr{padding:4px 8px;font-size:12px}
+
+/* ===== compact tug strips (redesigned assign board) ===== */
+.tug-strips{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));align-items:start}
+.tstrip{border:1.5px solid var(--line);border-left-width:5px;border-radius:10px;overflow:hidden;background:#fff}
+.tstrip.st-ready{border-left-color:#1e7d46}
+.tstrip.st-inop{border-left-color:#e0a52e}
+.tstrip.st-oos{border-left-color:#c0271e}
+.tstrip.oos{opacity:.75}
+.ts-top{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px 7px 5px 9px}
+.ts-id{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:900;color:var(--navy);min-width:0}
+.ts-id i{font-style:normal;background:#0b3d63;color:#fff;border-radius:3px;font-size:8px;padding:1px 4px;font-weight:900}
+.ts-ty{font-weight:700;font-size:9px;letter-spacing:.03em;color:var(--muted);text-transform:uppercase}
+.ts-ctl{display:flex;align-items:center;gap:3px;flex:none}
+.ts-ctl .ticon{border:none;border-radius:6px;width:26px;height:23px;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;background:#eef1f4;color:#5a6772;line-height:0}
+.ts-ctl .ticon:active{transform:scale(.9)}
+.ts-ctl .ticon svg{display:block}
+.ts-ctl .gpubtn.ok{color:#1e7d46}
+.ts-ctl .gpubtn.inop{color:#fff;background:#a8740c}
+.ts-ctl .toos.isoos{width:auto;padding:0 8px;font-size:10px;font-weight:900;background:#c0271e;color:#fff}
+.ts-ctl .thide{color:#9aa6b1}
+.ts-crew{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #eef1f4}
+.ts-slot{display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;min-width:0;font-size:12.5px}
+.ts-slot+.ts-slot{border-left:1px solid #eef1f4}
+.ts-slot.full{background:#f6faf7}
+.ts-slot>b{font-style:normal;font-size:9.5px;font-weight:900;color:var(--muted);flex:none;width:11px;text-align:center}
+.ts-slot .slot-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ts-slot .slot-t{font-size:9.5px;color:var(--muted);font-weight:700;margin-left:auto;flex:none;text-align:right;padding-left:4px}
+.ts-oos{padding:8px;text-align:center;font-size:11px;font-weight:800;color:#c0271e;letter-spacing:.04em;border-top:1px solid #eef1f4;background:repeating-linear-gradient(45deg,#fbeceb,#fbeceb 8px,#f7dedb 8px,#f7dedb 16px)}
+.ts-oos .haz{color:#fff;background:#c0271e;border-radius:4px;padding:0 5px;margin-right:4px;font-weight:900}
+.tstrip.muted{opacity:.5;border-style:dashed;border-left-style:solid;border-left-color:#c3ccd4;background:#fafbfc;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px}
+.tstrip.muted:active{transform:scale(.99);opacity:.7}
+.tstrip.muted .ts-id{color:#7a8792}
+.tstrip.muted .muse{font-size:10px;font-weight:800;color:#7a8792;flex:none}
