@@ -216,7 +216,7 @@ function prevWorkLabel(emp){
   if(!blocks.length) return "";
   let ov=0; blocks.forEach(b=>{const p=ivl(b.start,b.end); if(p) ov+=ovl(p,SHIFT_CORE[prev]);});
   ov=Math.min(ov,480);
-  if(ov<45) return "";
+  if(ov<=60) return "";   // a ≤1h tail (shift drift) doesn't count as having worked the prior shift
   const full=ov>=360;
   if(full) return prev==="NH" ? "Worked last night" : "Worked "+prev;
   const win=prevWorkWindow(emp);
