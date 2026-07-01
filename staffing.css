@@ -518,10 +518,27 @@
 .theme-minimal .tug-gtitle{color:#9aa6b1}
 
 /* ============ SECTION HUB — Dispatch stays; Tugs / Remotes each fill the pane ============ */
-.hub-disp{display:flex;align-items:center;gap:12px;padding:9px 12px;margin-bottom:10px}
-.hub-disp-l{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);flex:none}
+.hub-disp{display:flex;align-items:center;gap:10px;padding:5px 10px;margin-bottom:8px}
+.hub-disp-l{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);flex:none}
 .hub-disp .disp-box{flex:1;min-width:0}
-.hub-disp .disp-box select{margin:0}
+.hub-disp .disp-box select{margin:0;padding:7px 10px;font-size:13px}
+.by-who{font-size:13px;font-weight:700;color:var(--muted)}
+
+/* ---- pool cubes: one A–Z grid, colour-coded by shift type ---- */
+.pool-legend{display:flex;flex-wrap:wrap;gap:10px;margin:2px 0 9px}
+.pool-legend .lg{font-size:11px;font-weight:800;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+.pool-legend .lg::before{content:"";width:11px;height:11px;border-radius:3px;display:inline-block}
+.pool-legend .lg-std::before{background:#0d9488}
+.pool-legend .lg-non::before{background:#e5484d}
+.pool-legend .lg-part::before{background:#262b30;border:1.5px dashed #262b30}
+.pool-cubes{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px}
+#staffRoot .pool-cubes .abody{width:100%;min-width:0}
+/* shift-type colour edge + faint tint (kept subtle so names stay readable) */
+.abody.sh-std{border-color:#0d9488;background:#f0fbfa;box-shadow:inset 4px 0 0 #0d9488}
+.abody.sh-nonstd{border-color:#e5484d;background:#fef2f1;box-shadow:inset 4px 0 0 #e5484d}
+.abody.sh-part{border-color:#262b30;border-style:dashed;background:#f5f6f7;box-shadow:inset 4px 0 0 #262b30}
+/* selection still wins visually */
+.abody.sh-std.sel,.abody.sh-nonstd.sel,.abody.sh-part.sel{background:var(--navy);border-color:var(--navy);border-style:solid;box-shadow:0 3px 10px rgba(11,61,99,.3)}
 .sec-hub{display:flex;gap:6px;margin-bottom:10px}
 .hub-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:11px 14px;font-size:15px;font-weight:800;color:var(--muted);cursor:pointer}
 .hub-tab.on{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 4px 14px rgba(11,61,99,.22)}

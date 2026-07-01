@@ -299,6 +299,14 @@ function shiftHours(b,shift){
   else { ds=a; de=Math.min(z,a+480); }                 // forward/normal → show their first ~8h
   return fmtMin(ds)+"-"+fmtMin(de);
 }
+// the "standard" clock-in for each shift; anyone else on a full shift is "non-standard"
+const STD_START={AM:"05:00",PM:"13:00",NH:"21:00"};
+// colour class for a pool cube: partial (black/dashed) · standard (teal) · non-standard (red)
+function poolShiftClass(b){
+  if((b.ov||0)<FULL_MIN) return "sh-part";
+  const start=(b.hours||"").split("-")[0]||b.start||"";
+  return start===STD_START[ST.shift] ? "sh-std" : "sh-nonstd";
+}
 /* per-shift pool (deduped by emp within shift) */
 function poolFor(shift){
   const out=[],seen=new Set();
@@ -884,7 +892,7 @@ function rAssign(){
     const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
     const isSel=SEL===b.emp, partial=(b.ov||0)<FULL_MIN, ac=empAreaCount(b.emp);
-    return `<button class="abody ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="${early?'early':''}">${esc(nm(b.name))}</span>${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
+    return `<button class="abody ${poolShiftClass(b)} ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="${early?'early':''}">${esc(nm(b.name))}</span>${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const shgrp=(key,label,list)=>{const col=poolCollapsed.has(key);
     return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(key)}"><span class="shg-ca">${col?'▸':'▾'}</span>${label}<span>${list.length}</span></div><div class="abody-wrap">${list.map(chip).join("")}</div></div>`;};
   const byName=list=>list.slice().sort((a,b)=>normName(a.name).localeCompare(normName(b.name)));
@@ -896,13 +904,9 @@ function rAssign(){
   let poolHTML;
   if(!shown.length){ poolHTML=avail.length?'<span class="hint">No one matches this filter.</span>':'<span class="hint">All assigned.</span>'; }
   else {
-    const grp={};shown.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
-    const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
-    // shift groups laid out side-by-side as columns (names sorted A–Z within each)
-    poolHTML=`<div class="pool-cols">`+gkeys.map(st=>{const list=byName(grp[st]);
-      const endStr=grp[st].reduce((mx,x)=>{const e=(x.hours||"").split("-")[1]||"";return toMin(e)>toMin(mx)?e:mx;},"00:00");
-      return shgrp(st,`${esc(st)}-${esc(endStr)}`,list);
-    }).join("")+`</div>`;
+    // one combined grid of cubes, A–Z; colour = standard (teal) · non-standard (red) · partial (black/dashed)
+    const legend=`<div class="pool-legend"><span class="lg lg-std">Standard</span><span class="lg lg-non">Non-standard</span><span class="lg lg-part">Partial</span></div>`;
+    poolHTML=legend+`<div class="pool-cubes">`+byName(shown).map(chip).join("")+`</div>`;
   }
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
@@ -963,7 +967,7 @@ function rAssign(){
     ? `<div class="card pad hub-body"><div class="area-grid">${areaCards}</div></div>`
     : `<div class="card pad hub-body">${tugGroups}${tugToggle}</div>`;
   ROOT.innerHTML=`<div class="board-theme theme-${cfg.theme}">
-    <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
+    <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}${AUTH&&AUTH.name?` <span class="by-who">· by ${esc(nm(AUTH.name))}</span>`:''}</h2><span class="cnt">${avail.length} left</span></div>
       <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or remote slot.'}</p>
       ${missHTML}
       <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}</div>
