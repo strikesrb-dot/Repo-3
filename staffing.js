@@ -786,11 +786,12 @@ let showUnusedTugs=false;    // hide not-in-service tugs on the board unless tog
 let poolDoubles=false;       // filter the pool to forward doubles only
 let poolWorkedPrior=false;   // filter the pool to people who worked the previous shift
 let tugsOpen=true, areasOpen=true;   // collapsible board sections
+let asgSec="tugs";                   // hub: which section fills the board pane ('tugs' | 'areas')
 // per-device board layout: density + section order (the "adjust to my like" controls)
 const BOARD_THEMES=["front","modern","minimal"];
 const THEME_LABEL={front:"Front end",modern:"Modern",minimal:"Minimal"};
 const LAYOUT_NAME={1:"Sidebar",2:"Pool right",3:"Pool top",4:"Pool bottom",5:"Wide pool",6:"Narrow pool",7:"Split board",8:"Tug list",9:"Board first",10:"Single stack"};
-function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; const lay=(+c.layout>=1&&+c.layout<=10)?+c.layout:1; return {density:c.density||"normal",order:ord,theme:BOARD_THEMES.includes(c.theme)?c.theme:"front",layout:lay}; }
+function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; return {density:c.density||"normal",order:ord,theme:BOARD_THEMES.includes(c.theme)?c.theme:"front"}; }
 // a boolean control drawn in the active theme's toggle style (minimal = flat pill, else sliding switch)
 function tggl(id,on,label){ const min=boardCfg().theme==='minimal';
   return min
@@ -800,10 +801,6 @@ function tggl(id,on,label){ const min=boardCfg().theme==='minimal';
 function themePicker(){ const th=boardCfg().theme;
   return `<div class="theme-row"><span class="dens-l">Screen style</span>`+
     BOARD_THEMES.map(t=>`<button class="theme-btn ${th===t?'on':''}" data-theme="${t}">${esc(THEME_LABEL[t])}</button>`).join("")+`</div>`; }
-// 10 arrangement presets — same components, rearranged (pool position, section flow, tug packing)
-function layoutPicker(){ const ly=boardCfg().layout;
-  let btns=""; for(let n=1;n<=10;n++)btns+=`<button class="lay-btn ${ly===n?'on':''}" data-lay="${n}" title="${esc(LAYOUT_NAME[n])}">${n}</button>`;
-  return `<div class="lay-row"><span class="dens-l">Layout</span>${btns}<span class="lay-name">${esc(LAYOUT_NAME[ly])}</span></div>`; }
 function setBoardCfg(patch){ Store.setJSON("elt.staff.board",Object.assign(boardCfg(),patch)); }
 function moveSection(sec,dir){ const c=boardCfg(),o=c.order.slice(),i=o.indexOf(sec),j=i+dir; if(i<0||j<0||j>=o.length)return; const t=o[i];o[i]=o[j];o[j]=t; setBoardCfg({order:o}); render(); }
 // what still needs filling on the board — shown so the user always sees what's missing
@@ -953,19 +950,24 @@ function rAssign(){
   const miss=missingItems();
   const missHTML=miss.length?`<div class="asg-missing"><b>Still missing:</b> ${miss.map(m=>`<span>${esc(m)}</span>`).join("")}</div>`:`<div class="asg-missing ok">✓ Nothing outstanding — minimums met.</div>`;
   const cfg=boardCfg();
-  const secMove=sec=>`<span class="sec-move"><button class="sec-mv" data-mv="${sec}" data-dir="-1" title="Move up">▲</button><button class="sec-mv" data-mv="${sec}" data-dir="1" title="Move down">▼</button></span>`;
-  const secs={
-    dispatch:`<div class="card pad" data-sec="dispatch"><div class="sec-head"><div class="seg-section">DISPATCH (1 per shift)</div>${secMove("dispatch")}</div><div class="disp-box">${dispBox}</div></div>`,
-    tugs:`<div class="card pad" data-sec="tugs"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="tugs"><span class="sec-ca">${tugsOpen?'▾':'▸'}</span>TUGS — ${running} running</button>${secMove("tugs")}</div>${tugsOpen?`${tugGroups}${tugToggle}`:''}</div>`,
-    areas:`<div class="card pad" data-sec="areas"><div class="sec-head"><button class="seg-section sec-toggle" data-sec="areas"><span class="sec-ca">${areasOpen?'▾':'▸'}</span>REMOTES / AREAS</button>${secMove("areas")}</div>${areasOpen?`<div class="area-grid">${areaCards}</div>`:''}</div>`
-  };
-  ROOT.innerHTML=`<div class="board-theme theme-${cfg.theme} lay-${cfg.layout}">
+  // ---- section hub: Dispatch stays visible; Tugs / Remotes each get the full pane ----
+  const areasShort=AREAS.filter(a=>a.min&&(ST.assign.areas[a.key]||[]).length<(a.min[ST.shift]||0)).length;
+  const tugOpen=TUGS.filter(id=>{const t=tugState(id),c=ST.assign.tugs[id]||{};return t.running&&(!c.DRIVER||!c.OBSERVR);}).length;
+  const dispDone=!!(ST.dispatch&&ST.dispatch.name);
+  const dispSec=`<div class="card pad hub-disp"><span class="hub-disp-l">DISPATCH${dispDone?'':' <span class="bad">· open</span>'}</span><div class="disp-box">${dispBox}</div></div>`;
+  const hubBar=`<div class="sec-hub">`+
+    `<button class="hub-tab ${asgSec==='tugs'?'on':''}" data-hub="tugs">Tugs <span class="hub-n ${tugOpen?'bad':''}">${tugOpen?tugOpen+' open':running+' set'}</span></button>`+
+    `<button class="hub-tab ${asgSec==='areas'?'on':''}" data-hub="areas">Remotes <span class="hub-n ${areasShort?'bad':''}">${areasShort?areasShort+' short':'set'}</span></button>`+
+    `</div>`;
+  const activeSec=asgSec==='areas'
+    ? `<div class="card pad hub-body"><div class="area-grid">${areaCards}</div></div>`
+    : `<div class="card pad hub-body">${tugGroups}${tugToggle}</div>`;
+  ROOT.innerHTML=`<div class="board-theme theme-${cfg.theme}">
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
-      <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. Use <b>Multi Assign</b> to mark people for 2 areas.'}</p>
+      <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or remote slot.'}</p>
       ${missHTML}
-      <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}<span class="dens-hint">▲▼ on a section reorders it</span></div>
-      ${themePicker()}
-      ${layoutPicker()}</div>
+      <div class="dens-row"><span class="dens-l">Card size</span>${["compact","normal","large"].map(d=>`<button class="dens-btn ${cfg.density===d?'on':''}" data-dens="${d}">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}</div>
+      ${themePicker()}</div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
@@ -973,7 +975,7 @@ function rAssign(){
         <div class="filt-row">${tggl('dblFirst',poolDoubles,'Doubles')}${tggl('priorFirst',poolWorkedPrior,'Worked prior')}</div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
-      <div class="asg2-board dens-${cfg.density}">${cfg.order.map(k=>secs[k]).join("")}</div>
+      <div class="asg2-board dens-${cfg.density}">${dispSec}${hubBar}${activeSec}</div>
     </div>
     ${back("reconcile","Tugs")}
     <div class="asg-footspace"></div>
@@ -990,11 +992,9 @@ function rAssign(){
   $("#autoMulti")?.addEventListener("click",()=>{ autoMode=autoMode==='multi'?null:'multi'; autoPick=[]; SEL=null; render(); });
   $("#dblFirst")?.addEventListener("click",()=>{ poolDoubles=!poolDoubles; render(); });
   $("#priorFirst")?.addEventListener("click",()=>{ poolWorkedPrior=!poolWorkedPrior; render(); });
-  $$('#staffRoot .sec-toggle').forEach(b=>b.onclick=()=>{ if(b.dataset.sec==='tugs')tugsOpen=!tugsOpen; else areasOpen=!areasOpen; render(); });
-  $$('#staffRoot .sec-mv').forEach(b=>b.onclick=e=>{ e.stopPropagation(); moveSection(b.dataset.mv,+b.dataset.dir); });
+  $$('#staffRoot .hub-tab').forEach(b=>b.onclick=()=>{ asgSec=b.dataset.hub; render(); });
   $$('#staffRoot .dens-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({density:b.dataset.dens}); render(); });
   $$('#staffRoot .theme-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({theme:b.dataset.theme}); render(); });
-  $$('#staffRoot .lay-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({layout:+b.dataset.lay}); render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);
