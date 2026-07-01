@@ -301,9 +301,15 @@ function shiftHours(b,shift){
 }
 // the "standard" clock-in for each shift; anyone else on a full shift is "non-standard"
 const STD_START={AM:"05:00",PM:"13:00",NH:"21:00"};
+// how long they actually WORK this shift (from their displayed window) — not core overlap, so a
+// non-standard/offset shift like 12:00–20:00 (8h) reads as a full shift, not a partial
+function workedMin(b){ const h=b&&b.hours?String(b.hours):""; const p=h.split("-");
+  if(p.length===2){ let a=mins(p[0]),z=mins(p[1]); if(a!=null&&z!=null){ if(z<=a)z+=1440; return z-a; } }
+  return (b&&b.ov)||0; }
+function isPartial(b){ return workedMin(b)<FULL_MIN; }   // <7h worked = partial
 // colour class for a pool cube: partial (black/dashed) · standard (teal) · non-standard (red)
 function poolShiftClass(b){
-  if((b.ov||0)<FULL_MIN) return "sh-part";
+  if(isPartial(b)) return "sh-part";
   const start=(b.hours||"").split("-")[0]||b.start||"";
   return start===STD_START[ST.shift] ? "sh-std" : "sh-nonstd";
 }
@@ -730,7 +736,7 @@ function rPool(){
   const disp=dispatchCandidates(ST.shift);
   const dispLine=disp.length?disp.map(d=>`${esc(nm(d.name))}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
   // bucket by how much of the shift core each person actually works
-  const tier=b=>{const ov=b.ov||0; return ov>=FULL_MIN?'full':(ov>60?'part':'one');};   // ≥7h = full, else partial
+  const tier=b=>{const m=workedMin(b); return m>=FULL_MIN?'full':(m>60?'part':'one');};   // ≥7h worked = full, else partial
   const row=b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const tr=tier(b);
     return `<div class="prow prow-tap ${tr!=='full'?'partial':''} ${tr==='one'?'onehour':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
       ${fwd?`<span class="tag db">${esc(dblLabel(b.emp))}</span>`:''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
@@ -891,7 +897,7 @@ function rAssign(){
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
-    const isSel=SEL===b.emp, partial=(b.ov||0)<FULL_MIN, ac=empAreaCount(b.emp);
+    const isSel=SEL===b.emp, partial=isPartial(b), ac=empAreaCount(b.emp);
     return `<button class="abody ${poolShiftClass(b)} ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="${early?'early':''}">${esc(nm(b.name))}</span>${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const shgrp=(key,label,list)=>{const col=poolCollapsed.has(key);
     return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(key)}"><span class="shg-ca">${col?'▸':'▾'}</span>${label}<span>${list.length}</span></div><div class="abody-wrap">${list.map(chip).join("")}</div></div>`;};

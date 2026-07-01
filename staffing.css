@@ -531,8 +531,12 @@
 .pool-legend .lg-std::before{background:#0d9488}
 .pool-legend .lg-non::before{background:#e5484d}
 .pool-legend .lg-part::before{background:#262b30;border:1.5px dashed #262b30}
-.pool-cubes{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px}
-#staffRoot .pool-cubes .abody{width:100%;min-width:0}
+.pool-cubes{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
+#staffRoot .pool-cubes .abody{width:100%;min-width:0;aspect-ratio:1;align-items:center;justify-content:center;text-align:center;gap:3px;padding:6px}
+.pool-cubes .abody>span:first-child{font-size:12px;line-height:1.15;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.pool-cubes .abody span{margin-top:0;font-size:10.5px}
+.pool-cubes .abody .prt{display:none}          /* colour already shows partial — drop the redundant text badge */
+.pool-cubes .abody em{margin-left:0}
 /* shift-type colour edge + faint tint (kept subtle so names stay readable) */
 .abody.sh-std{border-color:#0d9488;background:#f0fbfa;box-shadow:inset 4px 0 0 #0d9488}
 .abody.sh-nonstd{border-color:#e5484d;background:#fef2f1;box-shadow:inset 4px 0 0 #e5484d}
