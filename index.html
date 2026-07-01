@@ -357,6 +357,15 @@
   .hist-top{font-size:14px;color:var(--ink)}
   .hist-meta{margin-top:2px;font-size:12px;color:var(--muted)}
   .hist-reason{margin-top:3px;font-size:12.5px;color:#b3251d;font-weight:600}
+  .gse-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
+  .gse-cat{border:1.5px solid var(--line);border-radius:14px;padding:15px 13px;background:#fff;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+  .gse-cat:active{transform:scale(.98)}
+  .gse-cat.has{border-color:#e7a59f;background:#fdeceb}
+  .gse-cat .gc-n{font-weight:800;color:var(--ink);font-size:15px}
+  .gse-cat .gc-c{font-size:13px;font-weight:700;color:var(--good)}
+  .gse-cat.has .gc-c{color:#b3251d}
+  .gse-cat .gc-c b{font-size:16px}
+  .gse-cat .gc-tot{font-size:11.5px;color:var(--muted)}
   .gse-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
   .gse-row{border:1px solid var(--line);border-left:4px solid var(--danger);border-radius:12px;padding:11px 13px;background:#fff;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .gse-main{flex:1;min-width:0}
@@ -1105,7 +1114,7 @@ function goTab(t){showTab(t);
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[],by:(data.invLastBy||"")};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();invReason=new Map();renderInventory();}
   if(t==="movement"){renderMovement();}
   if(t==="eos"){renderEos();}
-  if(t==="gse"){renderGse();}
+  if(t==="gse"){gseCat=null;renderGse();}
   if(t==="staffing"){window.STAFF&&window.STAFF.open();}
   if(t==="briefing"){window.BRIEF&&window.BRIEF.open();}
   if(t==="preview"){window.PREVIEW&&window.PREVIEW.open();}
@@ -1140,7 +1149,7 @@ function renderSupCodes(){
 }
 $("#addBtn").addEventListener("click",()=>requireUnlock(()=>openEdit(null)));
 function updateBackBtn(){$("#homeBtn").hidden=(curTab==="hub");updateFloatBack();}
-function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&$("#wizFoot").hidden);}
+function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&curTab!=="staffing"&&$("#wizFoot").hidden);}
 // leaving a half-built manpower board should warn (it auto-saves as a draft) and reset it so you return to the start
 function goHome(){
   if(curTab==="staffing"&&window.STAFF&&window.STAFF.inProgress&&window.STAFF.inProgress()){
@@ -1165,6 +1174,7 @@ function goBack(){
   if(curTab==="inventory")return invStepBack();
   if(curTab==="park")return parkBack();
   if(curTab==="secure")return secBack();
+  if(curTab==="gse"&&gseCat){gseCat=null;renderGse();return;}
   if(curTab==="staffing")return goHome();
   showTab("hub");}
 $("#floatBack").addEventListener("click",goBack);
@@ -1949,22 +1959,48 @@ function gseDownloadText(){const list=gseList();const L=["GSE OUT OF SERVICE —
   if(!list.length)L.push("(none out of service)");
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download=`GSE-OOS-${todayISO()}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
+let gseCat=null;  // null = category hub; otherwise the equipment type being viewed
+function gseCats(){ // every equipment category + its counts
+  const oos={},tot={};
+  data.equipment.forEach(e=>{const t=e.type||"(uncategorized)";tot[t]=(tot[t]||0)+1;if(e.oos)oos[t]=(oos[t]||0)+1;});
+  const names=[...new Set([...(data.types||[]),...Object.keys(tot)])];
+  return names.map(t=>({type:t,oos:oos[t]||0,total:tot[t]||0})).filter(c=>c.total>0).sort((a,b)=>(b.oos-a.oos)||a.type.localeCompare(b.type));
+}
 function renderGse(){const r=$("#gseRoot");if(!r)return;
-  const list=gseList();
+  if(gseCat!=null)return renderGseCat(r);
+  const cats=gseCats(), totalOos=data.equipment.filter(e=>e.oos).length;
+  const tiles=cats.map(c=>`<button class="gse-cat ${c.oos?'has':''}" data-cat="${esc(c.type)}">
+      <span class="gc-n">${esc(c.type)}</span>
+      <span class="gc-c">${c.oos?`<b>${c.oos}</b> out of service`:'all in service'}</span>
+      <span class="gc-tot">${c.total} unit${c.total===1?"":"s"}</span></button>`).join("")
+    ||`<p class="hint" style="padding:20px;text-align:center">No equipment yet.</p>`;
+  r.innerHTML=`<div class="card pad">
+    <div class="pool-head"><h2 class="staff-h" style="margin:0">GSE — Out of Service</h2><span class="cnt">${totalOos}</span></div>
+    <p class="hint" style="margin:2px 0 10px">Pick a category to see what's out of service and why. Tap a unit's category to drill in.</p>
+    <div class="gse-cats">${tiles}</div>
+    ${totalOos?`<div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="gseTxt">↓ Text list (all)</button></div>`:""}</div>`;
+  $$("#gseRoot .gse-cat").forEach(b=>b.onclick=()=>{gseCat=b.dataset.cat;renderGse();});
+  $("#gseTxt")?.addEventListener("click",gseDownloadText);
+}
+function renderGseCat(r){
+  const cat=gseCat;
+  const inCat=e=>(e.type||"(uncategorized)")===cat;
+  const list=gseList().filter(inCat);
   const rows=list.map(e=>{const ev=eqHistory(e).find(m=>m.oos);
     return `<li class="gse-row" data-id="${esc(e.id)}"><div class="gse-main">
-      <div class="gse-tag">${esc(e.tag||"(no tag)")}${e.type?`<span class="gse-type">${esc(e.type)}</span>`:""}</div>
+      <div class="gse-tag">${esc(e.tag||"(no tag)")}</div>
       <div class="gse-reason">⊘ ${esc(e.oosReason||"no reason recorded — tap Reason")}</div>
       <div class="gse-meta">${e.location?esc(e.location):"no location"}${ev?` · since ${esc(fmtDate(ev.date))}${ev.by?" · "+esc(nm(ev.by)):""}`:""}</div></div>
       <div class="gse-acts"><button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn good sm gse-back" data-id="${esc(e.id)}">✓ In service</button></div></li>`;}).join("")
-    ||`<p class="hint" style="text-align:center;padding:22px">Nothing is out of service right now.</p>`;
+    ||`<p class="hint" style="text-align:center;padding:22px">Nothing in ${esc(cat)} is out of service.</p>`;
   r.innerHTML=`<div class="card pad">
-    <div class="pool-head"><h2 class="staff-h" style="margin:0">GSE — Out of Service</h2><span class="cnt">${list.length}</span></div>
-    <p class="hint" style="margin:2px 0 10px">Every unit currently out of service and why. Add one below, or mark units during Do Inventory.</p>
-    <label class="inv-by"><span>Mark a unit out of service</span><input id="gseAdd" placeholder="Type a tag…" autocomplete="off" list="gseTags" /></label>
-    <datalist id="gseTags">${data.equipment.filter(e=>!e.oos).map(e=>`<option value="${esc(e.tag)}">`).join("")}</datalist>
-    <ul class="gse-list">${rows}</ul>
-    ${list.length?`<div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="gseTxt">↓ Text list</button></div>`:""}</div>`;
+    <button class="btn ghost sm" id="gseHome" style="width:auto;margin-bottom:8px">‹ All categories</button>
+    <div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(cat)} — Out of Service</h2><span class="cnt">${list.length}</span></div>
+    <p class="hint" style="margin:2px 0 10px">Add a ${esc(cat)} unit to out-of-service, or mark units during Do Inventory.</p>
+    <label class="inv-by"><span>Mark a ${esc(cat)} unit out of service</span><input id="gseAdd" placeholder="Type a tag…" autocomplete="off" list="gseTags" /></label>
+    <datalist id="gseTags">${data.equipment.filter(e=>!e.oos&&inCat(e)).map(e=>`<option value="${esc(e.tag)}">`).join("")}</datalist>
+    <ul class="gse-list">${rows}</ul></div>`;
+  $("#gseHome").onclick=()=>{gseCat=null;renderGse();};
   $("#gseAdd").addEventListener("change",ev=>{const tag=ev.target.value.trim().toUpperCase();if(!tag)return;ev.target.value="";
     const eq=data.equipment.find(x=>(x.tag||"").toUpperCase()===tag);
     if(!eq){toast("No unit with that tag");return;}
@@ -1974,7 +2010,6 @@ function renderGse(){const r=$("#gseRoot");if(!r)return;
     pickReason(eq.tag,eq.oosReason||"",v=>{eq.oosReason=v;e_when(eq);save();renderGse();});});
   $$("#gseRoot .gse-back").forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
     if(confirm(`Return ${eq.tag||"this unit"} to service?`))setEqOos(eq.id,false,"");});
-  $("#gseTxt")?.addEventListener("click",gseDownloadText);
 }
 function e_when(e){e.updated=todayISO();e.when=Date.now();}
 function commitInv(){

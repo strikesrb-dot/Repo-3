@@ -427,3 +427,11 @@
 .priorgrp-wrap{border:1px solid #d6e4f1;background:#f3f8fc;border-radius:12px;padding:8px 10px 4px;margin-bottom:10px}
 .priorgrp-wrap .shgrp-h{color:#2b557e}
 .priorgrp-wrap .shgrp-h span{background:#dce9f5;color:#2b557e}
+/* what's-missing banner + collapsible board sections */
+.asg-missing{margin-top:8px;font-size:12.5px;font-weight:700;color:#8a4b00;background:#fff6e8;border:1px solid #f0d9a8;border-radius:10px;padding:7px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.asg-missing b{color:#8a4b00}
+.asg-missing span{background:#fff;border:1px solid #ecc98f;border-radius:999px;padding:1px 9px;font-weight:800;color:#9a5a00}
+.asg-missing.ok{color:#15622f;background:var(--good-bg);border-color:#bfe3cc}
+.seg-section.sec-toggle{display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;cursor:pointer;padding:0;text-align:left}
+.seg-section.sec-toggle .sec-ca{color:var(--navy);font-size:11px;width:12px}
+.seg-section.sec-toggle:active{opacity:.6}

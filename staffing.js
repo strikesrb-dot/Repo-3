@@ -777,8 +777,19 @@ function rReconcile(){
 let SEL=null; // selected pool entry key
 let poolCollapsed=new Set(); // collapsed staff hour-groups (by start time)
 let showUnusedTugs=false;    // hide not-in-service tugs on the board unless toggled
-let poolDoublesFirst=false;  // forward doubles into a priority block at the top
-let poolWorkedPrior=false;   // people who worked the previous shift into their own block
+let poolDoubles=false;       // filter the pool to forward doubles only
+let poolWorkedPrior=false;   // filter the pool to people who worked the previous shift
+let tugsOpen=true, areasOpen=true;   // collapsible board sections
+// what still needs filling on the board — shown so the user always sees what's missing
+function missingItems(){
+  const a=ST.assign; if(!a)return []; const out=[];
+  if(!ST.dispatch||!ST.dispatch.name)out.push("Dispatcher");
+  AREAS.forEach(ar=>{ if(ar.min){ const n=(a.areas[ar.key]||[]).length,need=ar.min[ST.shift]; if(n<need)out.push(ar.key+" "+n+"/"+need); } });
+  let eD=0,eO=0; TUGS.filter(id=>tugState(id).running).forEach(id=>{const c=a.tugs[id]||{};if(!c.DRIVER)eD++;if(!c.OBSERVR)eO++;});
+  if(eD)out.push(eD+" tug driver"+(eD>1?"s":""));
+  if(eO)out.push(eO+" observer"+(eO>1?"s":""));
+  return out;
+}
 /* auto-assign modes + multi-assign (one person → 2 places) */
 let autoMode=null;            // null | 'tug' | 'remote' | 'multi'
 let autoPick=[];             // emps multi-selected in tug/remote auto modes (ordered)
@@ -864,23 +875,19 @@ function rAssign(){
   const byName=list=>list.slice().sort((a,b)=>normName(a.name).localeCompare(normName(b.name)));
   const isFwd=b=>!prevWorkLabel(b.emp)&&worksNext(b.emp);   // forward double: rolls into the NEXT shift
   const isPrior=b=>!!prevWorkLabel(b.emp);                  // backward double: worked the PREVIOUS shift
+  // Doubles / Worked-prior are FILTERS (show only those) — they don't reorder the pool
+  let shown=avail;
+  if(poolDoubles||poolWorkedPrior) shown=avail.filter(b=>(poolDoubles&&isFwd(b))||(poolWorkedPrior&&isPrior(b)));
   let poolHTML;
-  if(!avail.length){ poolHTML='<span class="hint">All assigned.</span>'; }
+  if(!shown.length){ poolHTML=avail.length?'<span class="hint">No one matches this filter.</span>':'<span class="hint">All assigned.</span>'; }
   else {
-    const taken=new Set(); let blocks="";
-    if(poolDoublesFirst){ const d=avail.filter(b=>isFwd(b)&&!taken.has(b.emp)); d.forEach(b=>taken.add(b.emp));
-      if(d.length)blocks+=`<div class="dblgrp-wrap">${shgrp("__dbl",'★ Doubles · forward (into next shift)',byName(d))}</div>`; }
-    if(poolWorkedPrior){ const w=avail.filter(b=>isPrior(b)&&!taken.has(b.emp)); w.forEach(b=>taken.add(b.emp));
-      if(w.length)blocks+=`<div class="priorgrp-wrap">${shgrp("__prior",'◀ Worked prior shift',byName(w))}</div>`; }
-    const rest=avail.filter(b=>!taken.has(b.emp));
-    const grp={};rest.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
+    const grp={};shown.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
     const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
     // shift groups laid out side-by-side as columns (names sorted A–Z within each)
-    const restHTML=`<div class="pool-cols">`+gkeys.map(st=>{const list=byName(grp[st]);
+    poolHTML=`<div class="pool-cols">`+gkeys.map(st=>{const list=byName(grp[st]);
       const endStr=grp[st].reduce((mx,x)=>{const e=(x.hours||"").split("-")[1]||"";return toMin(e)>toMin(mx)?e:mx;},"00:00");
       return shgrp(st,`${esc(st)}-${esc(endStr)}`,list);
     }).join("")+`</div>`;
-    poolHTML=blocks+restHTML;
   }
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
@@ -925,19 +932,22 @@ function rAssign(){
   const unusedN=TUGS.filter(id=>tugState(id).unset).length;
   const tugToggle=unusedN?`<button class="btn ghost sm" id="toggleUnused" style="margin-top:10px;width:auto">${showUnusedTugs?'Hide unused tugs':'＋ Show '+unusedN+' unused tug'+(unusedN>1?'s':'')}</button>`:'';
   const running=TUGS.filter(id=>tugState(id).running).length;
+  const miss=missingItems();
+  const missHTML=miss.length?`<div class="asg-missing"><b>Still missing:</b> ${miss.map(m=>`<span>${esc(m)}</span>`).join("")}</div>`:`<div class="asg-missing ok">✓ Nothing outstanding — minimums met.</div>`;
   ROOT.innerHTML=`
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}</h2><span class="cnt">${avail.length} left</span></div>
-      <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. Use <b>Multi Assign</b> to mark people for 2 areas.'}</p></div>
+      <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or area slot. Use <b>Multi Assign</b> to mark people for 2 areas.'}</p>
+      ${missHTML}</div>
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
-        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button><button class="btn ghost sm ${poolDoublesFirst?'on':''}" id="dblFirst">★ Doubles first</button><button class="btn ghost sm ${poolWorkedPrior?'on':''}" id="priorFirst">◀ Worked prior</button></div>
+        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button><button class="btn ghost sm ${poolDoubles?'on':''}" id="dblFirst">★ Doubles</button><button class="btn ghost sm ${poolWorkedPrior?'on':''}" id="priorFirst">◀ Worked prior</button></div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
       <div class="asg2-board">
         <div class="card pad"><div class="seg-section">DISPATCH (1 per shift)</div><div class="disp-box">${dispBox}</div></div>
-        <div class="card pad"><div class="seg-section">TUGS — ${running} running</div>${tugGroups}${tugToggle}${(ST.assign.dblTugs||[]).length?` <button class="btn ghost sm" id="fillDbl" style="margin-top:10px;width:auto">⤵ Fill double tugs with doubles</button>`:''}</div>
-        <div class="card pad"><div class="seg-section">AREAS</div><div class="area-grid">${areaCards}</div></div>
+        <div class="card pad"><button class="seg-section sec-toggle" data-sec="tugs"><span class="sec-ca">${tugsOpen?'▾':'▸'}</span>TUGS — ${running} running</button>${tugsOpen?`${tugGroups}${tugToggle}${(ST.assign.dblTugs||[]).length?` <button class="btn ghost sm" id="fillDbl" style="margin-top:10px;width:auto">⤵ Fill double tugs with doubles</button>`:''}`:''}</div>
+        <div class="card pad"><button class="seg-section sec-toggle" data-sec="areas"><span class="sec-ca">${areasOpen?'▾':'▸'}</span>REMOTES / AREAS</button>${areasOpen?`<div class="area-grid">${areaCards}</div>`:''}</div>
       </div>
     </div>
     ${back("reconcile","Tugs")}
@@ -952,8 +962,9 @@ function rAssign(){
   $("#autoTug")?.addEventListener("click",()=>{ autoMode=autoMode==='tug'?null:'tug'; autoPick=[]; SEL=null; render(); });
   $("#autoRemote")?.addEventListener("click",()=>{ autoMode=autoMode==='remote'?null:'remote'; autoStep=0; autoPick=[]; SEL=null; render(); });
   $("#autoMulti")?.addEventListener("click",()=>{ autoMode=autoMode==='multi'?null:'multi'; autoPick=[]; SEL=null; render(); });
-  $("#dblFirst")?.addEventListener("click",()=>{ poolDoublesFirst=!poolDoublesFirst; render(); });
+  $("#dblFirst")?.addEventListener("click",()=>{ poolDoubles=!poolDoubles; render(); });
   $("#priorFirst")?.addEventListener("click",()=>{ poolWorkedPrior=!poolWorkedPrior; render(); });
+  $$('#staffRoot .sec-toggle').forEach(b=>b.onclick=()=>{ if(b.dataset.sec==='tugs')tugsOpen=!tugsOpen; else areasOpen=!areasOpen; render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);
