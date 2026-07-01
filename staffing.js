@@ -19,6 +19,7 @@ const UP=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="cu
 const CK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
 /* ---------- config ---------- */
+const FULL_MIN=420;   // ≥7h of the shift counts as full; less is partial
 const SHIFTS=["AM","PM","NH"];
 const SHIFT_CORE={AM:[300,780],PM:[780,1260],NH:[1260,1740]}; // 05–13 / 13–21 / 21–05 (mins)
 const TUGS=[1,3,4,10,17,18,19,20,21,22,23,24,25,26,27,28,29,51];
@@ -200,6 +201,15 @@ function tugState(id){ const s=tugSt(id); return {state:s, oos:s==="oos", gpu:s=
 function tugType(id){ if([1,3,4].includes(id))return "TBL-400"; if(id>=10&&id<=19)return "TBL-280"; if(id>=20&&id<=29)return "GOLDHOFER"; if(id===51)return "Kalmar"; return ""; }
 const PREV_SHIFT={AM:"NH",PM:"AM",NH:"PM"};
 // label for someone who worked the directly-preceding shift (full or partial)
+// the clock window a person actually worked inside the previous shift (for partial-prev workers)
+function prevWorkWindow(emp){
+  const prev=PREV_SHIFT[ST.shift]; if(!prev)return "";
+  let lo=Infinity,hi=-Infinity;
+  (ST.bodies||[]).filter(b=>b.emp===emp).forEach(b=>{const p=ivl(b.start,b.end);if(!p)return;
+    for(const off of [0,1440]){const a=Math.max(p[0],SHIFT_CORE[prev][0]+off),bb=Math.min(p[1],SHIFT_CORE[prev][1]+off);if(bb>a){lo=Math.min(lo,a);hi=Math.max(hi,bb);}}});
+  if(lo===Infinity)return "";
+  return fmtMin(lo)+"-"+fmtMin(hi);
+}
 function prevWorkLabel(emp){
   const prev=PREV_SHIFT[ST.shift]; if(!prev||!emp) return "";
   const blocks=(ST.bodies||[]).filter(b=>b.emp===emp);
@@ -209,7 +219,8 @@ function prevWorkLabel(emp){
   if(ov<45) return "";
   const full=ov>=360;
   if(full) return prev==="NH" ? "Worked last night" : "Worked "+prev;
-  return "Worked Partial ("+prev+")";
+  const win=prevWorkWindow(emp);
+  return "Worked "+prev+(win?" "+win:"")+" (partial)";   // show the times they actually worked
 }
 // compact form for assigned-crew badges ("Worked last night" → "last night")
 function prevWorkShort(emp){ const l=prevWorkLabel(emp); return l?l.replace(/^Worked\s+/i,""):""; }
@@ -705,7 +716,7 @@ function rPool(){
   const disp=dispatchCandidates(ST.shift);
   const dispLine=disp.length?disp.map(d=>`${esc(nm(d.name))}${d.avail?'':' <span class="bad">('+esc(d.code)+')</span>'}`).join(" · "):'<span class="bad">none on shift</span>';
   // bucket by how much of the shift core each person actually works
-  const tier=b=>{const ov=b.ov||0; return ov>=240?'full':(ov>60?'part':'one');};
+  const tier=b=>{const ov=b.ov||0; return ov>=FULL_MIN?'full':(ov>60?'part':'one');};   // ≥7h = full, else partial
   const row=b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const tr=tier(b);
     return `<div class="prow prow-tap ${tr!=='full'?'partial':''} ${tr==='one'?'onehour':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
       ${fwd?`<span class="tag db">${esc(dblLabel(b.emp))}</span>`:''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
@@ -766,7 +777,8 @@ function rReconcile(){
 let SEL=null; // selected pool entry key
 let poolCollapsed=new Set(); // collapsed staff hour-groups (by start time)
 let showUnusedTugs=false;    // hide not-in-service tugs on the board unless toggled
-let poolDoublesFirst=false;  // group people on a double into a priority block at the top
+let poolDoublesFirst=false;  // forward doubles into a priority block at the top
+let poolWorkedPrior=false;   // people who worked the previous shift into their own block
 /* auto-assign modes + multi-assign (one person → 2 places) */
 let autoMode=null;            // null | 'tug' | 'remote' | 'multi'
 let autoPick=[];             // emps multi-selected in tug/remote auto modes (ordered)
@@ -845,23 +857,30 @@ function rAssign(){
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
-    const isSel=SEL===b.emp, partial=(b.ov||0)<240, ac=empAreaCount(b.emp);
+    const isSel=SEL===b.emp, partial=(b.ov||0)<FULL_MIN, ac=empAreaCount(b.emp);
     return `<button class="abody ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="${early?'early':''}">${esc(nm(b.name))}</span>${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${partial?'<em class="prt">PARTIAL</em>':''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}<span>${hrs}</span>${pw?`<i class="pw">${esc(pw)}</i>`:''}</button>`;};
   const shgrp=(key,label,list)=>{const col=poolCollapsed.has(key);
     return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(key)}"><span class="shg-ca">${col?'▸':'▾'}</span>${label}<span>${list.length}</span></div><div class="abody-wrap">${list.map(chip).join("")}</div></div>`;};
+  const byName=list=>list.slice().sort((a,b)=>normName(a.name).localeCompare(normName(b.name)));
+  const isFwd=b=>!prevWorkLabel(b.emp)&&worksNext(b.emp);   // forward double: rolls into the NEXT shift
+  const isPrior=b=>!!prevWorkLabel(b.emp);                  // backward double: worked the PREVIOUS shift
   let poolHTML;
   if(!avail.length){ poolHTML='<span class="hint">All assigned.</span>'; }
   else {
-    const dbls=poolDoublesFirst?avail.filter(b=>onDouble(b.emp)):[];
-    const rest=poolDoublesFirst?avail.filter(b=>!onDouble(b.emp)):avail;
+    const taken=new Set(); let blocks="";
+    if(poolDoublesFirst){ const d=avail.filter(b=>isFwd(b)&&!taken.has(b.emp)); d.forEach(b=>taken.add(b.emp));
+      if(d.length)blocks+=`<div class="dblgrp-wrap">${shgrp("__dbl",'★ Doubles · forward (into next shift)',byName(d))}</div>`; }
+    if(poolWorkedPrior){ const w=avail.filter(b=>isPrior(b)&&!taken.has(b.emp)); w.forEach(b=>taken.add(b.emp));
+      if(w.length)blocks+=`<div class="priorgrp-wrap">${shgrp("__prior",'◀ Worked prior shift',byName(w))}</div>`; }
+    const rest=avail.filter(b=>!taken.has(b.emp));
     const grp={};rest.forEach(b=>{const st=(b.hours||"").split("-")[0];(grp[st]=grp[st]||[]).push(b);});
     const gkeys=Object.keys(grp).sort((a,b)=>toMin(a)-toMin(b));
-    const restHTML=gkeys.map(st=>{const list=grp[st];
-      const endStr=list.reduce((mx,x)=>{const e=(x.hours||"").split("-")[1]||"";return toMin(e)>toMin(mx)?e:mx;},"00:00");
+    // shift groups laid out side-by-side as columns (names sorted A–Z within each)
+    const restHTML=`<div class="pool-cols">`+gkeys.map(st=>{const list=byName(grp[st]);
+      const endStr=grp[st].reduce((mx,x)=>{const e=(x.hours||"").split("-")[1]||"";return toMin(e)>toMin(mx)?e:mx;},"00:00");
       return shgrp(st,`${esc(st)}-${esc(endStr)}`,list);
-    }).join("");
-    const dblHTML=dbls.length?`<div class="dblgrp-wrap">${shgrp("__dbl",'★ Doubles · priority',dbls)}</div>`:'';
-    poolHTML=dblHTML+restHTML;
+    }).join("")+`</div>`;
+    poolHTML=blocks+restHTML;
   }
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
@@ -912,7 +931,7 @@ function rAssign(){
     <div class="asg2">
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
-        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button><button class="btn ghost sm ${poolDoublesFirst?'on':''}" id="dblFirst">★ Doubles first</button></div>
+        <div class="auto-btns"><button class="btn ghost sm ${autoMode==='tug'?'on':''}" id="autoTug">⚙ Auto Tug</button><button class="btn ghost sm ${autoMode==='remote'?'on':''}" id="autoRemote">⚙ Auto Remote</button><button class="btn ghost sm ${autoMode==='multi'?'on purple':''}" id="autoMulti">✦ Multi Assign</button><button class="btn ghost sm ${poolDoublesFirst?'on':''}" id="dblFirst">★ Doubles first</button><button class="btn ghost sm ${poolWorkedPrior?'on':''}" id="priorFirst">◀ Worked prior</button></div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
       <div class="asg2-board">
@@ -934,6 +953,7 @@ function rAssign(){
   $("#autoRemote")?.addEventListener("click",()=>{ autoMode=autoMode==='remote'?null:'remote'; autoStep=0; autoPick=[]; SEL=null; render(); });
   $("#autoMulti")?.addEventListener("click",()=>{ autoMode=autoMode==='multi'?null:'multi'; autoPick=[]; SEL=null; render(); });
   $("#dblFirst")?.addEventListener("click",()=>{ poolDoublesFirst=!poolDoublesFirst; render(); });
+  $("#priorFirst")?.addEventListener("click",()=>{ poolWorkedPrior=!poolWorkedPrior; render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);
