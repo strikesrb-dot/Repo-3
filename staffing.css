@@ -539,7 +539,7 @@
 /* empty footer stays as a zero-height anchor at the bottom so the shift time keeps the middle */
 .pool-cubes .cb-foot{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;min-height:0}
 .pool-cubes .cb-foot em{margin:0;white-space:normal;line-height:1.2}                    /* DBL until HH:MM */
-.pool-cubes .cb-foot .pw{display:block;margin:0;font-size:9px;padding:1px 6px}           /* Worked AM / prior-shift */
+.pool-cubes .cb-foot .pw{display:block;align-self:center;margin:0;font-size:9px;padding:1px 6px}   /* Worked AM / prior-shift, centred */
 .abody.sel .cb-hrs{color:rgba(255,255,255,.85)}
 /* shift-type colour edge + faint tint (kept subtle so names stay readable) */
 .abody.sh-std{border-color:#0d9488;background:#f0fbfa;box-shadow:inset 4px 0 0 #0d9488}
