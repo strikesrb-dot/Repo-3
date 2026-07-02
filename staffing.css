@@ -569,9 +569,9 @@
 .tc3-tile b i{font-style:normal;font-size:9px;font-weight:900;background:rgba(255,255,255,.28);border-radius:3px;padding:1px 4px}
 .tc3-tile small{font-size:8.5px;font-weight:800;opacity:.92;text-align:center;letter-spacing:.03em}
 .tc3-gpu{font-size:9px;font-weight:800;color:#fff;background:rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;margin-top:1px;text-align:center;white-space:nowrap}
-.tc3-b{flex:1;min-width:0;display:flex;flex-direction:column}
-/* controls at the TOP-right, no bottom bar */
-.tc3-ctl{display:flex;justify-content:flex-end;align-items:center;gap:3px;padding:4px 6px 3px;border-bottom:1px solid #eef1f4}
+.tc3-b{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-start}
+/* controls flush at the TOP-right, no bottom bar */
+.tc3-ctl{display:flex;justify-content:flex-end;align-items:center;gap:3px;padding:4px 6px;border-bottom:1px solid #eef1f4}
 .tc3-ctl .ticon{border:none;border-radius:6px;width:28px;height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;background:#eef1f4;color:#5a6772;line-height:0}
 .tc3-ctl .ticon svg{display:block}
 .tc3-ctl .ticon:active{transform:scale(.9)}
@@ -579,8 +579,8 @@
 .tc3-ctl .gpubtn.inop{color:#fff;background:#a8740c}
 .tc3-ctl .toos.isoos{width:auto;padding:0 9px;font-size:10.5px;font-weight:900;background:#c0271e;color:#fff}
 .tc3-ctl .thide{color:#9aa6b1}
-/* larger crew bars */
-.tc3-b .ts-slot{border-top:none;flex:1;padding:10px 11px;font-size:14px;gap:8px}
+/* larger crew bars — fixed height so the controls stay flush at the very top */
+.tc3-b .ts-slot{border-top:none;flex:none;min-height:44px;padding:9px 11px;font-size:14px;gap:8px}
 .tc3-b .ts-slot+.ts-slot{border-left:none;border-top:1px solid #eef1f4}
 .tc3-b .ts-slot>b{font-size:11px;width:13px}
 .tc3-b .ts-slot .slot-name{font-size:14px}

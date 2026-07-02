@@ -288,17 +288,20 @@ function promptTargets(){
 }
 
 function fmtMin(m){ m=((m%1440)+1440)%1440; const h=Math.floor(m/60),mm=m%60; return (h<10?"0":"")+h+":"+(mm<10?"0":"")+mm; }
-/* the hours to SHOW for a person on this shift — clipped to their ~8h shift window,
-   so a double/relief block (e.g. 05:00-21:00) reads as their current shift (05:00-13:00) */
+/* the hours to SHOW for a person on this shift. A genuine double is clipped to this shift's ~8h
+   window; a plain (even long or early) shift shows its REAL clock window — so 12:00-22:00 reads
+   as 12:00-22:00, not 14:00-22:00 (a 12:00 start only grazing 1h of the AM window isn't a double) */
 function shiftHours(b,shift){
   const a=mins(b.start); let z=mins(b.end); if(a==null||z==null) return (b.start||"")+"-"+(b.end||"");
   if(z<=a)z+=1440;
-  const prev=PREV_SHIFT[shift];
-  let workedPrevShift=false;
-  if(prev){ let ov=0; (ST.bodies||[]).filter(x=>x.emp===b.emp).forEach(x=>{const p=ivl(x.start,x.end); if(p)ov+=ovl(p,SHIFT_CORE[prev]);}); workedPrevShift=Math.min(ov,480)>=45; }
+  const prev=PREV_SHIFT[shift], next=NEXT_SHIFT[shift];
+  const sumOv=core=>{let ov=0;(ST.bodies||[]).filter(x=>x.emp===b.emp).forEach(x=>{const p=ivl(x.start,x.end);if(p)ov+=ovl(p,core);});return Math.min(ov,480);};
+  const dblPrev=prev&&sumOv(SHIFT_CORE[prev])>120;   // genuinely came off the previous shift (>2h)
+  const dblNext=next&&sumOv(SHIFT_CORE[next])>120;   // genuinely rolls into the next shift (>2h)
   let ds,de;
-  if(workedPrevShift){ de=z; ds=Math.max(a,z-480); }   // came off the previous shift → show the tail (this shift)
-  else { ds=a; de=Math.min(z,a+480); }                 // forward/normal → show their first ~8h
+  if(dblPrev){ de=z; ds=Math.max(a,z-480); }           // came off the previous shift → show the tail
+  else if(dblNext){ ds=a; de=Math.min(z,a+480); }      // rolls into the next shift → show first ~8h
+  else { ds=a; de=z; }                                 // plain shift → real clock window
   return fmtMin(ds)+"-"+fmtMin(de);
 }
 // the "standard" clock-in for each shift; anyone else on a full shift is "non-standard"
