@@ -561,14 +561,8 @@
 .pool-cubes .abody.sh-nonstd .cb-foot em,.pool-cubes .abody.sh-nonstd .cb-foot .pw{background:rgba(0,0,0,.15);color:#2b2410}
 .pool-cubes .abody.sh-std .cb-name.early,.pool-cubes .abody.sh-part .cb-name.early{color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.75)}
 .pool-cubes .abody.sh-nonstd .cb-name.early{color:#7a1710;text-decoration:underline}
-/* selection = animated white "marching" border (keeps the shift colour) */
-.pool-cubes .abody.sel{box-shadow:0 4px 14px rgba(0,0,0,.3)}
-.pool-cubes .abody.sel::before{content:"";position:absolute;inset:2px;border-radius:9px;pointer-events:none;z-index:3;
-  background-image:linear-gradient(90deg,#fff 50%,transparent 0),linear-gradient(90deg,#fff 50%,transparent 0),linear-gradient(0deg,#fff 50%,transparent 0),linear-gradient(0deg,#fff 50%,transparent 0);
-  background-size:12px 2px,12px 2px,2px 12px,2px 12px;
-  background-position:0 0,100% 100%,0 100%,100% 0;background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;
-  animation:antsMove .5s linear infinite}
-@keyframes antsMove{to{background-position:24px 0,-24px 100%,0 -24px,100% 24px}}
+/* selection = solid white border (keeps the shift colour) */
+.pool-cubes .abody.sel{box-shadow:inset 0 0 0 3px #fff, 0 4px 12px rgba(0,0,0,.28)}
 .sec-hub{display:flex;gap:6px;margin-bottom:10px}
 .hub-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:11px 14px;font-size:15px;font-weight:800;color:var(--muted);cursor:pointer}
 .hub-tab.on{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 4px 14px rgba(11,61,99,.22)}
