@@ -1171,6 +1171,9 @@ function buildSheet(){
   </div>`;
 }
 
+// the printable staff page IS the canvas image (same as preview + saved image)
+function sheetImageHTML(){try{return `<img class="sb-img" src="${renderStaffCanvas().toDataURL("image/png")}" alt="Staffing sheet">`;}catch(_){return buildSheet();}}
+
 /* ---- exporters (canvas-drawn — works in Safari/WebKit) ---- */
 const FA=s=>s+" -apple-system,Arial,sans-serif";
 function drawBolt(ctx,x,y,inop){ // small lightning at (x,y) top-left ~13x15
@@ -1428,7 +1431,7 @@ function rLogs(){
     $("#logImg")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetImage()));
     $("#logTxt")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetText()));
     $("#logShare")?.addEventListener("click",()=>withSnapshot(e.snap,()=>shareSheets()));
-    $("#logPdf")?.addEventListener("click",()=>withSnapshot(e.snap,()=>{ $("#printArea").innerHTML=`<div class="sb-print">${buildSheet()}</div><div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); }));
+    $("#logPdf")?.addEventListener("click",()=>withSnapshot(e.snap,()=>{ $("#printArea").innerHTML=`<div class="sb-print">${sheetImageHTML()}</div><div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); }));
     return;
   }
   const byDate={};list.forEach(e=>{(byDate[e.date]=byDate[e.date]||[]).push(e);});
