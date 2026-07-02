@@ -534,11 +534,11 @@
 .pool-legend .lg{font-size:11px;font-weight:800;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
 .pool-legend .lg::before{content:"";width:11px;height:11px;border-radius:3px;display:inline-block}
 .pool-legend .lg-std::before{background:#0d9488}
-.pool-legend .lg-non::before{background:#e5484d}
+.pool-legend .lg-non::before{background:#f4c020}
 .pool-legend .lg-part::before{background:#262b30;border:1.5px dashed #262b30}
 .pool-cubes{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:5px}
 /* small square cube: name top · shift middle · DBL/prior bottom (grows if a note wraps) */
-#staffRoot .pool-cubes .abody{width:100%;min-width:0;min-height:84px;aspect-ratio:1;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:2px;padding:6px 4px}
+#staffRoot .pool-cubes .abody{position:relative;width:100%;min-width:0;min-height:84px;aspect-ratio:1;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:2px;padding:6px 4px}
 .pool-cubes .cb-name{font-size:11px;font-weight:800;line-height:1.12;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .pool-cubes .cb-hrs{font-size:10.5px;font-weight:800;color:var(--muted)}   /* full HH:MM–HH:MM, centred */
 /* empty footer stays as a zero-height anchor at the bottom so the shift time keeps the middle */
@@ -547,19 +547,28 @@
 .pool-cubes .cb-foot .pw{display:block;align-self:center;margin:0;font-size:9px;padding:1px 6px}   /* Worked AM / prior-shift, centred */
 .abody.sel .cb-hrs{color:rgba(255,255,255,.85)}
 /* shift-type colour edge + faint tint (kept subtle so names stay readable) */
-/* Concept 4 — solid-fill cube, white text (teal std · red non-std · black partial) */
+/* Concept 4 — solid-fill cube (teal std · yellow non-std · black partial) */
 .abody.sh-std{border-color:#0d9488;background:#0d9488;box-shadow:none}
-.abody.sh-nonstd{border-color:#e5484d;background:#e5484d;box-shadow:none}
+.abody.sh-nonstd{border-color:#d9a512;background:#f4c020;box-shadow:none}
 .abody.sh-part{border-color:#262b30;background:#262b30;box-shadow:none}
-.pool-cubes .abody.sh-std,.pool-cubes .abody.sh-nonstd,.pool-cubes .abody.sh-part{color:#fff}
-.pool-cubes .abody[class*="sh-"] .cb-name{color:#fff}
-.pool-cubes .abody[class*="sh-"] .cb-hrs{color:rgba(255,255,255,.9)}
-.pool-cubes .abody[class*="sh-"] .cb-name.early{color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.75)}
-.pool-cubes .abody[class*="sh-"] .cb-foot em{background:rgba(255,255,255,.26);color:#fff}
-.pool-cubes .abody[class*="sh-"] .cb-foot .pw{background:rgba(255,255,255,.22);color:#fff}
-/* selection still wins visually (navy) */
-.abody.sh-std.sel,.abody.sh-nonstd.sel,.abody.sh-part.sel{background:var(--navy);border-color:var(--navy);border-style:solid;box-shadow:0 3px 10px rgba(11,61,99,.3)}
-.pool-cubes .abody.sel .cb-name,.pool-cubes .abody.sel .cb-hrs{color:#fff}
+/* teal & black cubes → white text; yellow cube → dark text (readable on yellow) */
+.pool-cubes .abody.sh-std .cb-name,.pool-cubes .abody.sh-part .cb-name{color:#fff}
+.pool-cubes .abody.sh-std .cb-hrs,.pool-cubes .abody.sh-part .cb-hrs{color:rgba(255,255,255,.9)}
+.pool-cubes .abody.sh-std .cb-foot em,.pool-cubes .abody.sh-part .cb-foot em,
+.pool-cubes .abody.sh-std .cb-foot .pw,.pool-cubes .abody.sh-part .cb-foot .pw{background:rgba(255,255,255,.24);color:#fff}
+.pool-cubes .abody.sh-nonstd .cb-name{color:#2b2410}
+.pool-cubes .abody.sh-nonstd .cb-hrs{color:#6b530a}
+.pool-cubes .abody.sh-nonstd .cb-foot em,.pool-cubes .abody.sh-nonstd .cb-foot .pw{background:rgba(0,0,0,.15);color:#2b2410}
+.pool-cubes .abody.sh-std .cb-name.early,.pool-cubes .abody.sh-part .cb-name.early{color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.75)}
+.pool-cubes .abody.sh-nonstd .cb-name.early{color:#7a1710;text-decoration:underline}
+/* selection = animated white "marching" border (keeps the shift colour) */
+.pool-cubes .abody.sel{box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.pool-cubes .abody.sel::before{content:"";position:absolute;inset:2px;border-radius:9px;pointer-events:none;z-index:3;
+  background-image:linear-gradient(90deg,#fff 50%,transparent 0),linear-gradient(90deg,#fff 50%,transparent 0),linear-gradient(0deg,#fff 50%,transparent 0),linear-gradient(0deg,#fff 50%,transparent 0);
+  background-size:12px 2px,12px 2px,2px 12px,2px 12px;
+  background-position:0 0,100% 100%,0 100%,100% 0;background-repeat:repeat-x,repeat-x,repeat-y,repeat-y;
+  animation:antsMove .5s linear infinite}
+@keyframes antsMove{to{background-position:24px 0,-24px 100%,0 -24px,100% 24px}}
 .sec-hub{display:flex;gap:6px;margin-bottom:10px}
 .hub-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:11px 14px;font-size:15px;font-weight:800;color:var(--muted);cursor:pointer}
 .hub-tab.on{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 4px 14px rgba(11,61,99,.22)}
