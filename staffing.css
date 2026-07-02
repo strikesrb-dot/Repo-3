@@ -226,7 +226,18 @@
 .bf-focus{margin:0;padding-left:20px;font-size:13.5px;color:#1c2530}
 .bf-focus li{padding:2px 0}
 .bf-notes{background:#fffaf0;border-color:#e7d3a0}
-@media print{.bf{border:none;min-width:0}.bf-title,.bf-h{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{.bf{border:none;min-width:0}.bf-title,.bf-h{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* compress the briefing so it always lands on a single page (no near-empty spillover) */
+  .bf{padding:6px;page-break-inside:avoid;break-inside:avoid}
+  .bf-title{font-size:17px;margin-bottom:7px;padding-bottom:5px}
+  .bf-2col{gap:8px;margin-bottom:6px}
+  .bf-card{padding:6px 9px;margin-bottom:6px}
+  .bf-h{margin-bottom:4px;font-size:11px}
+  .bf-row{padding:1px 0;font-size:12px}
+  .bf-l{font-size:11px}
+  .bf-tbl{font-size:12px}.bf-tbl th{padding:3px 5px}.bf-tbl td{padding:3px 5px}
+  .bf-mgr{margin-top:5px}
+  .bf-focus{font-size:12px}.bf-focus li{padding:0.5px 0}}
 
 /* ===== doubles, gpu toggle in assign, logs ===== */
 .tag.db{background:#0b3d63;color:#fff}

@@ -1136,7 +1136,7 @@ function rSheet(){
     </div>`;
   // the on-screen preview IS the saved image — render the same canvas so they never diverge
   if(isStaff){const host=$("#staffSheet");if(host){try{const cv=renderStaffCanvas();cv.style.cssText="width:100%;height:auto;display:block;border-radius:12px";host.appendChild(cv);
-    const ac=renderAbsentCanvas();ac.style.cssText="width:100%;height:auto;display:block;border-radius:12px;margin-top:12px";host.appendChild(ac);}catch(_){host.innerHTML=buildSheet();}}}
+    if(absentFor(ST.shift).length){const ac=renderAbsentCanvas();ac.style.cssText="width:100%;height:auto;display:block;border-radius:12px;margin-top:12px";host.appendChild(ac);}}catch(_){host.innerHTML=buildSheet();}}}
   $$('#staffRoot .seg[data-sv]').forEach(s=>s.onclick=()=>{sheetView=s.dataset.sv;render();});
   $("#shLog").onclick=logManpower;
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
@@ -1178,7 +1178,7 @@ function buildSheet(){
 function printImg(cv){const r=cv.height/cv.width,maxW=174,maxH=236;let w=maxW,h=w*r;if(h>maxH){h=maxH;w=h/r;}
   return `<img class="sb-img" style="width:${w.toFixed(1)}mm;height:${h.toFixed(1)}mm" src="${cv.toDataURL("image/png")}" alt="sheet">`;}
 function sheetImageHTML(){try{return printImg(renderStaffCanvas());}catch(_){return buildSheet();}}
-function absentImageHTML(){try{return printImg(renderAbsentCanvas());}catch(_){return "";}}
+function absentImageHTML(){try{return absentFor(ST.shift).length?printImg(renderAbsentCanvas()):"";}catch(_){return "";}}
 
 /* ---- exporters (canvas-drawn — works in Safari/WebKit) ---- */
 const FA=s=>s+" -apple-system,Arial,sans-serif";
