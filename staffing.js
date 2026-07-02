@@ -1171,8 +1171,13 @@ function buildSheet(){
   </div>`;
 }
 
-// the printable staff page IS the canvas image (same as preview + saved image)
-function sheetImageHTML(){try{return `<img class="sb-img" src="${renderStaffCanvas().toDataURL("image/png")}" alt="Staffing sheet">`;}catch(_){return buildSheet();}}
+// the printable staff page IS the canvas image (same as preview + saved image).
+// Size it explicitly in mm (Safari print ignores max-height on <img>, so we fit by
+// hand to a portrait Letter printable box and let height drive tall boards).
+function sheetImageHTML(){try{const cv=renderStaffCanvas();const r=cv.height/cv.width;
+    const maxW=174,maxH=236; let w=maxW,h=w*r; if(h>maxH){h=maxH;w=h/r;}
+    return `<img class="sb-img" style="width:${w.toFixed(1)}mm;height:${h.toFixed(1)}mm" src="${cv.toDataURL("image/png")}" alt="Staffing sheet">`;
+  }catch(_){return buildSheet();}}
 
 /* ---- exporters (canvas-drawn — works in Safari/WebKit) ---- */
 const FA=s=>s+" -apple-system,Arial,sans-serif";
