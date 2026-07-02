@@ -1314,7 +1314,7 @@ function autoCropCanvas(src,pad){
     const cw=right-left+1,ch=bottom-top+1,out=document.createElement("canvas");out.width=cw;out.height=ch;
     const o=out.getContext("2d");o.fillStyle="#fff";o.fillRect(0,0,cw,ch);o.drawImage(src,left,top,cw,ch,0,0,cw,ch);return out;
   }catch(_){return src;} }
-function exportSheetImage(){ const c=autoCropCanvas(renderStaffCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed — use Print."); const name="EWR-AMT-Staffing-"+ST.shift+".jpg"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/jpeg",0.92); }
+function exportSheetImage(){ const c=autoCropCanvas(renderStaffCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed — use Print."); const name="EWR-AMT-Staffing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
 function renderBriefCanvas(){
   const b=ST.brief||{focus:[]},S=2,W=1100,M=34;
   const oosT=TUGS.filter(id=>tugState(id).oos),inop=TUGS.filter(id=>tugSt(id)==='inop'),sked=TUGS.filter(id=>tugState(id).running).length;
@@ -1364,7 +1364,7 @@ function renderBriefCanvas(){
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
   return c;
 }
-function exportBriefImage(){ const c=autoCropCanvas(renderBriefCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed."); const name="Daily-Briefing-"+ST.shift+".jpg"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/jpeg",0.92); }
+function exportBriefImage(){ const c=autoCropCanvas(renderBriefCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed."); const name="Daily-Briefing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
 async function shareSheets(){
   try{
     const [s,br]=await Promise.all([canvasToPng(renderStaffCanvas()),canvasToPng(renderBriefCanvas())]);
@@ -1443,7 +1443,7 @@ function rLogs(){
     ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.shift)} manpower <span class="ro-badge">read-only</span></h2></div>
       <div class="muted-row">${esc(e.date||'')} · ${e.pool} in pool · ${e.crews||0} tug crews of ${e.running} running · dispatch ${esc(nm(e.dispatch)||"OPEN")}${e.by?` · by <b>${esc(nm(e.by))}</b>`:''}</div>
       ${(e.startedAt||e.finishedAt)?`<div class="muted-row">${e.startedAt?`Started <b>${esc(fmtClock(e.startedAt))}</b>`:''}${e.finishedAt?`${e.startedAt?' · ':''}Finished <b>${esc(fmtClock(e.finishedAt))}</b>`:''}${(e.startedAt&&e.finishedAt)?` · took ${esc(fmtDur(e.finishedAt-e.startedAt))}`:''}</div>`:''}
-      ${e.img?`<div class="sheet-scroll"><img class="log-img" src="${e.img}" alt="staffing sheet"/></div>`:'<p class="hint">Image not stored for this entry.</p>'}
+      <div class="sheet-scroll" id="logSheetHost">${e.img?`<img class="log-img" src="${e.img}" alt="staffing sheet"/>`:'<p class="hint">Image not stored for this entry.</p>'}</div>
       ${e.snap?`<div class="btnrow" style="margin-top:10px"><button class="btn good" id="logEdit">✎ Reopen &amp; edit</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn navy" id="logShare">Email / Share both ›</button></div>
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logImg">Save image</button><button class="btn ghost" id="logPdf">PDF / Print</button></div>
@@ -1462,6 +1462,12 @@ function rLogs(){
     $("#logTxt")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetText()));
     $("#logShare")?.addEventListener("click",()=>withSnapshot(e.snap,()=>shareSheets()));
     $("#logPdf")?.addEventListener("click",()=>withSnapshot(e.snap,()=>{ const abs=absentImageHTML(); $("#printArea").innerHTML=`<div class="sb-print">${sheetImageHTML()}</div>${abs?`<div class="sb-print" style="page-break-before:always">${abs}</div>`:''}<div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); }));
+    // re-render the sheet live from the saved snapshot — full resolution and current layout,
+    // instead of the frozen low-res JPEG thumbnail (which older entries baked in)
+    if(e.snap){const host=$("#logSheetHost");if(host)withSnapshot(e.snap,()=>{try{
+      const cv=renderStaffCanvas();cv.style.cssText="width:100%;height:auto;display:block;border-radius:10px";host.innerHTML="";host.appendChild(cv);
+      if(absentFor(ST.shift).length){const ac=renderAbsentCanvas();ac.style.cssText="width:100%;height:auto;display:block;border-radius:10px;margin-top:10px";host.appendChild(ac);}
+    }catch(_){ if(e.img)host.innerHTML=`<img class="log-img" src="${e.img}" alt="staffing sheet"/>`; }});}
     return;
   }
   const byDate={};list.forEach(e=>{(byDate[e.date]=byDate[e.date]||[]).push(e);});
