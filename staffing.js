@@ -192,6 +192,7 @@ const ST={
   prompts:{},            // name -> bool (trainees + exclusions availability)
   supers:[], manager:MANAGERS[0]||"", asst:[],
   tug:{},                // tugId -> "unset"|"ready"|"inop"|"oos"
+  tugOos:{},             // tugId -> free-text out-of-service reason
   dispatch:null,         // {name,emp}
   brief:null,            // briefing fields (phase 2)
   bodies:null,           // built pool bodies (all shifts)
@@ -245,7 +246,7 @@ function onDouble(emp){ return !!emp&&(worksNext(emp)||!!prevWorkLabel(emp)); }
 // the DBL badge does — the stricter double-detector (>60m into the next shift) would otherwise
 // leave a time off for someone who only rolls ~1h past their shift.
 function dblUntil(emp){ if(!emp)return ""; const blocks=(ST.bodies||[]).filter(b=>b.emp===emp); if(!blocks.length)return ""; const w=comboWin(blocks); return w?w[1]:""; }
-function dblLabel(emp){ const u=dblUntil(emp); return u?("DBL until "+u):"DBL"; }
+function dblLabel(emp){ const u=dblUntil(emp); return u?("Double until "+u):"Double"; }
 // leaves before the shift's standard end (not staying the full shift) → flag red
 function leavesEarly(o){ if(!o)return false;
   const h=o._hours||o.hours||((o.start&&o.end)?o.start+"-"+o.end:"");
@@ -428,7 +429,7 @@ function dispatcherWarn(){
 function back(toStep,label){return `<button class="btn ghost stp-back" data-to="${toStep}" style="margin-top:10px">‹ ${label}</button>`;}
 
 /* ---- snapshots, drafts & past logs ---- */
-const SNAP_KEYS=["shift","numTugs","prompts","supers","manager","asst","tug","dispatch","brief","assign","bodies","dbl","parsed"];
+const SNAP_KEYS=["shift","numTugs","prompts","supers","manager","asst","tug","tugOos","dispatch","brief","assign","bodies","dbl","parsed"];
 function snapshot(){ const s={}; SNAP_KEYS.forEach(k=>s[k]=ST[k]); return JSON.parse(JSON.stringify(s)); }
 function applySnapshot(s){ SNAP_KEYS.forEach(k=>{ if(k in s) ST[k]=JSON.parse(JSON.stringify(s[k])); }); }
 function withSnapshot(s,fn){ const cur={}; SNAP_KEYS.forEach(k=>cur[k]=ST[k]); applySnapshot(s); try{ return fn(); } finally { SNAP_KEYS.forEach(k=>ST[k]=cur[k]); } }
@@ -927,8 +928,8 @@ function rAssign(){
   }
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
-    // compact DBL flag in the tight crew slot (the full "DBL until HH:MM" shows on the pool cube)
-    return `<span class="slot-name vname ${early?'early':''}">${crewNameV(p.name)}</span>${fwd?`<em class="sdbl">DBL</em>`:''}<span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
+    const t=esc(p._hours||(p.start+"-"+p.end));
+    return `<span class="slot-name vname ${early?'early':''}">${crewNameV(p.name)}</span><span class="slot-meta"><span class="slot-t">${t}</span>${fwd?`<em class="sdbl">${esc(dblLabel(p.emp))}</em>`:''}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
@@ -953,19 +954,18 @@ function rAssign(){
     return `<div class="tc3 ${stCls} ${t.oos?'oos':''}">
       <div class="tc3-tile"><div class="tc3-ctl">${ctl}</div><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b>${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
       <div class="tc3-b">
-        ${t.oos?`<div class="tc3-oos"><span class="haz">✕</span> OUT OF SERVICE</div>`:
+        ${t.oos?`<div class="tc3-oos" data-oosedit="${id}"><span class="haz">✕</span> OUT OF SERVICE${(ST.tugOos&&ST.tugOos[id])?` — ${esc(ST.tugOos[id])}`:' ✎'}</div>`:
           `<div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER">${slotName(crew.DRIVER)}</div>
            <div class="ts-slot ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR">${slotName(crew.OBSERVR)}</div>`}
       </div>
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
   const mutedCard=id=>`<div class="tc3 muted" data-add="${id}"><div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b></div><div class="tc3-b"><span class="muse">＋ add to board</span></div></div>`;
-  const tugGroups=TUG_GROUPS.map(g=>{
-    const ids=showUnusedTugs?g.ids:g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
-    if(!ids.length)return "";
-    const cells=ids.map(id=>{const t=tugState(id);return (t.running||t.oos)?tugCard(id):mutedCard(id);});
-    return `<div class="tug-gtitle">STUG ${g.label}${tugType(g.ids[0])?` · ${tugType(g.ids[0])}`:''}</div><div class="tug-strips">${cells.join("")}</div>`;
-  }).join("")||'<p class="hint" style="margin:4px 0">No tugs in service — show unused to add one.</p>';
+  const tugGroups=(()=>{ const cells=[];
+    TUG_GROUPS.forEach(g=>{ const ids=showUnusedTugs?g.ids:g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
+      ids.forEach(id=>{const t=tugState(id);cells.push((t.running||t.oos)?tugCard(id):mutedCard(id));}); });
+    return cells.length?`<div class="tug-strips">${cells.join("")}</div>`:'<p class="hint" style="margin:4px 0">No tugs in service — show unused to add one.</p>';
+  })();
   const unusedN=TUGS.filter(id=>tugState(id).unset).length;
   const tugToggle=unusedN?`<button class="btn ghost sm" id="toggleUnused" style="margin-top:10px;width:auto">${showUnusedTugs?'Hide unused tugs':'＋ Show '+unusedN+' unused tug'+(unusedN>1?'s':'')}</button>`:'';
   const running=TUGS.filter(id=>tugState(id).running).length;
@@ -1038,7 +1038,11 @@ function rAssign(){
   $$('#staffRoot .ts-slot').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
     if(t[role]){const p=t[role];t[role]=null;SEL=p.emp;logAct("Removed from STUG "+id,nm(p.name)+" · "+role);render();return;}
     const who=selName(); place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); if(who)logAct("Assigned to STUG "+id,who+" · "+role); }); // tap filled slot = pick up & move
-  $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); if(t.oos){setTug(id,"ready");} else {setTug(id,"oos");delete ST.assign.tugs[id];} render(); });
+  $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); ST.tugOos=ST.tugOos||{};
+    if(t.oos){setTug(id,"ready");delete ST.tugOos[id];}
+    else {setTug(id,"oos");delete ST.assign.tugs[id]; const r=prompt("Why is STUG "+id+" out of service? (optional)",""); if(r!=null)ST.tugOos[id]=r.trim();}
+    render(); });
+  $$('#staffRoot .tc3-oos[data-oosedit]').forEach(el=>el.onclick=()=>{ const id=+el.dataset.oosedit; ST.tugOos=ST.tugOos||{}; const r=prompt("Out-of-service reason for STUG "+id+":",ST.tugOos[id]||""); if(r!=null){ST.tugOos[id]=r.trim();render();} });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
   $$('#staffRoot .tc3.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
   $("#toggleUnused")?.addEventListener("click",()=>{ showUnusedTugs=!showUnusedTugs; render(); });
@@ -1137,13 +1141,13 @@ function rSheet(){
 function buildSheet(){
   const a=ST.assign, dn=ST.dispatch&&ST.dispatch.name?esc(nm(ST.dispatch.name)):'<span class="sb-oos">OPEN</span>';
   const crew=p=>{ if(!p)return ""; const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp);
-    return `${esc(nm(p.name))}${fwd?` <b class="sb-db">${esc(dblLabel(p.emp))}</b>`:''} <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${pw?` <b class="sb-wln">${esc(pw)}</b>`:''}`; };
+    return `<span class="sb-nm">${crewNameV(p.name)}</span><span class="sb-cmeta"><span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>${fwd?`<b class="sb-db">${esc(dblLabel(p.emp))}</b>`:''}${pw?`<b class="sb-wln">${esc(pw)}</b>`:''}</span>`; };
   const areaBox=k=>{const list=a.areas[k]||[];const ad=AREAS.find(x=>x.key===k);const min=ad&&ad.min?ad.min[ST.shift]:0;
     return `<div class="sb-area"><div class="sb-area-h">${esc(areaLabel(k))}${min?` <span>${list.length}/${min}</span>`:''}</div>
       <div class="sb-area-b">${list.map(p=>`<div>${esc(nm(p.name))}${(p._hours||(p.start&&p.end))?` <span class="sb-t">${esc(p._hours||(p.start+"-"+p.end))}</span>`:''}${(!prevWorkLabel(p.emp)&&worksNext(p.emp))?` <b class="sb-db">${esc(dblLabel(p.emp))}</b>`:''}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>`;};
   const tugCell=id=>{const t=tugState(id),c=a.tugs[id]||{},ty=tugType(id);
     const bolt=t.gpu==='inop'?`<span class="sb-bolt inop">${BOLT_X}</span>`:`<span class="sb-bolt ok">${BOLT}</span>`;
-    return `<div class="sb-tug ${t.oos?'oos':''}"><div class="sb-tug-h">STUG ${id}${ELECTRIC.has(id)?'<b>w</b>':''}${ty?`<u>${ty}</u>`:''} ${t.oos?'':bolt}${t.oos?'<span class="sb-oos">OUT OF SERVICE</span>':''}</div>
+    return `<div class="sb-tug ${t.oos?'oos':''}"><div class="sb-tug-h">STUG ${id}${ELECTRIC.has(id)?'<b>w</b>':''}${ty?`<u>${ty}</u>`:''} ${t.oos?'':bolt}${t.oos?`<span class="sb-oos">OUT OF SERVICE${(ST.tugOos&&ST.tugOos[id])?' — '+esc(ST.tugOos[id]):''}</span>`:''}</div>
       ${t.oos?'<div class="sb-haz"></div>':`<div class="sb-tug-r"><i>DRIVER</i>${crew(c.DRIVER)}</div><div class="sb-tug-r"><i>OBSERVR</i>${crew(c.OBSERVR)}</div>`}</div>`;};
   const groupBlock=g=>{const ids=g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
     return ids.length?`<div class="sb-tgroup"><div class="sb-tg-h">STUG ${g.label}</div><div class="sb-tg-cells">${ids.map(tugCell).join("")}</div></div>`:"";};

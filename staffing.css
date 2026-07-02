@@ -89,9 +89,9 @@
 .sb-shift b{background:#0b3d63;color:#fff;border-radius:6px;padding:2px 9px;margin-left:5px;font-size:13px}
 .sb-band{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
 .sb-area{border:1px solid #d7dce1;border-radius:7px;overflow:hidden;display:flex;flex-direction:column}
-.sb-area-h{background:#f5a623;color:#3a2500;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.3px;padding:4px 7px;display:flex;justify-content:space-between}
+.sb-area-h{background:#f5a623;color:#3a2500;font-size:12.5px;font-weight:900;text-transform:uppercase;letter-spacing:.3px;padding:5px 8px;display:flex;justify-content:space-between}
 .sb-area-h span{font-weight:800;opacity:.8}
-.sb-area-b{padding:5px 7px;font-size:12px;font-weight:600;color:#1c2530;display:flex;flex-direction:column;gap:2px;flex:1}
+.sb-area-b{padding:6px 8px;font-size:14px;font-weight:600;color:#1c2530;display:flex;flex-direction:column;gap:3px;flex:1}
 .sb-disp .sb-area-h{background:#0b3d63;color:#fff}
 .sb-empty{color:#c2ccd4}
 .sb-oos{color:#c0271e;font-weight:800;font-size:10px}
@@ -100,11 +100,16 @@
 .sb-tugs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1}
 .sb-tug{border:1px solid #d7dce1;border-radius:6px;overflow:hidden}
 .sb-tug.oos{background:#fbeceb}
-.sb-tug-h{background:#eef2f5;color:#0b3d63;font-size:11px;font-weight:900;padding:3px 7px;display:flex;align-items:center;gap:5px}
-.sb-tug-h b{font-style:normal;background:#f5a623;color:#3a2500;border-radius:3px;font-size:9px;padding:0 3px}
-.sb-tug-h u{text-decoration:none;font-size:8.5px;font-weight:800;color:#67727e;letter-spacing:.03em;text-transform:uppercase}
-.sb-tug-r{display:flex;gap:6px;padding:3px 7px;font-size:11.5px;border-top:1px solid #eef1f4;min-height:20px}
-.sb-tug-r i{font-style:normal;font-size:9px;font-weight:800;color:#90a0ad;width:46px;flex:none;letter-spacing:.03em;padding-top:1px}
+.sb-tug-h{background:#eef2f5;color:#0b3d63;font-size:13px;font-weight:900;padding:4px 8px;display:flex;align-items:center;gap:5px}
+.sb-tug-h b{font-style:normal;background:#f5a623;color:#3a2500;border-radius:3px;font-size:10px;padding:0 3px}
+.sb-tug-h u{text-decoration:none;font-size:10px;font-weight:800;color:#67727e;letter-spacing:.03em;text-transform:uppercase}
+.sb-tug-r{display:flex;align-items:center;gap:8px;padding:5px 8px;font-size:14px;border-top:1px solid #eef1f4;min-height:24px}
+.sb-tug-r i{font-style:normal;font-size:10.5px;font-weight:800;color:#90a0ad;width:52px;flex:none;letter-spacing:.03em}
+/* stacked first/last name + right-aligned time/double/worked */
+.sb-nm{display:inline-flex;flex-direction:column;line-height:1.05;flex:1;min-width:0}
+.sb-nm .cn-1{font-size:12.5px;font-weight:700}
+.sb-nm .cn-2{font-size:14px;font-weight:900}
+.sb-cmeta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;margin-left:auto;text-align:right}
 @media print{
   #staffRoot .no-print,.floatback,header{display:none !important}
   .sheet-scroll{overflow:visible}
@@ -189,7 +194,7 @@
 /* sheet: bolts, hazard, crew time, absent */
 .sb-bolt{display:inline-flex;vertical-align:-2px}
 .sb-bolt.ok{color:#1e7d46}.sb-bolt.inop{color:#c0271e}
-.sb-t{font-size:9.5px;color:#90a0ad;font-weight:700}
+.sb-t{font-size:11.5px;color:#90a0ad;font-weight:700}
 .sb-tgroup{margin-bottom:8px}
 .sb-tg-h{font-size:11px;font-weight:900;color:#0b3d63;margin:0 0 4px}
 .sb-tg-cells{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
@@ -228,8 +233,8 @@
 .abody.dbl{border-color:#0b3d63}
 .abody em{font-style:normal;font-size:8.5px;font-weight:900;letter-spacing:.04em;background:#0b3d63;color:#fff;border-radius:4px;padding:1px 4px;margin-left:5px;vertical-align:1px}
 .abody.sel em{background:#fff;color:var(--navy)}
-.sb-db{font-style:normal;font-size:8px;font-weight:900;background:#0b3d63;color:#fff;border-radius:3px;padding:0 3px}
-.sb-wln{font-style:normal;font-size:8px;font-weight:800;color:#7a3287;background:#f6e9f8;border-radius:3px;padding:0 4px}
+.sb-db{font-style:normal;font-size:10px;font-weight:900;background:#0b3d63;color:#fff;border-radius:4px;padding:1px 6px;white-space:nowrap}
+.sb-wln{font-style:normal;font-size:10px;font-weight:800;color:#7a3287;background:#f3e2f7;border-radius:4px;padding:1px 6px;white-space:nowrap}
 .thdr-r{display:flex;align-items:center;gap:4px}
 .thdr .gpubtn.ok{color:#fff}.thdr .gpubtn.inop{color:#fff;background:rgba(255,255,255,.3)}
 .gpubtn:disabled{opacity:.4}
@@ -543,8 +548,9 @@
 .pool-cubes .cb-hrs{font-size:10.5px;font-weight:800;color:var(--muted)}   /* full HH:MM–HH:MM, centred */
 /* empty footer stays as a zero-height anchor at the bottom so the shift time keeps the middle */
 .pool-cubes .cb-foot{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;min-height:0}
-.pool-cubes .cb-foot em{margin:0;white-space:normal;line-height:1.2}                    /* DBL until HH:MM */
-.pool-cubes .cb-foot .pw{display:block;align-self:center;margin:0;font-size:9px;padding:1px 6px}   /* Worked AM / prior-shift, centred */
+/* solid pills so they contrast on any cube fill: Double = navy-on-white, Worked = purple-on-white */
+.pool-cubes .cb-foot em{margin:0;white-space:normal;line-height:1.15;font-size:8.5px;font-weight:900;padding:2px 6px;background:#fff;color:#0b3d63}
+.pool-cubes .cb-foot .pw{display:block;align-self:center;margin:0;font-size:8.5px;font-weight:800;padding:2px 6px;background:#fff;color:#7a3287}
 .abody.sel .cb-hrs{color:rgba(255,255,255,.85)}
 /* shift-type colour edge + faint tint (kept subtle so names stay readable) */
 /* Concept 4 — solid-fill cube (teal std · yellow non-std · black partial) */
@@ -554,11 +560,8 @@
 /* teal & black cubes → white text; yellow cube → dark text (readable on yellow) */
 .pool-cubes .abody.sh-std .cb-name,.pool-cubes .abody.sh-part .cb-name{color:#fff}
 .pool-cubes .abody.sh-std .cb-hrs,.pool-cubes .abody.sh-part .cb-hrs{color:rgba(255,255,255,.9)}
-.pool-cubes .abody.sh-std .cb-foot em,.pool-cubes .abody.sh-part .cb-foot em,
-.pool-cubes .abody.sh-std .cb-foot .pw,.pool-cubes .abody.sh-part .cb-foot .pw{background:rgba(255,255,255,.24);color:#fff}
 .pool-cubes .abody.sh-nonstd .cb-name{color:#2b2410}
 .pool-cubes .abody.sh-nonstd .cb-hrs{color:#6b530a}
-.pool-cubes .abody.sh-nonstd .cb-foot em,.pool-cubes .abody.sh-nonstd .cb-foot .pw{background:rgba(0,0,0,.15);color:#2b2410}
 .pool-cubes .abody.sh-std .cb-name.early,.pool-cubes .abody.sh-part .cb-name.early{color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.75)}
 .pool-cubes .abody.sh-nonstd .cb-name.early{color:#7a1710;text-decoration:underline}
 /* selection = solid white border (keeps the shift colour) */
@@ -604,8 +607,11 @@
 .tc3-b .ts-slot .vname .cn-2{font-size:14px;font-weight:900}
 .tc3-b .ts-slot .vname .cn-1,.tc3-b .ts-slot .vname .cn-2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc3-b .ts-slot .slot-empty{font-size:13px}
-.tc3-b .ts-slot .slot-t{font-size:10px;flex:none;margin-left:6px}
-.tc3-b .ts-slot .sdbl{flex:none;font-size:8px;padding:0 4px}
+/* right column: shift time, then Double-until, then Worked-AM — stacked & readable */
+.tc3-b .ts-slot .slot-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;margin-left:8px;text-align:right}
+.tc3-b .ts-slot .slot-t{font-size:10.5px;color:var(--muted);font-weight:700;margin:0}
+.tc3-b .ts-slot .sdbl{font-size:9px;font-weight:900;background:#0b3d63;color:#fff;border-radius:5px;padding:2px 7px;white-space:nowrap;display:block}
+.tc3-b .ts-slot .swln{font-size:9.5px;font-weight:800;background:#f3e2f7;color:#7a3287;border-radius:5px;padding:2px 7px;white-space:nowrap;display:block;margin:0}
 .tc3-oos{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:14px 10px;font-size:11.5px;font-weight:800;letter-spacing:.04em;color:#c0271e;background:repeating-linear-gradient(45deg,#fbeceb,#fbeceb 8px,#f7dedb 8px,#f7dedb 16px)}
 .tc3-oos .haz{color:#fff;background:#c0271e;border-radius:4px;padding:0 5px;font-weight:900}
 .tc3.muted{opacity:.55;cursor:pointer}
