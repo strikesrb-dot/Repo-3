@@ -1175,7 +1175,7 @@ function buildSheet(){
 // the printable pages ARE canvas images (same as preview + saved image).
 // Size them explicitly in mm (Safari print ignores max-height on <img>, so we fit by
 // hand to a portrait Letter printable box and let height drive tall boards).
-function printImg(cv){const r=cv.height/cv.width,maxW=174,maxH=236;let w=maxW,h=w*r;if(h>maxH){h=maxH;w=h/r;}
+function printImg(cv){const r=cv.height/cv.width,maxW=168,maxH=236;let w=maxW,h=w*r;if(h>maxH){h=maxH;w=h/r;}  // fits both US Letter and A4 portrait
   return `<img class="sb-img" style="width:${w.toFixed(1)}mm;height:${h.toFixed(1)}mm" src="${cv.toDataURL("image/png")}" alt="sheet">`;}
 function sheetImageHTML(){try{return printImg(renderStaffCanvas());}catch(_){return buildSheet();}}
 function absentImageHTML(){try{return absentFor(ST.shift).length?printImg(renderAbsentCanvas()):"";}catch(_){return "";}}
