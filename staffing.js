@@ -1123,17 +1123,19 @@ function buildBriefing(){
 /* ---- step: generate (staffing sheet + briefing, exports) ---- */
 let sheetView="staff";
 function rSheet(){
-  const html=sheetView==="staff"?buildSheet():buildBriefing();
+  const isStaff=sheetView==="staff";
   ROOT.innerHTML=`
     <div class="card pad no-print" style="padding-bottom:8px">
-      <div class="seg-wrap"><button class="seg ${sheetView==='staff'?'on':''}" data-sv="staff">Staffing sheet</button><button class="seg ${sheetView==='brief'?'on':''}" data-sv="brief">Briefing</button></div>
+      <div class="seg-wrap"><button class="seg ${isStaff?'on':''}" data-sv="staff">Staffing sheet</button><button class="seg ${sheetView==='brief'?'on':''}" data-sv="brief">Briefing</button></div>
     </div>
-    <div class="sheet-scroll"><div id="staffSheet">${html}</div></div>
+    <div class="sheet-scroll"><div id="staffSheet">${isStaff?'':buildBriefing()}</div></div>
     <div class="card pad no-print" style="text-align:center">
       <button class="btn good" id="shLog" style="width:100%">✓ Log Manpower</button>
       <p class="hint" style="margin:8px 2px 0">Log this manpower to save it.</p>
       <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button></div>
     </div>`;
+  // the on-screen preview IS the saved image — render the same canvas so they never diverge
+  if(isStaff){const host=$("#staffSheet");if(host){try{const cv=renderStaffCanvas();cv.style.cssText="width:100%;height:auto;display:block;border-radius:12px";host.appendChild(cv);}catch(_){host.innerHTML=buildSheet();}}}
   $$('#staffRoot .seg[data-sv]').forEach(s=>s.onclick=()=>{sheetView=s.dataset.sv;render();});
   $("#shLog").onclick=logManpower;
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
