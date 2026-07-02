@@ -952,7 +952,7 @@ function rAssign(){
     const gpuTxt=t.oos?'':(t.gpu==='inop'?'GPU Inop':'Good GPU');   // GPU status lives inside the tile now
     const ctl=`${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}<button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button><button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button>`;
     return `<div class="tc3 ${stCls} ${t.oos?'oos':''}">
-      <div class="tc3-tile"><div class="tc3-ctl">${ctl}</div><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b>${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
+      <div class="tc3-tile"><div class="tc3-ctl">${ctl}</div><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b>${ty?`<small class="tc3-ty">${esc(ty)}</small>`:''}${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
       <div class="tc3-b">
         ${t.oos?`<div class="tc3-oos" data-oosedit="${id}"><span class="haz">✕</span> OUT OF SERVICE${(ST.tugOos&&ST.tugOos[id])?` — ${esc(ST.tugOos[id])}`:' ✎'}</div>`:
           `<div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER">${slotName(crew.DRIVER)}</div>
@@ -960,7 +960,7 @@ function rAssign(){
       </div>
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
-  const mutedCard=id=>`<div class="tc3 muted" data-add="${id}"><div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b></div><div class="tc3-b"><span class="muse">＋ add to board</span></div></div>`;
+  const mutedCard=id=>{const ty=tugType(id);return `<div class="tc3 muted" data-add="${id}"><div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b>${ty?`<small class="tc3-ty">${esc(ty)}</small>`:''}</div><div class="tc3-b"><span class="muse">＋ add to board</span></div></div>`;};
   const tugGroups=(()=>{ const cells=[];
     TUG_GROUPS.forEach(g=>{ const ids=showUnusedTugs?g.ids:g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
       ids.forEach(id=>{const t=tugState(id);cells.push((t.running||t.oos)?tugCard(id):mutedCard(id));}); });

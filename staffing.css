@@ -587,6 +587,7 @@
 .tc3-tile b{font-size:28px;font-weight:900;line-height:1;display:flex;align-items:center;gap:4px}
 .tc3-tile b i{font-style:normal;font-size:9px;font-weight:900;background:rgba(255,255,255,.28);border-radius:3px;padding:1px 4px}
 .tc3-tile small{font-size:8.5px;font-weight:800;opacity:.92;text-align:center;letter-spacing:.03em}
+.tc3-ty{font-size:8.5px;font-weight:800;letter-spacing:.04em;opacity:.9;text-align:center;text-transform:uppercase;line-height:1}
 .tc3-gpu{font-size:9px;font-weight:800;color:#fff;background:rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;margin-top:1px;text-align:center;white-space:nowrap}
 .tc3-b{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-start}
 /* controls sit INSIDE the tile, on top of the number — translucent on the coloured background */
