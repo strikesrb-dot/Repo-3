@@ -946,9 +946,8 @@ function rAssign(){
     const gpuTxt=t.oos?'':(t.gpu==='inop'?'GPU Inop':'Good GPU');   // GPU status lives inside the tile now
     const ctl=`${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}<button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button><button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button>`;
     return `<div class="tc3 ${stCls} ${t.oos?'oos':''}">
-      <div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b>${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
+      <div class="tc3-tile"><div class="tc3-ctl">${ctl}</div><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b>${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
       <div class="tc3-b">
-        <div class="tc3-ctl">${ctl}</div>
         ${t.oos?`<div class="tc3-oos"><span class="haz">✕</span> OUT OF SERVICE</div>`:
           `<div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><b>D</b>${slotName(crew.DRIVER)}</div>
            <div class="ts-slot ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><b>O</b>${slotName(crew.OBSERVR)}</div>`}

@@ -568,26 +568,21 @@
 .tc3.st-inop{--ac:#a8740c}
 .tc3.st-oos{--ac:#c0271e}
 .tc3.oos{opacity:.9}
-/* bigger status tile now holds the number, type AND the GPU status */
-.tc3-tile{background:var(--ac);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 10px;min-width:96px;flex:none;gap:3px}
+/* status tile holds the controls (on top), the number, and the GPU status */
+.tc3-tile{background:var(--ac);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 8px 8px;min-width:104px;flex:none;gap:3px}
 .tc3-tile b{font-size:28px;font-weight:900;line-height:1;display:flex;align-items:center;gap:4px}
 .tc3-tile b i{font-style:normal;font-size:9px;font-weight:900;background:rgba(255,255,255,.28);border-radius:3px;padding:1px 4px}
 .tc3-tile small{font-size:8.5px;font-weight:800;opacity:.92;text-align:center;letter-spacing:.03em}
 .tc3-gpu{font-size:9px;font-weight:800;color:#fff;background:rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;margin-top:1px;text-align:center;white-space:nowrap}
-.tc3{position:relative}
 .tc3-b{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-start}
-/* controls sit INLINE in the top-right corner (not on their own bar); the first crew row
-   reserves space on the right so names/hours never collide with them */
-.tc3-ctl{position:absolute;top:5px;right:6px;display:flex;align-items:center;gap:3px;z-index:2}
-.tc3-b .ts-slot:first-child{padding-right:98px}
-.tc3-oos{padding-right:98px}
-.tc3-ctl .ticon{border:none;border-radius:6px;width:28px;height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;background:#eef1f4;color:#5a6772;line-height:0}
-.tc3-ctl .ticon svg{display:block}
+/* controls sit INSIDE the tile, on top of the number — translucent on the coloured background */
+.tc3-ctl{display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:1px}
+.tc3-ctl .ticon{border:none;border-radius:6px;width:25px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;background:rgba(255,255,255,.22);color:#fff;line-height:0}
+.tc3-ctl .ticon svg{display:block;width:13px;height:13px}
 .tc3-ctl .ticon:active{transform:scale(.9)}
-.tc3-ctl .gpubtn.ok{color:#1e7d46}
-.tc3-ctl .gpubtn.inop{color:#fff;background:#a8740c}
-.tc3-ctl .toos.isoos{width:auto;padding:0 9px;font-size:10.5px;font-weight:900;background:#c0271e;color:#fff}
-.tc3-ctl .thide{color:#9aa6b1}
+.tc3-ctl .gpubtn.inop{background:rgba(0,0,0,.18)}
+.tc3-ctl .toos.isoos{width:auto;padding:0 7px;font-size:10px;font-weight:900;background:rgba(255,255,255,.28)}
+.tc3-ctl .thide{background:rgba(255,255,255,.16)}
 /* larger crew bars — fixed height so the controls stay flush at the very top */
 .tc3-b .ts-slot{border-top:none;flex:none;min-height:44px;padding:9px 11px;font-size:14px;gap:8px}
 .tc3-b .ts-slot+.ts-slot{border-left:none;border-top:1px solid #eef1f4}
