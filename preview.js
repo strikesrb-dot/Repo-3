@@ -130,46 +130,39 @@ function render(){
     b.querySelector('.ip-ic').textContent=m.ic;b.querySelector('.ip-chip').textContent=m.lbl;});
 }
 /* =========================================================================
-   PREVIEW 2 — 5 concepts for the ASSIGN-BOARD tug card, colored by status
-   (green = ready + good GPU, yellow = GPU inop but ready, red = out of service)
+   PREVIEW 2 — 7 concepts for the STAFF POOL CUBE, colored by shift type
+   (teal = standard shift, red = non-standard, black = partial <7h)
    ========================================================================= */
-let dev2="phone", v2=1;
-const CT=[
-  {id:1, type:"TBL-400",  st:"ready", crew:[["DRV","Scott, J.","05:00-13:00",0,0],["OBS","Pete, M.","05:00-13:00",0,0]]},
-  {id:17,type:"TBL-280",  st:"ready", crew:[["DRV","Matthews, S.","05:00-13:00",1,0],["OBS","Mbacke, M.","05:00-13:00",0,1]]},
-  {id:20,type:"GOLDHOFER",elec:true, st:"inop", crew:[["DRV","Torres, L.","05:00-13:00",0,0],["OBS","Walsh, K.","05:00-13:00",1,0]]},
-  {id:24,type:"GOLDHOFER",st:"oos"},
-  {id:10,type:"TBL-280",  st:"ready", crew:[["DRV","Kull, Fred","04:00-12:00",0,1],["OBS","Marmol, P.","05:00-13:00",0,0]]},
-  {id:21,type:"GOLDHOFER",st:"inop", crew:[["DRV","Williams, T.","05:00-13:00",0,0],["OBS","—","",0,0]]},
+let dev2="ipad", v2=1;
+const PC=[
+  {name:"Bernard Allic",     hrs:"13:00-21:00", cls:"std"},
+  {name:"Juan Castillo",     hrs:"12:00-22:00", cls:"non"},
+  {name:"Victor Antunes",    hrs:"13:00-21:00", cls:"std", dbl:"05:00"},
+  {name:"Chris Kadelak",     hrs:"15:00-19:00", cls:"part", pw:"Worked AM"},
+  {name:"Rudy Rigor",        hrs:"14:00-22:00", cls:"non"},
+  {name:"Kevin Small",       hrs:"13:00-21:00", cls:"std", pw:"Worked AM"},
+  {name:"Paul Zablocki",     hrs:"12:00-22:00", cls:"non", dbl:"06:00"},
+  {name:"Joanne Rizzolo",    hrs:"13:00-21:00", cls:"std"},
 ];
-const STLBL={ready:"Good GPU",inop:"GPU Inop · still ready",oos:"Out of Service"};
-const cr=(role,name,h,dbl,wln)=>`<div class="c-r"><i>${role}</i><span class="c-nm">${esc(name)}${dbl?'<em class="cdbl">DBL</em>':''}</span><s>${esc(h||'')}${wln?'<u class="cwln">last night</u>':''}</s></div>`;
-const crews=x=>x.crew.map(c=>cr(c[0],c[1],c[2],c[3],c[4])).join("");
-function concept(n){
-  const t=CT, body=x=>x.st==='oos'?'<div class="c-oos">Out of Service</div>':crews(x);
-  // 1 — colored header bar
-  if(n===1) return `<div class="c-grid">${t.map(x=>`<div class="c1 ${x.st}"><div class="c1-h">STUG ${x.id}${x.elec?' ⚡':''}<u>${x.type}</u><b>${x.st==='ready'?'✓ Good GPU':x.st==='inop'?'GPU Inop':'OOS'}</b></div>${body(x)}</div>`).join("")}</div>`;
-  // 2 — left status stripe
-  if(n===2) return `<div class="c-grid">${t.map(x=>`<div class="c2 ${x.st}"><div class="c2-h">STUG ${x.id}${x.elec?' ⚡':''} <u>${x.type}</u><span class="c2-dot"></span></div>${x.st==='oos'?'<div class="c-oos">Out of Service</div>':crews(x)+`<div class="c2-gpu">${STLBL[x.st]}</div>`}</div>`).join("")}</div>`;
-  // 3 — status number tile + crew
-  if(n===3) return `<div class="c-grid">${t.map(x=>`<div class="c3 ${x.st}"><div class="c3-tile"><b>${x.id}</b><small>${x.elec?'⚡ ':''}${x.type}</small></div><div class="c3-b">${x.st==='oos'?'<div class="c-oos">Out of Service</div>':crews(x)+`<div class="c3-gpu">${STLBL[x.st]}</div>`}</div></div>`).join("")}</div>`;
-  // 4 — full soft tint
-  if(n===4) return `<div class="c-grid">${t.map(x=>`<div class="c4 ${x.st}"><div class="c4-h"><span class="c4-n">${x.id}</span><span class="c4-ty">${x.elec?'⚡ ':''}${x.type}</span><span class="c4-pill">${x.st==='ready'?'GPU ✓':x.st==='inop'?'GPU ✕':'OOS'}</span></div>${body(x)}</div>`).join("")}</div>`;
-  // 5 — top accent + gpu pill
-  return `<div class="c-grid">${t.map(x=>`<div class="c5 ${x.st}"><div class="c5-top"></div><div class="c5-h">STUG ${x.id}${x.elec?' ⚡':''}<u>${x.type}</u></div>${x.st==='oos'?'<div class="c-oos">Out of Service</div>':crews(x)+`<div class="c5-pill ${x.st}">${STLBL[x.st]}</div>`}</div>`).join("")}</div>`;
-}
+const ccCube=p=>`<button class="cc-cube ${p.cls}">
+  <span class="cc-nm">${esc(p.name)}</span>
+  <span class="cc-hr">${esc(p.hrs)}</span>
+  <span class="cc-ft">${p.dbl?`<em class="cc-dbl">DBL until ${esc(p.dbl)}</em>`:''}${p.pw?`<em class="cc-pw">${esc(p.pw)}</em>`:''}</span>
+</button>`;
+const CC_DESC={1:"Tint + left bar (current)",2:"Colored top strip",3:"Outlined",4:"Solid fill",5:"Left color block",6:"Bottom bar",7:"Colored name only"};
+function cubeConcept(n){ return `<div class="cc-legend"><span class="cl std">Standard</span><span class="cl non">Non-standard</span><span class="cl part">Partial</span></div><div class="cc-grid cc${n}">${PC.map(ccCube).join("")}</div>`; }
 function render2(){
   const root=$("#preview2Root");if(!root)return;
-  if(v2>5)v2=1;
+  if(v2>7||v2<1)v2=1;
   const devBtns=Object.entries(DEV).map(([k,d])=>`<button class="pv-seg ${dev2===k?"on":""}" data-dev="${k}">${d.l}</button>`).join("");
-  const vBtns=Array.from({length:5},(_,i)=>`<button class="pv-vnum ${v2===i+1?"on":""}" data-v="${i+1}">${i+1}</button>`).join("");
+  const vBtns=Array.from({length:7},(_,i)=>`<button class="pv-vnum ${v2===i+1?"on":""}" data-v="${i+1}">${i+1}</button>`).join("");
   root.innerHTML=`<div class="card pad pv-ctrl">
-      <h2 class="staff-h" style="margin:0 0 8px">Tug-card concepts</h2>
-      <p class="pv-note" style="margin:0 0 6px">Assign-board tug cards colored by status — <b class="rk g">green</b> ready/good GPU, <b class="rk y">yellow</b> GPU inop, <b class="rk r">red</b> out of service. Pick one and I'll make it the real board.</p>
+      <h2 class="staff-h" style="margin:0 0 8px">Pool cube concepts</h2>
+      <p class="pv-note" style="margin:0 0 6px">Staff-pool cubes colored by shift — <b class="rk g">teal</b> standard, <b class="rk r">red</b> non-standard, <b class="rk k">black</b> partial. Pick one and I'll make it the real pool.</p>
       <div class="pv-row"><span class="pv-lbl">Device</span><div class="pv-segs">${devBtns}</div></div>
       <div class="pv-row"><span class="pv-lbl">Concept</span><div class="pv-segs">${vBtns}</div></div>
     </div>
-    <div class="pv-stage"><div class="pv-dev pv-${dev2}"><div class="pv-frame" style="width:${DEV[dev2].w}px"><div class="pv-screen pv-c2">${concept(v2)}</div></div><div class="pv-cap">${DEV[dev2].l} · ${DEV[dev2].w}px — concept ${v2}</div></div></div>`;
+    <div class="pv-stage"><div class="pv-dev pv-${dev2}"><div class="pv-frame" style="width:${DEV[dev2].w}px"><div class="pv-screen pv-cc">${cubeConcept(v2)}</div></div><div class="pv-cap">${DEV[dev2].l} · ${DEV[dev2].w}px — concept ${v2}: ${CC_DESC[v2]}</div></div></div>`;
   $$('#preview2Root .pv-seg[data-dev]').forEach(b=>b.onclick=()=>{dev2=b.dataset.dev;render2();});
   $$('#preview2Root .pv-vnum').forEach(b=>b.onclick=()=>{v2=+b.dataset.v;render2();});
 }

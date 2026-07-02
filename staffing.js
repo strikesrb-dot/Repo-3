@@ -949,8 +949,8 @@ function rAssign(){
       <div class="tc3-tile"><div class="tc3-ctl">${ctl}</div><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b>${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
       <div class="tc3-b">
         ${t.oos?`<div class="tc3-oos"><span class="haz">✕</span> OUT OF SERVICE</div>`:
-          `<div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><b>D</b>${slotName(crew.DRIVER)}</div>
-           <div class="ts-slot ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><b>O</b>${slotName(crew.OBSERVR)}</div>`}
+          `<div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER">${slotName(crew.DRIVER)}</div>
+           <div class="ts-slot ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR">${slotName(crew.OBSERVR)}</div>`}
       </div>
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
