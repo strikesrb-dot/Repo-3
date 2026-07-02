@@ -454,7 +454,7 @@ async function syncShared(kind,load,saveFn,cap){
   const rows=await pullKind(kind); if(rows===null)return false;
   const remote={}; rows.forEach(r=>{const e=r.data; if(e&&e.id)remote[e.id]=e;});
   const map={}; load().forEach(e=>map[e.id]=e); let changed=false;
-  Object.values(remote).forEach(e=>{const cur=map[e.id]; if(!cur||(e.when||0)>(cur.when||0)){ if(cur&&!e.img&&cur.img)e.img=cur.img; map[e.id]=e; changed=true; }});
+  Object.values(remote).forEach(e=>{const cur=map[e.id]; if(!cur||(e.when||0)>(cur.when||0)){ if(cur&&!e.img&&cur.img&&!e._deleted)e.img=cur.img; map[e.id]=e; changed=true; }});
   const toPush=Object.values(map).filter(e=>{const r=remote[e.id];return !r||(e.when||0)>(r.when||0);}).map(e=>({id:e.id,kind,data:e}));
   if(changed)saveFn(Object.values(map).sort((a,b)=>(b.when||0)-(a.when||0)).slice(0,cap));
   if(toPush.length){ try{ await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify(toPush)}); }catch(_){ } }
@@ -600,7 +600,7 @@ function rAuth(){
 /* ---- step: menu (Create / Past / Draft) ---- */
 function rMenu(){
   syncLogs();syncDrafts();   // refresh team data in the background
-  const logs=loadLog().length, drafts=loadDrafts().length;
+  const logs=loadLog().filter(e=>!e._deleted).length, drafts=loadDrafts().length;
   ROOT.innerHTML=card(`
     <div class="pool-head"><h2 class="staff-h" style="margin:0">Manpower / Staffing</h2>
       ${AUTH?`<button class="who-chip" id="mpSwitch">${esc(nm(AUTH.name))}${AUTH.temp?' · temp':''} · switch</button>`:''}</div>
@@ -1135,7 +1135,8 @@ function rSheet(){
       <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="assign">‹ Edit board</button></div>
     </div>`;
   // the on-screen preview IS the saved image — render the same canvas so they never diverge
-  if(isStaff){const host=$("#staffSheet");if(host){try{const cv=renderStaffCanvas();cv.style.cssText="width:100%;height:auto;display:block;border-radius:12px";host.appendChild(cv);}catch(_){host.innerHTML=buildSheet();}}}
+  if(isStaff){const host=$("#staffSheet");if(host){try{const cv=renderStaffCanvas();cv.style.cssText="width:100%;height:auto;display:block;border-radius:12px";host.appendChild(cv);
+    const ac=renderAbsentCanvas();ac.style.cssText="width:100%;height:auto;display:block;border-radius:12px;margin-top:12px";host.appendChild(ac);}catch(_){host.innerHTML=buildSheet();}}}
   $$('#staffRoot .seg[data-sv]').forEach(s=>s.onclick=()=>{sheetView=s.dataset.sv;render();});
   $("#shLog").onclick=logManpower;
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
@@ -1171,13 +1172,13 @@ function buildSheet(){
   </div>`;
 }
 
-// the printable staff page IS the canvas image (same as preview + saved image).
-// Size it explicitly in mm (Safari print ignores max-height on <img>, so we fit by
+// the printable pages ARE canvas images (same as preview + saved image).
+// Size them explicitly in mm (Safari print ignores max-height on <img>, so we fit by
 // hand to a portrait Letter printable box and let height drive tall boards).
-function sheetImageHTML(){try{const cv=renderStaffCanvas();const r=cv.height/cv.width;
-    const maxW=174,maxH=236; let w=maxW,h=w*r; if(h>maxH){h=maxH;w=h/r;}
-    return `<img class="sb-img" style="width:${w.toFixed(1)}mm;height:${h.toFixed(1)}mm" src="${cv.toDataURL("image/png")}" alt="Staffing sheet">`;
-  }catch(_){return buildSheet();}}
+function printImg(cv){const r=cv.height/cv.width,maxW=174,maxH=236;let w=maxW,h=w*r;if(h>maxH){h=maxH;w=h/r;}
+  return `<img class="sb-img" style="width:${w.toFixed(1)}mm;height:${h.toFixed(1)}mm" src="${cv.toDataURL("image/png")}" alt="sheet">`;}
+function sheetImageHTML(){try{return printImg(renderStaffCanvas());}catch(_){return buildSheet();}}
+function absentImageHTML(){try{return printImg(renderAbsentCanvas());}catch(_){return "";}}
 
 /* ---- exporters (canvas-drawn — works in Safari/WebKit) ---- */
 const FA=s=>s+" -apple-system,Arial,sans-serif";
@@ -1194,7 +1195,6 @@ function renderStaffCanvas(){
   const supers=ST.supers.map(nm), mgrs=[ST.manager,...ST.asst].filter(Boolean).map(nm);
   const areas=AREAS.map(x=>({key:x.key,label:areaLabel(x.key),min:x.min?x.min[ST.shift]:0,list:(a.areas[x.key]||[])}));
   const tugIds=[]; TUG_GROUPS.forEach(g=>g.ids.forEach(id=>{const t=tugState(id);if(t.running||t.oos)tugIds.push(id);}));
-  const absent=absentFor(ST.shift);
   // fixed columns: WestPark · Ballpark · South on the right, everything else on the left
   const areaBoxH=x=>26+Math.max(1,x.list.length)*28+8;
   const RIGHT_ORDER=["WestPark","Ballpark","South Team"];
@@ -1207,8 +1207,7 @@ function renderStaffCanvas(){
   const full=tugIds.length>12, TUGH=full?82:94, crewTop=full?24:27, crewGap=full?34:40;
   const tugRows=Math.ceil(tugIds.length/2), tugsH=tugRows*(TUGH+gap);
   const infoLines=Math.max(1,supers.length,mgrs.length), infoH=24+infoLines*20+6;
-  const absH=absent.length?24+Math.ceil(absent.length/4)*18+8:0;
-  let H=M+52+8+infoH+10 +32+areasH+10 +32+tugsH +(absH?absH+8:0) +M;
+  let H=M+52+8+infoH+10 +32+areasH+10 +32+tugsH +M;
   const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
   ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);ctx.textBaseline="middle";
   const clip=(t,mw,font)=>{ctx.font=font;t=t||"";if(ctx.measureText(t).width<=mw)return t;while(t.length&&ctx.measureText(t+"…").width>mw)t=t.slice(0,-1);return t+"…";};
@@ -1278,12 +1277,28 @@ function renderStaffCanvas(){
       ctx.fillStyle=leavesEarly(p)?"#c0271e":"#1c2530";ctx.font=FA("700 17px");ctx.textAlign="left";
       ctx.fillText(clip(nm(p.name),Math.max(20,mL-cx-8),FA("700 17px")),cx,cy);});});
   y=tTop+tugsH;
-  // absent
-  if(absH){ctx.fillStyle="#fbfbfc";ctx.fillRect(M,y,IW,absH);ctx.strokeStyle="#e2e7eb";ctx.lineWidth=1;ctx.strokeRect(M+.5,y+.5,IW-1,absH-1);
-    ctx.fillStyle="#67727e";ctx.font=FA("800 12px");ctx.textAlign="left";ctx.fillText("NOT HERE THIS SHIFT — "+absent.length,M+10,y+13);
-    const cw=(IW-20)/4;absent.forEach((x,i)=>{const col=i%4,row=Math.floor(i/4),px=M+10+col*cw,py=y+24+15+row*18;
-      ctx.fillStyle="#1c2530";ctx.font=FA("600 13px");ctx.textAlign="left";ctx.fillText(clip(x.name,cw-42,FA("600 13px")),px,py);
-      ctx.fillStyle="#c0271e";ctx.font=FA("800 11px");ctx.textAlign="right";ctx.fillText(x.code,px+cw-14,py);ctx.textAlign="left";});}
+  ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
+  return c;
+}
+// the "who's not here" is its own sheet (its own page in the PDF, its own card in the preview)
+function renderAbsentCanvas(){
+  const S=2,W=1040,M=26,IW=W-2*M,absent=absentFor(ST.shift);
+  const cols=2,rows=Math.ceil(Math.max(1,absent.length)/cols),rowH=36,colW=(IW-16)/cols;
+  const headH=56;let H=M+headH+12+rows*rowH+12+M;
+  const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);ctx.textBaseline="middle";
+  const rr=(x,yy,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,yy);ctx.arcTo(x+w,yy,x+w,yy+h,r);ctx.arcTo(x+w,yy+h,x,yy+h,r);ctx.arcTo(x,yy+h,x,yy,r);ctx.arcTo(x,yy,x+w,yy,r);ctx.closePath();};
+  const clip=(t,mw,font)=>{ctx.font=font;t=t||"";if(ctx.measureText(t).width<=mw)return t;while(t.length&&ctx.measureText(t+"…").width>mw)t=t.slice(0,-1);return t+"…";};
+  // title + shift + count
+  ctx.fillStyle="#10171f";ctx.font=FA("900 30px");ctx.textAlign="left";ctx.fillText("NOT HERE THIS SHIFT",M,M+26);
+  ctx.fillStyle="#0b3d63";rr(W-M-150,M+6,150,38,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 16px");ctx.textAlign="center";ctx.fillText(ST.shift+" · "+absent.length,W-M-75,M+26);
+  let y=M+headH+12;
+  if(!absent.length){ctx.fillStyle="#8a97a3";ctx.font=FA("700 20px");ctx.textAlign="left";ctx.fillText("Everyone is here this shift.",M+4,y+20);}
+  absent.forEach((x,i)=>{const col=i%cols,row=Math.floor(i/cols),bx=M+col*(colW+16),by=y+row*rowH;
+    ctx.fillStyle=(row%2)?"#f5f7f9":"#fff";rr(bx,by,colW,rowH-6,8);ctx.fill();ctx.strokeStyle="#e6eaee";ctx.lineWidth=1;rr(bx,by,colW,rowH-6,8);ctx.stroke();
+    ctx.fillStyle="#1c2530";ctx.font=FA("700 19px");ctx.textAlign="left";ctx.fillText(clip(nm(x.name),colW-120,FA("700 19px")),bx+14,by+(rowH-6)/2);
+    const code=x.code||"";ctx.font=FA("800 13px");const cw=ctx.measureText(code).width+16;ctx.fillStyle="#fbe4e2";rr(bx+colW-cw-12,by+(rowH-6)/2-11,cw,22,6);ctx.fill();
+    ctx.fillStyle="#c0271e";ctx.textAlign="center";ctx.fillText(code,bx+colW-cw/2-12,by+(rowH-6)/2);ctx.textAlign="left";});
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
   return c;
 }
@@ -1422,7 +1437,7 @@ async function unlockLogEdit(entry){
 }
 function rLogs(){
   if(!logSel)syncLogs();
-  const list=loadLog();
+  const list=loadLog().filter(x=>!x._deleted);   // tombstones are kept for sync but hidden from view
   if(logSel){const e=list.find(x=>x.id===logSel);
     if(!e){logSel=null;return rLogs();}
     ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(e.shift)} manpower <span class="ro-badge">read-only</span></h2></div>
@@ -1435,12 +1450,18 @@ function rLogs(){
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logTxt">Text</button></div>`:'<p class="hint">This entry has no saved board, so it can\'t be reopened.</p>'}
       <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="logBack">‹ Back to past</button>${logDeleteAllowed()?'<button class="btn ghost" id="logDel">Delete</button>':''}</div>`);
     $("#logBack").onclick=()=>{logSel=null;render();};
-    $("#logDel")?.addEventListener("click",()=>{ if(!confirm("Delete this past manpower? It will be removed for the whole team."))return; delRow(logSel);saveLogList(loadLog().filter(x=>x.id!==logSel));logSel=null;render(); });
+    $("#logDel")?.addEventListener("click",()=>{ if(!confirm("Delete this past manpower? It will be removed for the whole team."))return;
+      // write a tombstone (not a plain delete): the two-way sync re-uploads any row a peer still
+      // has, so a bare delete gets resurrected. A tombstone with when=now wins the merge everywhere.
+      const tomb={id:logSel,_deleted:true,when:Date.now()};
+      saveLogList([tomb,...loadLog().filter(x=>x.id!==logSel)]);
+      pushRow("log",logSel,tomb);
+      logSel=null;render(); });
     $("#logEdit")?.addEventListener("click",async()=>{ if(!(await unlockLogEdit(e)))return; logAct("Reopened manpower",e.shift+" "+(e.date||"")); applySnapshot(e.snap); ST._tugSeeded=true; logSel=null; ST.step="assign"; render(); }); // reopen the saved board to edit (re-log to overwrite)
     $("#logImg")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetImage()));
     $("#logTxt")?.addEventListener("click",()=>withSnapshot(e.snap,()=>exportSheetText()));
     $("#logShare")?.addEventListener("click",()=>withSnapshot(e.snap,()=>shareSheets()));
-    $("#logPdf")?.addEventListener("click",()=>withSnapshot(e.snap,()=>{ $("#printArea").innerHTML=`<div class="sb-print">${sheetImageHTML()}</div><div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); }));
+    $("#logPdf")?.addEventListener("click",()=>withSnapshot(e.snap,()=>{ const abs=absentImageHTML(); $("#printArea").innerHTML=`<div class="sb-print">${sheetImageHTML()}</div>${abs?`<div class="sb-print" style="page-break-before:always">${abs}</div>`:''}<div class="sb-print" style="page-break-before:always">${buildBriefing()}</div>`; window.print(); }));
     return;
   }
   const byDate={};list.forEach(e=>{(byDate[e.date]=byDate[e.date]||[]).push(e);});
