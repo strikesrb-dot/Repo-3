@@ -1303,6 +1303,8 @@ function renderAbsentCanvas(){
   return c;
 }
 function canvasToPng(c){return new Promise(res=>c.toBlob(b=>res(b),"image/png"));}
+// full-resolution JPEG for email/share — crisp enough, but a fraction of a PNG's size
+function canvasToJpeg(c,q){return new Promise(res=>c.toBlob(b=>res(b),"image/jpeg",q||0.92));}
 // trim uniform white margins so the exported image is snipped tight to the content
 function autoCropCanvas(src,pad){
   try{ const w=src.width,h=src.height,d=src.getContext("2d").getImageData(0,0,w,h).data;
@@ -1367,12 +1369,16 @@ function renderBriefCanvas(){
 function exportBriefImage(){ const c=autoCropCanvas(renderBriefCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed."); const name="Daily-Briefing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
 async function shareSheets(){
   try{
-    const [s,br]=await Promise.all([canvasToPng(renderStaffCanvas()),canvasToPng(renderBriefCanvas())]);
-    const files=[new File([s],"EWR-AMT-Staffing-"+ST.shift+".png",{type:"image/png"}), new File([br],"Daily-Briefing-"+ST.shift+".png",{type:"image/png"})];
+    // JPEG (not PNG) so the attachments are small enough to email comfortably
+    const jobs=[["EWR-AMT-Staffing-"+ST.shift+".jpg",renderStaffCanvas()]];
+    if(absentFor(ST.shift).length)jobs.push(["Not-Here-"+ST.shift+".jpg",renderAbsentCanvas()]);
+    jobs.push(["Daily-Briefing-"+ST.shift+".jpg",renderBriefCanvas()]);
+    const blobs=await Promise.all(jobs.map(j=>canvasToJpeg(j[1],0.92)));
+    const files=jobs.map((j,i)=>new File([blobs[i]],j[0],{type:"image/jpeg"}));
     if(navigator.canShare&&navigator.canShare({files})){ await navigator.share({files,title:"EWR Move Team — "+ST.shift,text:"Staffing + Daily Briefing ("+ST.shift+")"}); return; }
-    // fallback: download both
+    // fallback: download all
     files.forEach(f=>{const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);});
-    alert("Sharing isn't supported here — both files were downloaded instead.");
+    alert("Sharing isn't supported here — the files were downloaded instead.");
   }catch(err){ if(String(err).indexOf("AbortError")<0)alert("Share failed: "+(err.message||err)); }
 }
 function exportSheetText(){
@@ -1488,8 +1494,8 @@ function rLogs(){
 /* ---- standalone Briefing & Focus tab (home) ---- */
 let briefTabView="edit";
 async function shareBriefOnly(){
-  try{ const blob=await canvasToPng(renderBriefCanvas());
-    const files=[new File([blob],"Daily-Briefing-"+ST.shift+".png",{type:"image/png"})];
+  try{ const blob=await canvasToJpeg(renderBriefCanvas(),0.92);
+    const files=[new File([blob],"Daily-Briefing-"+ST.shift+".jpg",{type:"image/jpeg"})];
     if(navigator.canShare&&navigator.canShare({files})){ await navigator.share({files,title:"Daily Move Team Briefing",text:"Daily Move Team Shift Briefing"}); return; }
     const u=URL.createObjectURL(files[0]),a=document.createElement("a");a.href=u;a.download=files[0].name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);
   }catch(err){ if(String(err).indexOf("AbortError")<0)alert("Share failed: "+(err.message||err)); }
