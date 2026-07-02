@@ -1357,17 +1357,21 @@ async function shareSheets(){
 }
 function exportSheetText(){
   const a=ST.assign,L=[];
+  // same hours + Double-until / Worked-prior info the sheet shows
+  const hrs=p=>p._hours||(p.start+"-"+p.end);
+  const metaTxt=p=>{const pw=prevWorkLabel(p.emp);if(pw)return " ("+pw+")";if(worksNext(p.emp))return " ("+dblLabel(p.emp)+")";return "";};
+  const crewTxt=p=>p?nm(p.name)+" "+hrs(p)+metaTxt(p):"—";
   L.push("EWR AMT STAFFING — "+ST.shift);L.push("=".repeat(30));
   L.push("DISPATCHER: "+(ST.dispatch&&ST.dispatch.name?nm(ST.dispatch.name):"OPEN"));
   if(ST.supers.length)L.push("SUPERVISORS: "+ST.supers.map(nm).join(", "));
   const mgr=[ST.manager,...ST.asst].filter(Boolean);if(mgr.length)L.push("MANAGERS: "+mgr.map(nm).join(", "));
   L.push("");L.push("AREAS:");
-  AREAS.forEach(ar=>{const list=a.areas[ar.key]||[];if(list.length||ar.min)L.push("  "+ar.key+(ar.min?" ("+list.length+"/"+ar.min[ST.shift]+")":"")+": "+(list.map(p=>nm(p.name)).join(", ")||"—"));});
+  AREAS.forEach(ar=>{const list=a.areas[ar.key]||[];if(list.length||ar.min)L.push("  "+ar.key+(ar.min?" ("+list.length+"/"+ar.min[ST.shift]+")":"")+": "+(list.map(crewTxt).join(", ")||"—"));});
   L.push("");L.push("TUGS:");
   TUG_GROUPS.forEach(g=>{const ids=g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});if(!ids.length)return;
-    L.push(" ["+g.label+"]");ids.forEach(id=>{const t=tugState(id),ty=tugType(id)?" "+tugType(id):"";if(t.oos){L.push("  STUG "+id+ty+": OUT OF SERVICE");return;}
+    L.push(" ["+g.label+"]");ids.forEach(id=>{const t=tugState(id),ty=tugType(id)?" "+tugType(id):"";if(t.oos){L.push("  STUG "+id+ty+": OUT OF SERVICE"+((ST.tugOos&&ST.tugOos[id])?" — "+ST.tugOos[id]:""));return;}
     const cr=a.tugs[id]||{},gp=t.gpu==='inop'?" [GP INOP]":"";
-    L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+ty+gp+": DRIVER "+(cr.DRIVER?nm(cr.DRIVER.name)+" "+cr.DRIVER.start+"-"+cr.DRIVER.end:"—")+" / OBSERVR "+(cr.OBSERVR?nm(cr.OBSERVR.name)+" "+cr.OBSERVR.start+"-"+cr.OBSERVR.end:"—"));});});
+    L.push("  STUG "+id+(ELECTRIC.has(id)?" (E)":"")+ty+gp+": DRIVER "+crewTxt(cr.DRIVER)+" / OBSERVR "+crewTxt(cr.OBSERVR));});});
   const ab=absentFor(ST.shift);
   if(ab.length){L.push("");L.push("NOT HERE:");ab.forEach(x=>L.push("  "+nm(x.name)+" — "+x.code));}
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),el=document.createElement("a");
