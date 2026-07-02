@@ -21,7 +21,8 @@
     --line:#dce1e6;--ink:#1c2530;--muted:#67727e;--good:#1e7d46;--good-bg:#e6f4ec;--danger:#c0392b;--shadow:0 1px 3px rgba(0,0,0,.12);}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  /* Claude-style book serif (uses the system serif — "New York" on iPad — so it works offline) */
+  body{font-family:ui-serif,"New York","Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
     background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4;padding-bottom:24px;touch-action:manipulation;}
   html{touch-action:manipulation}
   button,a,.chip,.selpill,.hubtile,.iconbtn,summary{touch-action:manipulation}
@@ -640,6 +641,15 @@
       <div id="tileToggles"></div>
     </div>
 
+    <h2 class="section">Staffing names</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">How people's names show across the staffing board, tug crews and the sheet.</p>
+      <select id="nameOrderSel">
+        <option value="first">First name first — David Tavarez</option>
+        <option value="last">Last name first — Tavarez, David</option>
+      </select>
+    </div>
+
     <h2 class="section">App passcode</h2>
     <div class="card pad">
       <p class="hint" style="margin-top:0">Unlocks Settings, the inventory location editor, and the movement-log wipe. 3–8 digits.</p>
@@ -896,9 +906,11 @@ function load(){
   if(!d.previewSeeded){["preview","preview2"].forEach(k=>{if(!d.hiddenTiles.includes(k))d.hiddenTiles.push(k);});d.previewSeeded=true;}
   d.settings=Object.assign({
     trackInventory:true,trackEdits:true,trackQuickMove:true,trackDeletions:true,trackClears:true,
-    moveCap:300, shiftAM:300,shiftPM:780,shiftNH:1260,
+    moveCap:300, shiftAM:300,shiftPM:780,shiftNH:1260, nameOrder:"first",
     shiftNameAM:"AM",shiftNamePM:"PM",shiftNameNH:"Nighthawk", passcode:"3599"
   }, d.settings||{});
+  // mirror the name-order pref to a tiny key so staffing.js can read it cheaply on every name render
+  try{Store.setRaw("elt.staff.nameOrder", d.settings.nameOrder==="last"?"last":"first");}catch(_){}
   d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();
     if(/^westpark staging area$/i.test(e.location||""))e.location="WestPark";
     if(/^amelia staging area$/i.test(e.location||"")){e.location="South";e.spot="Staging Area";}}); // caps + location migration
@@ -1142,7 +1154,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";const nos=$("#nameOrderSel");if(nos)nos.value=(data.settings&&data.settings.nameOrder)==="last"?"last":"first";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -1417,6 +1429,9 @@ $("#passSave").addEventListener("click",()=>{const v=$("#passNew").value.trim();
   data.settings.passcode=v;save();$("#passNew").value="";toast("Passcode updated");});
 $("#subSave").addEventListener("click",()=>{const v=$("#subEdit").value.trim();
   data.settings.headerSub=v;save();updateHdr();toast("Subtitle saved");});
+$("#nameOrderSel")?.addEventListener("change",e=>{const v=e.target.value==="last"?"last":"first";
+  data.settings.nameOrder=v; try{Store.setRaw("elt.staff.nameOrder",v);}catch(_){}
+  save(); toast("Name order: "+(v==="last"?"Last name first":"First name first"));});
 function refreshLocationFilter(){const sel=$("#filterLoc"),cur=sel.value;
   // only locations you actually have equipment at
   const locs=[...new Set(data.equipment.map(e=>e.location).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));

@@ -14,7 +14,9 @@ function fakeName(real){if(!real)return real;const h=hashStr(real);const last=FA
 function demoOn(){return !!Store.getJSON("elt.demo",false);}
 // display names as "First Last" (stored as "Last, First" from eTA); leave single-word / comma-less names as-is
 function firstLast(name){const s=(name||"").trim();const i=s.indexOf(",");if(i<0)return s;const last=s.slice(0,i).trim(),first=s.slice(i+1).trim();return first?first+" "+last:last;}
-function nm(name){if(!name)return name;return demoOn()?fakeName(name):firstLast(name);}
+// name display order — settings-driven ("first" = First Last, "last" = raw Last, First from eTA)
+function nameOrderFirst(){ try{return Store.getRaw("elt.staff.nameOrder","first")!=="last";}catch(_){return true;} }
+function nm(name){if(!name)return name;if(demoOn())return fakeName(name);return nameOrderFirst()?firstLast(name):name;}
 const UP=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
 const CK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
@@ -938,15 +940,15 @@ function rAssign(){
   // driver/observer crew stacked on the RIGHT. Green=ready · amber=GPU inop · red=OOS.
   const tugCard=id=>{const t=tugState(id),crew=ST.assign.tugs[id]||{},ty=tugType(id);
     const stCls=t.oos?'st-oos':(t.gpu==='inop'?'st-inop':'st-ready');
-    const stLbl=t.oos?'':(t.gpu==='inop'?'GPU Inop · still ready':'Good GPU');
+    const gpuTxt=t.oos?'':(t.gpu==='inop'?'GPU Inop':'Good GPU');   // GPU status lives inside the tile now
     const ctl=`${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}<button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button><button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button>`;
     return `<div class="tc3 ${stCls} ${t.oos?'oos':''}">
-      <div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b><small>${esc(ty||'')}</small></div>
+      <div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b><small>${esc(ty||'')}</small>${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
       <div class="tc3-b">
+        <div class="tc3-ctl">${ctl}</div>
         ${t.oos?`<div class="tc3-oos"><span class="haz">✕</span> OUT OF SERVICE</div>`:
           `<div class="ts-slot ${crew.DRIVER?'full':''}" data-tug="${id}" data-role="DRIVER"><b>D</b>${slotName(crew.DRIVER)}</div>
            <div class="ts-slot ${crew.OBSERVR?'full':''}" data-tug="${id}" data-role="OBSERVR"><b>O</b>${slotName(crew.OBSERVR)}</div>`}
-        <div class="tc3-foot"><span class="tc3-gpu">${stLbl}</span><span class="tc3-ctl">${ctl}</span></div>
       </div>
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
