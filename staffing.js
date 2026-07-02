@@ -1178,95 +1178,86 @@ function drawBolt(ctx,x,y,inop){ // small lightning at (x,y) top-left ~13x15
   ctx.restore();
 }
 function renderStaffCanvas(){
-  // ---- large single-column LIST: header · REMOTES section · TUGS section ----
-  const a=ST.assign,S=2,W=1000,M=30,IW=W-2*M;
+  // ---- two-column list built to fit a single page: header · REMOTES · TUGS ----
+  const a=ST.assign,S=2,W=1040,M=26,gap=10,IW=W-2*M,colW=(IW-gap)/2;
   const dn=ST.dispatch&&ST.dispatch.name?nm(ST.dispatch.name):"";
   const supers=ST.supers.map(nm), mgrs=[ST.manager,...ST.asst].filter(Boolean).map(nm);
   const areas=AREAS.map(x=>({label:areaLabel(x.key),min:x.min?x.min[ST.shift]:0,list:(a.areas[x.key]||[])}));
   const tugIds=[]; TUG_GROUPS.forEach(g=>g.ids.forEach(id=>{const t=tugState(id);if(t.running||t.oos)tugIds.push(id);}));
   const absent=absentFor(ST.shift);
-  const areaRowH=x=>28+Math.max(1,x.list.length)*32+8;
-  const TUGH=104;
-  const infoLines=Math.max(1,supers.length,mgrs.length), infoH=28+infoLines*24+8;
-  // ---- height pass ----
-  let H=M+62+10+infoH+12;
-  H+=34; areas.forEach(x=>{H+=areaRowH(x);}); H+=12;      // remotes
-  H+=34; H+=tugIds.length*(TUGH+8);                        // tugs
-  const absH=absent.length?30+Math.ceil(absent.length/3)*22+10:0; if(absH)H+=absH+8;
-  H+=M;
+  // pack the area boxes into 2 balanced columns
+  const areaBoxH=x=>24+Math.max(1,x.list.length)*26+8;
+  const aCol=[M,M+colW+gap],aY=[0,0],aPlace=[];
+  areas.forEach(x=>{const h=areaBoxH(x),ci=aY[0]<=aY[1]?0:1;aPlace.push({x:aCol[ci],ry:aY[ci],h,area:x});aY[ci]+=h+gap;});
+  const areasH=Math.max(aY[0],aY[1]);
+  const TUGH=88, tugRows=Math.ceil(tugIds.length/2), tugsH=tugRows*(TUGH+gap);
+  const infoLines=Math.max(1,supers.length,mgrs.length), infoH=24+infoLines*20+6;
+  const absH=absent.length?24+Math.ceil(absent.length/4)*18+8:0;
+  let H=M+52+8+infoH+10 +32+areasH+10 +32+tugsH +(absH?absH+8:0) +M;
   const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
   ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);ctx.textBaseline="middle";
   const clip=(t,mw,font)=>{ctx.font=font;t=t||"";if(ctx.measureText(t).width<=mw)return t;while(t.length&&ctx.measureText(t+"…").width>mw)t=t.slice(0,-1);return t+"…";};
   const rr=(x,yy,w,h,r)=>{ctx.beginPath();ctx.moveTo(x+r,yy);ctx.arcTo(x+w,yy,x+w,yy+h,r);ctx.arcTo(x+w,yy+h,x,yy+h,r);ctx.arcTo(x,yy+h,x,yy,r);ctx.arcTo(x,yy,x+w,yy,r);ctx.closePath();};
-  // pill ending at right edge xr, centred on cy
-  const pill=(txt,xr,cy,bg,fg,fs)=>{ctx.font=FA("800 "+fs+"px");const w=ctx.measureText(txt).width+14;const x=xr-w;ctx.fillStyle=bg;rr(x,cy-10,w,20,5);ctx.fill();ctx.fillStyle=fg;ctx.textAlign="center";ctx.fillText(txt,x+w/2,cy);ctx.textAlign="left";return w;};
+  const pill=(txt,xr,cy,bg,fg,fs)=>{ctx.font=FA("800 "+fs+"px");const w=ctx.measureText(txt).width+12;const x=xr-w;ctx.fillStyle=bg;rr(x,cy-9,w,18,5);ctx.fill();ctx.fillStyle=fg;ctx.textAlign="center";ctx.fillText(txt,x+w/2,cy);ctx.textAlign="left";return w;};
+  // hours + Double-until / Worked pill, right-aligned to xrEdge
+  const rightMeta=(p,cy,xrEdge)=>{const pw=prevWorkLabel(p.emp),fwd=!pw&&worksNext(p.emp),du=fwd?dblUntil(p.emp):"";
+    let xr=xrEdge;
+    if(pw){xr-=pill(pw,xr,cy,"#f3e2f7","#7a3287",12)+6;}
+    else if(fwd){xr-=pill("Double until "+du,xr,cy,"#0b3d63","#fff",12)+6;}
+    ctx.fillStyle="#5a6772";ctx.font=FA("800 14px");ctx.textAlign="right";ctx.fillText(p._hours||(p.start+"-"+p.end),xr,cy);ctx.textAlign="left";return xr;};
   let y=M;
   // title + shift
-  ctx.fillStyle="#10171f";ctx.font=FA("900 36px");ctx.textAlign="left";ctx.fillText("EWR AMT STAFFING",M,y+30);
-  ctx.fillStyle="#0b3d63";rr(W-M-104,y+6,104,44,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 20px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-52,y+29);
-  y+=62+10;
-  // info band — dispatcher / supervisors / managers
-  const colW=(IW-2*10)/3;
-  [["DISPATCHER",[dn||"OPEN"],!dn,true],["SUPERVISORS",supers.length?supers:["—"]],["MANAGERS",mgrs.length?mgrs:["—"]]].forEach((b,i)=>{
-    const bx=M+i*(colW+10);
-    ctx.fillStyle="#fff";ctx.fillRect(bx,y,colW,infoH);ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(bx+.5,y+.5,colW-1,infoH-1);
-    ctx.fillStyle=b[3]?"#0b3d63":"#f5a623";ctx.fillRect(bx,y,colW,26);
-    ctx.fillStyle=b[3]?"#fff":"#3a2500";ctx.font=FA("900 14px");ctx.textAlign="left";ctx.fillText(b[0],bx+10,y+13);
-    ctx.textAlign="left";b[1].forEach((v,j)=>{ctx.fillStyle=b[2]?"#c0271e":"#1c2530";ctx.font=FA("700 18px");ctx.fillText(clip(v,colW-18,FA("700 18px")),bx+10,y+26+20+j*24);});
-  });
-  y+=infoH+12;
-  const sectionHead=label=>{ctx.fillStyle="#0b3d63";rr(M,y,IW,32,5);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("900 18px");ctx.textAlign="left";ctx.fillText(label,M+12,y+17);y+=38;};
-  const rightMeta=(p,cy)=>{ // hours + Double-until / Worked-AM pills, right-aligned, large
-    const pw=prevWorkLabel(p.emp),fwd=!pw&&worksNext(p.emp),du=fwd?dblUntil(p.emp):"";
-    let xr=W-M-12;
-    if(pw){const w=pill(pw,xr,cy,"#f3e2f7","#7a3287",14);xr-=w+8;}
-    else if(fwd){const w=pill("Double until "+du,xr,cy,"#0b3d63","#fff",14);xr-=w+8;}
-    ctx.fillStyle="#5a6772";ctx.font=FA("800 17px");ctx.textAlign="right";ctx.fillText(p._hours||(p.start+"-"+p.end),xr,cy);ctx.textAlign="left";
-    return xr; };
-  // ---- REMOTES / AREAS ----
+  ctx.fillStyle="#10171f";ctx.font=FA("900 32px");ctx.textAlign="left";ctx.fillText("EWR AMT STAFFING",M,y+26);
+  ctx.fillStyle="#0b3d63";rr(W-M-92,y+4,92,40,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 18px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-46,y+25);
+  y+=52+8;
+  // info band
+  const iW=(IW-2*gap)/3;
+  [["DISPATCHER",[dn||"OPEN"],!dn,true],["SUPERVISORS",supers.length?supers:["—"]],["MANAGERS",mgrs.length?mgrs:["—"]]].forEach((b,i)=>{const bx=M+i*(iW+gap);
+    ctx.fillStyle="#fff";ctx.fillRect(bx,y,iW,infoH);ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(bx+.5,y+.5,iW-1,infoH-1);
+    ctx.fillStyle=b[3]?"#0b3d63":"#f5a623";ctx.fillRect(bx,y,iW,22);
+    ctx.fillStyle=b[3]?"#fff":"#3a2500";ctx.font=FA("900 12px");ctx.textAlign="left";ctx.fillText(b[0],bx+9,y+11);
+    b[1].forEach((v,j)=>{ctx.fillStyle=b[2]?"#c0271e":"#1c2530";ctx.font=FA("700 16px");ctx.fillText(clip(v,iW-16,FA("700 16px")),bx+9,y+22+18+j*20);});});
+  y+=infoH+10;
+  const sectionHead=label=>{ctx.fillStyle="#0b3d63";rr(M,y,IW,28,5);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("900 16px");ctx.textAlign="left";ctx.fillText(label,M+12,y+15);y+=32;};
+  // ---- REMOTES / AREAS (2 columns) ----
   sectionHead("REMOTES / AREAS");
-  areas.forEach(x=>{const rh=areaRowH(x);
-    ctx.fillStyle="#fff";ctx.fillRect(M,y,IW,rh);ctx.strokeStyle="#e2e7eb";ctx.lineWidth=1;ctx.strokeRect(M+.5,y+.5,IW-1,rh-1);
-    ctx.fillStyle="#f5a623";ctx.fillRect(M,y,IW,24);
-    ctx.fillStyle="#3a2500";ctx.font=FA("900 13px");ctx.textAlign="left";ctx.fillText(x.label.toUpperCase(),M+10,y+12);
-    ctx.textAlign="right";ctx.fillText(x.min?(x.list.length+"/"+x.min):"DISC",M+IW-10,y+12);ctx.textAlign="left";
-    if(!x.list.length){ctx.fillStyle="#c2ccd4";ctx.font=FA("600 19px");ctx.fillText("—",M+12,y+24+19);}
-    else x.list.forEach((p,j)=>{const cy=y+24+20+j*32;
-      ctx.fillStyle=leavesEarly(p)?"#c0271e":"#1c2530";ctx.font=FA("700 19px");ctx.textAlign="left";
-      ctx.fillText(clip(nm(p.name),IW-320,FA("700 19px")),M+12,cy);
-      rightMeta(p,cy);});
-    y+=rh;});
-  y+=12;
-  // ---- TUGS ----
+  const aTop=y;
+  aPlace.forEach(pl=>{const x=pl.x,by=aTop+pl.ry,bw=colW,ar=pl.area;
+    ctx.fillStyle="#fff";ctx.fillRect(x,by,bw,pl.h);ctx.strokeStyle="#e2e7eb";ctx.lineWidth=1;ctx.strokeRect(x+.5,by+.5,bw-1,pl.h-1);
+    ctx.fillStyle="#f5a623";ctx.fillRect(x,by,bw,22);
+    ctx.fillStyle="#3a2500";ctx.font=FA("900 12px");ctx.textAlign="left";ctx.fillText(clip(ar.label.toUpperCase(),bw-56,FA("900 12px")),x+9,by+11);
+    ctx.textAlign="right";ctx.fillText(ar.min?(ar.list.length+"/"+ar.min):"DISC",x+bw-9,by+11);ctx.textAlign="left";
+    if(!ar.list.length){ctx.fillStyle="#c2ccd4";ctx.font=FA("600 16px");ctx.fillText("—",x+10,by+22+16);}
+    else ar.list.forEach((p,j)=>{const cy=by+22+17+j*26;
+      ctx.fillStyle=leavesEarly(p)?"#c0271e":"#1c2530";ctx.font=FA("700 16px");ctx.textAlign="left";
+      ctx.fillText(clip(nm(p.name),bw-190,FA("700 16px")),x+10,cy);rightMeta(p,cy,x+bw-10);});});
+  y=aTop+areasH+10;
+  // ---- TUGS (2 columns) ----
   sectionHead("TUGS");
-  tugIds.forEach(id=>{const t=tugState(id),cr=a.tugs[id]||{},tlbl=tugType(id);
-    const ac=t.oos?"#c0271e":(t.gpu==='inop'?"#a8740c":"#1e7d46");
-    ctx.fillStyle="#fff";ctx.fillRect(M,y,IW,TUGH);ctx.strokeStyle="#e2e7eb";ctx.lineWidth=1;ctx.strokeRect(M+.5,y+.5,IW-1,TUGH-1);
-    // left status tile
-    const boxW=132;ctx.fillStyle=ac;ctx.fillRect(M,y,boxW,TUGH);
+  const tTop=y;
+  tugIds.forEach((id,i)=>{const col=i%2,row=Math.floor(i/2),x=M+col*(colW+gap),ty=tTop+row*(TUGH+gap);
+    const t=tugState(id),cr=a.tugs[id]||{},tlbl=tugType(id),ac=t.oos?"#c0271e":(t.gpu==='inop'?"#a8740c":"#1e7d46");
+    ctx.fillStyle="#fff";ctx.fillRect(x,ty,colW,TUGH);ctx.strokeStyle="#e2e7eb";ctx.lineWidth=1;ctx.strokeRect(x+.5,ty+.5,colW-1,TUGH-1);
+    const boxW=98;ctx.fillStyle=ac;ctx.fillRect(x,ty,boxW,TUGH);
     ctx.fillStyle="#fff";ctx.textAlign="center";
-    ctx.font=FA("900 34px");ctx.fillText(String(id)+(ELECTRIC.has(id)?" E":""),M+boxW/2,y+30);
-    if(tlbl){ctx.font=FA("800 12.5px");ctx.fillText(tlbl,M+boxW/2,y+56);}
-    ctx.font=FA("800 12.5px");ctx.fillText(t.oos?"OOS":(t.gpu==='inop'?"GPU INOP":"GOOD GPU"),M+boxW/2,y+78);
-    ctx.textAlign="left";
-    const cx=M+boxW+18;
-    if(t.oos){ ctx.fillStyle="#c0271e";ctx.font=FA("900 20px");ctx.fillText("OUT OF SERVICE",cx,y+TUGH/2-10);
-      const r=ST.tugOos&&ST.tugOos[id]; if(r){ctx.fillStyle="#8a4a44";ctx.font=FA("600 16px");ctx.fillText(clip(r,IW-boxW-40,FA("600 16px")),cx,y+TUGH/2+18);} }
-    else ["DRIVER","OBSERVR"].forEach((role,k)=>{const cy=y+32+k*42;
-      ctx.fillStyle="#90a0ad";ctx.font=FA("800 12px");ctx.textAlign="left";ctx.fillText(role,cx,cy);
-      const p=cr[role];
-      if(!p){ctx.fillStyle="#cdd5dc";ctx.font=FA("700 20px");ctx.fillText("—",cx+86,cy);return;}
-      ctx.fillStyle=leavesEarly(p)?"#c0271e":"#1c2530";ctx.font=FA("700 20px");
-      ctx.fillText(clip(nm(p.name),IW-boxW-340,FA("700 20px")),cx+86,cy);
-      rightMeta(p,cy);});
-    y+=TUGH+8;});
+    ctx.font=FA("900 27px");ctx.fillText(String(id)+(ELECTRIC.has(id)?" E":""),x+boxW/2,ty+24);
+    if(tlbl){ctx.font=FA("800 10px");ctx.fillText(tlbl,x+boxW/2,ty+46);}
+    ctx.font=FA("800 10px");ctx.fillText(t.oos?"OOS":(t.gpu==='inop'?"GPU INOP":"GOOD GPU"),x+boxW/2,ty+64);
+    ctx.textAlign="left";const cx=x+boxW+12,xr=x+colW-10;
+    if(t.oos){ctx.fillStyle="#c0271e";ctx.font=FA("900 16px");ctx.fillText("OUT OF SERVICE",cx,ty+TUGH/2-9);
+      const r=ST.tugOos&&ST.tugOos[id];if(r){ctx.fillStyle="#8a4a44";ctx.font=FA("600 13px");ctx.fillText(clip(r,colW-boxW-24,FA("600 13px")),cx,ty+TUGH/2+13);}}
+    else ["DRIVER","OBSERVR"].forEach((role,k)=>{const cy=ty+27+k*36;
+      ctx.fillStyle="#90a0ad";ctx.font=FA("800 10px");ctx.textAlign="left";ctx.fillText(role.slice(0,3),cx,cy);
+      const p=cr[role];if(!p){ctx.fillStyle="#cdd5dc";ctx.font=FA("700 17px");ctx.fillText("—",cx+34,cy);return;}
+      ctx.fillStyle=leavesEarly(p)?"#c0271e":"#1c2530";ctx.font=FA("700 17px");
+      ctx.fillText(clip(nm(p.name),colW-boxW-190,FA("700 17px")),cx+34,cy);rightMeta(p,cy,xr);});});
+  y=tTop+tugsH;
   // absent
   if(absH){ctx.fillStyle="#fbfbfc";ctx.fillRect(M,y,IW,absH);ctx.strokeStyle="#e2e7eb";ctx.lineWidth=1;ctx.strokeRect(M+.5,y+.5,IW-1,absH-1);
-    ctx.fillStyle="#67727e";ctx.font=FA("800 13px");ctx.textAlign="left";ctx.fillText("NOT HERE THIS SHIFT — "+absent.length,M+10,y+15);
-    const cw=(IW-20)/3;absent.forEach((x,i)=>{const col=i%3,row=Math.floor(i/3),px=M+10+col*cw,py=y+30+18+row*22;
-      ctx.fillStyle="#1c2530";ctx.font=FA("600 15px");ctx.textAlign="left";ctx.fillText(clip(x.name,cw-56,FA("600 15px")),px,py);
-      ctx.fillStyle="#c0271e";ctx.font=FA("800 12px");ctx.textAlign="right";ctx.fillText(x.code,px+cw-16,py);ctx.textAlign="left";});
-    y+=absH+8;}
+    ctx.fillStyle="#67727e";ctx.font=FA("800 12px");ctx.textAlign="left";ctx.fillText("NOT HERE THIS SHIFT — "+absent.length,M+10,y+13);
+    const cw=(IW-20)/4;absent.forEach((x,i)=>{const col=i%4,row=Math.floor(i/4),px=M+10+col*cw,py=y+24+15+row*18;
+      ctx.fillStyle="#1c2530";ctx.font=FA("600 13px");ctx.textAlign="left";ctx.fillText(clip(x.name,cw-42,FA("600 13px")),px,py);
+      ctx.fillStyle="#c0271e";ctx.font=FA("800 11px");ctx.textAlign="right";ctx.fillText(x.code,px+cw-14,py);ctx.textAlign="left";});}
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
   return c;
 }
