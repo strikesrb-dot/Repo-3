@@ -810,7 +810,7 @@ let asgSec="tugs";                   // hub: which section fills the board pane 
 const BOARD_THEMES=["front","modern","minimal"];
 const THEME_LABEL={front:"Front end",modern:"Modern",minimal:"Minimal"};
 const LAYOUT_NAME={1:"Sidebar",2:"Pool right",3:"Pool top",4:"Pool bottom",5:"Wide pool",6:"Narrow pool",7:"Split board",8:"Tug list",9:"Board first",10:"Single stack"};
-function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; return {density:c.density||"normal",order:ord,theme:BOARD_THEMES.includes(c.theme)?c.theme:"front"}; }
+function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; const pw=(+c.poolW>=220&&+c.poolW<=1000)?+c.poolW:null; return {density:c.density||"normal",order:ord,theme:BOARD_THEMES.includes(c.theme)?c.theme:"front",poolW:pw}; }
 // a boolean control drawn in the active theme's toggle style (minimal = flat pill, else sliding switch)
 function tggl(id,on,label){ const min=boardCfg().theme==='minimal';
   return min
@@ -946,7 +946,7 @@ function rAssign(){
     const gpuTxt=t.oos?'':(t.gpu==='inop'?'GPU Inop':'Good GPU');   // GPU status lives inside the tile now
     const ctl=`${t.oos?'':`<button class="ticon gpubtn ${t.gpu==='inop'?'inop':'ok'}" data-gpu="${id}" title="Ground power: ${t.gpu==='inop'?'INOP':'OK'}">${t.gpu==='inop'?BOLT_X:BOLT}</button>`}<button class="ticon toos ${t.oos?'isoos':''}" data-oos="${id}" title="${t.oos?'Bring into service':'Mark out of service'}">${t.oos?'OOS':POWER}</button><button class="ticon thide" data-hide="${id}" title="Remove from board">✕</button>`;
     return `<div class="tc3 ${stCls} ${t.oos?'oos':''}">
-      <div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b><small>${esc(ty||'')}</small>${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
+      <div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b>${gpuTxt?`<span class="tc3-gpu">${gpuTxt}</span>`:''}</div>
       <div class="tc3-b">
         <div class="tc3-ctl">${ctl}</div>
         ${t.oos?`<div class="tc3-oos"><span class="haz">✕</span> OUT OF SERVICE</div>`:
@@ -955,7 +955,7 @@ function rAssign(){
       </div>
     </div>`;};
   // unused (unset) tugs still show, extremely muted — tap to bring into service
-  const mutedCard=id=>`<div class="tc3 muted" data-add="${id}"><div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b><small>${esc(tugType(id)||'')}</small></div><div class="tc3-b"><span class="muse">＋ add to board</span></div></div>`;
+  const mutedCard=id=>`<div class="tc3 muted" data-add="${id}"><div class="tc3-tile"><b>${id}${ELECTRIC.has(id)?'<i>E</i>':''}</b></div><div class="tc3-b"><span class="muse">＋ add to board</span></div></div>`;
   const tugGroups=TUG_GROUPS.map(g=>{
     const ids=showUnusedTugs?g.ids:g.ids.filter(id=>{const t=tugState(id);return t.running||t.oos;});
     if(!ids.length)return "";
@@ -984,11 +984,12 @@ function rAssign(){
     <div class="card pad asg2-top"><div class="pool-head"><h2 class="staff-h" style="margin:0">Assign ${ST.shift}${AUTH&&AUTH.name?` <span class="by-who">· by ${esc(nm(AUTH.name))}</span>`:''}</h2><span class="cnt">${avail.length} left</span></div>
       <p class="hint" style="margin:2px 0 0">${autoMode==='multi'?'<b>Multi Assign</b> — tap names to turn them purple (can go in 2 areas).':autoMode?'<b>Auto mode</b> — tap people in the pool, then use the bar below.':'Tap a name, then tap a tug or remote slot.'}</p>
       ${missHTML}</div>
-    <div class="asg2">
+    <div class="asg2"${cfg.poolW?` style="grid-template-columns:${cfg.poolW}px 10px 1fr"`:''}>
       <div class="asg2-pool card pad">
         <div class="seg-section">STAFF · ${avail.length} left</div>
         <div class="pool-groups">${poolHTML}</div>
       </div>
+      <div class="asg-gutter" id="asgGutter" title="Drag to resize"><span></span></div>
       <div class="asg2-board">${dispSec}${hubBar}${activeSec}</div>
     </div>
     ${back("reconcile","Tugs")}
@@ -1007,6 +1008,15 @@ function rAssign(){
   $("#dblFirst")?.addEventListener("click",()=>{ poolDoubles=!poolDoubles; render(); });
   $("#priorFirst")?.addEventListener("click",()=>{ poolWorkedPrior=!poolWorkedPrior; render(); });
   $$('#staffRoot .hub-tab').forEach(b=>b.onclick=()=>{ asgSec=b.dataset.hub; render(); });
+  // drag the gutter to resize the pool ⇄ board split
+  (function(){ const g=$("#asgGutter"),grid=$("#staffRoot .asg2"); if(!g||!grid)return;
+    const onDown=e=>{ e.preventDefault(); const startX=(e.touches?e.touches[0]:e).clientX; const left=grid.getBoundingClientRect().left;
+      const move=ev=>{ const x=(ev.touches?ev.touches[0]:ev).clientX; let w=Math.round(x-left); w=Math.max(220,Math.min(w, grid.clientWidth-260)); grid.style.gridTemplateColumns=w+"px 10px 1fr"; grid.dataset.pw=w; };
+      const up=()=>{ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); document.removeEventListener('touchmove',move); document.removeEventListener('touchend',up); document.body.style.userSelect=''; if(grid.dataset.pw)setBoardCfg({poolW:+grid.dataset.pw}); };
+      document.body.style.userSelect='none';
+      document.addEventListener('pointermove',move); document.addEventListener('pointerup',up); document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',up); };
+    g.addEventListener('pointerdown',onDown); g.addEventListener('touchstart',onDown,{passive:false});
+  })();
   $$('#staffRoot .dens-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({density:b.dataset.dens}); render(); });
   $$('#staffRoot .theme-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({theme:b.dataset.theme}); render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
