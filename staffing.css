@@ -598,7 +598,11 @@
 .tc3-b .ts-slot{border-top:none;flex:none;min-height:44px;padding:8px 9px;font-size:13.5px;gap:6px}
 .tc3-b .ts-slot+.ts-slot{border-left:none;border-top:1px solid #eef1f4}
 .tc3-b .ts-slot>b{font-size:11px;width:13px}
-.tc3-b .ts-slot .slot-name{font-size:13.5px;flex:1 1 auto;min-width:0}
+/* full name stacked: first name over last name */
+.tc3-b .ts-slot .slot-name.vname{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;line-height:1.1;white-space:normal;overflow:hidden}
+.tc3-b .ts-slot .vname .cn-1{font-size:13px;font-weight:700}
+.tc3-b .ts-slot .vname .cn-2{font-size:14px;font-weight:900}
+.tc3-b .ts-slot .vname .cn-1,.tc3-b .ts-slot .vname .cn-2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc3-b .ts-slot .slot-empty{font-size:13px}
 .tc3-b .ts-slot .slot-t{font-size:10px;flex:none;margin-left:6px}
 .tc3-b .ts-slot .sdbl{flex:none;font-size:8px;padding:0 4px}

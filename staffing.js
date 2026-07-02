@@ -17,10 +17,10 @@ function firstLast(name){const s=(name||"").trim();const i=s.indexOf(",");if(i<0
 // name display order — settings-driven ("first" = First Last, "last" = raw Last, First from eTA)
 function nameOrderFirst(){ try{return Store.getRaw("elt.staff.nameOrder","first")!=="last";}catch(_){return true;} }
 function nm(name){if(!name)return name;if(demoOn())return fakeName(name);return nameOrderFirst()?firstLast(name):name;}
-// tight slots (tug crew / remotes): first name + last name shortened to 3 letters + a dot
-function crewName(name){ const s=(nm(name)||"").trim(); if(!s)return s;
-  const c=s.indexOf(","); if(c>=0) return s.slice(0,3)+". "+s.slice(c+1).trim();   // "Last, First" → "Las. First"
-  const p=s.split(/\s+/); if(p.length<2) return s; const last=p.pop(); return p.join(" ")+" "+last.slice(0,3)+"."; }
+// tug crew: full name stacked vertically — first name on top, last name below
+function crewNameV(name){ const s=(nm(name)||"").trim(); if(!s)return "";
+  const i=s.indexOf(" "); if(i<0) return `<span class="cn-1">${esc(s)}</span>`;
+  return `<span class="cn-1">${esc(s.slice(0,i))}</span><span class="cn-2">${esc(s.slice(i+1))}</span>`; }
 const UP=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
 const CK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
@@ -928,7 +928,7 @@ function rAssign(){
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
     // compact DBL flag in the tight crew slot (the full "DBL until HH:MM" shows on the pool cube)
-    return `<span class="slot-name ${early?'early':''}">${esc(crewName(p.name))}</span>${fwd?`<em class="sdbl">DBL</em>`:''}<span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
+    return `<span class="slot-name vname ${early?'early':''}">${crewNameV(p.name)}</span>${fwd?`<em class="sdbl">DBL</em>`:''}<span class="slot-t">${esc(p._hours||(p.start+"-"+p.end))}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];
@@ -941,7 +941,7 @@ function rAssign(){
   const areaCards=AREAS.map(a=>{
     const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0,need=min&&list.length<min;
     return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.label||a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
-      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip ${leavesEarly(p)?'early':''}" data-area="${esc(a.key)}" data-i="${i}">${esc(crewName(p.name))}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
+      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip ${leavesEarly(p)?'early':''}" data-area="${esc(a.key)}" data-i="${i}">${esc(nm(p.name))}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
   // tugs — "Concept 3" card: a colour-status tile (STUG # + type + GPU state) on the LEFT,
