@@ -1316,7 +1316,7 @@ function autoCropCanvas(src,pad){
     const cw=right-left+1,ch=bottom-top+1,out=document.createElement("canvas");out.width=cw;out.height=ch;
     const o=out.getContext("2d");o.fillStyle="#fff";o.fillRect(0,0,cw,ch);o.drawImage(src,left,top,cw,ch,0,0,cw,ch);return out;
   }catch(_){return src;} }
-function exportSheetImage(){ const c=autoCropCanvas(renderStaffCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed — use Print."); const name="EWR-AMT-Staffing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
+function exportSheetImage(){ const c=autoCropCanvas(renderStaffCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed — use Print."); const name="EWR-AMT-Staffing-"+ST.shift+".jpg"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/jpeg",0.95); }
 function renderBriefCanvas(){
   const b=ST.brief||{focus:[]},S=2,W=1100,M=34;
   const oosT=TUGS.filter(id=>tugState(id).oos),inop=TUGS.filter(id=>tugSt(id)==='inop'),sked=TUGS.filter(id=>tugState(id).running).length;
@@ -1366,7 +1366,7 @@ function renderBriefCanvas(){
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
   return c;
 }
-function exportBriefImage(){ const c=autoCropCanvas(renderBriefCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed."); const name="Daily-Briefing-"+ST.shift+".png"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/png"); }
+function exportBriefImage(){ const c=autoCropCanvas(renderBriefCanvas()); c.toBlob(b=>{ if(!b)return alert("Image export failed."); const name="Daily-Briefing-"+ST.shift+".jpg"; if(window.showImagePreview)window.showImagePreview(b,name); },"image/jpeg",0.95); }
 async function shareSheets(){
   try{
     // JPEG (not PNG) so the attachments are small enough to email comfortably
