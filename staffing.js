@@ -73,8 +73,10 @@ const OUT_CODES=new Set(["VC","OUT","DTO","HOLT","DATV","DO","SICK","SICK ","CB"
 const WORKED_CODES=new Set(["DTW","HWP","HWFT"]);
 
 /* ---------- bid results (hours + days off per emp) ---------- */
+// bid roster intentionally not shipped with the site — real employee data must never
+// be a public static asset. If a roster feature returns, it gets imported at runtime.
 let BIDS=null;
-async function loadBids(){ if(BIDS)return BIDS; try{const r=await fetch("./bids.json",{cache:"force-cache"});const j=await r.json();BIDS=j.bids||{};}catch(_){BIDS={};} return BIDS; }
+async function loadBids(){ if(!BIDS)BIDS={}; return BIDS; }
 
 /* ---------- pdf.js (vendored, lazy) ---------- */
 let pdfjs=null;
@@ -750,7 +752,7 @@ function rPool(){
   const row=b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const tr=tier(b);
     return `<div class="prow prow-tap ${tr!=='full'?'partial':''} ${tr==='one'?'onehour':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
       ${fwd?`<span class="tag db">${esc(dblLabel(b.emp))}</span>`:''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
-      <div class="bid-line">${bid?`Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b>`:'<span class="hint">No bid on file</span>'}</div></div>
+      ${bid?`<div class="bid-line">Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b></div>`:''}</div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;};
   const full=pool.filter(b=>tier(b)==='full'), parts=pool.filter(b=>tier(b)==='part'), ones=pool.filter(b=>tier(b)==='one');
   ROOT.innerHTML=card(`
