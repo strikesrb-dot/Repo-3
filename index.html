@@ -212,6 +212,14 @@
   .setg-ic{width:48px;height:48px;border-radius:14px;background:#eef2f5;color:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto}
   .setg-title{font-size:18px;font-weight:900;color:var(--ink)}.setg-sub{font-size:13px;color:var(--muted);margin-top:-6px}
   #setgIn{font-size:24px;font-weight:800;letter-spacing:.4em;text-align:center;padding:12px;border:1.5px solid var(--line);border-radius:12px}
+  .askpass-ov{position:fixed;inset:0;z-index:9200;background:rgba(10,20,35,.6);display:flex;align-items:center;justify-content:center;padding:24px}
+  .askpass-ov .ap-in{font-size:24px;font-weight:800;letter-spacing:.4em;text-align:center;padding:12px;border:1.5px solid var(--line);border-radius:12px}
+  .pass-warn{background:#fde9c8;color:#9a5a00;border:1px solid #f2cf94;border-radius:10px;padding:9px 11px;font-size:13px;font-weight:700;margin-bottom:10px}
+  .pass-warn[hidden]{display:none}
+  .sync-health{font-size:12px;font-weight:700;border-radius:8px;padding:6px 9px;margin:2px 0 4px;background:#eef2f5;color:var(--muted)}
+  .sync-health.ok{background:#e7f5ec;color:#15622f}
+  .sync-health.bad{background:#fde9c8;color:#9a5a00}
+  .sync-health[hidden]{display:none}
   .setg-err{color:var(--danger);font-size:13px;font-weight:700;min-height:16px}
   .supc-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #f1f3f5}
   .supc-row:last-child{border-bottom:none}.supc-row b{font-size:14px}
@@ -653,6 +661,7 @@
 
     <h2 class="section">App passcode</h2>
     <div class="card pad">
+      <div id="passDefaultWarn" class="pass-warn" hidden>⚠︎ You're still using the default passcode. Set your own before the team uses this.</div>
       <p class="hint" style="margin-top:0">Unlocks Settings, the inventory location editor, and the movement-log wipe. 3–8 digits.</p>
       <div class="toolbar" style="margin-bottom:0">
         <input id="passNew" type="text" inputmode="numeric" placeholder="New passcode" autocomplete="off" maxlength="8" />
@@ -760,6 +769,7 @@
     <div class="card pad">
       <p class="hint" style="margin-top:0">Shares the whole site across supervisors — manpower logs &amp; drafts, sign-in codes, the equipment list, inventory, movement &amp; secure logs, and settings. Everyone sees the same data. Demo mode stays local to each device. Turn off to go fully local (offline).</p>
       <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Online sync<small id="syncStatus"></small></span><input type="checkbox" id="syncOnChk" class="cfg-chk"></label>
+      <div id="syncHealth" class="sync-health"></div>
       <details style="margin-top:6px">
         <summary style="font-weight:700;color:var(--navy);cursor:pointer;font-size:13px">Backend (advanced)</summary>
         <label for="syncUrl" style="margin-top:8px">Supabase REST URL</label>
@@ -1165,7 +1175,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();renderLabelCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";const nos=$("#nameOrderSel");if(nos)nos.value=(data.settings&&data.settings.nameOrder)==="last"?"last":"first";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();renderLabelCfg();refreshPassWarn();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";const nos=$("#nameOrderSel");if(nos)nos.value=(data.settings&&data.settings.nameOrder)==="last"?"last":"first";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -1277,10 +1287,10 @@ function renderList(){
 }
 $$("#grpSeg .seg").forEach(b=>b.addEventListener("click",()=>{eqGroup=b.dataset.g;eqInitCollapse=true;renderList();}));
 let editUnlocked=false; // session unlock for editing equipment
-function requireEditPass(cb){
+async function requireEditPass(cb){
   if(editUnlocked||unlocked){cb();return;}          // edit mode (pattern unlock) already authorizes — no second prompt
   if(data.lockPattern){requireUnlock(cb);return;}   // a lock pattern is the gate when one is set
-  const p=prompt("Enter passcode to edit equipment:");if(p===null)return;
+  const p=await askPass("Edit equipment","Enter the settings passcode.");if(p===null)return;
   if(p!==curPass()){toast("Wrong passcode");return;}editUnlocked=true;cb();}
 $("#eqList").addEventListener("click",e=>{
   const h=e.target.closest(".eqg-h");if(h){const k=h.dataset.grp;eqCollapsed.has(k)?eqCollapsed.delete(k):eqCollapsed.add(k);renderList();return;}
@@ -1353,9 +1363,9 @@ $("#filterLoc").addEventListener("change",renderList);
 $("#filterType").addEventListener("change",renderList);
 $("#sortBy").addEventListener("change",renderList);
 $("#moveSearch").addEventListener("input",renderMovement);
-$("#moveWipe").addEventListener("click",()=>{
+$("#moveWipe").addEventListener("click",async()=>{
   if(!data.movements.length){toast("Nothing to wipe");return;}
-  const pass=prompt("Enter passcode to wipe the movement log:");
+  const pass=await askPass("Wipe movement log","Enter the settings passcode.");
   if(pass===null)return;
   if(pass!==curPass()){toast("Wrong passcode");return;}
   if(!confirm(`Permanently wipe all ${data.movements.length} logged movement(s)? This cannot be undone.`))return;
@@ -1433,7 +1443,17 @@ $("#addSubtypeBtn").addEventListener("click",()=>{const cat=$("#subtypeCat").val
 $("#newSubtype").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addSubtypeBtn").click();});
 function renderSyncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{on:true,url:"",key:""};
   $("#syncOnChk").checked=c.on!==false;$("#syncUrl").value=c.url||"";$("#syncKey").value=c.key||"";
-  $("#syncStatus").textContent=(c.on!==false)?(c.url?" · sharing with the team":" · no backend set"):" · off (local only)";}
+  $("#syncStatus").textContent=(c.on!==false)?(c.url?" · sharing with the team":" · no backend set"):" · off (local only)";
+  renderSyncHealth();}
+function agoStr(t){if(!t)return"never";const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<60)return s+"s ago";if(s<3600)return Math.round(s/60)+"m ago";if(s<86400)return Math.round(s/3600)+"h ago";return Math.round(s/86400)+"d ago";}
+function renderSyncHealth(){const el=$("#syncHealth");if(!el)return;
+  const c=Store.getJSON("elt.sync.cfg",null)||{on:true};
+  if(c.on===false){el.hidden=true;return;} el.hidden=false;
+  const h=(window.SYNC&&window.SYNC.health&&window.SYNC.health())||null;
+  if(!h||(!h.lastOk&&!h.lastErr)){el.className="sync-health";el.textContent="No sync activity yet this session.";return;}
+  const okNewer=(h.lastOk||0)>=(h.lastErr||0);
+  if(okNewer){el.className="sync-health ok";el.textContent="✓ Synced "+agoStr(h.lastOk)+(h.pending?" · "+h.pending+" pending":"");}
+  else{el.className="sync-health bad";el.textContent="⚠︎ Last sync failed "+agoStr(h.lastErr)+(h.lastErrMsg?" — "+h.lastErrMsg:"")+(h.lastOk?" · last ok "+agoStr(h.lastOk):"");}}
 $("#syncOnChk").addEventListener("change",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.on=$("#syncOnChk").checked;Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast(c.on?"Online sync on":"Online sync off — local only");});
 function renderDemoCfg(){const on=!!Store.getJSON("elt.demo",false);$("#demoChk").checked=on;$("#demoStatus").textContent=on?" · on — names masked":" · off — real names";document.body.classList.toggle("demo-on",on);}
 $("#demoChk").addEventListener("change",()=>{const on=$("#demoChk").checked;Store.setJSON("elt.demo",on);renderDemoCfg();toast(on?"Demo mode on — names masked":"Demo mode off");});
@@ -1443,9 +1463,11 @@ $("#syncSave").addEventListener("click",()=>{const c=Store.getJSON("elt.sync.cfg
 $("#syncTest").addEventListener("click",async()=>{const url=$("#syncUrl").value.trim(),key=$("#syncKey").value.trim();$("#syncMsg").textContent="Testing…";
   try{const r=await fetch(url.replace(/\/+$/,"")+"/manpower_shared?select=id&limit=1",{headers:{apikey:key,Authorization:"Bearer "+key}});
     $("#syncMsg").textContent=r.ok?"✓ Connected — table reachable.":"✗ HTTP "+r.status+" "+(await r.text()).slice(0,120);}catch(e){$("#syncMsg").textContent="✗ "+(e.message||e);}});
+function refreshPassWarn(){const w=$("#passDefaultWarn");if(w)w.hidden=(curPass()!==SETTINGS_PASS);}
 $("#passSave").addEventListener("click",()=>{const v=$("#passNew").value.trim();
   if(!/^\d{3,8}$/.test(v)){toast("Use 3–8 digits");return;}
-  data.settings.passcode=v;save();$("#passNew").value="";toast("Passcode updated");});
+  if(v===SETTINGS_PASS){toast("Pick a passcode other than the default");return;}
+  data.settings.passcode=v;save();$("#passNew").value="";refreshPassWarn();toast("Passcode updated");});
 $("#subSave").addEventListener("click",()=>{const v=$("#subEdit").value.trim();
   data.settings.headerSub=v;save();updateHdr();toast("Subtitle saved");});
 $("#nameOrderSel")?.addEventListener("change",e=>{const v=e.target.value==="last"?"last":"first";
@@ -1540,6 +1562,25 @@ $("#moveCancel").addEventListener("click",closeMovePick);
 $("#movePickOverlay").addEventListener("click",e=>{if(e.target.id==="movePickOverlay")closeMovePick();});
 // settings helpers
 function curPass(){return (data.settings&&data.settings.passcode)||SETTINGS_PASS;}
+// styled masked passcode prompt (replaces cleartext prompt() so passcodes aren't shoulder-surfable).
+// resolves to the entered string, or null if cancelled.
+function askPass(title,sub){return new Promise(res=>{
+  const ov=document.createElement("div"); ov.className="askpass-ov";
+  ov.innerHTML=`<div class="setg-box">
+    <div class="setg-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+    <div class="setg-title">${esc(title)}</div>${sub?`<div class="setg-sub">${esc(sub)}</div>`:""}
+    <input class="ap-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />
+    <button class="btn navy ap-go">Continue</button>
+    <button class="btn ghost ap-x">Cancel</button></div>`;
+  document.body.appendChild(ov);
+  const inp=ov.querySelector(".ap-in");
+  let done=false; const fin=v=>{ if(done)return; done=true; ov.remove(); res(v); };
+  setTimeout(()=>inp.focus(),60);
+  ov.querySelector(".ap-go").onclick=()=>fin((inp.value||"").trim());
+  inp.onkeydown=e=>{ if(e.key==="Enter")fin((inp.value||"").trim()); };
+  ov.querySelector(".ap-x").onclick=()=>fin(null);
+  ov.addEventListener("click",e=>{ if(e.target===ov)fin(null); });
+});}
 function minToTime(m){m=((Math.round(m)||0)%1440+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
 function timeToMin(t){const p=(t||"").split(":");return (parseInt(p[0])||0)*60+(parseInt(p[1])||0);}
 // record a location change for the Movement tab — honors the tracking settings + retention cap
@@ -1803,8 +1844,8 @@ function renderInvMore(r){
   setWizFoot(null);
 }
 /* ---- password-locked location editor (add/delete locations + sub-locations) ---- */
-function openLocEdit(){
-  const pass=prompt("Enter passcode to edit locations:");
+async function openLocEdit(){
+  const pass=await askPass("Edit locations","Enter the settings passcode.");
   if(pass===null)return;
   if(pass!==curPass()){toast("Wrong passcode");return;}
   // bake the FULL set of inventory locations (incl. any only referenced by equipment)
@@ -2736,12 +2777,19 @@ $("#importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)r
     Store.setJSON(KEY,d);data=load();
     save();refreshAll();renderTypes();renderLocs();fillAreaList();toast("Imported");
   }catch(err){alert("That file isn't a valid backup.");}$("#importFile").value="";};r.readAsText(f);});
-$("#clearBtn").addEventListener("click",()=>{
-  const p=prompt("Enter passcode to delete ALL data:");if(p===null)return;
+$("#clearBtn").addEventListener("click",async()=>{
+  const p=await askPass("Delete ALL data","Enter the settings passcode.");if(p===null)return;
   if(p!==curPass()){toast("Wrong passcode");return;}
-  if(!confirm("Delete ALL your data? This cannot be undone."))return;
+  const syncOn=(()=>{try{const c=Store.getJSON("elt.sync.cfg",null);return !!(c&&c.on&&c.url);}catch(_){return false;}})();
+  const warn="Delete ALL data on this device — equipment, movements, locations, manpower logs, drafts, supervisor codes, activity and settings? This cannot be undone."
+    +(syncOn?"\n\nSync is ON: anything the team still has (codes, logs, drafts, settings) will sync back to this device. To wipe it everywhere, turn sync off first, or have every device delete.":"");
+  if(!confirm(warn))return;
   if(!confirm("Really delete everything?"))return;
-  Store.del(KEY);Store.setRaw(SEEN_KEY,"1");data=load();
+  // enumerate every app key (elt.*) rather than just the equipment blob, so nothing is left behind
+  const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("elt.")===0)keys.push(k);}
+  keys.forEach(k=>Store.del(k));
+  Store.setRaw(SEEN_KEY,"1");   // keep the intro from replaying
+  data=load();
   save();refreshAll();renderTypes();renderLocs();fillAreaList();toast("All data cleared");});
 
 /* ---- master list ---- */

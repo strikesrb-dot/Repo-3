@@ -435,6 +435,18 @@ function staffModal(html){
   document.body.appendChild(ov);
   return ov;
 }
+// styled masked code prompt (replaces cleartext prompt() so passcodes aren't shoulder-surfable)
+function askCode(title,sub){ return new Promise(res=>{
+  const ov=staffModal(`<h3 class="sm-title">${esc(title)}</h3>${sub?`<p class="sm-sub">${esc(sub)}</p>`:""}
+    <input id="smCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8" class="code-in" placeholder="••••" style="text-align:center;letter-spacing:.3em">
+    <div class="btnrow" style="margin-top:12px"><button class="btn navy" id="smOk">Continue</button><button class="btn ghost" id="smX">Cancel</button></div>`);
+  let done=false; const fin=v=>{ if(done)return; done=true; ov.remove(); res(v); };
+  setTimeout(()=>ov.querySelector("#smCode")?.focus(),60);
+  ov.querySelector("#smOk").onclick=()=>fin((ov.querySelector("#smCode").value||"").trim());
+  ov.querySelector("#smCode").addEventListener("keydown",e=>{ if(e.key==="Enter")fin((ov.querySelector("#smCode").value||"").trim()); });
+  ov.querySelector("#smX").onclick=()=>fin(null);
+  ov.addEventListener("click",e=>{ if(e.target===ov)fin(null); });
+}); }
 function dispatcherWarn(){
   if(!ST.dispatch||!ST.dispatch.name){
     staffModal(`<div class="sm-bang">⚠</div>
@@ -462,9 +474,16 @@ function syncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{};return {on:c.o
 function syncOn(){const c=syncCfg();return !!(c.on&&c.url&&c.key);}
 function supaUrl(path){return syncCfg().url.replace(/\/+$/,"")+"/"+path;}
 function supaHdr(extra){const c=syncCfg();return Object.assign({apikey:c.key,Authorization:"Bearer "+c.key,"Content-Type":"application/json"},extra||{});}
-async function pushRow(kind,id,data){ if(!syncOn())return; try{ await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify([{id,kind,data}])}); }catch(_){ } }
-async function delRow(id){ if(!syncOn())return; try{ await fetch(supaUrl("manpower_shared?id=eq."+encodeURIComponent(id)),{method:"DELETE",headers:supaHdr()}); }catch(_){ } }
-async function pullKind(kind){ if(!syncOn())return null; try{ const r=await fetch(supaUrl("manpower_shared?kind=eq."+kind+"&select=id,data"),{headers:supaHdr()}); if(!r.ok)return null; return await r.json(); }catch(_){ return null; } }
+// lightweight sync-health so a silently-broken backend can be spotted before a pilot.
+// every network path below updates this instead of swallowing errors into an empty catch.
+const syncHealth={lastOk:0,lastErr:0,lastErrMsg:"",pending:0,log:[]};
+function syncNote(ok,msg){ const t=Date.now();
+  if(ok){syncHealth.lastOk=t;} else {syncHealth.lastErr=t;syncHealth.lastErrMsg=msg||"error";}
+  syncHealth.log.unshift({t,ok,msg:msg||""}); if(syncHealth.log.length>30)syncHealth.log.length=30;
+}
+async function pushRow(kind,id,data){ if(!syncOn())return; syncHealth.pending++; try{ const r=await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify([{id,kind,data}])}); syncNote(r.ok,r.ok?"push "+kind:"push "+kind+" HTTP "+r.status); }catch(e){ syncNote(false,"push "+kind+": "+(e&&e.message||e)); } finally{ syncHealth.pending=Math.max(0,syncHealth.pending-1); } }
+async function delRow(id){ if(!syncOn())return; try{ const r=await fetch(supaUrl("manpower_shared?id=eq."+encodeURIComponent(id)),{method:"DELETE",headers:supaHdr()}); syncNote(r.ok,r.ok?"delete":"delete HTTP "+r.status); }catch(e){ syncNote(false,"delete: "+(e&&e.message||e)); } }
+async function pullKind(kind){ if(!syncOn())return null; try{ const r=await fetch(supaUrl("manpower_shared?kind=eq."+kind+"&select=id,data"),{headers:supaHdr()}); if(!r.ok){syncNote(false,"pull "+kind+" HTTP "+r.status);return null;} syncNote(true,"pull "+kind); return await r.json(); }catch(e){ syncNote(false,"pull "+kind+": "+(e&&e.message||e)); return null; } }
 // two-way merge: newest `when` wins both directions, then upload anything we have that's newer/missing
 async function syncShared(kind,load,saveFn,cap){
   if(!syncOn())return false;
@@ -487,7 +506,7 @@ let _logPull=0,_draftPull=0,_codePull=0,_tempPull=0;
 async function syncCodes(force){ const n=Date.now(); if(!force&&n-_codePull<2500)return false; _codePull=n; const c=await syncShared("code",loadCodeRows,saveCodeRows,300); if(c&&ST.step==="auth")render(); return c; }
 async function syncTempSups(force){ const n=Date.now(); if(!force&&n-_tempPull<2500)return false; _tempPull=n; const c=await syncShared("tempsup",loadTempRows,saveTempRows,100); if(c&&ST.step==="auth")render(); return c; }
 // generic sync primitives so the equipment side (index.html) can share the same backend
-window.SYNC={ on:()=>syncOn(), shared:(kind,load,save,cap)=>syncShared(kind,load,save,cap), push:(k,id,d)=>pushRow(k,id,d), del:id=>delRow(id) };
+window.SYNC={ on:()=>syncOn(), shared:(kind,load,save,cap)=>syncShared(kind,load,save,cap), push:(k,id,d)=>pushRow(k,id,d), del:id=>delRow(id), health:()=>({...syncHealth,log:syncHealth.log.slice(0,8)}) };
 async function syncLogs(force){ const n=Date.now(); if(!force&&n-_logPull<2500)return false; _logPull=n; const c=await syncShared("log",loadLog,saveLogList,24); if(c&&(ST.step==="logs"||ST.step==="menu"))render(); return c; }
 async function syncDrafts(force){ const n=Date.now(); if(!force&&n-_draftPull<2500)return false; _draftPull=n; const c=await syncShared("draft",loadDrafts,saveDraftList,6); if(c&&(ST.step==="drafts"||ST.step==="menu"))render(); return c; }
 function loadDrafts(){const d=Store.getJSON("elt.staff.drafts",[]);return Array.isArray(d)?d:[];}
@@ -673,7 +692,7 @@ function rActivity(){
     <p class="hint" style="margin:2px 0 10px">Track record of manpower actions — sign-ins, assignments, dispatcher, logging, edits — newest first.</p>
     <div class="act-wrap">${body}</div>
     <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="menu">‹ Back</button>${acts.length?'<button class="btn ghost" id="actClear">Clear log</button>':''}</div>`);
-  $("#actClear")?.addEventListener("click",()=>{ const p=prompt("Enter the settings passcode to clear the activity log:"); if(p===null)return; if(p.trim()!==settingsPass()){alert("Incorrect passcode.");return;} Store.setJSON("elt.staff.activity",[]); render(); });
+  $("#actClear")?.addEventListener("click",async()=>{ const p=await askCode("Clear activity log","Enter the team passcode to clear the activity log."); if(p===null)return; if(p!==settingsPass()){alert("Incorrect passcode.");return;} Store.setJSON("elt.staff.activity",[]); render(); });
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 function fmtDayLabel(iso){const d=new Date(iso+"T00:00:00");return isNaN(d)?iso:d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});}
@@ -1468,16 +1487,19 @@ let logSel=null;
 // deleting past manpowers is off by default — enabled via Settings (shared app setting)
 function logDeleteAllowed(){ try{ const d=Store.getJSON("elt.data.v1",null); return !!(d&&d.settings&&d.settings.allowLogDelete); }catch(_){ return false; } }
 function settingsPass(){ try{ const d=Store.getJSON("elt.data.v1",null); return (d&&d.settings&&d.settings.passcode)||""; }catch(_){ return ""; } }
-// a logged manpower may only be reopened by its creator (their code) or the settings passcode
+// a logged manpower may be reopened by its creator, any manager (signed in or by code),
+// or the settings passcode. Codes are entered through the styled masked modal, never cleartext.
 async function unlockLogEdit(entry){
   const creator=(entry&&entry.by)||"";
   if(AUTH&&creator&&normName(AUTH.name)===normName(creator))return true;   // the creator is signed in
-  const who=creator?nm(creator)+"'s":"this";
-  const code=prompt(who+" manpower — enter "+(creator?nm(creator)+"'s code":"the")+" or the settings passcode to edit:");
+  if(AUTH&&AUTH.role==="Manager")return true;                             // a manager is signed in — override
+  const sub=creator?("Enter "+nm(creator)+"'s code, a manager's code, or the team passcode."):"Enter a manager's code or the team passcode.";
+  const code=await askCode("Edit locked manpower",sub);
   if(code===null)return false;
+  if(creator&&await checkCode(creator,code))return true;
+  for(const m of MANAGERS){ if(await checkCode(m,code))return true; }     // any manager's code overrides
   const pass=settingsPass();
-  const okOwner=creator?await checkCode(creator,code):false;
-  if(okOwner||(pass&&code.trim()===pass))return true;
+  if(pass&&code===pass)return true;
   alert("Incorrect code."); return false;
 }
 function rLogs(){
