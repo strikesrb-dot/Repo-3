@@ -1018,7 +1018,7 @@ function rAssign(){
     </div>
     ${back("reconcile","Tugs")}
     <div class="asg-footspace"></div>
-    ${autoMode?'<div class="autobar-spacer"></div>'+autoBar():`<div class="asg-generate"><button class="btn navy" id="toBrief">Generate staffing sheet ›</button></div>`}
+    ${autoMode?'<div class="autobar-spacer"></div>'+autoBar():`<div class="asg-generate"><button class="btn navy" id="toBrief">Next: briefing ›</button></div>`}
   </div>`;
   // pool chip tap depends on mode: multi/normal = select · tug/remote = pick
   const poolEl=$('#staffRoot .pool-groups');
@@ -1067,7 +1067,7 @@ function rAssign(){
   $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
   $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; const who=selRaw(); place(p=>{ if(!ST.assign.areas[k].some(x=>x.emp===p.emp))ST.assign.areas[k].push(p); }); if(who)logAct("Assigned to "+k,"",who); });
   $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; const p=ST.assign.areas[k][i]; ST.assign.areas[k].splice(i,1); if(p){SEL=p.emp;logAct("Removed from "+k,"",p.name);} render(); }); // remove = pick up & move
-  $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="sheet"; render(); };  // briefing is edited in its own tab, not here
+  $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="brief"; render(); };  // briefing is now a step in the flow (also editable from its own tab)
   saveDraft();
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
