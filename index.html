@@ -220,6 +220,10 @@
   .sync-health.ok{background:#e7f5ec;color:#15622f}
   .sync-health.bad{background:#fde9c8;color:#9a5a00}
   .sync-health[hidden]{display:none}
+  .sync-auth{margin:8px 0 2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#f8fafb}
+  .sync-auth-h{font-size:13px;font-weight:800;color:var(--navy)}
+  .sync-auth input{width:100%;margin-top:6px}
+  .sync-auth-status{font-size:14px;font-weight:700;color:#15622f;background:#e7f5ec;border:1px solid #bfe0cb;border-radius:8px;padding:8px 10px}
   .setg-err{color:var(--danger);font-size:13px;font-weight:700;min-height:16px}
   .supc-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #f1f3f5}
   .supc-row:last-child{border-bottom:none}.supc-row b{font-size:14px}
@@ -770,6 +774,20 @@
       <p class="hint" style="margin-top:0">Shares the whole site across supervisors — manpower logs &amp; drafts, sign-in codes, the equipment list, inventory, movement &amp; secure logs, and settings. Everyone sees the same data. Demo mode stays local to each device. Turn off to go fully local (offline).</p>
       <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Online sync<small id="syncStatus"></small></span><input type="checkbox" id="syncOnChk" class="cfg-chk"></label>
       <div id="syncHealth" class="sync-health"></div>
+      <div id="syncAuthBox" class="sync-auth">
+        <div class="sync-auth-h">Team sync sign-in</div>
+        <p class="hint" style="margin:2px 0 8px">Signs this device in to the shared backend. Ask your admin for the team email &amp; password — it's never stored in the app's code, only the login token is kept on this device.</p>
+        <div id="syncAuthOut">
+          <input id="syncAuthEmail" type="email" autocomplete="username" placeholder="Team email" />
+          <input id="syncAuthPass" type="password" autocomplete="current-password" placeholder="Team password" />
+          <div class="btnrow" style="margin-top:8px"><button class="btn navy" id="syncSignIn" style="flex:0 0 120px">Sign in</button></div>
+        </div>
+        <div id="syncAuthIn" hidden>
+          <div class="sync-auth-status">✓ Signed in as <b id="syncAuthWho"></b></div>
+          <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="syncSignOut" style="flex:0 0 120px">Sign out</button></div>
+        </div>
+        <p class="hint" id="syncAuthMsg" style="margin:6px 0 0"></p>
+      </div>
       <details style="margin-top:6px">
         <summary style="font-weight:700;color:var(--navy);cursor:pointer;font-size:13px">Backend (advanced)</summary>
         <label for="syncUrl" style="margin-top:8px">Supabase REST URL</label>
@@ -1453,7 +1471,21 @@ $("#newSubtype").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addSubtyp
 function renderSyncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{on:true,url:"",key:""};
   $("#syncOnChk").checked=c.on!==false;$("#syncUrl").value=c.url||"";$("#syncKey").value=c.key||"";
   $("#syncStatus").textContent=(c.on!==false)?(c.url?" · sharing with the team":" · no backend set"):" · off (local only)";
-  renderSyncHealth();}
+  renderSyncHealth();renderSyncAuth();}
+function renderSyncAuth(){const box=$("#syncAuthBox");if(!box)return;
+  const on=window.SYNC&&window.SYNC.signedIn&&window.SYNC.signedIn();
+  const inB=$("#syncAuthIn"),outB=$("#syncAuthOut");
+  if(inB)inB.hidden=!on; if(outB)outB.hidden=!!on;
+  if(on){const who=$("#syncAuthWho");if(who)who.textContent=(window.SYNC.email&&window.SYNC.email())||"team";}
+  const msg=$("#syncAuthMsg");if(msg&&!on)msg.textContent="";}
+$("#syncSignIn")?.addEventListener("click",async()=>{
+  const email=$("#syncAuthEmail").value.trim(),pass=$("#syncAuthPass").value;
+  if(!email||!pass){$("#syncAuthMsg").textContent="Enter the team email and password.";return;}
+  $("#syncAuthMsg").textContent="Signing in…";
+  try{ await window.SYNC.signIn(email,pass); $("#syncAuthPass").value=""; $("#syncAuthMsg").textContent="✓ Signed in — syncing as the team account.";
+    renderSyncAuth(); if(typeof scheduleSiteSync==="function")scheduleSiteSync(); }
+  catch(e){ $("#syncAuthMsg").textContent="✗ Sign-in failed: "+(e&&e.message||e); }});
+$("#syncSignOut")?.addEventListener("click",()=>{ window.SYNC.signOut(); renderSyncAuth(); $("#syncAuthMsg").textContent="Signed out — this device will use the public key only (blocked once RLS is on)."; });
 function agoStr(t){if(!t)return"never";const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<60)return s+"s ago";if(s<3600)return Math.round(s/60)+"m ago";if(s<86400)return Math.round(s/3600)+"h ago";return Math.round(s/86400)+"d ago";}
 function renderSyncHealth(){const el=$("#syncHealth");if(!el)return;
   const c=Store.getJSON("elt.sync.cfg",null)||{on:true};

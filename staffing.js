@@ -484,13 +484,54 @@ const SUPA_URL="https://diqqjyryhzpzlrivupef.supabase.co/rest/v1";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpcXFqeXJ5aHpwemxyaXZ1cGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2OTQzMzIsImV4cCI6MjA5ODI3MDMzMn0.o2ew-zOD5R1w3fzpUYScOLVEehvCpVQ-89MsOHjgYHI";
 if(!Store.getJSON("elt.sync.cfg",null))Store.setJSON("elt.sync.cfg",{on:true,url:SUPA_URL,key:SUPA_KEY});
 function syncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{};return {on:c.on!==false,url:c.url||SUPA_URL,key:c.key||SUPA_KEY};}
+
+/* ---- Supabase Auth (Option A: authenticated, RLS-gated backend) --------------------------------
+   A client-only app can't hide a secret, so security comes from an authenticated SESSION, not from
+   the key. The public anon key stays in `apikey` (that's its designed role — a project/gateway id);
+   the Authorization Bearer becomes the signed-in team account's access token, which is what the
+   table's Row-Level Security actually checks. The team login is entered per device in Settings and
+   is NEVER shipped in source. When no login is configured we fall back to the anon key, so shipping
+   this code changes nothing until (a) an admin signs a device in AND (b) RLS is enabled server-side.
+   Only tokens are stored locally (access + refresh + email) — never the password. */
+function authBase(){ return syncCfg().url.replace(/\/rest\/v\d+\/?$/,"").replace(/\/+$/,"")+"/auth/v1"; }
+let _session=Store.getJSON("elt.sync.session",null);
+function saveSession(s){ _session=s||null; if(s)Store.setJSON("elt.sync.session",s); else Store.del("elt.sync.session"); }
+function signedIn(){ return !!(_session&&_session.refresh_token); }
+function sessionEmail(){ return (_session&&_session.email)||""; }
+async function supaSignIn(email,password){
+  const c=syncCfg();
+  const r=await fetch(authBase()+"/token?grant_type=password",{method:"POST",headers:{apikey:c.key,"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+  if(!r.ok){ const t=await r.text().catch(()=>""); throw new Error("HTTP "+r.status+" "+t.slice(0,140)); }
+  const j=await r.json();
+  saveSession({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+((j.expires_in||3600)*1000),email});
+  syncNote(true,"signed in"); return true;
+}
+async function supaRefresh(){
+  if(!_session||!_session.refresh_token)return false;
+  const c=syncCfg();
+  try{
+    const r=await fetch(authBase()+"/token?grant_type=refresh_token",{method:"POST",headers:{apikey:c.key,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:_session.refresh_token})});
+    if(!r.ok){ if(r.status===400||r.status===401)saveSession(null); return false; }   // refresh token dead → force re-login
+    const j=await r.json();
+    saveSession({access_token:j.access_token,refresh_token:j.refresh_token||_session.refresh_token,expires_at:Date.now()+((j.expires_in||3600)*1000),email:_session.email});
+    return true;
+  }catch(_){ return false; }
+}
+let _refreshing=null;
+async function supaAuthEnsure(){   // refresh the access token just before it expires (60s skew)
+  if(!_session)return;
+  if(Date.now()<((_session.expires_at||0)-60000))return;
+  if(!_refreshing)_refreshing=supaRefresh().finally(()=>{_refreshing=null;});
+  await _refreshing;
+}
+function supaSignOut(){ saveSession(null); syncNote(true,"signed out"); }
 // Demo mode HARD-DISABLES all backend sync (push, pull, delete). nm()/fakeName only mask
 // what's drawn; the underlying rows are still real names, so a masked pitch demo must never
 // touch the network or it would upload real employee PII. Gating here covers every sync path
 // in both staffing.js and index.html (window.SYNC.on() -> this).
 function syncOn(){if(demoOn())return false;const c=syncCfg();return !!(c.on&&c.url&&c.key);}
 function supaUrl(path){return syncCfg().url.replace(/\/+$/,"")+"/"+path;}
-function supaHdr(extra){const c=syncCfg();return Object.assign({apikey:c.key,Authorization:"Bearer "+c.key,"Content-Type":"application/json"},extra||{});}
+function supaHdr(extra){const c=syncCfg();const bearer=(_session&&_session.access_token)?_session.access_token:c.key;return Object.assign({apikey:c.key,Authorization:"Bearer "+bearer,"Content-Type":"application/json"},extra||{});}
 // lightweight sync-health so a silently-broken backend can be spotted before a pilot.
 // every network path below updates this instead of swallowing errors into an empty catch.
 const syncHealth={lastOk:0,lastErr:0,lastErrMsg:"",pending:0,log:[]};
@@ -498,9 +539,9 @@ function syncNote(ok,msg){ const t=Date.now();
   if(ok){syncHealth.lastOk=t;} else {syncHealth.lastErr=t;syncHealth.lastErrMsg=msg||"error";}
   syncHealth.log.unshift({t,ok,msg:msg||""}); if(syncHealth.log.length>30)syncHealth.log.length=30;
 }
-async function pushRow(kind,id,data){ if(!syncOn())return; syncHealth.pending++; try{ const r=await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify([{id,kind,data}])}); syncNote(r.ok,r.ok?"push "+kind:"push "+kind+" HTTP "+r.status); }catch(e){ syncNote(false,"push "+kind+": "+(e&&e.message||e)); } finally{ syncHealth.pending=Math.max(0,syncHealth.pending-1); } }
-async function delRow(id){ if(!syncOn())return; try{ const r=await fetch(supaUrl("manpower_shared?id=eq."+encodeURIComponent(id)),{method:"DELETE",headers:supaHdr()}); syncNote(r.ok,r.ok?"delete":"delete HTTP "+r.status); }catch(e){ syncNote(false,"delete: "+(e&&e.message||e)); } }
-async function pullKind(kind){ if(!syncOn())return null; try{ const r=await fetch(supaUrl("manpower_shared?kind=eq."+kind+"&select=id,data"),{headers:supaHdr()}); if(!r.ok){syncNote(false,"pull "+kind+" HTTP "+r.status);return null;} syncNote(true,"pull "+kind); return await r.json(); }catch(e){ syncNote(false,"pull "+kind+": "+(e&&e.message||e)); return null; } }
+async function pushRow(kind,id,data){ if(!syncOn())return; await supaAuthEnsure(); syncHealth.pending++; try{ const r=await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify([{id,kind,data}])}); syncNote(r.ok,r.ok?"push "+kind:"push "+kind+" HTTP "+r.status); }catch(e){ syncNote(false,"push "+kind+": "+(e&&e.message||e)); } finally{ syncHealth.pending=Math.max(0,syncHealth.pending-1); } }
+async function delRow(id){ if(!syncOn())return; await supaAuthEnsure(); try{ const r=await fetch(supaUrl("manpower_shared?id=eq."+encodeURIComponent(id)),{method:"DELETE",headers:supaHdr()}); syncNote(r.ok,r.ok?"delete":"delete HTTP "+r.status); }catch(e){ syncNote(false,"delete: "+(e&&e.message||e)); } }
+async function pullKind(kind){ if(!syncOn())return null; await supaAuthEnsure(); try{ const r=await fetch(supaUrl("manpower_shared?kind=eq."+kind+"&select=id,data"),{headers:supaHdr()}); if(!r.ok){syncNote(false,"pull "+kind+" HTTP "+r.status);return null;} syncNote(true,"pull "+kind); return await r.json(); }catch(e){ syncNote(false,"pull "+kind+": "+(e&&e.message||e)); return null; } }
 // two-way merge: newest `when` wins both directions, then upload anything we have that's newer/missing
 async function syncShared(kind,load,saveFn,cap){
   if(!syncOn())return false;
@@ -534,7 +575,8 @@ let _logPull=0,_draftPull=0,_codePull=0,_tempPull=0;
 async function syncCodes(force){ const n=Date.now(); if(!force&&n-_codePull<2500)return false; _codePull=n; const c=await syncShared("code",loadCodeRows,saveCodeRows,300); if(c&&ST.step==="auth")render(); return c; }
 async function syncTempSups(force){ const n=Date.now(); if(!force&&n-_tempPull<2500)return false; _tempPull=n; const c=await syncShared("tempsup",loadTempRows,saveTempRows,100); if(c&&ST.step==="auth")render(); return c; }
 // generic sync primitives so the equipment side (index.html) can share the same backend
-window.SYNC={ on:()=>syncOn(), shared:(kind,load,save,cap)=>syncShared(kind,load,save,cap), push:(k,id,d)=>pushRow(k,id,d), del:id=>delRow(id), health:()=>({...syncHealth,log:syncHealth.log.slice(0,8)}) };
+window.SYNC={ on:()=>syncOn(), shared:(kind,load,save,cap)=>syncShared(kind,load,save,cap), push:(k,id,d)=>pushRow(k,id,d), del:id=>delRow(id), health:()=>({...syncHealth,log:syncHealth.log.slice(0,8)}),
+  signedIn:()=>signedIn(), email:()=>sessionEmail(), signIn:(e,p)=>supaSignIn(e,p), signOut:()=>supaSignOut() };
 async function syncLogs(force){ const n=Date.now(); if(!force&&n-_logPull<2500)return false; _logPull=n; const c=await syncShared("log",loadLog,saveLogList,24); if(c&&(ST.step==="logs"||ST.step==="menu"))render(); return c; }
 async function syncDrafts(force){ const n=Date.now(); if(!force&&n-_draftPull<2500)return false; _draftPull=n; const c=await syncShared("draft",loadDrafts,saveDraftList,6); if(c&&(ST.step==="drafts"||ST.step==="menu"))render(); return c; }
 function loadDrafts(){const d=Store.getJSON("elt.staff.drafts",[]);return Array.isArray(d)?d:[];}
