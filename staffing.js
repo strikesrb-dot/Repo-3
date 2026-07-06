@@ -1247,7 +1247,7 @@ function renderStaffCanvas(){
   let y=M;
   // title + date + shift
   ctx.fillStyle="#10171f";ctx.font=FA("900 32px");ctx.textAlign="left";ctx.fillText("EWR AMT STAFFING",M,y+22);
-  ctx.fillStyle="#67727e";ctx.font=FA("700 14px");ctx.fillText((ST.parsed&&ST.parsed.date)||todayLocalISO(),M,y+45);
+  ctx.fillStyle="#67727e";ctx.font=FA("700 14px");ctx.fillText(fmtNiceDate((ST.parsed&&ST.parsed.date)||todayLocalISO()),M,y+45);
   ctx.fillStyle="#0b3d63";rr(W-M-92,y+4,92,40,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 18px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-46,y+26);
   y+=52+8;
   // info band
@@ -1361,7 +1361,7 @@ function renderBriefCanvas(){
   ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
   ctx.fillStyle="#0b3d63";ctx.fillRect(0,0,W,4);
   ctx.fillStyle="#10171f";ctx.font=FA("900 24px");ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.fillText("DAILY MOVE TEAM SHIFT BRIEFING",M,M+24);
-  ctx.fillStyle="#67727e";ctx.font=FA("600 13px");ctx.textAlign="right";ctx.fillText(ST.parsed?ST.parsed.date:"",W-M,M+24);
+  ctx.fillStyle="#67727e";ctx.font=FA("600 13px");ctx.textAlign="right";ctx.fillText(fmtNiceDate((ST.parsed&&ST.parsed.date)||todayLocalISO()),W-M,M+24);
   let yy=M+40;  // match the height-simulation origin so tblY/mgrY line up with the draw flow
   segs.forEach(s=>{
     // the table + MGR line are drawn separately at absolute tblY/mgrY; skip the draw cursor
@@ -1430,6 +1430,11 @@ function loadLog(){const d=Store.getJSON("elt.staff.log",[]);return Array.isArra
 function saveLogList(l){return Store.setJSON("elt.staff.log",l);}
 // local-timezone YYYY-MM-DD, used when a manpower has no parsed date so logs are never dateless
 function todayLocalISO(){const d=new Date(Date.now());return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}
+// "2026-07-24" -> "Wednesday, July 24, 2026" for the printed sheet & briefing
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function fmtNiceDate(iso){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||"");if(!m)return iso||"";
+  const d=new Date(+m[1],+m[2]-1,+m[3],12);return DAYS[d.getDay()]+", "+MONTHS[+m[2]-1]+" "+(+m[3])+", "+m[1];}
 function logManpower(){
   const date=(ST.parsed&&ST.parsed.date)||todayLocalISO(),shift=ST.shift,a=ST.assign,id=date+"|"+shift;
   // warn before silently clobbering an already-logged board for the same date + shift

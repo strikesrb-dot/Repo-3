@@ -1878,10 +1878,12 @@ function renderInvSelect(r){
       const its=g.items.slice().sort((a,b)=>(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));
       return `<div class="m-cat">${esc(g.type)}${sel?`<span class="m-catn">${sel} here</span>`:""}</div>`+
         `<div class="pillgrid">`+its.map(e=>{const oos=invOos.has(e.id),on=invSel.has(e.id),det=invDetail(invSpot.get(e.id),invNose.get(e.id));
+          const wasOos=!oos&&!!e.oos;   // out of service in the record, not (yet) marked in this count
           const spotChip=(on&&!oos&&canSpot)?`<span class="pill-spotbtn" data-spot="${e.id}">${det?esc(det):'＋ spot'}</span>`:(det?`<span class="pillspot">${esc(det)}</span>`:"");
           const rsn=invReason.get(e.id)||e.oosReason||"";
-          const oosChip=oos?`<span class="oostag">OUT OF SERVICE</span><span class="pill-oosbtn" data-oosr="${e.id}">${rsn?esc(rsn):'＋ reason'}</span>`:"";
-          return `<button class="selpill ${oos?'oos':on?'on':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${spotChip}${oosChip}</button>`;}).join("")+`</div>`;
+          const oosChip=oos?`<span class="oostag">OUT OF SERVICE</span><span class="pill-oosbtn" data-oosr="${e.id}">${rsn?esc(rsn):'＋ reason'}</span>`
+            :(wasOos?`<span class="oostag" style="background:#fbe4e2;color:#8a1c12">⊘ currently OOS${e.oosReason?" · "+esc(e.oosReason):""}</span>`:"");
+          return `<button class="selpill ${oos?'oos':on?'on':''} ${wasOos?'wasoos':''}" data-id="${e.id}"><span class="selc">${oos?'⊘':on?'✓':''}</span>${esc(e.tag)}${spotChip}${oosChip}</button>`;}).join("")+`</div>`;
     }).join(""):`<p class="hint" style="padding:10px 2px">Nothing left to count here — all units are accounted for at other locations.</p>`;
     const n=invSel.size;$("#invSelN").textContent=n?n+" selected":"";
     $("#wizNext").textContent=`✓ Save ${n} ›`;
@@ -2057,10 +2059,19 @@ function e_when(e){e.updated=todayISO();e.when=Date.now();}
 function commitInv(){
   const loc=inv.loc,n=invSel.size;
   if(inv.by)data.invLastBy=inv.by;
+  // units currently out of service that this count would silently return to service
+  // (counted "here" but not re-marked OOS). Default to KEEPING them out of service.
+  const clearing=data.equipment.filter(e=>invSel.has(e.id)&&e.oos&&!invOos.has(e.id));
+  let keepOos=false;
+  if(clearing.length){
+    keepOos=!confirm(clearing.length+" unit(s) are currently OUT OF SERVICE — "+clearing.map(e=>e.tag||"?").join(", ")+
+      ".\n\nOK = return them to service (clears the reason).\nCancel = keep them out of service.");
+  }
   // additive: only the units you count get placed here. Units you don't tap keep
   // their current location — a later partial re-count never silently unassigns them.
   data.equipment.forEach(e=>{
-    if(invSel.has(e.id)){const from=e.location||"",fromSpot=e.spot||"",fromOos=!!e.oos;e.location=loc;e.oos=invOos.has(e.id);
+    if(invSel.has(e.id)){const from=e.location||"",fromSpot=e.spot||"",fromOos=!!e.oos;e.location=loc;
+      e.oos=(keepOos&&fromOos&&!invOos.has(e.id))?true:invOos.has(e.id);
       e.oosReason=e.oos?(invReason.get(e.id)||e.oosReason||""):"";
       e.spot=invSpot.get(e.id)||"";e.nose=invNose.get(e.id)||"";e.updated=todayISO();e.when=Date.now();logMove(e,from,loc,"inventory",fromSpot,inv.by,fromOos);}});
   if(!inv.covered.includes(loc))inv.covered.push(loc);
