@@ -1185,8 +1185,11 @@ function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&curTab!=="st
 // leaving a half-built manpower board should warn (it auto-saves as a draft) and reset it so you return to the start
 function goHome(){
   if(curTab==="staffing"&&window.STAFF&&window.STAFF.inProgress&&window.STAFF.inProgress()){
-    if(!confirm("Leave this manpower? Your progress on this board will be lost (it's kept as a draft you can resume)."))return;
+    if(!confirm("Leave this manpower? Your progress on this board will be lost."))return;
     window.STAFF.discard&&window.STAFF.discard();
+  }
+  if(curTab==="inventory"&&(invSel.size||invOos.size)){
+    if(!confirm("Leave this inventory? The units you've counted at this location aren't saved yet and will be lost. Tap Save first to keep them."))return;
   }
   showTab("hub");
 }
@@ -1314,6 +1317,11 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
 /* ---- full-site lock screen (right-side L: 2-5-8-7-6) ---- */
 (function(){
   const PAT="25876",lock=$("#siteLock"),pad=$("#sitePad");if(!lock||!pad)return;
+  // remember an unlock for the shift so a reload (incl. a service-worker update) doesn't re-lock
+  const ULK="elt.lock.ok",ULWIN=12*3600*1000;
+  const unlocked=()=>{try{const t=+(localStorage.getItem(ULK)||0);return t&&(Date.now()-t)<ULWIN;}catch(_){return false;}};
+  const markUnlocked=()=>{try{localStorage.setItem(ULK,String(Date.now()));}catch(_){}};
+  if(unlocked()){lock.remove();return;}
   let sel=[],drawing=false;
   function build(){sel=[];drawing=false;pad.classList.remove("err");
     pad.innerHTML=`<svg viewBox="0 0 280 280" preserveAspectRatio="none"><polyline id="siteLine" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" points=""></polyline></svg>`+
@@ -1325,7 +1333,7 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
   pad.addEventListener("pointerdown",e=>{build();drawing=true;const p=pt(e);hit(p);line(p);e.preventDefault();});
   window.addEventListener("pointermove",e=>{if(!drawing)return;const p=pt(e);hit(p);line(p);});
   window.addEventListener("pointerup",()=>{if(!drawing)return;drawing=false;line(null);
-    if(sel.join("")===PAT){lock.classList.add("done");setTimeout(()=>lock.remove(),360);}
+    if(sel.join("")===PAT){markUnlocked();lock.classList.add("done");setTimeout(()=>lock.remove(),360);}
     else if(sel.length>1)fail();else build();});
   build();
 })();
@@ -2746,20 +2754,25 @@ function updateHdr(){const cust=data.settings&&data.settings.headerSub;
   // initial team pull once staffing.js has exposed window.SYNC
   setTimeout(()=>{ if(window.SYNC&&window.SYNC.on())syncSite(true); },1500);})();
 if("serviceWorker" in navigator){
-  const hadController=!!navigator.serviceWorker.controller;
-  let refreshing=false;
-  // when a new worker takes over, reload once so the user sees fresh code (no manual cache clearing)
-  navigator.serviceWorker.addEventListener("controllerchange",()=>{
-    if(refreshing||!hadController)return; refreshing=true; location.reload();
-  });
+  let reloading=false,waitingWorker=null;
+  const hadController=!!navigator.serviceWorker.controller;   // false on first install → never reload then
+  // reload ONLY happens after the user opts in (applyUpdate -> skipWaiting -> controllerchange),
+  // never automatically — a mid-shift/mid-demo reload would wipe in-progress tool state
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(reloading||!hadController)return; reloading=true; location.reload(); });
+  function applyUpdate(){ if(waitingWorker)waitingWorker.postMessage("skipWaiting"); }
+  function showUpdateToast(w){ waitingWorker=w; if(document.getElementById("swUpdate"))return;
+    const el=document.createElement("div");el.id="swUpdate";
+    el.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));z-index:9998;background:#0b3d63;color:#fff;padding:10px 8px 10px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.28);font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px";
+    const b=document.createElement("button");b.textContent="Update";b.style.cssText="background:#f5a623;color:#10171f;border:none;border-radius:999px;padding:7px 16px;font-weight:800;font:inherit;cursor:pointer";
+    b.onclick=applyUpdate; el.append("New version ready",b); document.body.appendChild(el); }
+  // only prompt when replacing an existing controller (not on the very first install)
+  const canPrompt=()=>!!navigator.serviceWorker.controller;
   window.addEventListener("load",()=>{
     navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(reg=>{
       reg.update().catch(()=>{});
-      // if a fresh worker is already waiting, activate it immediately
-      if(reg.waiting)reg.waiting.postMessage("skipWaiting");
+      if(reg.waiting&&canPrompt())showUpdateToast(reg.waiting);
       reg.addEventListener("updatefound",()=>{const w=reg.installing;if(!w)return;
-        w.addEventListener("statechange",()=>{ if(w.state==="installed")w.postMessage("skipWaiting"); });});
-      // re-check for a new version periodically and when the tab regains focus
+        w.addEventListener("statechange",()=>{ if(w.state==="installed"&&canPrompt())showUpdateToast(w); });});
       setInterval(()=>reg.update().catch(()=>{}),60000);
       document.addEventListener("visibilitychange",()=>{ if(!document.hidden)reg.update().catch(()=>{}); });
     }).catch(()=>{});
