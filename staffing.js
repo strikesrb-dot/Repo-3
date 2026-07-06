@@ -530,33 +530,27 @@ function rAuth(){
   // code entry (create on first use, or enter)
   if(authView==="code"){
     const first=!hasCode(authPick);
-    // first-time enrollment must be co-signed by an already-enrolled supervisor/manager so a
-    // coworker can't claim someone's identity. The first person to ever enroll has no one to
-    // co-sign (bootstrap), so co-sign only kicks in once at least one code exists.
-    const approvers=first?rosterAll().filter(r=>r.role!=="Assistant Manager"&&r.name!==authPick&&hasCode(r.name)):[];
-    const needSign=first&&approvers.length>0;
+    // first-time enrollment is gated by the team passcode so a coworker can't claim someone's
+    // identity. Only required when a passcode is actually set (avoids a lockout if it's blank).
+    const gate=first&&!!settingsPass();
     ROOT.innerHTML=card(`
       <h2 class="staff-h">${esc(authPick)}</h2>
-      <p class="hint" style="margin:0 0 12px">${first?(needSign?"First time — create your code, then have an enrolled supervisor co-sign to confirm it's really you.":"First time — create a code you'll enter each shift. Keep it private."):"Enter your code to continue."}</p>
+      <p class="hint" style="margin:0 0 12px">${first?(gate?"First time — create a code you'll enter each shift, and confirm with the team passcode so only authorized people can enroll.":"First time — create a code you'll enter each shift. Keep it private."):"Enter your code to continue."}</p>
       <label class="fld-l">${first?"Create code":"Code"}</label>
       <input id="codeIn" class="code-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />
       ${first?'<label class="fld-l">Confirm code</label><input id="codeIn2" class="code-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />':''}
-      ${needSign?`<label class="fld-l">Co-signed by</label>
-        <select id="signSel" class="code-in txt"><option value="">— enrolled supervisor —</option>${approvers.map(r=>`<option value="${esc(r.name)}">${esc(nm(r.name))}${r.temp?' (temp)':''}</option>`).join("")}</select>
-        <label class="fld-l">Their code</label>
-        <input id="signCode" class="code-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />`:''}
+      ${gate?'<label class="fld-l">Team passcode</label><input id="enrollPass" class="code-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />':''}
       ${authErr?`<div class="code-err">${esc(authErr)}</div>`:''}
-      <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="codeGo">${first?(needSign?"Set code & co-sign":"Set code & continue"):"Continue"} ›</button></div>
+      <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="codeGo">${first?"Set code & continue":"Continue"} ›</button></div>
       <button class="btn ghost auth-back" style="margin-top:10px">‹ Back</button>`);
     const go=async()=>{
       const v=($("#codeIn").value||"").trim();
       if(first){ const v2=($("#codeIn2").value||"").trim();
         if(v.length<4){authErr="Use at least 4 digits.";return render();}
         if(v!==v2){authErr="Codes don't match.";return render();}
-        if(needSign){ const signer=$("#signSel").value, scode=($("#signCode").value||"").trim();
-          if(!signer){authErr="Pick an enrolled supervisor to co-sign.";return render();}
-          if(!(await checkCode(signer,scode))){authErr="That supervisor's code is incorrect.";return render();}
-          logAct("Enrollment co-signed","",authPick); }
+        if(gate){ const pass=($("#enrollPass").value||"").trim();
+          if(pass!==settingsPass()){authErr="Incorrect team passcode.";return render();}
+          logAct("Enrolled (passcode)","",authPick); }
         await setCode(authPick,v); authenticate(authPick,authRole,isTempSup(authPick)); return; }
       if(await checkCode(authPick,v)){ authenticate(authPick,authRole,isTempSup(authPick)); }
       else { authErr="Incorrect code."; render(); }
