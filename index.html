@@ -997,7 +997,7 @@ async function syncSite(force){
   try{
     const moveCap=Math.max(50,(data.settings&&data.settings.moveCap)||300);
     data._tomb=data._tomb||{};
-    changed=await window.SYNC.shared("equip",   ()=>data.equipment.map(eqBackfillWhen), arr=>{data.equipment=arr.map(e=>{eqBackfillWhen(e);if(e&&e.location)e.location=normLoc(e.location);if(e){e.type=normType(e.type);if(e.type==="PCA"&&/^AC/i.test(e.tag||"")&&!(e.subtype||"").trim())e.subtype="AC & HEAT";}return e;});persist();}, 100000)||changed;
+    changed=await window.SYNC.shared("equip",   ()=>rowsWithTomb(data.equipment.map(eqBackfillWhen),data._tomb.equip), arr=>{const s=splitRows(arr,100000);data.equipment=s.live.map(e=>{eqBackfillWhen(e);if(e&&e.location)e.location=normLoc(e.location);if(e){e.type=normType(e.type);if(e.type==="PCA"&&/^AC/i.test(e.tag||"")&&!(e.subtype||"").trim())e.subtype="AC & HEAT";}return e;});data._tomb.equip=s.tomb;persist();}, 100000)||changed;
     changed=await window.SYNC.shared("emove",    ()=>rowsWithTomb(data.movements,data._tomb.emove), arr=>{const s=splitRows(arr,moveCap);data.movements=s.live;data._tomb.emove=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("esecure",  ()=>rowsWithTomb(data.secureLog,data._tomb.esecure), arr=>{const s=splitRows(arr,2000);data.secureLog=s.live;data._tomb.esecure=s.tomb;persist();}, 5000)||changed;
     changed=await window.SYNC.shared("config",   ()=>[configRow()], arr=>{applyConfigRow(arr[0]);persist();}, 1)||changed;
@@ -1496,11 +1496,11 @@ $("#saveEq").addEventListener("click",()=>{const tag=$("#fTag").value.trim().toU
   const p={tag,type:$("#fType").value,subtype:sub,location:loc,spot,volt:$("#fVolt").value.trim(),notes:$("#fNotes").value.trim(),updated:todayISO(),when:Date.now()};
   if(editingId){const ex=data.equipment.find(x=>x.id===editingId);const from=ex.location||"",fromSpot=ex.spot||"";Object.assign(ex,p);logMove(ex,from,p.location,"edit",fromSpot);toast("Updated");}
   else{const ni={id:uid(),...p};data.equipment.push(ni);if(ni.location)logMove(ni,"",ni.location,"add","");toast("Added");}save();closeEdit();refreshAll();});
-function delEquip(id){const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}?`))return;
-  data.equipment=data.equipment.filter(x=>x.id!==id);save();refreshAll();toast("Deleted");}
 $("#deleteEq").addEventListener("click",()=>{const id=editingId;if(!id)return;
-  const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"}? This can't be undone.`))return;
-  data.equipment=data.equipment.filter(x=>x.id!==id);save();closeEdit();refreshAll();toast("Deleted");});
+  const e=data.equipment.find(x=>x.id===id);if(!confirm(`Delete ${e?.tag||"this item"} for the whole team? This can't be undone.`))return;
+  data.equipment=data.equipment.filter(x=>x.id!==id);
+  tombstone(id,"equip");   // without this the two-way sync resurrects the unit on every device
+  save();closeEdit();refreshAll();toast("Deleted");});
 function locOptions(cur){const opts=[...new Set([...equipLocs(),...data.equipment.map(e=>e.location).filter(Boolean)])]
     .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
   if(cur&&!opts.includes(cur))opts.unshift(cur);

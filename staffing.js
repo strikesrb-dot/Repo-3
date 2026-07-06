@@ -490,11 +490,17 @@ function saveDraft(){
   if(!ST.parsed||assignedCount()<1)return;
   const date=ST.parsed.date||"",shift=ST.shift,id="D|"+date+"|"+shift;
   const entry={id,date,shift,when:Date.now(),count:assignedCount(),step:ST.step,snap:snapshot(),by:AUTH?AUTH.name:""};
-  let l=loadDrafts().filter(e=>e.id!==id);l.unshift(entry);l=l.slice(0,6);
-  if(!saveDraftList(l)){l=l.slice(0,3);saveDraftList(l);}
+  // cap live drafts separately from tombstones so deletions never evict a real draft
+  const all=loadDrafts().filter(e=>e.id!==id);
+  let live=all.filter(e=>!e._deleted).slice(0,5);live.unshift(entry);
+  let tombs=all.filter(e=>e._deleted).slice(0,12);
+  if(!saveDraftList([...live,...tombs])){live=live.slice(0,3);saveDraftList([...live,...tombs.slice(0,6)]);}
   pushRow("draft",id,entry);
 }
-function deleteDraft(id){ saveDraftList(loadDrafts().filter(e=>e.id!==id)); delRow(id); }
+// tombstone, not a bare delete — the two-way sync re-uploads any row a peer still has,
+// so a plain remove gets resurrected (same fix as past-manpower logs)
+function deleteDraft(id){ const tomb={id,_deleted:true,when:Date.now()};
+  saveDraftList([tomb,...loadDrafts().filter(e=>e.id!==id)]); pushRow("draft",id,tomb); }
 
 /* ---- activity log: a track record of who did what, when ---- */
 function loadActivity(){const d=Store.getJSON("elt.staff.activity",[]);return Array.isArray(d)?d:[];}
@@ -611,7 +617,7 @@ function rAuth(){
 /* ---- step: menu (Create / Past / Draft) ---- */
 function rMenu(){
   syncLogs();syncDrafts();   // refresh team data in the background
-  const logs=loadLog().filter(e=>!e._deleted).length, drafts=loadDrafts().length;
+  const logs=loadLog().filter(e=>!e._deleted).length, drafts=loadDrafts().filter(e=>!e._deleted).length;
   ROOT.innerHTML=card(`
     <div class="pool-head"><h2 class="staff-h" style="margin:0">Manpower / Staffing</h2>
       ${AUTH?`<button class="who-chip" id="mpSwitch">${esc(nm(AUTH.name))}${AUTH.temp?' · temp':''} · switch</button>`:''}</div>
@@ -655,7 +661,7 @@ function fmtDayLabel(iso){const d=new Date(iso+"T00:00:00");return isNaN(d)?iso:
 /* ---- step: drafts ---- */
 function rDrafts(){
   syncDrafts();
-  const list=loadDrafts();
+  const list=loadDrafts().filter(e=>!e._deleted);   // tombstones ride in storage, never on screen
   const ord={AM:0,PM:1,NH:2};
   ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">Draft manpowers</h2><span class="cnt">${list.length}</span></div>
     <p class="hint" style="margin:0 0 8px">Boards you started but didn't log. Resume to keep assigning.</p>
@@ -664,7 +670,7 @@ function rDrafts(){
     <div class="btnrow" style="margin-top:12px"><button class="btn ghost stp-back" data-to="menu">‹ Back</button></div>`);
   $$('#staffRoot .dr-main').forEach(b=>b.onclick=()=>{ const e=loadDrafts().find(x=>x.id===b.dataset.id); if(!e)return render();
     applySnapshot(e.snap); ST._tugSeeded=true; ST.step=e.step&&e.step!=="upload"?e.step:"assign"; render(); });
-  $$('#staffRoot .dr-del').forEach(b=>b.onclick=()=>{ deleteDraft(b.dataset.del); render(); });
+  $$('#staffRoot .dr-del').forEach(b=>b.onclick=()=>{ if(!confirm("Delete this draft? It will be removed for the whole team."))return; deleteDraft(b.dataset.del); render(); });
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 
