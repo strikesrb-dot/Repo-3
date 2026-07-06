@@ -822,22 +822,10 @@ let poolDoubles=false;       // filter the pool to forward doubles only
 let poolWorkedPrior=false;   // filter the pool to people who worked the previous shift
 let tugsOpen=true, areasOpen=true;   // collapsible board sections
 let asgSec="tugs";                   // hub: which section fills the board pane ('tugs' | 'areas')
-// per-device board layout: density + section order (the "adjust to my like" controls)
-const BOARD_THEMES=["front","modern","minimal"];
-const THEME_LABEL={front:"Front end",modern:"Modern",minimal:"Minimal"};
-const LAYOUT_NAME={1:"Sidebar",2:"Pool right",3:"Pool top",4:"Pool bottom",5:"Wide pool",6:"Narrow pool",7:"Split board",8:"Tug list",9:"Board first",10:"Single stack"};
-function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const ord=Array.isArray(c.order)&&c.order.length===3?c.order:["dispatch","tugs","areas"]; const pw=(+c.poolW>=220&&+c.poolW<=1000)?+c.poolW:null; return {density:c.density||"normal",order:ord,theme:BOARD_THEMES.includes(c.theme)?c.theme:"front",poolW:pw}; }
-// a boolean control drawn in the active theme's toggle style (minimal = flat pill, else sliding switch)
-function tggl(id,on,label){ const min=boardCfg().theme==='minimal';
-  return min
-    ? `<button class="mintggl ${on?'on':''}" id="${id}"><span class="mintggl-dot"></span>${esc(label)}</button>`
-    : `<button class="mtggl ${on?'on':''}" id="${id}"><span class="mtggl-track"><span class="mtggl-knob"></span></span><span class="mtggl-lbl">${esc(label)}</span></button>`; }
-// whole-screen style switcher — Front end (current), Modern, Minimal
-function themePicker(){ const th=boardCfg().theme;
-  return `<div class="theme-row"><span class="dens-l">Screen style</span>`+
-    BOARD_THEMES.map(t=>`<button class="theme-btn ${th===t?'on':''}" data-theme="${t}">${esc(THEME_LABEL[t])}</button>`).join("")+`</div>`; }
+// per-device board setting: only the pool-pane width (drag-resizable). The old theme/
+// density/layout experiments were removed — the board has one consistent United-Modern look.
+function boardCfg(){ const c=Store.getJSON("elt.staff.board",null)||{}; const pw=(+c.poolW>=220&&+c.poolW<=1000)?+c.poolW:null; return {poolW:pw}; }
 function setBoardCfg(patch){ Store.setJSON("elt.staff.board",Object.assign(boardCfg(),patch)); }
-function moveSection(sec,dir){ const c=boardCfg(),o=c.order.slice(),i=o.indexOf(sec),j=i+dir; if(i<0||j<0||j>=o.length)return; const t=o[i];o[i]=o[j];o[j]=t; setBoardCfg({order:o}); render(); }
 // what still needs filling on the board — shown so the user always sees what's missing
 function missingItems(){
   const a=ST.assign; if(!a)return []; const out=[];
@@ -1032,8 +1020,6 @@ function rAssign(){
       document.addEventListener('pointermove',move); document.addEventListener('pointerup',up); document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',up); };
     g.addEventListener('pointerdown',onDown); g.addEventListener('touchstart',onDown,{passive:false});
   })();
-  $$('#staffRoot .dens-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({density:b.dataset.dens}); render(); });
-  $$('#staffRoot .theme-btn').forEach(b=>b.onclick=()=>{ setBoardCfg({theme:b.dataset.theme}); render(); });
   $("#abCancel")?.addEventListener("click",()=>{ autoMode=null; autoPick=[]; autoStep=0; render(); });
   $("#abGo")?.addEventListener("click",autoPairTugs);
   $("#abNext")?.addEventListener("click",autoNextRemote);
