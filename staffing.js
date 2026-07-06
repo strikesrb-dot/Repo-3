@@ -928,7 +928,9 @@ function rAssign(){
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
     const t=esc(p._hours||(p.start+"-"+p.end));
-    return `<span class="slot-name vname ${early?'early':''}">${crewNameV(p.name)}</span><span class="slot-meta"><span class="slot-t">${t}</span>${fwd?`<em class="sdbl">${esc(dblLabel(p.emp))}</em>`:''}${pw?`<b class="swln">${esc(pw)}</b>`:''}</span>`; };
+    // layout: name (left) · double/worked-prior (center) · hours (right) — matches the sheet
+    const mid=fwd?`<em class="sdbl">${esc(dblLabel(p.emp))}</em>`:(pw?`<b class="swln">${esc(pw)}</b>`:"");
+    return `<span class="slot-name vname ${early?'early':''}">${crewNameV(p.name)}</span><span class="slot-mid">${mid}</span><span class="slot-t">${t}</span>`; };
   // dispatch dropdown + custom
   const cur=ST.dispatch?ST.dispatch.name:"", custom=!!(ST.dispatch&&ST.dispatch.custom);
   const opts=[...new Set([...DISPATCHERS,...(cur&&!custom&&!DISPATCHERS.includes(cur)?[cur]:[])])];

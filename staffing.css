@@ -527,8 +527,8 @@
 .tc3-ctl .gpubtn.inop{background:rgba(0,0,0,.18)}
 .tc3-ctl .toos.isoos{width:auto;padding:0 7px;font-size:10px;font-weight:900;background:rgba(255,255,255,.28)}
 .tc3-ctl .thide{background:rgba(255,255,255,.16)}
-/* larger crew bars — fixed height so the controls stay flush at the very top */
-.tc3-b .ts-slot{border-top:none;flex:none;min-height:44px;padding:8px 9px;font-size:13.5px;gap:6px}
+/* larger crew bars — 3-col grid: name (left) · double/worked (center) · hours (right) */
+.tc3-b .ts-slot{border-top:none;flex:none;min-height:44px;padding:8px 9px;font-size:13.5px;gap:8px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(44px,1fr)}
 .tc3-b .ts-slot+.ts-slot{border-left:none;border-top:1px solid #eef1f4}
 .tc3-b .ts-slot>b{font-size:11px;width:13px}
 /* full name stacked: first name over last name */
@@ -537,11 +537,11 @@
 .tc3-b .ts-slot .vname .cn-2{font-size:14px;font-weight:900}
 .tc3-b .ts-slot .vname .cn-1,.tc3-b .ts-slot .vname .cn-2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tc3-b .ts-slot .slot-empty{font-size:13px}
-/* right column: shift time, then Double-until, then Worked-AM — stacked & readable */
-.tc3-b .ts-slot .slot-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;margin-left:8px;text-align:right}
-.tc3-b .ts-slot .slot-t{font-size:12.5px;color:var(--muted);font-weight:800;margin:0;white-space:nowrap}
-.tc3-b .ts-slot .sdbl{font-size:10.5px;font-weight:900;background:#0b3d63;color:#fff;border-radius:5px;padding:2px 8px;white-space:nowrap;display:block}
-.tc3-b .ts-slot .swln{font-size:10.5px;font-weight:800;background:#f3e2f7;color:#7a3287;border-radius:5px;padding:2px 8px;white-space:nowrap;display:block;margin:0}
+/* center: Double-until / Worked-AM pill · right: shift time */
+.tc3-b .ts-slot .slot-mid{justify-self:center;display:flex;align-items:center;min-width:0}
+.tc3-b .ts-slot .slot-t{font-size:12.5px;color:var(--muted);font-weight:800;margin:0;white-space:nowrap;justify-self:end;text-align:right}
+.tc3-b .ts-slot .sdbl{font-size:10px;font-weight:900;background:#0b3d63;color:#fff;border-radius:5px;padding:2px 8px;white-space:nowrap;font-style:normal}
+.tc3-b .ts-slot .swln{font-size:10px;font-weight:900;background:#f3e2f7;color:#7a3287;border-radius:5px;padding:2px 8px;white-space:nowrap}
 .tc3-oos{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:14px 10px;font-size:11.5px;font-weight:800;letter-spacing:.04em;color:#c0271e;background:repeating-linear-gradient(45deg,#fbeceb,#fbeceb 8px,#f7dedb 8px,#f7dedb 16px)}
 .tc3-oos .haz{color:#fff;background:#c0271e;border-radius:4px;padding:0 5px;font-weight:900}
 .tc3.muted{opacity:.55;cursor:pointer}
