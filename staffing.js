@@ -31,7 +31,9 @@ const SHIFT_CORE={AM:[300,780],PM:[780,1260],NH:[1260,1740]}; // 05–13 / 13–
 const TUGS=[1,3,4,10,17,18,19,20,21,22,23,24,25,26,27,28,29,51];
 const TUG_GROUPS=[{label:"1 · 3 · 4",ids:[1,3,4]},{label:"10–19",ids:[10,17,18,19]},{label:"20–29",ids:[20,21,22,23,24,25,26,27,28,29]},{label:"51",ids:[51]}];
 const ELECTRIC=new Set([20,25,26,28,29]);
-const DISPATCHERS=["Plant, Corey","Castro, Alex","Cope, Yolanda","Santana, Carlos","Menendez, Kevin","Murillo Mieles, Andres","Murray, Naki","Young, Benjamin","Platero, German","Reid, Sharee"];
+// real dispatcher names are NOT shipped in source — loaded from synced settings at runtime
+// (populate via "elt.staff.dispatchers"; the dispatcher field also accepts free-typed names)
+const DISPATCHERS=(()=>{try{const d=Store.getJSON("elt.staff.dispatchers",null);return Array.isArray(d)?d:[];}catch(_){return [];}})();
 const AREAS=[ // min staffing per shift; null = supervisor discretion
   {key:"Ballpark",  min:{AM:3,PM:3,NH:3}},
   {key:"WestPark",  min:{AM:2,PM:2,NH:2}},
@@ -68,7 +70,8 @@ async function hashCode(salt,code){
 function randSalt(){ const a=new Uint8Array(8); (crypto.getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=i*7)); return [...a].map(b=>b.toString(16).padStart(2,"0")).join(""); }
 async function setCode(name,code){ const c=loadCodes(); const salt=randSalt(); const when=Date.now(); c[name]={salt,hash:await hashCode(salt,code),when}; const ok=saveCodes(c); pushRow("code","C|"+name,{id:"C|"+name,name,salt,hash:c[name].hash,when}); return ok; }
 async function checkCode(name,code){ const e=loadCodes()[name]; if(!e||!e.hash)return false; return (await hashCode(e.salt,code))===e.hash; }
-const EXCLUDE_DEFAULT=["Bonet, Christopher","Vizcaino, Angel","Dickey, Todd","Mendes","Stephens, Kevin"];
+// no real names shipped in source; team-specific exclusions live in "elt.staff.exclude"
+const EXCLUDE_DEFAULT=[];
 const OUT_CODES=new Set(["VC","OUT","DTO","HOLT","DATV","DO","SICK","SICK ","CB","SKU","SKUS","Partial DTO","Shift Trade","HOLF","HOLM","JD","MD","DATC","DAT3","C4D","HODV"]);
 const WORKED_CODES=new Set(["DTW","HWP","HWFT"]);
 
