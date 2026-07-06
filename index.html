@@ -483,7 +483,7 @@
     <div class="setg-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
     <div class="setg-title">Settings locked</div>
     <div class="setg-sub">Enter the settings passcode.</div>
-    <input id="setgIn" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="••••" />
+    <input id="setgIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />
     <div class="setg-err" id="setgErr"></div>
     <button class="btn navy" id="setgGo">Unlock</button>
     <button class="btn ghost" id="setgCancel">Cancel</button>
@@ -1018,9 +1018,17 @@ let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add
 /* ---- demo mode (mask real people-names; mirrors staffing.js) ---- */
 const _FAKE_LAST=["Anderson","Brooks","Carter","Diaz","Evans","Flores","Garcia","Hayes","Irwin","Jones","Kelly","Lopez","Morgan","Nguyen","Ortiz","Patel","Quinn","Reyes","Santos","Torres","Underwood","Vance","Walker","Young","Zimmer"];
 function _hashStr(s){let h=0;for(let i=0;i<(s||"").length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
-function _fakeName(real){if(!real)return real;const h=_hashStr(real);const last=_FAKE_LAST[h%_FAKE_LAST.length];const ini=String.fromCharCode(65+(Math.floor(h/_FAKE_LAST.length)%26));return last+", "+ini+".";}
+// collision-free: memoize + linear-probe so two people never share a masked name
+const _fakeMap=new Map(),_fakeUsed=new Set();
+function _fakeName(real){if(!real)return real;if(_fakeMap.has(real))return _fakeMap.get(real);
+  const h=_hashStr(real),span=_FAKE_LAST.length*26;let fake="";
+  for(let p=0;p<span;p++){const idx=(h+p)>>>0,last=_FAKE_LAST[idx%_FAKE_LAST.length],ini=String.fromCharCode(65+(Math.floor(idx/_FAKE_LAST.length)%26));fake=last+", "+ini+".";if(!_fakeUsed.has(fake))break;}
+  _fakeUsed.add(fake);_fakeMap.set(real,fake);return fake;}
 function demoOn(){return !!Store.getJSON("elt.demo",false);}
 function nm(name){return (demoOn()&&name)?_fakeName(name):name;}
+// EOS name fields arrive pre-joined; mask each part with the right separator (output only)
+const EOS_NAME_SEP={supervisors:" & ",asst:", ",manager:"",dispatcher:""};
+function eosMask(k,v){const sep=EOS_NAME_SEP[k];if(sep===undefined||!v)return v;return sep?String(v).split(sep).map(x=>nm(x.trim())).join(sep):nm(v);}
 
 /* ---- location helpers ---- */
 function locNames(){return data.locations.map(l=>l.name);}
@@ -1047,11 +1055,11 @@ function groupByType(items){
 }
 
 /* ---- fleet ---- */
-let FLEET=[],byShip=new Map();
+let FLEET=[],byShip=new Map(),byReg=new Map();
 let fstat=Store.getJSON("elt.fleet.fstat",{})||{};
 function effFuture(a){const k=(a.reg||"").toUpperCase();return (k in fstat)?!!fstat[k]:!!a.future;}
 function setFstat(reg,isFuture){fstat[(reg||"").toUpperCase()]=isFuture;Store.setJSON("elt.fleet.fstat",fstat);}
-function indexFleet(){byShip=new Map();FLEET.forEach(a=>{if(a.ship)byShip.set(String(a.ship),a);});}
+function indexFleet(){byShip=new Map();byReg=new Map();FLEET.forEach(a=>{if(a.ship)byShip.set(String(a.ship),a);if(a.reg)byReg.set(String(a.reg).toUpperCase(),a);});}
 function loadFleetCache(){const d=Store.getJSON(FLEET_KEY,null);if(d&&Array.isArray(d.aircraft)){FLEET=d.aircraft;indexFleet();return true;}return false;}
 function saveFleetCache(){Store.setJSON(FLEET_KEY,{aircraft:FLEET});}
 async function fetchFleet(){try{const r=await fetch(FLEET_URL+"?t="+todayISO(),{cache:"no-store"});if(!r.ok)return false;
@@ -1623,7 +1631,7 @@ function renderEos(){
 function eosTitle(){return "EWR Move Team — Shift EWR Report"; }
 function buildEosHTML(){const d=eosEnsure(),date=fmtDate(eos.date);
   const field=(l,v,red)=>`<div class="eos-pl"><b>${esc(l)}:</b> <span${red?' style="color:#c0271e;font-weight:700"':''}>${esc(v||"—")}</span></div>`;
-  const grp=arr=>arr.map(f=>field(f.l,d[f.k],f.red)).join("");
+  const grp=arr=>arr.map(f=>field(f.l,eosMask(f.k,d[f.k]),f.red)).join("");
   const S=f=>EOS_FIELDS.filter(x=>!x.sec).filter(f);
   return `<div class="sheet-head"><div><div class="title">${esc(eosTitle())}</div>
       <div style="font-size:13px;color:#555">Date: <b>${esc(date)}</b> &nbsp;·&nbsp; Shift: <b>${esc(eos.shift)}</b></div></div></div>
@@ -1637,7 +1645,7 @@ function buildEosHTML(){const d=eosEnsure(),date=fmtDate(eos.date);
 }
 function eosLines(){const d=eosEnsure();const L=[];
   L.push(eosTitle().toUpperCase());L.push("Date: "+fmtDate(eos.date)+"    Shift: "+eos.shift);L.push("");
-  const f=(l,k)=>L.push(l+": "+(d[k]||""));
+  const f=(l,k)=>L.push(l+": "+(eosMask(k,d[k])||""));
   ["weather:Weather Conditions","supervisors:Supervisors","manager:Manager","asst:Assistant Managers","dispatcher:Dispatcher"].forEach(x=>{const[k,l]=x.split(":");f(l,k);});
   L.push("");L.push("STAFFING & EQUIPMENT SUMMARY");
   [["agentCount","Agent Count"],["tugsOnShift","Tugs on Shift"],["paats","PAATs Ready"],["tocs","TOCs Assigned"],["totalMoves","Total Shift Moves"],["tbRepos","Terminal B Repos"],["starTow","Star Tow-Up"]].forEach(([k,l])=>f(l,k));
@@ -2457,7 +2465,7 @@ function renderParkResult(r){
     :`<div class="ac-ok" style="background:#eef2f5;color:#234;border-color:#cfd8e0"> Coordinate with Ramp Control (verify frequency on the chart)</div>`;
   let body;
   if(res.ok){
-    body=`<div class="ac-ok" style="font-size:18px">✓ Park on <b>STOP LINE ${res.line}</b></div>
+    body=`<div id="pkVerdict" class="ac-ok" style="font-size:18px">✓ Park on <b>STOP LINE ${res.line}</b></div>
       <p class="hint">Spot ${esc(park.spot)} · ${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} · ADG ${res.adg}</p>${rampHtml}`;
     if(cross.length){
       const ask=cross.map((c,i)=>`<div class="ac-no" style="margin-top:8px"><b>⚠ Restriction:</b> Spot ${esc(park.spot)} can't be used if a widebody is on ${c.wb.map(esc).join(" or ")}.
@@ -2475,9 +2483,18 @@ function renderParkResult(r){
     ${body}
     <p class="hint" style="margin-top:10px">⚠ Always verify against the official Hardstand ${esc(park.area)} chart before parking.</p>
     <div class="btnrow"><button class="btn ghost" id="pkAgain">↻ New lookup</button><button class="btn navy" id="pkBack" style="flex:2">Change aircraft</button></div></div>`;
+  const crossState={};
   $$(".pk-cross",r).forEach(b=>b.addEventListener("click",e=>{const i=b.dataset.i,occ=b.dataset.v==="1";
+    crossState[i]=occ;
+    // highlight the chosen button in its restriction group
+    $$(".pk-cross",r).forEach(x=>{if(x.dataset.i===i)x.classList.toggle("on",x===b);});
     $("#pkCrossR"+i).innerHTML=occ?`<div class="ac-no" style="margin-top:8px;color:#b3261e"><b>⊘ Spot ${esc(park.spot)} cannot be used</b> while that widebody is parked.</div>`
-      :`<div class="ac-ok" style="margin-top:8px">✓ Clear — spot ${esc(park.spot)} is usable.</div>`;}));
+      :`<div class="ac-ok" style="margin-top:8px">✓ Clear — spot ${esc(park.spot)} is usable.</div>`;
+    // the top verdict must never contradict the restriction answer: blocked if ANY is occupied
+    const blocked=Object.values(crossState).some(v=>v===true),vEl=$("#pkVerdict");
+    if(vEl){ if(blocked){vEl.className="ac-no";vEl.style.cssText="font-size:18px;color:#b3261e";vEl.innerHTML=`<b>⊘ Do NOT park — Spot ${esc(park.spot)} is blocked</b> while a widebody occupies the restricted spot.`;}
+      else {vEl.className="ac-ok";vEl.style.cssText="font-size:18px";vEl.innerHTML=`✓ Park on <b>STOP LINE ${res.line}</b>`;} }
+  }));
   $("#pkAgain").addEventListener("click",()=>{park=newPark();renderPark();});
   $("#pkBack").addEventListener("click",()=>{park.stage="ac";renderPark();});
 }

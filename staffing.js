@@ -10,7 +10,13 @@ const esc=s=>(s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt
 /* ---------- demo mode (mask real people-names for screen-sharing/sales) ---------- */
 const FAKE_LAST=["Anderson","Brooks","Carter","Diaz","Evans","Flores","Garcia","Hayes","Irwin","Jones","Kelly","Lopez","Morgan","Nguyen","Ortiz","Patel","Quinn","Reyes","Santos","Torres","Underwood","Vance","Walker","Young","Zimmer"];
 function hashStr(s){let h=0;for(let i=0;i<(s||"").length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
-function fakeName(real){if(!real)return real;const h=hashStr(real);const last=FAKE_LAST[h%FAKE_LAST.length];const ini=String.fromCharCode(65+(Math.floor(h/FAKE_LAST.length)%26));return ini+". "+last;}
+// collision-free demo names: memoize per real name and linear-probe past any fake already
+// taken by a different person, so no two people ever show the same masked name on screen.
+const _fakeMap=new Map(),_fakeUsed=new Set();
+function fakeName(real){if(!real)return real;if(_fakeMap.has(real))return _fakeMap.get(real);
+  const h=hashStr(real),span=FAKE_LAST.length*26;let fake="";
+  for(let p=0;p<span;p++){const idx=(h+p)>>>0,last=FAKE_LAST[idx%FAKE_LAST.length],ini=String.fromCharCode(65+(Math.floor(idx/FAKE_LAST.length)%26));fake=ini+". "+last;if(!_fakeUsed.has(fake))break;}
+  _fakeUsed.add(fake);_fakeMap.set(real,fake);return fake;}
 function demoOn(){return !!Store.getJSON("elt.demo",false);}
 // display names as "First Last" (stored as "Last, First" from eTA); leave single-word / comma-less names as-is
 function firstLast(name){const s=(name||"").trim();const i=s.indexOf(",");if(i<0)return s;const last=s.slice(0,i).trim(),first=s.slice(i+1).trim();return first?first+" "+last:last;}
@@ -1334,7 +1340,7 @@ function renderBriefCanvas(){
   const segs=[];
   const addH=(label,lines,fs)=>{segs.push({label,lines,fs});y+=18+lines.length*(fs+4)+6;};
   fields.forEach(([l,v])=>addH(l,wrap(v||"—",W-2*M-150,FA("400 15px")),16));
-  addH("Tugs SKED / OOS / INOP GP",[sked+" of "+TUGS.length+"   ·   OOS: "+(oosT.join(", ")||"none")+"   ·   INOP GP: "+(inop.join(", ")||"none")],16);
+  addH("Tugs",[sked+" of "+TUGS.length+"   ·   OOS: "+(oosT.join(", ")||"none")+"   ·   INOP GP: "+(inop.join(", ")||"none")],16);
   const tblY=y+6;y+=30+rows.length*22+14;
   const mgrY=y;y+=24;
   segs.push({focusTitle:true});y+=24;
@@ -1348,9 +1354,11 @@ function renderBriefCanvas(){
   ctx.fillStyle="#0b3d63";ctx.fillRect(0,0,W,4);
   ctx.fillStyle="#10171f";ctx.font=FA("900 24px");ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.fillText("DAILY MOVE TEAM SHIFT BRIEFING",M,M+24);
   ctx.fillStyle="#67727e";ctx.font=FA("600 13px");ctx.textAlign="right";ctx.fillText(ST.parsed?ST.parsed.date:"",W-M,M+24);
-  let yy=M+50;
+  let yy=M+40;  // match the height-simulation origin so tblY/mgrY line up with the draw flow
   segs.forEach(s=>{
-    if(s.focusTitle){ctx.fillStyle="#0b3d63";ctx.font=FA("800 14px");ctx.textAlign="left";ctx.fillText("BRIEFING FOCUS ITEMS",M,yy+4);yy+=24;
+    // the table + MGR line are drawn separately at absolute tblY/mgrY; skip the draw cursor
+    // past that reserved block before the focus items, or they overprint the staffing table
+    if(s.focusTitle){yy=mgrY+24;ctx.fillStyle="#0b3d63";ctx.font=FA("800 14px");ctx.textAlign="left";ctx.fillText("BRIEFING FOCUS ITEMS",M,yy+4);yy+=24;
       focus.forEach((f,i)=>{const fl=focusLines[i];ctx.fillStyle="#1c2530";ctx.font=FA("400 14px");
         fl.forEach((ln,k)=>ctx.fillText((k===0?(i+1)+". ":"   ")+ln,M+4,yy+14+k*18));yy+=fl.length*18+6;});return;}
     ctx.fillStyle="#8a939c";ctx.font=FA("800 11px");ctx.textAlign="left";ctx.fillText(s.label.toUpperCase(),M,yy+2);
@@ -1365,7 +1373,7 @@ function renderBriefCanvas(){
   rows.forEach((r,i)=>{const ry=tblY+22+18+i*22;ctx.fillStyle="#1c2530";
     ctx.fillText(r.sh,cx[0],ry);ctx.fillText(""+r.n,cx[1],ry);ctx.fillText(""+r.max,cx[2],ry);
     ctx.fillText(r.t.VAC+" | "+r.t.DAT+" | "+r.t.CB,cx[3],ry);ctx.fillText(r.t.SICK+" | "+r.t.OUT+" | "+r.t.OJI,cx[4],ry);});
-  ctx.fillStyle="#67727e";ctx.font=FA("600 12px");ctx.fillText("MGR "+(ST.manager||"—")+"   ·   ASST "+(ST.asst.join(", ")||"—")+"   ·   SUP "+(ST.supers.join(", ")||"—"),M,mgrY+6);
+  ctx.fillStyle="#67727e";ctx.font=FA("600 12px");ctx.fillText("MGR "+(ST.manager?nm(ST.manager):"—")+"   ·   ASST "+(ST.asst.map(nm).join(", ")||"—")+"   ·   SUP "+(ST.supers.map(nm).join(", ")||"—"),M,mgrY+6);
   if(b.notes){ctx.fillStyle="#0b3d63";ctx.font=FA("800 12px");ctx.fillText("NOTES",M,H-M-((wrap(b.notes,W-2*M-20,FA("400 14px")).length)*18)-2);
     ctx.fillStyle="#1c2530";ctx.font=FA("400 14px");wrap(b.notes,W-2*M-20,FA("400 14px")).forEach((ln,k)=>ctx.fillText(ln,M,H-M-((wrap(b.notes,W-2*M-20,FA("400 14px")).length-1-k)*18)));}
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
