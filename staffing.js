@@ -431,10 +431,10 @@ function staffModal(html){
 }
 function dispatcherWarn(){
   if(!ST.dispatch||!ST.dispatch.name){
-    staffModal(`<div class="sm-bang">!!!</div>
-      <h3 class="sm-title">YOU DON'T HAVE A DISPATCHER!!!</h3>
-      <p class="sm-sub">Pick a dispatcher below before you finish the board.</p>
-      <button class="btn navy" data-close>OK</button>`);
+    staffModal(`<div class="sm-bang">⚠</div>
+      <h3 class="sm-title">No dispatcher assigned</h3>
+      <p class="sm-sub">Assign a dispatcher before you finish the board — the staffing sheet needs one.</p>
+      <button class="btn navy" data-close>Got it</button>`);
   }
 }
 function back(toStep,label){return `<button class="btn ghost stp-back" data-to="${toStep}" style="margin-top:10px">‹ ${label}</button>`;}
