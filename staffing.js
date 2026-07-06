@@ -1245,9 +1245,10 @@ function renderStaffCanvas(){
       leftEdge=px;}
     return leftEdge;};
   let y=M;
-  // title + shift
-  ctx.fillStyle="#10171f";ctx.font=FA("900 32px");ctx.textAlign="left";ctx.fillText("EWR AMT STAFFING",M,y+26);
-  ctx.fillStyle="#0b3d63";rr(W-M-92,y+4,92,40,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 18px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-46,y+25);
+  // title + date + shift
+  ctx.fillStyle="#10171f";ctx.font=FA("900 32px");ctx.textAlign="left";ctx.fillText("EWR AMT STAFFING",M,y+22);
+  ctx.fillStyle="#67727e";ctx.font=FA("700 14px");ctx.fillText((ST.parsed&&ST.parsed.date)||todayLocalISO(),M,y+45);
+  ctx.fillStyle="#0b3d63";rr(W-M-92,y+4,92,40,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 18px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-46,y+26);
   y+=52+8;
   // info band
   const iW=(IW-2*gap)/3;
@@ -1427,19 +1428,26 @@ function exportSheetText(){
 /* ---- manpower log (history) ---- */
 function loadLog(){const d=Store.getJSON("elt.staff.log",[]);return Array.isArray(d)?d:[];}
 function saveLogList(l){return Store.setJSON("elt.staff.log",l);}
+// local-timezone YYYY-MM-DD, used when a manpower has no parsed date so logs are never dateless
+function todayLocalISO(){const d=new Date(Date.now());return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}
 function logManpower(){
-  const date=ST.parsed?ST.parsed.date:"",shift=ST.shift,a=ST.assign;
+  const date=(ST.parsed&&ST.parsed.date)||todayLocalISO(),shift=ST.shift,a=ST.assign,id=date+"|"+shift;
+  // warn before silently clobbering an already-logged board for the same date + shift
+  const prior=loadLog().find(e=>e.id===id&&!e._deleted);
+  if(prior&&!confirm("A "+shift+" manpower for "+(date||"this date")+" is already logged"+(prior.by?" by "+nm(prior.by):"")+". Overwrite it?"))return;
   const running=TUGS.filter(id=>tugState(id).running).length, pool=poolFor(shift).length;
   const areasFilled=AREAS.reduce((s,ar)=>s+((a.areas[ar.key]||[]).length),0);
   const crews=TUGS.filter(id=>tugState(id).running&&(a.tugs[id]&&(a.tugs[id].DRIVER||a.tugs[id].OBSERVR))).length;
-  let img="";try{const src=renderStaffCanvas();const w=1000,h=Math.round(src.height/src.width*w);
-    const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(src,0,0,w,h);
-    img=c.toDataURL("image/jpeg",0.85);}catch(_){}
   const finishedAt=Date.now();
-  const entry={id:date+"|"+shift,date,shift,when:finishedAt,startedAt:ST.startedAt||null,finishedAt,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",by:AUTH?AUTH.name:"",img,snap:snapshot()};
-  let l=loadLog().filter(e=>e.id!==entry.id);l.unshift(entry);l=l.slice(0,24);
-  if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,snap:null}); if(!saveLogList(l)){ l=l.map((e,i)=>i===0?e:{...e,img:""}); l=l.slice(0,12); saveLogList(l); } }
-  pushRow("log",entry.id,entry);      // share with the team
+  // no baked image: the detail view and every export re-render live from `snap`, so an entry
+  // is ~17KB instead of ~270KB — the archive no longer overruns storage at ~24 entries
+  const entry={id,date,shift,when:finishedAt,startedAt:ST.startedAt||null,finishedAt,pool,running,crews,areasFilled,dispatch:ST.dispatch?ST.dispatch.name:"",by:AUTH?AUTH.name:"",snap:snapshot()};
+  // cap live logs separately from tombstones so a delete never evicts a real entry
+  const all=loadLog().filter(e=>e.id!==id);
+  let live=all.filter(e=>!e._deleted).slice(0,23);live.unshift(entry);
+  let tombs=all.filter(e=>e._deleted).slice(0,24);
+  if(!saveLogList([...live,...tombs])){ live=live.slice(0,12); if(!saveLogList([...live,...tombs.slice(0,12)])){ live=live.map((e,i)=>i===0?e:{...e,snap:null}); saveLogList([...live,...tombs.slice(0,6)]); } }
+  pushRow("log",id,entry);      // share with the team
   deleteDraft("D|"+date+"|"+shift);   // finalized — drop the draft
   logAct("Logged manpower",shift+" · "+assignedCount()+" assigned");
   toast("Logged: "+date+" "+shift);
