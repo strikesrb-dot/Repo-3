@@ -59,7 +59,9 @@ const SUP_DEFAULT=["Sheldon","Paulia","Qua","Mark","Stephanie","Denroy","Earl","
 const MANAGERS=["Steve"];
 const ASSTMGRS=["Jay","Tito"];
 /* roster store (base supervisors + co-signed temporary supervisors) */
-function loadTempSups(){const d=Store.getJSON("elt.staff.tempsups",[]);return Array.isArray(d)?d:[];}
+function loadTempRaw(){const d=Store.getJSON("elt.staff.tempsups",[]);return Array.isArray(d)?d:[];}
+// active temp supervisors = newest row per name, excluding removal tombstones ({del:true})
+function loadTempSups(){ const newest={}; loadTempRaw().forEach(x=>{ if(!x||!x.name)return; const c=newest[x.name]; if(!c||(x.when||0)>=(c.when||0))newest[x.name]=x; }); return Object.values(newest).filter(x=>!x.del).map(x=>({name:x.name,by:x.by||"",when:x.when||0})); }
 function saveTempSups(l){Store.setJSON("elt.staff.tempsups",l);}
 function supervisorList(){ const t=loadTempSups().map(x=>x.name); return [...SUP_DEFAULT,...t.filter(n=>!SUP_DEFAULT.includes(n))]; }
 const SUPERVISORS=supervisorList(); // compatibility (recomputed where it matters via supervisorList())
@@ -471,7 +473,11 @@ const SUPA_URL="https://diqqjyryhzpzlrivupef.supabase.co/rest/v1";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpcXFqeXJ5aHpwemxyaXZ1cGVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2OTQzMzIsImV4cCI6MjA5ODI3MDMzMn0.o2ew-zOD5R1w3fzpUYScOLVEehvCpVQ-89MsOHjgYHI";
 if(!Store.getJSON("elt.sync.cfg",null))Store.setJSON("elt.sync.cfg",{on:true,url:SUPA_URL,key:SUPA_KEY});
 function syncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{};return {on:c.on!==false,url:c.url||SUPA_URL,key:c.key||SUPA_KEY};}
-function syncOn(){const c=syncCfg();return !!(c.on&&c.url&&c.key);}
+// Demo mode HARD-DISABLES all backend sync (push, pull, delete). nm()/fakeName only mask
+// what's drawn; the underlying rows are still real names, so a masked pitch demo must never
+// touch the network or it would upload real employee PII. Gating here covers every sync path
+// in both staffing.js and index.html (window.SYNC.on() -> this).
+function syncOn(){if(demoOn())return false;const c=syncCfg();return !!(c.on&&c.url&&c.key);}
 function supaUrl(path){return syncCfg().url.replace(/\/+$/,"")+"/"+path;}
 function supaHdr(extra){const c=syncCfg();return Object.assign({apikey:c.key,Authorization:"Bearer "+c.key,"Content-Type":"application/json"},extra||{});}
 // lightweight sync-health so a silently-broken backend can be spotted before a pilot.
@@ -492,16 +498,27 @@ async function syncShared(kind,load,saveFn,cap){
   const map={}; load().forEach(e=>map[e.id]=e); let changed=false;
   Object.values(remote).forEach(e=>{const cur=map[e.id]; if(!cur||(e.when||0)>(cur.when||0)){ if(cur&&!e.img&&cur.img&&!e._deleted)e.img=cur.img; map[e.id]=e; changed=true; }});
   const toPush=Object.values(map).filter(e=>{const r=remote[e.id];return !r||(e.when||0)>(r.when||0);}).map(e=>({id:e.id,kind,data:e}));
-  if(changed)saveFn(Object.values(map).sort((a,b)=>(b.when||0)-(a.when||0)).slice(0,cap));
-  if(toPush.length){ try{ await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify(toPush)}); }catch(_){ } }
+  if(changed){
+    // cap LIVE rows and TOMBSTONES with independent budgets. A single combined slice(0,cap) let a
+    // burst of recent deletes evict real logged manpowers/drafts team-wide (the local save paths
+    // already keep these budgets separate — mirror that here).
+    const merged=Object.values(map).sort((a,b)=>(b.when||0)-(a.when||0));
+    const isTomb=e=>!!(e&&(e._deleted||e.del||e.reset));
+    const live=merged.filter(e=>!isTomb(e)).slice(0,cap);
+    const tomb=merged.filter(isTomb).slice(0,Math.max(cap,24));
+    saveFn([...live,...tomb]);
+  }
+  if(toPush.length){ syncHealth.pending++; try{ const r=await fetch(supaUrl("manpower_shared"),{method:"POST",headers:supaHdr({Prefer:"resolution=merge-duplicates"}),body:JSON.stringify(toPush)}); syncNote(r.ok,r.ok?"sync "+kind:"sync "+kind+" HTTP "+r.status); }catch(e){ syncNote(false,"sync "+kind+": "+(e&&e.message||e)); } finally{ syncHealth.pending=Math.max(0,syncHealth.pending-1); } }
   return changed;
 }
 // per-person codes as sync rows: tombstones (reset:true) carry no hash and clear the code everywhere
 function loadCodeRows(){ const c=loadCodes(); return Object.keys(c).map(name=>{const e=c[name];return e.reset?{id:"C|"+name,name,reset:true,when:e.when||0}:{id:"C|"+name,name,salt:e.salt,hash:e.hash,when:e.when||0};}); }
 function saveCodeRows(arr){ const c={}; arr.forEach(e=>{ if(!e||!e.name)return; if(e.reset)c[e.name]={reset:true,when:e.when||0}; else if(e.hash)c[e.name]={salt:e.salt,hash:e.hash,when:e.when||0}; }); return saveCodes(c); }
 // temporary supervisors as sync rows (union by name)
-function loadTempRows(){ return loadTempSups().map(x=>({id:"T|"+x.name,name:x.name,by:x.by||"",when:x.when||0})); }
-function saveTempRows(arr){ const seen=new Set(),out=[]; arr.forEach(e=>{ if(e&&e.name&&!seen.has(e.name)){seen.add(e.name);out.push({name:e.name,by:e.by||"",when:e.when||0});} }); return saveTempSups(out); }
+function loadTempRows(){ const newest={}; loadTempRaw().forEach(x=>{ if(!x||!x.name)return; const c=newest[x.name]; if(!c||(x.when||0)>=(c.when||0))newest[x.name]=x; });
+  return Object.values(newest).map(x=>x.del?{id:"T|"+x.name,name:x.name,del:true,when:x.when||0}:{id:"T|"+x.name,name:x.name,by:x.by||"",when:x.when||0}); }
+function saveTempRows(arr){ const newest={}; (arr||[]).forEach(e=>{ if(!e||!e.name)return; const c=newest[e.name]; if(!c||(e.when||0)>=(c.when||0))newest[e.name]=e; });
+  const out=Object.values(newest).map(e=>e.del?{name:e.name,del:true,when:e.when||0}:{name:e.name,by:e.by||"",when:e.when||0}); return saveTempSups(out); }
 let _logPull=0,_draftPull=0,_codePull=0,_tempPull=0;
 async function syncCodes(force){ const n=Date.now(); if(!force&&n-_codePull<2500)return false; _codePull=n; const c=await syncShared("code",loadCodeRows,saveCodeRows,300); if(c&&ST.step==="auth")render(); return c; }
 async function syncTempSups(force){ const n=Date.now(); if(!force&&n-_tempPull<2500)return false; _tempPull=n; const c=await syncShared("tempsup",loadTempRows,saveTempRows,100); if(c&&ST.step==="auth")render(); return c; }
@@ -625,7 +642,7 @@ function rAuth(){
       if(!signer){authErr="Pick an approving supervisor.";return render();}
       if(!hasCode(signer)){authErr=signer+" hasn't set up a code yet — they must sign in once first.";return render();}
       if(!(await checkCode(signer,code))){authErr="That supervisor's code is incorrect.";return render();}
-      const tw=Date.now(); const l=loadTempSups(); l.push({name:authTemp.name,by:signer,when:tw}); saveTempSups(l);
+      const tw=Date.now(); const l=loadTempRaw(); l.push({name:authTemp.name,by:signer,when:tw}); saveTempSups(l);
       pushRow("tempsup","T|"+authTemp.name,{id:"T|"+authTemp.name,name:authTemp.name,by:signer,when:tw});
       authenticate(authTemp.name,"Supervisor",true);
     };
@@ -1610,7 +1627,7 @@ window.STAFF={
   syncCodes:()=>syncCodes(true),
   syncRoster:()=>syncTempSups(true),
   resetCode:n=>{ resetCode(n); },
-  removeTempSup:n=>{ saveTempSups(loadTempSups().filter(x=>x.name!==n)); delRow("T|"+n); if(AUTH&&AUTH.name===n)AUTH=null; },
+  removeTempSup:n=>{ const tw=Date.now(); const l=loadTempRaw(); l.push({name:n,del:true,when:tw}); saveTempSups(l); pushRow("tempsup","T|"+n,{id:"T|"+n,name:n,del:true,when:tw}); if(AUTH&&AUTH.name===n)AUTH=null; },
   who:()=>AUTH?AUTH.name:""
 };
 window.BRIEF={ open:()=>{ loadBids(); briefTabView="edit"; renderBriefTab(); } };

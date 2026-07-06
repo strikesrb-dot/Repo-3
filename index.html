@@ -994,8 +994,17 @@ function persist(){Store.setJSON(KEY,data);}   // raw write — no timestamp bum
 function save(){ const sig=configSig(); if(cfgReady&&_cfgSig!==null&&sig!==_cfgSig)data._t=Date.now(); _cfgSig=sig; persist(); scheduleSiteSync(); }
 
 /* ---- whole-site team sync (equipment, inventory, movements, secure log, settings) ---- */
-function configRow(){const o={id:"config",when:data._t||0};CFG_FIELDS.forEach(k=>o[k]=data[k]);return o;}
-function applyConfigRow(r){if(!r)return;CFG_FIELDS.forEach(k=>{if(k in r)data[k]=r[k];});
+function configRow(){const o={id:"config",when:data._t||0};CFG_FIELDS.forEach(k=>o[k]=data[k]);
+  // SECURITY: never broadcast the cleartext team passcode. Upload a settings copy with it stripped
+  // (shift times, caps, labels, name-order etc. still sync — the secret does not).
+  if(o.settings&&typeof o.settings==="object"){o.settings={...o.settings};delete o.settings.passcode;}
+  return o;}
+function applyConfigRow(r){if(!r)return;
+  // incoming config carries no passcode (we strip it on upload); keep whatever this device has set
+  // so a pulled config can't blank it back to the default.
+  const localPass=data.settings&&data.settings.passcode;
+  CFG_FIELDS.forEach(k=>{if(k in r)data[k]=r[k];});
+  if(localPass!=null){data.settings=data.settings||{};data.settings.passcode=localPass;}
   // normalize incoming location names so a not-yet-updated device can't reintroduce "Ball Park"/"West Park"
   if(Array.isArray(data.equipLocs)){const seen=new Set(),el=[];data.equipLocs.forEach(x=>{const n=normLoc(x);if(n&&!seen.has(n)){seen.add(n);el.push(n);}});data.equipLocs=el;}
   if(data.locZones){const z={};Object.keys(data.locZones).forEach(k=>{const n=normLoc(k);const cur=z[n]||[];(data.locZones[k]||[]).forEach(s=>{if(!cur.some(x=>x.toLowerCase()===String(s).toLowerCase()))cur.push(s);});z[n]=cur;});data.locZones=z;}
@@ -1005,7 +1014,7 @@ function applyConfigRow(r){if(!r)return;CFG_FIELDS.forEach(k=>{if(k in r)data[k]
   if(data.subtypes){const sz={};Object.keys(data.subtypes).forEach(k=>{const m=normType(k);sz[m]=[...new Set([...(sz[m]||[]),...(data.subtypes[k]||[])])];});data.subtypes=sz;}
   data._t=r.when||data._t||0;_cfgSig=configSig();}
 let _siteSyncT=null,_siteBusy=false;
-function scheduleSiteSync(){ if(!window.SYNC||!window.SYNC.on())return; clearTimeout(_siteSyncT); _siteSyncT=setTimeout(()=>syncSite(),1200); }
+function scheduleSiteSync(){ if(demoOn()||!window.SYNC||!window.SYNC.on())return; clearTimeout(_siteSyncT); _siteSyncT=setTimeout(()=>syncSite(),1200); }
 // deletions sync as tombstones ({del:true}) so they propagate instead of being re-added by another device
 function rowsWithTomb(list,tomb){ const r=(list||[]).map(e=>({...e,when:e.when||0})); (tomb||[]).forEach(t=>r.push({id:t.id,del:true,when:t.when||0})); return r; }
 function splitRows(arr,liveCap){ let live=[],tomb=[]; (arr||[]).forEach(e=>{ if(!e||!e.id)return; if(e.del)tomb.push({id:e.id,when:e.when||0}); else live.push(e); });
@@ -1014,7 +1023,7 @@ function splitRows(arr,liveCap){ let live=[],tomb=[]; (arr||[]).forEach(e=>{ if(
   return {live,tomb}; }
 function tombstone(id,kind){ data._tomb=data._tomb||{}; (data._tomb[kind]=data._tomb[kind]||[]).push({id,when:Date.now()}); if(window.SYNC)window.SYNC.push(kind,id,{id,del:true,when:Date.now()}); }
 async function syncSite(force){
-  if(_siteBusy||!window.SYNC||!window.SYNC.on())return false;
+  if(demoOn()||_siteBusy||!window.SYNC||!window.SYNC.on())return false;
   _siteBusy=true; let changed=false;
   try{
     const moveCap=Math.max(50,(data.settings&&data.settings.moveCap)||300);
