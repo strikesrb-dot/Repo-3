@@ -504,9 +504,12 @@ function deleteDraft(id){ const tomb={id,_deleted:true,when:Date.now()};
 
 /* ---- activity log: a track record of who did what, when ---- */
 function loadActivity(){const d=Store.getJSON("elt.staff.activity",[]);return Array.isArray(d)?d:[];}
-function logAct(kind,detail){ try{
+// names are stored RAW in the dedicated `who` field and masked at render time (like `by`),
+// so demo mode masks history correctly and the audit trail never bakes in fake names.
+// v:2 marks entries with name-free detail; legacy rows may embed raw names in free text.
+function logAct(kind,detail,who){ try{
   const l=loadActivity();
-  l.unshift({ts:Date.now(),by:AUTH?AUTH.name:"",shift:ST.shift||"",kind,detail:detail||""});
+  l.unshift({ts:Date.now(),by:AUTH?AUTH.name:"",shift:ST.shift||"",kind,detail:detail||"",who:who||"",v:2});
   Store.setJSON("elt.staff.activity",l.slice(0,400));
 }catch(_){ } }
 function fmtClock(ts){ if(!ts)return ""; const d=new Date(ts); let h=d.getHours(),m=d.getMinutes(); const ap=h<12?"AM":"PM"; h=h%12||12; return h+":"+String(m).padStart(2,"0")+" "+ap; }
@@ -641,13 +644,16 @@ function rMenu(){
 
 /* ---- step: activity log (track record of user actions) ---- */
 function rActivity(){
-  const acts=loadActivity();
+  // legacy (pre-v2) rows may carry raw names inside free-text detail — hide them while
+  // demo mode is masking, since they can't be masked reliably. They return when demo is off.
+  const acts=loadActivity().filter(a=>!demoOn()||a.v>=2);
   const dayKey=ts=>{const d=new Date(ts);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);};
   const byDay={},order=[];
   acts.forEach(a=>{const k=dayKey(a.ts);if(!byDay[k]){byDay[k]=[];order.push(k);}byDay[k].push(a);});
   const body=order.length?order.map(k=>{
-    const rows=byDay[k].map(a=>`<div class="act-row"><span class="act-t">${esc(fmtClock(a.ts))}</span>
-      <span class="act-b"><b>${esc(a.kind)}</b>${a.detail?` — ${esc(a.detail)}`:''}${a.by?`<span class="act-by">${esc(nm(a.by))}${a.shift?" · "+esc(a.shift):""}</span>`:''}</span></div>`).join("");
+    const rows=byDay[k].map(a=>{const parts=[a.who?esc(nm(a.who)):"",a.detail?esc(a.detail):""].filter(Boolean).join(" · ");
+      return `<div class="act-row"><span class="act-t">${esc(fmtClock(a.ts))}</span>
+      <span class="act-b"><b>${esc(a.kind)}</b>${parts?` — ${parts}`:''}${a.by?`<span class="act-by">${esc(nm(a.by))}${a.shift?" · "+esc(a.shift):""}</span>`:''}</span></div>`;}).join("");
     return `<div class="act-day">${esc(fmtDayLabel(k))}</div>${rows}`;
   }).join(""):'<p class="hint" style="margin:0">No activity recorded yet.</p>';
   ROOT.innerHTML=card(`<div class="pool-head"><h2 class="staff-h" style="margin:0">Activity log</h2><span class="cnt">${acts.length}</span></div>
@@ -1033,16 +1039,16 @@ function rAssign(){
   $("#abNext")?.addEventListener("click",autoNextRemote);
   $$('#staffRoot .shgrp-h[data-grp]').forEach(h=>h.onclick=()=>{ const g=h.dataset.grp; poolCollapsed.has(g)?poolCollapsed.delete(g):poolCollapsed.add(g); render(); });
   // placing keeps the selection in multi mode so the same person can go in a 2nd spot (auto-clears at 2 areas)
-  const selName=()=>{ const b=SEL&&poolFor(ST.shift).find(x=>x.emp===SEL); return b?nm(b.name):""; };
+  const selRaw=()=>{ const b=SEL&&poolFor(ST.shift).find(x=>x.emp===SEL); return b?b.name:""; };   // raw name for the activity log (masked at render)
   const place=(setter)=>{ if(!SEL)return; const emp=SEL,b=poolFor(ST.shift).find(x=>x.emp===emp); if(!b)return; setter(mkBody(b)); if(autoMode!=='multi'||empAreaCount(emp)>=2)SEL=null; render(); };
   $("#dispSel")?.addEventListener("change",e=>{ const v=e.target.value;
     if(v==="__custom"){ST.dispatch={name:custom?cur:"",emp:"",custom:true};}
     else{ const m=pool.find(b=>normName(b.name)===normName(v)); ST.dispatch=v?{name:v,emp:m?m.emp:"",custom:false}:{name:"",emp:"",custom:false}; }
-    if(ST.dispatch&&ST.dispatch.name)logAct("Set dispatcher",nm(ST.dispatch.name)); render(); });
+    if(ST.dispatch&&ST.dispatch.name)logAct("Set dispatcher","",ST.dispatch.name); render(); });
   $("#dispCustom")?.addEventListener("input",e=>{ ST.dispatch={name:e.target.value,emp:"",custom:true}; });
   $$('#staffRoot .ts-slot').forEach(s=>s.onclick=()=>{ const id=s.dataset.tug,role=s.dataset.role,t=ST.assign.tugs[id]=ST.assign.tugs[id]||{};
-    if(t[role]){const p=t[role];t[role]=null;SEL=p.emp;logAct("Removed from STUG "+id,nm(p.name)+" · "+role);render();return;}
-    const who=selName(); place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); if(who)logAct("Assigned to STUG "+id,who+" · "+role); }); // tap filled slot = pick up & move
+    if(t[role]){const p=t[role];t[role]=null;SEL=p.emp;logAct("Removed from STUG "+id,role,p.name);render();return;}
+    const who=selRaw(); place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); if(who)logAct("Assigned to STUG "+id,role,who); }); // tap filled slot = pick up & move
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); ST.tugOos=ST.tugOos||{};
     if(t.oos){setTug(id,"ready");delete ST.tugOos[id];}
     else {setTug(id,"oos");delete ST.assign.tugs[id]; const r=prompt("Why is STUG "+id+" out of service? (optional)",""); if(r!=null)ST.tugOos[id]=r.trim();}
@@ -1052,8 +1058,8 @@ function rAssign(){
   $$('#staffRoot .tc3.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
   $("#toggleUnused")?.addEventListener("click",()=>{ showUnusedTugs=!showUnusedTugs; render(); });
   $$('#staffRoot .thide').forEach(b=>b.onclick=()=>{ const id=+b.dataset.hide; setTug(id,"unset"); delete ST.assign.tugs[id]; render(); });
-  $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; const who=selName(); place(p=>{ if(!ST.assign.areas[k].some(x=>x.emp===p.emp))ST.assign.areas[k].push(p); }); if(who)logAct("Assigned to "+k,who); });
-  $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; const p=ST.assign.areas[k][i]; ST.assign.areas[k].splice(i,1); if(p){SEL=p.emp;logAct("Removed from "+k,nm(p.name));} render(); }); // remove = pick up & move
+  $$('#staffRoot .aadd').forEach(b=>b.onclick=()=>{ const k=b.dataset.areaadd; const who=selRaw(); place(p=>{ if(!ST.assign.areas[k].some(x=>x.emp===p.emp))ST.assign.areas[k].push(p); }); if(who)logAct("Assigned to "+k,"",who); });
+  $$('#staffRoot .slot-chip').forEach(c=>c.onclick=()=>{ const k=c.dataset.area,i=+c.dataset.i; const p=ST.assign.areas[k][i]; ST.assign.areas[k].splice(i,1); if(p){SEL=p.emp;logAct("Removed from "+k,"",p.name);} render(); }); // remove = pick up & move
   $("#toBrief").onclick=()=>{ initBrief(); saveDraft(); ST.step="sheet"; render(); };  // briefing is edited in its own tab, not here
   saveDraft();
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
