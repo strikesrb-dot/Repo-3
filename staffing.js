@@ -23,6 +23,11 @@ function firstLast(name){const s=(name||"").trim();const i=s.indexOf(",");if(i<0
 // name display order — settings-driven ("first" = First Last, "last" = raw Last, First from eTA)
 function nameOrderFirst(){ try{return Store.getRaw("elt.staff.nameOrder","first")!=="last";}catch(_){return true;} }
 function nm(name){if(!name)return name;if(demoOn())return fakeName(name);return nameOrderFirst()?firstLast(name):name;}
+// user-configurable labels (stored in the equipment settings so they sync team-wide via config).
+// A blank/absent override means "use the built-in default".
+function appLabels(){ try{const d=Store.getJSON("elt.data.v1",null);return (d&&d.settings&&d.settings.labels)||{};}catch(_){return {};} }
+function lblOf(k,def){ const v=appLabels()[k]; return (typeof v==="string"&&v.trim())?v.trim():def; }
+function lblMap(group,key,def){ const m=appLabels()[group]; const v=m&&m[key]; return (typeof v==="string"&&v.trim())?v.trim():def; }
 // tug crew: full name stacked vertically — first name on top, last name below
 function crewNameV(name){ const s=(nm(name)||"").trim(); if(!s)return "";
   const i=s.indexOf(" "); if(i<0) return `<span class="cn-1">${esc(s)}</span>`;
@@ -49,7 +54,7 @@ const AREAS=[ // min staffing per shift; null = supervisor discretion
   {key:"Support",   min:null},
   {key:"C4",        min:null},
 ];
-const areaLabel=k=>{const a=AREAS.find(x=>x.key===k);return a&&a.label?a.label:k;};
+const areaLabel=k=>{const a=AREAS.find(x=>x.key===k);const def=(a&&a.label)?a.label:k;return lblMap("areas",k,def);};
 const SUP_DEFAULT=["Sheldon","Paulia","Qua","Mark","Stephanie","Denroy","Earl","John","Juan"];
 const MANAGERS=["Steve"];
 const ASSTMGRS=["Jay","Tito"];
@@ -217,7 +222,8 @@ function cycleTug(id){ ST.tug[id]=TUG_ORDER[(TUG_ORDER.indexOf(tugSt(id))+1)%TUG
 // compatibility view used by sheets/board/exports
 function tugState(id){ const s=tugSt(id); return {state:s, oos:s==="oos", gpu:s==="inop"?"inop":"ok", running:s==="ready"||s==="inop", unset:s==="unset"}; }
 // tug make/model by id range
-function tugType(id){ if([1,3,4].includes(id))return "TBL-400"; if(id>=10&&id<=19)return "TBL-280"; if(id>=20&&id<=29)return "GOLDHOFER"; if(id===51)return "Kalmar"; return ""; }
+function tugTypeRaw(id){ if([1,3,4].includes(id))return "TBL-400"; if(id>=10&&id<=19)return "TBL-280"; if(id>=20&&id<=29)return "GOLDHOFER"; if(id===51)return "Kalmar"; return ""; }
+function tugType(id){ const raw=tugTypeRaw(id); return raw?lblMap("tugTypes",raw,raw):""; }   // display label (user-renamable)
 const PREV_SHIFT={AM:"NH",PM:"AM",NH:"PM"};
 // label for someone who worked the directly-preceding shift (full or partial)
 // the clock window a person actually worked inside the previous shift (for partial-prev workers)
@@ -1117,7 +1123,7 @@ function buildBriefing(){
   const fld=(l,v)=>`<div class="bf-row"><div class="bf-l">${l}</div><div class="bf-v">${v?esc(v).replace(/\n/g,"<br>"):'<span class="bf-em">—</span>'}</div></div>`;
   const date=ST.parsed?ST.parsed.date:"";
   return `<div class="bf">
-    <div class="bf-title">DAILY MOVE TEAM SHIFT BRIEFING<span>${esc(date)}</span></div>
+    <div class="bf-title">${esc(lblOf("briefTitle","DAILY MOVE TEAM SHIFT BRIEFING"))}<span>${esc(date)}</span></div>
     <div class="bf-2col">
       <div class="bf-card"><div class="bf-h">Tonight</div>
         ${fld("Weather",b.weather)}${fld("Flight activity / ATC",b.flight)}${fld("Remote parking",b.parking)}</div>
@@ -1176,7 +1182,7 @@ function buildSheet(){
   const absBlock=absent.length?`<div class="sb-absent"><div class="sb-abs-h">NOT HERE THIS SHIFT — ${absent.length}</div>
     <div class="sb-abs-grid">${absent.map(x=>`<span class="sb-abs"><b>${esc(x.name)}</b><span class="sb-abs-c">${esc(x.code)}</span></span>`).join("")}</div></div>`:"";
   return `<div class="sb">
-    <div class="sb-top"><div class="sb-title">EWR AMT STAFFING</div><div class="sb-shift">SHIFT <b>${ST.shift}</b></div></div>
+    <div class="sb-top"><div class="sb-title">${esc(lblOf("sheetTitle","EWR AMT STAFFING"))}</div><div class="sb-shift">SHIFT <b>${ST.shift}</b></div></div>
     <div class="sb-band">
       ${AREAS.map(x=>areaBox(x.key)).join("")}
       <div class="sb-area sb-disp"><div class="sb-area-h">DISPATCHER</div><div class="sb-area-b">${dn}</div></div>
@@ -1246,7 +1252,7 @@ function renderStaffCanvas(){
     return leftEdge;};
   let y=M;
   // title + date + shift
-  ctx.fillStyle="#10171f";ctx.font=FA("900 32px");ctx.textAlign="left";ctx.fillText("EWR AMT STAFFING",M,y+22);
+  ctx.fillStyle="#10171f";ctx.font=FA("900 32px");ctx.textAlign="left";ctx.fillText(lblOf("sheetTitle","EWR AMT STAFFING"),M,y+22);
   ctx.fillStyle="#67727e";ctx.font=FA("700 14px");ctx.fillText(fmtNiceDate((ST.parsed&&ST.parsed.date)||todayLocalISO()),M,y+45);
   ctx.fillStyle="#0b3d63";rr(W-M-92,y+4,92,40,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 18px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-46,y+26);
   y+=52+8;
@@ -1360,7 +1366,7 @@ function renderBriefCanvas(){
   const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
   ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
   ctx.fillStyle="#0b3d63";ctx.fillRect(0,0,W,4);
-  ctx.fillStyle="#10171f";ctx.font=FA("900 24px");ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.fillText("DAILY MOVE TEAM SHIFT BRIEFING",M,M+24);
+  ctx.fillStyle="#10171f";ctx.font=FA("900 24px");ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.fillText(lblOf("briefTitle","DAILY MOVE TEAM SHIFT BRIEFING"),M,M+24);
   ctx.fillStyle="#67727e";ctx.font=FA("600 13px");ctx.textAlign="right";ctx.fillText(fmtNiceDate((ST.parsed&&ST.parsed.date)||todayLocalISO()),W-M,M+24);
   let yy=M+40;  // match the height-simulation origin so tblY/mgrY line up with the draw flow
   segs.forEach(s=>{
@@ -1408,7 +1414,7 @@ function exportSheetText(){
   const hrs=p=>p._hours||(p.start+"-"+p.end);
   const metaTxt=p=>{const pw=prevWorkLabel(p.emp);if(pw)return " ("+pw+")";if(worksNext(p.emp))return " ("+dblLabel(p.emp)+")";return "";};
   const crewTxt=p=>p?nm(p.name)+" "+hrs(p)+metaTxt(p):"—";
-  L.push("EWR AMT STAFFING — "+ST.shift);L.push("=".repeat(30));
+  L.push(lblOf("sheetTitle","EWR AMT STAFFING")+" — "+ST.shift);L.push("=".repeat(30));
   L.push("DISPATCHER: "+(ST.dispatch&&ST.dispatch.name?nm(ST.dispatch.name):"OPEN"));
   if(ST.supers.length)L.push("SUPERVISORS: "+ST.supers.map(nm).join(", "));
   const mgr=[ST.manager,...ST.asst].filter(Boolean);if(mgr.length)L.push("MANAGERS: "+mgr.map(nm).join(", "));

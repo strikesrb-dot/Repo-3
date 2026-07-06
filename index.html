@@ -253,6 +253,12 @@
   .chip.done{background:var(--good-bg);color:#15622f;border-color:#bfe0cb}
   .manage-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
   .manage-row span{flex:1}
+  .lbl-grp{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 7px}
+  .lbl-grp:first-child{margin-top:2px}
+  .lbl-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+  .lbl-row>span{flex:0 0 42%;font-size:12.5px;font-weight:600;color:var(--ink)}
+  .lbl-row input{flex:1;min-width:0;font-size:14px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;background:var(--card);color:var(--ink)}
+  @media(max-width:520px){.lbl-row{flex-direction:column;align-items:stretch;gap:3px}.lbl-row>span{flex:none}}
   .manage-row .el-name{cursor:pointer}
   .areahdr{font-size:13px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 2px}
   .regionhdr{font-size:14px;font-weight:800;color:#fff;background:var(--navy);border-radius:8px;padding:5px 10px;letter-spacing:.6px;text-transform:uppercase;margin:16px 0 6px}
@@ -661,6 +667,12 @@
         <input id="subEdit" type="text" placeholder="Ground support equipment · staging &amp; audits" autocomplete="off" />
         <button class="btn sm navy" id="subSave" style="width:auto">Save</button>
       </div>
+    </div>
+
+    <h2 class="section">Names &amp; labels</h2>
+    <div class="card pad">
+      <p class="hint" style="margin-top:0">Rename anything on the sheets and screens — titles, areas, tug types. Blank = keep the built-in name. Changes sync to the whole team.</p>
+      <div id="labelCfg"></div>
     </div>
 
     <h2 class="section">Areas &amp; spots</h2>
@@ -1153,7 +1165,7 @@ function goTab(t){showTab(t);
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";const nos=$("#nameOrderSel");if(nos)nos.value=(data.settings&&data.settings.nameOrder)==="last"?"last":"first";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();renderLabelCfg();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";const nos=$("#nameOrderSel");if(nos)nos.value=(data.settings&&data.settings.nameOrder)==="last"?"last":"first";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
 
 /* settings passcode lock (3599) */
@@ -2751,10 +2763,32 @@ async function autoLoadMaster(){if(data.equipment.length||Store.getRaw(SEEN_KEY,
 
 /* ---- refresh ---- */
 function refreshAll(){renderList();refreshLocationFilter();refreshTypeFilter();updateHdr();}
-function updateHdr(){const cust=data.settings&&data.settings.headerSub;
+function updateHdr(){applyBrandLabels();const cust=data.settings&&data.settings.headerSub;
   if(cust){$("#hdrSub").textContent=cust;return;}
   const n=data.equipment.length,locs=new Set(data.equipment.map(e=>e.location).filter(Boolean)).size;
   $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} across ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
+// apply the user's custom app-name / eyebrow to the header (blank eyebrow hides it)
+function applyBrandLabels(){ const L=(data.settings&&data.settings.labels)||{};
+  const eb=document.querySelector('.brand .eyebrow');
+  if(eb){const t=('eyebrow' in L)?String(L.eyebrow||'').trim():'United Ground Ops · Move Team';eb.textContent=t;eb.style.display=t?'':'none';}
+  const wm=document.querySelector('.brand .wordmark'); if(wm)wm.textContent=(L.wordmark&&String(L.wordmark).trim())||'EWR MT HUB'; }
+// the rename tool: titles, area names, tug types — stored in settings.labels (synced team-wide)
+function renderLabelCfg(){ const wrap=$("#labelCfg"); if(!wrap)return; const L=(data.settings&&data.settings.labels)||{};
+  const val=(g,k)=>g==='top'?(L[k]!=null?L[k]:''):((L[g]&&L[g][k]!=null)?L[g][k]:'');
+  const field=(g,k,label,def)=>`<label class="lbl-row"><span>${esc(label)}</span><input data-lg="${g}" data-lk="${esc(k)}" placeholder="${esc(def)}" value="${esc(val(g,k))}" autocomplete="off" spellcheck="false"></label>`;
+  const top=[["sheetTitle","Staffing sheet title","EWR AMT STAFFING"],["briefTitle","Briefing title","DAILY MOVE TEAM SHIFT BRIEFING"],["wordmark","App name (header)","EWR MT HUB"],["eyebrow","Header eyebrow — blank hides it","United Ground Ops · Move Team"]];
+  const areas=[["Ballpark","Ballpark"],["WestPark","WestPark"],["South Team","South Team"],["Terminal B","Terminal B"],["APU","APU/T.O.C.S"],["Support","Support"],["C4","C4"]];
+  const tugs=[["TBL-400","TBL-400"],["TBL-280","TBL-280"],["GOLDHOFER","GOLDHOFER"],["Kalmar","Kalmar"]];
+  wrap.innerHTML=`<div class="lbl-grp">Titles &amp; app name</div>`+top.map(([k,la,def])=>field('top',k,la,def)).join("")
+    +`<div class="lbl-grp">Area names</div>`+areas.map(([k,def])=>field('areas',k,def,def)).join("")
+    +`<div class="lbl-grp">Tug types</div>`+tugs.map(([k,def])=>field('tugTypes',k,def,def)).join("")
+    +`<div class="btnrow" style="margin-top:12px"><button class="btn sm navy" id="labelSave" style="width:auto">Save names</button><button class="btn sm ghost" id="labelReset" style="width:auto">Reset all</button></div>`;
+  $("#labelSave").onclick=()=>{ const lab={areas:{},tugTypes:{}};
+    wrap.querySelectorAll('input[data-lk]').forEach(inp=>{const g=inp.dataset.lg,k=inp.dataset.lk,v=inp.value.trim();
+      if(g==='top'){ if(k==='eyebrow')lab.eyebrow=v; else if(v)lab[k]=v; } else if(v)lab[g][k]=v; });
+    if(!Object.keys(lab.areas).length)delete lab.areas; if(!Object.keys(lab.tugTypes).length)delete lab.tugTypes;
+    data.settings=data.settings||{}; data.settings.labels=lab; save(); applyBrandLabels(); toast("Names saved — synced to the team"); renderLabelCfg(); };
+  $("#labelReset").onclick=()=>{ if(!confirm("Reset every name back to its default?"))return; data.settings=data.settings||{}; delete data.settings.labels; save(); applyBrandLabels(); toast("Names reset to defaults"); renderLabelCfg(); }; }
 
 /* ---- init ---- */
 (async function(){save();document.body.classList.toggle("demo-on",demoOn());if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();applyTileVisibility();
