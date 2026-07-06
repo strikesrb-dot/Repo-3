@@ -1,5 +1,5 @@
 /* ELT service worker — network-first with offline cache fallback */
-const CACHE = 'elt-v138';
+const CACHE = 'elt-v139';
 const CORE = ['./', './index.html', './manifest.webmanifest', './aircraft.json', './equipment.json',
               './store.js', './staffing.js', './staffing.css', './vendor/pdf.min.mjs', './vendor/pdf.worker.min.mjs',
               './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
@@ -32,14 +32,21 @@ self.addEventListener('fetch', e => {
   if (url.origin !== self.location.origin) return;
   // network-first, bypassing the browser HTTP cache so "fresh" is really fresh
   e.respondWith((async () => {
+    // Cap the network wait. On degraded ramp wifi a request can connect but stall forever; without
+    // this the promise never settles and the PWA hangs blank despite a perfectly good cached copy —
+    // the exact failure offline-first exists to prevent. Abort at 4s and fall through to cache.
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 4000);
     try {
-      const res = await fetch(req, { cache: 'no-cache' });
+      const res = await fetch(req, { cache: 'no-cache', signal: ctl.signal });
+      clearTimeout(timer);
       // only cache genuine successes from our origin — never error pages (4xx/5xx) or opaque responses
       if (res && res.ok && res.type === 'basic') {
         caches.open(CACHE).then(c => c.put(req, res.clone())).catch(() => {});
       }
       return res;
     } catch (_) {
+      clearTimeout(timer);
       const cached = await caches.match(req, { ignoreSearch: true });  // tolerate ?t= cache-busting
       if (cached) return cached;
       // fall back to the app shell only for page navigations — not for images, data, or API calls

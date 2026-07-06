@@ -426,7 +426,18 @@ function absenceTally(){
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
-  ({auth:rAuth,menu:rMenu,upload:rUpload,shift:rShift,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts,activity:rActivity}[ST.step]||rMenu)();
+  const fn={auth:rAuth,menu:rMenu,upload:rUpload,shift:rShift,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts,activity:rActivity}[ST.step]||rMenu;
+  try{ fn(); }
+  catch(err){
+    // A bad synced/reopened snapshot (e.g. a newly-added area key missing from ST.assign) must not
+    // wedge the whole tool — every tap re-enters render(), so one unguarded throw would be fatal.
+    // Paint a recoverable card and let the user step back to the menu; their stored data is untouched.
+    try{ console.error("staff render failed at step "+ST.step,err); }catch(_){}
+    ROOT.innerHTML=card(`<h2 class="staff-h" style="margin:0 0 6px">Something went wrong on this screen</h2>
+      <p class="hint">This board couldn't be drawn — it may be from an older version. Your saved data is safe.</p>
+      <div class="btnrow" style="margin-top:10px"><button class="btn navy" id="staffRecover">‹ Back to menu</button></div>`);
+    const bk=$("#staffRecover"); if(bk)bk.onclick=()=>{ ST.step="menu"; render(); };
+  }
 }
 function card(inner){return `<div class="card pad">${inner}</div>`;}
 function staffModal(html){
@@ -959,6 +970,10 @@ const BOLT_X='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke
 const POWER='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3.5v8"/><path d="M6.8 7a8 8 0 1 0 10.4 0"/></svg>';
 const ovh=m=>(m/60).toFixed(1).replace('.0','');
 function rAssign(){
+  // ensure every current AREAS key exists as an array — a snapshot taken before an area was added
+  // (or a partial synced board) would otherwise leave a key undefined and throw on `.length` below
+  if(!ST.assign)ST.assign={tugs:{},areas:{}};
+  AREAS.forEach(a=>{ if(!Array.isArray(ST.assign.areas[a.key]))ST.assign.areas[a.key]=[]; });
   const pool=poolFor(ST.shift);
   const avail=pool.filter(availBody);
   // group by START time so doubles & prev-shift workers sit with their base-shift peers
@@ -1216,14 +1231,14 @@ function buildSheet(){
     return ids.length?`<div class="sb-tgroup"><div class="sb-tg-h">STUG ${g.label}</div><div class="sb-tg-cells">${ids.map(tugCell).join("")}</div></div>`:"";};
   const absent=absentFor(ST.shift);
   const absBlock=absent.length?`<div class="sb-absent"><div class="sb-abs-h">NOT HERE THIS SHIFT — ${absent.length}</div>
-    <div class="sb-abs-grid">${absent.map(x=>`<span class="sb-abs"><b>${esc(x.name)}</b><span class="sb-abs-c">${esc(x.code)}</span></span>`).join("")}</div></div>`:"";
+    <div class="sb-abs-grid">${absent.map(x=>`<span class="sb-abs"><b>${esc(nm(x.name))}</b><span class="sb-abs-c">${esc(x.code)}</span></span>`).join("")}</div></div>`:"";
   return `<div class="sb">
     <div class="sb-top"><div class="sb-title">${esc(lblOf("sheetTitle","EWR AMT STAFFING"))}</div><div class="sb-shift">SHIFT <b>${ST.shift}</b></div></div>
     <div class="sb-band">
       ${AREAS.map(x=>areaBox(x.key)).join("")}
       <div class="sb-area sb-disp"><div class="sb-area-h">DISPATCHER</div><div class="sb-area-b">${dn}</div></div>
-      <div class="sb-area"><div class="sb-area-h">SUPERVISORS</div><div class="sb-area-b">${ST.supers.map(esc).map(s=>`<div>${s}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>
-      <div class="sb-area"><div class="sb-area-h">MANAGERS</div><div class="sb-area-b">${[ST.manager,...ST.asst].filter(Boolean).map(esc).map(s=>`<div>${s}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>
+      <div class="sb-area"><div class="sb-area-h">SUPERVISORS</div><div class="sb-area-b">${ST.supers.map(s=>esc(nm(s))).map(s=>`<div>${s}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>
+      <div class="sb-area"><div class="sb-area-h">MANAGERS</div><div class="sb-area-b">${[ST.manager,...ST.asst].filter(Boolean).map(s=>esc(nm(s))).map(s=>`<div>${s}</div>`).join("")||'<div class="sb-empty">—</div>'}</div></div>
     </div>
     <div class="sb-grid"><div class="sb-rail">ALWAYS FOLLOW SOP</div>
       <div class="sb-tugs">${TUG_GROUPS.map(groupBlock).join("")}</div>
@@ -1493,7 +1508,12 @@ function logManpower(){
   const all=loadLog().filter(e=>e.id!==id);
   let live=all.filter(e=>!e._deleted).slice(0,23);live.unshift(entry);
   let tombs=all.filter(e=>e._deleted).slice(0,24);
-  if(!saveLogList([...live,...tombs])){ live=live.slice(0,12); if(!saveLogList([...live,...tombs.slice(0,12)])){ live=live.map((e,i)=>i===0?e:{...e,snap:null}); saveLogList([...live,...tombs.slice(0,6)]); } }
+  // Persist with graceful degradation under storage pressure, but TRACK whether it actually stuck —
+  // never report "Logged" or drop the source draft on a total failure (that silently loses the shift).
+  let saved=saveLogList([...live,...tombs]);
+  if(!saved){ live=live.slice(0,12); saved=saveLogList([...live,...tombs.slice(0,12)]); }
+  if(!saved){ live=live.map((e,i)=>i===0?e:{...e,snap:null}); saved=saveLogList([...live,...tombs.slice(0,6)]); }  // keep the new entry whole; sacrifice older snapshots first
+  if(!saved){ toast("Storage full — manpower NOT saved. Delete old logs or free space, then try again."); return; }  // do not lie, do not drop the draft
   pushRow("log",id,entry);      // share with the team
   deleteDraft("D|"+date+"|"+shift);   // finalized — drop the draft
   logAct("Logged manpower",shift+" · "+assignedCount()+" assigned");
