@@ -11,14 +11,14 @@
 <meta name="apple-mobile-web-app-title" content="EWR MT HUB" />
 <meta name="mobile-web-app-capable" content="yes" />
 <title>EWR MT HUB — Equipment Location Tracker</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+<!-- No web-font CDN: sending each cold start to Google (IP/UA/timing) is a privacy leak and fails
+     offline. Every font-family below carries a full system fallback stack, so the UI is unchanged. -->
 <link rel="stylesheet" href="staffing.css" />
 <style>
   :root{--navy:#0b3d63;--navy-d:#08304e;--accent:#f5a623;--accent-d:#d98c0a;--melon:#fc4c4e;--bg:#f4f6f8;--card:#fff;
     --line:#dce1e6;--ink:#1c2530;--muted:#67727e;--good:#1e7d46;--good-bg:#e6f4ec;--danger:#c0392b;--shadow:0 1px 3px rgba(0,0,0,.12);}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{color-scheme:light}  /* app is a fixed light theme; keep native autofill/date pickers light too */
   html,body{margin:0;padding:0}
   body{font-family:'Manrope',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4;padding-bottom:24px;touch-action:manipulation;}
@@ -1607,7 +1607,7 @@ function curPass(){return (data.settings&&data.settings.passcode)||SETTINGS_PASS
 // resolves to the entered string, or null if cancelled.
 function askPass(title,sub){return new Promise(res=>{
   const ov=document.createElement("div"); ov.className="askpass-ov";
-  ov.innerHTML=`<div class="setg-box">
+  ov.innerHTML=`<div class="setg-box" role="dialog" aria-modal="true" aria-label="${esc(title)}">
     <div class="setg-ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
     <div class="setg-title">${esc(title)}</div>${sub?`<div class="setg-sub">${esc(sub)}</div>`:""}
     <input class="ap-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" />
@@ -1618,7 +1618,7 @@ function askPass(title,sub){return new Promise(res=>{
   let done=false; const fin=v=>{ if(done)return; done=true; ov.remove(); res(v); };
   setTimeout(()=>inp.focus(),60);
   ov.querySelector(".ap-go").onclick=()=>fin((inp.value||"").trim());
-  inp.onkeydown=e=>{ if(e.key==="Enter")fin((inp.value||"").trim()); };
+  inp.onkeydown=e=>{ if(e.key==="Enter")fin((inp.value||"").trim()); if(e.key==="Escape")fin(null); };
   ov.querySelector(".ap-x").onclick=()=>fin(null);
   ov.addEventListener("click",e=>{ if(e.target===ov)fin(null); });
 });}
@@ -1729,7 +1729,10 @@ function renderEos(){
   $("#eosPdf").onclick=()=>{$("#printArea").innerHTML=buildEosHTML();window.print();};
   $("#eosShare").onclick=eosShare;
 }
-function eosTitle(){return "EWR Move Team — Shift EWR Report"; }
+// label accessor for the equipment/inventory/EOS side (mirrors staffing.js lblOf) — reads the
+// team-synced rename map so a white-label customer can change every visible heading.
+function siteLbl(k,def){const L=(data.settings&&data.settings.labels)||{};const v=L&&L[k];return (typeof v==="string"&&v.trim())?v.trim():def;}
+function eosTitle(){return siteLbl("eosTitle","EWR Move Team — Shift EWR Report"); }
 function buildEosHTML(){const d=eosEnsure(),date=fmtDate(eos.date);
   const field=(l,v,red)=>`<div class="eos-pl"><b>${esc(l)}:</b> <span${red?' style="color:#c0271e;font-weight:700"':''}>${esc(v||"—")}</span></div>`;
   const grp=arr=>arr.map(f=>field(f.l,eosMask(f.k,d[f.k]),f.red)).join("");
@@ -2235,7 +2238,7 @@ function downloadInvText(locs){
   const tot=locs.reduce((a,l)=>a+data.equipment.filter(e=>e.location===l).length,0);
   const oosN=locs.reduce((a,l)=>a+data.equipment.filter(e=>e.location===l&&e.oos).length,0);
   const single=locs.length===1?locs[0]:null;
-  const ttl="EWR MOVE TEAM "+(single?single.toUpperCase()+" ":"")+"EQUIPMENT LIST";
+  const ttl=siteLbl("equipBrand","EWR MOVE TEAM")+" "+(single?single.toUpperCase()+" ":"")+"EQUIPMENT LIST";
   const lines=["========================================","   "+ttl,"========================================",
     fmtDate(todayISO())+"  ·  "+locs.length+" location(s)  ·  "+tot+" item(s)"+(oosN?"  ·  "+oosN+" out of service":""),""];
   locs.forEach(loc=>{lines.push(loc.toUpperCase()+" ("+data.equipment.filter(e=>e.location===loc).length+")");
@@ -2251,7 +2254,7 @@ function downloadInvImage(locs){
   const muted="#9aa3ad",muted2="#aab2bb",ink="#10171f",tagc="#1c2530",detc="#8a939c",oosc="#c0271e",divc="#eef1f4";
   const mc=document.createElement("canvas").getContext("2d");const tw=(t,f)=>{mc.font=f;return mc.measureText(t).width;};
   const ops=[];let y=FM+24;
-  ops.push({k:'tx',x:M,y,t:"EWR MOVE TEAM · EQUIPMENT LIST",f:topF,c:muted,ls:1.4});y+=20;
+  ops.push({k:'tx',x:M,y,t:siteLbl("equipBrand","EWR MOVE TEAM")+" · EQUIPMENT LIST",f:topF,c:muted,ls:1.4});y+=20;
   ops.push({k:'tx',x:M,y,t:date,f:dateF,c:muted});y+=20;
   for(const loc of locs){
     const eq=data.equipment.filter(e=>e.location===loc);
@@ -2860,12 +2863,16 @@ function updateHdr(){applyBrandLabels();const cust=data.settings&&data.settings.
 function applyBrandLabels(){ const L=(data.settings&&data.settings.labels)||{};
   const eb=document.querySelector('.brand .eyebrow');
   if(eb){const t=('eyebrow' in L)?String(L.eyebrow||'').trim():'United Ground Ops · Move Team';eb.textContent=t;eb.style.display=t?'':'none';}
-  const wm=document.querySelector('.brand .wordmark'); if(wm)wm.textContent=(L.wordmark&&String(L.wordmark).trim())||'EWR MT HUB'; }
+  const wordmark=(L.wordmark&&String(L.wordmark).trim())||'EWR MT HUB';
+  const wm=document.querySelector('.brand .wordmark'); if(wm)wm.textContent=wordmark;
+  const sl=document.querySelector('.sl-title'); if(sl)sl.textContent=wordmark;   // lock-screen splash
+  const ib=document.querySelector('.inv-banner .ib-brand'); if(ib)ib.textContent=wordmark;
+  try{document.title=wordmark+' — '+((L.eyebrow!=null?String(L.eyebrow):'Ground Ops')||'Ground Ops');}catch(_){} }
 // the rename tool: titles, area names, tug types — stored in settings.labels (synced team-wide)
 function renderLabelCfg(){ const wrap=$("#labelCfg"); if(!wrap)return; const L=(data.settings&&data.settings.labels)||{};
   const val=(g,k)=>g==='top'?(L[k]!=null?L[k]:''):((L[g]&&L[g][k]!=null)?L[g][k]:'');
   const field=(g,k,label,def)=>`<label class="lbl-row"><span>${esc(label)}</span><input data-lg="${g}" data-lk="${esc(k)}" placeholder="${esc(def)}" value="${esc(val(g,k))}" autocomplete="off" spellcheck="false"></label>`;
-  const top=[["sheetTitle","Staffing sheet title","EWR AMT STAFFING"],["briefTitle","Briefing title","DAILY MOVE TEAM SHIFT BRIEFING"],["wordmark","App name (header)","EWR MT HUB"],["eyebrow","Header eyebrow — blank hides it","United Ground Ops · Move Team"]];
+  const top=[["sheetTitle","Staffing sheet title","EWR AMT STAFFING"],["briefTitle","Briefing title","DAILY MOVE TEAM SHIFT BRIEFING"],["wordmark","App name (header)","EWR MT HUB"],["eyebrow","Header eyebrow — blank hides it","United Ground Ops · Move Team"],["eosTitle","End-of-shift report title","EWR Move Team — Shift EWR Report"],["equipBrand","Equipment-list heading","EWR MOVE TEAM"]];
   const areas=[["Ballpark","Ballpark"],["WestPark","WestPark"],["South Team","South Team"],["Terminal B","Terminal B"],["APU","APU/T.O.C.S"],["Support","Support"],["C4","C4"]];
   const tugs=[["TBL-400","TBL-400"],["TBL-280","TBL-280"],["GOLDHOFER","GOLDHOFER"],["Kalmar","Kalmar"]];
   wrap.innerHTML=`<div class="lbl-grp">Titles &amp; app name</div>`+top.map(([k,la,def])=>field('top',k,la,def)).join("")
@@ -2887,12 +2894,13 @@ function renderLabelCfg(){ const wrap=$("#labelCfg"); if(!wrap)return; const L=(
   // initial team pull once staffing.js has exposed window.SYNC
   setTimeout(()=>{ if(window.SYNC&&window.SYNC.on())syncSite(true); },1500);})();
 if("serviceWorker" in navigator){
-  let reloading=false,waitingWorker=null;
+  let reloading=false,waitingWorker=null,iInitiatedUpdate=false;
   const hadController=!!navigator.serviceWorker.controller;   // false on first install → never reload then
-  // reload ONLY happens after the user opts in (applyUpdate -> skipWaiting -> controllerchange),
-  // never automatically — a mid-shift/mid-demo reload would wipe in-progress tool state
-  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(reloading||!hadController)return; reloading=true; location.reload(); });
-  function applyUpdate(){ if(waitingWorker)waitingWorker.postMessage("skipWaiting"); }
+  // reload ONLY in the tab that actually tapped "Update". The SW's clients.claim() fires
+  // controllerchange in EVERY open tab; without the initiator flag, a colleague's other tab
+  // (mid-board) would reload and lose its in-progress state through no action of their own.
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(reloading||!hadController||!iInitiatedUpdate)return; reloading=true; location.reload(); });
+  function applyUpdate(){ iInitiatedUpdate=true; if(waitingWorker)waitingWorker.postMessage("skipWaiting"); }
   function showUpdateToast(w){ waitingWorker=w; if(document.getElementById("swUpdate"))return;
     const el=document.createElement("div");el.id="swUpdate";
     el.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));z-index:9998;background:#0b3d63;color:#fff;padding:10px 8px 10px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.28);font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px";

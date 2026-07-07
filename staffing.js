@@ -443,7 +443,7 @@ function card(inner){return `<div class="card pad">${inner}</div>`;}
 function staffModal(html){
   document.querySelector(".staff-modal")?.remove();
   const ov=document.createElement("div");ov.className="staff-modal";
-  ov.innerHTML=`<div class="sm-box">${html}</div>`;
+  ov.innerHTML=`<div class="sm-box" role="dialog" aria-modal="true">${html}</div>`;
   ov.addEventListener("click",e=>{ if(e.target===ov||e.target.closest("[data-close]"))ov.remove(); });
   document.body.appendChild(ov);
   return ov;
@@ -456,7 +456,7 @@ function askCode(title,sub){ return new Promise(res=>{
   let done=false; const fin=v=>{ if(done)return; done=true; ov.remove(); res(v); };
   setTimeout(()=>ov.querySelector("#smCode")?.focus(),60);
   ov.querySelector("#smOk").onclick=()=>fin((ov.querySelector("#smCode").value||"").trim());
-  ov.querySelector("#smCode").addEventListener("keydown",e=>{ if(e.key==="Enter")fin((ov.querySelector("#smCode").value||"").trim()); });
+  ov.querySelector("#smCode").addEventListener("keydown",e=>{ if(e.key==="Enter")fin((ov.querySelector("#smCode").value||"").trim()); if(e.key==="Escape")fin(null); });
   ov.querySelector("#smX").onclick=()=>fin(null);
   ov.addEventListener("click",e=>{ if(e.target===ov)fin(null); });
 }); }
@@ -1532,8 +1532,14 @@ function todayLocalISO(){const d=new Date(Date.now());return new Date(d.getTime(
 // "2026-07-24" -> "Wednesday, July 24, 2026" for the printed sheet & briefing
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-function fmtNiceDate(iso){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||"");if(!m)return iso||"";
-  const d=new Date(+m[1],+m[2]-1,+m[3],12);return DAYS[d.getDay()]+", "+MONTHS[+m[2]-1]+" "+(+m[3])+", "+m[1];}
+// accepts ISO (2026-07-24) AND the M/D/YYYY the manpower PDF actually yields (7/24/2026),
+// so real sheets print "Friday, July 24, 2026" instead of a bare "7/24/2026".
+function fmtNiceDate(iso){let y,mo,d,m;
+  if((m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(iso||""))){y=+m[1];mo=+m[2];d=+m[3];}
+  else if((m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(iso||""))){mo=+m[1];d=+m[2];y=+m[3];}
+  else return iso||"";
+  if(mo<1||mo>12)return iso||"";
+  const dt=new Date(y,mo-1,d,12);return DAYS[dt.getDay()]+", "+MONTHS[mo-1]+" "+d+", "+y;}
 function logManpower(){
   const date=(ST.parsed&&ST.parsed.date)||todayLocalISO(),shift=ST.shift,a=ST.assign,id=date+"|"+shift;
   // warn before silently clobbering an already-logged board for the same date + shift

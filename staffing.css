@@ -53,7 +53,7 @@
 .slot.full{border-style:solid;border-color:var(--navy);color:var(--ink);background:#f3f7fb}
 .slot.disp{text-transform:uppercase}
 .slot-name{font-weight:800;color:var(--ink)}.slot.full .slot-name{color:var(--navy)}
-.slot-empty{font-weight:700;color:#aab4bd}
+.slot-empty{font-weight:700;color:#6a7480}
 
 .tug-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
 .tcard{border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
@@ -379,8 +379,8 @@
 .abody.dual.sel span{color:rgba(255,255,255,.85)}
 .abody .a2{background:#9a4dbf}
 .abody.apick{outline:3px solid #0b3d63;outline-offset:1px}
-.autobar-spacer{height:74px}
-.autobar{position:fixed;left:0;right:0;bottom:0;z-index:350;background:#0b3d63;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;box-shadow:0 -6px 18px rgba(0,0,0,.28)}
+.autobar-spacer{height:calc(74px + env(safe-area-inset-bottom))}
+.autobar{position:fixed;left:0;right:0;bottom:0;z-index:350;background:#0b3d63;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -6px 18px rgba(0,0,0,.28)}
 .autobar .ab-msg b{font-size:13.5px;display:block;letter-spacing:.4px}
 .autobar .ab-msg small{font-size:11px;opacity:.85}
 .autobar .ab-acts{display:flex;gap:8px;flex:none}
@@ -520,8 +520,8 @@
 .tc3-gpu{font-size:9px;font-weight:800;color:#fff;background:rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;margin-top:1px;text-align:center;white-space:nowrap}
 .tc3-b{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-start}
 /* controls sit INSIDE the tile, on top of the number — translucent on the coloured background */
-.tc3-ctl{display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:2px}
-.tc3-ctl .ticon{border:none;border-radius:7px;width:30px;height:27px;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;background:rgba(255,255,255,.24);color:#fff;line-height:0}
+.tc3-ctl{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:2px}
+.tc3-ctl .ticon{border:none;border-radius:7px;width:36px;height:32px;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;background:rgba(255,255,255,.24);color:#fff;line-height:0}  /* was 30x27/gap4 — enlarged tap target to reduce mis-taps that flip a tug OOS */
 .tc3-ctl .ticon svg{display:block;width:16px;height:16px}
 .tc3-ctl .ticon:active{transform:scale(.9)}
 .tc3-ctl .gpubtn.inop{background:rgba(0,0,0,.18)}
