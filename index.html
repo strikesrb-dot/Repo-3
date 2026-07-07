@@ -1008,8 +1008,14 @@ function eqBackfillWhen(e){ if(e&&!e.when){ const u=e.updated?Date.parse(e.updat
 const CFG_FIELDS=["types","subtypes","locations","locZones","equipLocs","spotAircraft","settings","hiddenTiles","previewSeeded","typeSeedV","locSeedV"];
 function configSig(){return JSON.stringify(CFG_FIELDS.map(k=>data[k]));}
 let _cfgSig=null,cfgReady=false;   // cfgReady gates _t bumps so boot/master-load isn't mistaken for a user edit
-function persist(){Store.setJSON(KEY,data);}   // raw write — no timestamp bump, no push (used by sync merge)
-function save(){ const sig=configSig(); if(cfgReady&&_cfgSig!==null&&sig!==_cfgSig)data._t=Date.now(); _cfgSig=sig; persist(); scheduleSiteSync(); }
+let _quotaWarned=false;
+function persist(){ const ok=Store.setJSON(KEY,data);   // raw write — no timestamp bump, no push (used by sync merge)
+  // localStorage is ~5MB; near the ceiling setJSON returns false and NOTHING is written. Surface it
+  // once (not on every keystroke) instead of silently reporting success and reverting on reload.
+  if(!ok){ if(!_quotaWarned){_quotaWarned=true; try{toast("⚠ Storage full — changes may not be saved. Delete old data to free space.");}catch(_){}} }
+  else _quotaWarned=false;
+  return ok; }
+function save(){ const sig=configSig(); if(cfgReady&&_cfgSig!==null&&sig!==_cfgSig)data._t=Date.now(); _cfgSig=sig; const ok=persist(); scheduleSiteSync(); return ok; }
 
 /* ---- whole-site team sync (equipment, inventory, movements, secure log, settings) ---- */
 function configRow(){const o={id:"config",when:data._t||0};CFG_FIELDS.forEach(k=>o[k]=data[k]);
