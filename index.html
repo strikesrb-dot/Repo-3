@@ -942,6 +942,14 @@ function load(){
     moveCap:300, shiftAM:300,shiftPM:780,shiftNH:1260, nameOrder:"first",
     shiftNameAM:"AM",shiftNamePM:"PM",shiftNameNH:"Nighthawk", passcode:"3599"
   }, d.settings||{});
+  // One-time restore of the pool-exclusion list (trainers / not-counted people) that an earlier
+  // security scrub emptied out of the source. Seeds the team-synced setting once; from then on it's
+  // managed in Settings and syncs across devices. Stored as LAST NAMES so it matches regardless of
+  // how a first name is spelled on the manpower PDF (Chris/Christopher, etc.).
+  if(!d.settings.staffExcludeSeeded && !Array.isArray(d.settings.staffExclude)){
+    d.settings.staffExclude=["Vizcaino","Dickey","Bonet","Mendes","Stephens"];
+    d.settings.staffExcludeSeeded=true;
+  }
   // mirror the name-order pref to a tiny key so staffing.js can read it cheaply on every name render
   try{Store.setRaw("elt.staff.nameOrder", d.settings.nameOrder==="last"?"last":"first");}catch(_){}
   d.equipment.forEach(e=>{if(e.tag)e.tag=e.tag.toUpperCase();

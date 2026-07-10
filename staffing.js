@@ -272,7 +272,13 @@ function leavesEarly(o){ if(!o)return false;
   const start=o.start||(h.split("-")[0]||""), end=o.end||(h.split("-")[1]||"");
   const pv=ivl(start,end); if(!pv)return false;
   return pv[1] < SHIFT_CORE[ST.shift][1]-30; }
-function excludeList(){ const d=Store.getJSON("elt.staff.exclude",null); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice(); }
+// pool exclusions (trainers / not-counted people). Primary home is the team-synced settings
+// (managed in Settings, so it's entered once and shared, and survives a device reset). Falls back
+// to the legacy device-local key, then the built-in default. No real names live in this source.
+function excludeList(){
+  try{ const d=Store.getJSON("elt.data.v1",null); const s=d&&d.settings&&d.settings.staffExclude; if(Array.isArray(s))return s; }catch(_){}
+  const d=Store.getJSON("elt.staff.exclude",null); return Array.isArray(d)?d:EXCLUDE_DEFAULT.slice();
+}
 
 /* build the body list (all shifts) from parsed inputs + prompt answers */
 function buildBodies(){
@@ -305,9 +311,9 @@ function buildBodies(){
 /* people flagged as trainees / exclusions that appear on the sheet — for prompts */
 function promptTargets(){
   const {mpRecs}=ST.parsed;
-  const trainees=mpRecs.filter(r=>r.sec==="TRAINING"&&r.start).map(r=>({key:"T:"+r.name,name:r.name,hours:r.start+"-"+r.end,kind:"trainee"}));
+  const trainees=mpRecs.filter(r=>r.sec==="TRAINING"&&r.start).map(r=>({key:"T:"+r.name,name:r.name,start:r.start,end:r.end,hours:r.start+"-"+r.end,kind:"trainee"}));
   const seen=new Set(),excl=[];
-  for(const r of mpRecs){ if(r.sec!=="PUSH")continue; if(isExcluded(r.name)&&!seen.has(r.name)){seen.add(r.name);excl.push({key:"X:"+r.name,name:r.name,hours:r.start+"-"+r.end,kind:"exclude"});} }
+  for(const r of mpRecs){ if(r.sec!=="PUSH")continue; if(isExcluded(r.name)&&!seen.has(r.name)){seen.add(r.name);excl.push({key:"X:"+r.name,name:r.name,start:r.start,end:r.end,hours:r.start+"-"+r.end,kind:"exclude"});} }
   return [...trainees,...excl];
 }
 
@@ -838,17 +844,21 @@ function rSetup(){
   const seg=SHIFTS.map(s=>`<button class="seg ${ST.shift===s?'on':''}" data-sh="${s}">${s}</button>`).join("");
   const chip=(list,sel,attr)=>list.map(n=>`<button class="chip pick ${sel.includes(n)?'on':''}" ${attr}="${esc(n)}">${esc(nm(n))}${sel.includes(n)?' ✓':''}</button>`).join("");
   const promptRows=tgts.map(t=>{
-    const on=!!ST.prompts[t.key];
-    return `<div class="prow"><div><b>${esc(nm(t.name.replace(' +TrainingOJT','')))}</b> <span class="hint">${t.kind==='trainee'?'training':'exclusion'} · ${esc(t.hours)}</span></div>
-      <button class="yn ${on?'on':''}" data-pk="${esc(t.key)}">${on?'Available ✓':'Add?'}</button></div>`;
-  }).join("")||`<p class="hint" style="margin:0">No trainees or exclusion-list people on the sheet.</p>`;
+    const on=!!ST.prompts[t.key];   // true = counted on the shift; false/default = training (not counted)
+    const shs=shiftsFor({start:t.start,end:t.end}).map(x=>x.sh);   // both shifts if their block spans two
+    const dbl=shs.length>1;
+    const kindLbl=t.kind==='trainee'?'In training':'Trainer';
+    const shTag=shs.length?`<span class="tos-sh${dbl?' dbl':''}">${shs.join(' + ')}${dbl?' · 2 shifts':''}</span>`:'';
+    return `<div class="prow tos-row"><div class="tos-info"><b>${esc(nm(t.name.replace(' +TrainingOJT','')))}</b> <span class="hint">${kindLbl} · ${esc(t.hours)}</span> ${shTag}</div>
+      <div class="tos-seg"><button class="tos-b ${!on?'on':''}" data-pk="${esc(t.key)}" data-v="0">Training</button><button class="tos-b ${on?'on':''}" data-pk="${esc(t.key)}" data-v="1">On shift</button></div></div>`;
+  }).join("")||`<p class="hint" style="margin:0">No trainers or trainees on this sheet.</p>`;
   ROOT.innerHTML=card(`
     <h2 class="staff-h">Shift setup</h2>
     <div class="muted-row">Parsed: ${p.mpRecs.filter(r=>r.sec==='PUSH').length} scheduled · ${p.otRecs.length} OT · ${p.coRows.length} call-outs ${p.date?'· '+esc(p.date):''}</div>
     <label class="fld-l">Shift</label><div class="seg-wrap">${seg}</div>
     <label class="fld-l">Tugs to run</label>
     <div class="num-row"><button class="numb" data-d="-1">−</button><input id="numTugs" type="number" min="0" max="${TUGS.length}" value="${ST.numTugs}" /><button class="numb" data-d="1">+</button></div>
-    <label class="fld-l">Availability checks</label>
+    <label class="fld-l">Trainers &amp; trainees — training or on shift?</label>
     <div class="prow-wrap">${promptRows}</div>
     <label class="fld-l">Supervisor(s) on shift</label><div class="chips">${chip(supervisorList(),ST.supers,'data-sup')}</div>
     <label class="fld-l">Manager / Asst</label><div class="chips">${MANAGERS.map(n=>`<button class="chip pick ${ST.manager===n?'on':''}" data-mgr="${esc(n)}">${esc(nm(n))}${ST.manager===n?' ✓':''}</button>`).join("")} ${chip(ASSTMGRS,ST.asst,'data-asst')}</div>
@@ -857,7 +867,7 @@ function rSetup(){
   $$('#staffRoot .seg[data-sh]').forEach(b=>b.onclick=()=>{ST.shift=b.dataset.sh;render();});
   $$('#staffRoot .numb').forEach(b=>b.onclick=()=>{ST.numTugs=Math.max(0,Math.min(TUGS.length,(+$("#numTugs").value||0)+ +b.dataset.d));render();});
   $("#numTugs").onchange=e=>{ST.numTugs=Math.max(0,Math.min(TUGS.length,+e.target.value||0));};
-  $$('#staffRoot .yn[data-pk]').forEach(b=>b.onclick=()=>{const k=b.dataset.pk;ST.prompts[k]=!ST.prompts[k];render();});
+  $$('#staffRoot .tos-b[data-pk]').forEach(b=>b.onclick=()=>{ST.prompts[b.dataset.pk]=(b.dataset.v==="1");render();});
   $$('#staffRoot .chip[data-sup]').forEach(b=>b.onclick=()=>{const n=b.dataset.sup;ST.supers=ST.supers.includes(n)?ST.supers.filter(x=>x!==n):[...ST.supers,n];render();});
   $$('#staffRoot .chip[data-asst]').forEach(b=>b.onclick=()=>{const n=b.dataset.asst;ST.asst=ST.asst.includes(n)?ST.asst.filter(x=>x!==n):[...ST.asst,n];render();});
   $$('#staffRoot .chip[data-mgr]').forEach(b=>b.onclick=()=>{ST.manager=ST.manager===b.dataset.mgr?"":b.dataset.mgr;render();});

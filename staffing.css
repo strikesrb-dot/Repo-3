@@ -29,6 +29,15 @@
 .prow .hint{font-size:11.5px}
 .yn{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer;white-space:nowrap}
 .yn.on{background:var(--good-bg);border-color:var(--good);color:#15622f}
+/* trainer/trainee "Training | On shift" segmented choice */
+.tos-row{align-items:flex-start}
+.tos-info{min-width:0;flex:1}
+.tos-sh{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.03em;color:var(--navy);background:#eef2f6;border-radius:5px;padding:1px 6px;margin-top:2px}
+.tos-sh.dbl{color:#8a4b00;background:#fce6cb}
+.tos-seg{display:inline-flex;flex:none;border:1.5px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
+.tos-b{border:none;background:transparent;padding:7px 12px;font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tos-b+.tos-b{border-left:1.5px solid var(--line)}
+.tos-b.on{background:var(--navy);color:#fff}
 .chip.pick{cursor:pointer}
 .chip.pick.on{background:var(--good-bg);border-color:var(--good);color:#15622f}
 
