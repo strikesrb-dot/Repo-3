@@ -773,6 +773,8 @@
     <div class="card pad">
       <p class="hint" style="margin-top:0">Past manpowers are read-only by default. Turn this on to allow deleting them from the Past view (removes the entry for the whole team).</p>
       <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Allow deleting past manpowers<small id="logDelStatus"></small></span><input type="checkbox" id="allowLogDel" class="cfg-chk"></label>
+      <label class="cfgrow" style="border-top:1px solid var(--line);padding:10px 0 4px"><span class="cfg-l">Fatigue warning after<small>Flags ⚠ on anyone who's worked this many days in a row, counted from logged manpower history.</small></span>
+        <span style="display:flex;align-items:center;gap:6px;flex:none"><input type="number" id="fatigueDays" min="2" max="14" step="1" style="width:64px;text-align:center" /><span class="cfg-l" style="font-size:13px">days</span></span></label>
     </div>
 
     <h2 class="section">Supervisor codes</h2>
@@ -1536,8 +1538,10 @@ function clearDemoData(){ data.equipment=data.equipment.filter(e=>!/^demo-stug-/
   try{Store.del("elt.staff.log");}catch(_){} refreshAll(); toast("Demo data cleared"); }
 $("#demoSeed")?.addEventListener("click",()=>{ seedDemoEquip(); if(window.STAFF&&window.STAFF.seedDemo)window.STAFF.seedDemo(); toast("Demo data loaded"); });
 $("#demoSeedClear")?.addEventListener("click",()=>{ if(confirm("Clear all demo data (seeded super-tugs + past manpowers)?"))clearDemoData(); });
-function renderLogDelCfg(){const on=!!(data.settings&&data.settings.allowLogDelete);$("#allowLogDel").checked=on;$("#logDelStatus").textContent=on?" · on — Delete shown":" · off — read-only";}
+function renderLogDelCfg(){const on=!!(data.settings&&data.settings.allowLogDelete);$("#allowLogDel").checked=on;$("#logDelStatus").textContent=on?" · on — Delete shown":" · off — read-only";
+  const fd=$("#fatigueDays");if(fd)fd.value=(data.settings&&data.settings.fatigueDays)||7;}
 $("#allowLogDel").addEventListener("change",()=>{data.settings.allowLogDelete=$("#allowLogDel").checked;save();renderLogDelCfg();toast(data.settings.allowLogDelete?"Past manpowers can be deleted":"Past manpowers are read-only");});
+$("#fatigueDays").addEventListener("change",e=>{let n=parseInt(e.target.value,10);if(isNaN(n))n=7;n=Math.max(2,Math.min(14,n));data.settings.fatigueDays=n;e.target.value=n;save();toast("Fatigue warning set to "+n+" days");});
 $("#syncSave").addEventListener("click",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.url=$("#syncUrl").value.trim();c.key=$("#syncKey").value.trim();Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast("Sync backend saved");});
 $("#syncTest").addEventListener("click",async()=>{const url=$("#syncUrl").value.trim(),key=$("#syncKey").value.trim();$("#syncMsg").textContent="Testing…";
   try{const r=await fetch(url.replace(/\/+$/,"")+"/manpower_shared?select=id&limit=1",{headers:{apikey:key,Authorization:"Bearer "+key}});
