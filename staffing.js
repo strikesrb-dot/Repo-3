@@ -1731,18 +1731,24 @@ function seedDemoHistory(){
   const FIRST=["Marcus","Devin","Ray","Luis","Andre","Sean","Priya","Tevin","Omar","Cole","Nate","Jamal","Rico","Vince","Hank","Iris"];
   const LAST=["Fielding","Barrett","Okafor","Mendez","Cho","Vaughn","Nair","Ellis","Reid","Santos","Park","Doyle","Cruz","Lang","Boyd","Frey"];
   const roster=FIRST.map((f,i)=>({name:f+" "+LAST[i],emp:"D"+String(i+1).padStart(2,"0"),start:"13:00",end:"21:00",hours:"13:00-21:00",src:"sched"}));
-  const fatigue=roster[0];   // in the 6 most-recent logged days; the live board is today → 7 straight
+  const fatigue=roster[0];   // works PM every day for the last 6 days; the live board is today → 7 straight
   const today=isoDate(todayLocalISO())||todayLocalISO();
-  const SH=["PM","AM","NH"];
+  // every day carries a full AM / PM / NH set so the archive reads like a complete operation
+  const SHIFTS_SEED=[{sh:"AM",s:"05:00",e:"13:00"},{sh:"PM",s:"13:00",e:"21:00"},{sh:"NH",s:"21:00",e:"05:00"}];
+  const DAYS=7;   // a full week × 3 shifts = 21 boards (under the 24 sync cap)
   const entries=[];
-  for(let d=1;d<=14;d++){
-    const date=addDaysISO(today,-d), shift=SH[(d-1)%3];
-    const day=[]; if(d<=6)day.push(fatigue);
-    roster.forEach((p,i)=>{ if(p===fatigue)return; if(((i*7+d*3)%5)!==0)day.push(p); });   // deterministic subset
-    const bodies=day.map(p=>({name:p.name,emp:p.emp,start:p.start,end:p.end,hours:p.hours,src:"sched"}));
-    entries.push({id:date+"|"+shift,date,shift,when:Date.now()-d*86400000,startedAt:null,finishedAt:Date.now()-d*86400000,
-      by:roster[(d+1)%roster.length].name,pool:bodies.length,running:12,crews:8,areasFilled:7,
-      dispatch:roster[(d+2)%roster.length].name,seed:true,snap:{bodies}});
+  for(let d=1;d<=DAYS;d++){
+    const date=addDaysISO(today,-d);
+    SHIFTS_SEED.forEach((sh,si)=>{
+      const day=[];
+      if(d<=6 && sh.sh==="PM")day.push(fatigue);   // one shift/day, consistently — realistic streak
+      roster.forEach((p,i)=>{ if(p===fatigue)return; if(((i*7+d*3+si*2)%5)!==0)day.push(p); });   // deterministic per-shift subset
+      const bodies=day.map(p=>({name:p.name,emp:p.emp,start:sh.s,end:sh.e,hours:sh.s+"-"+sh.e,src:"sched"}));
+      const when=Date.now()-(d*86400000)-(si*3600000);
+      entries.push({id:date+"|"+sh.sh,date,shift:sh.sh,when,startedAt:null,finishedAt:when,
+        by:roster[(d+si+1)%roster.length].name,pool:bodies.length,running:12,crews:8,areasFilled:7,
+        dispatch:roster[(d+si+2)%roster.length].name,seed:true,snap:{bodies}});
+    });
   }
   saveLogList(entries);
   // set up a viewable current PM board so the pool screen shows the fatigue ⚠ live (no PDF needed)
