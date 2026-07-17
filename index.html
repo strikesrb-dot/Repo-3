@@ -2869,6 +2869,27 @@ async function autoLoadMaster(){if(data.equipment.length||Store.getRaw(SEEN_KEY,
 
 /* ---- refresh ---- */
 function refreshAll(){renderList();refreshLocationFilter();refreshTypeFilter();updateHdr();}
+// ---- cross-window live refresh (equipment / GSE side) — mirrors the staffing.js listener ---------
+// Two windows on one machine share localStorage, so a write in window A (marking a unit out of
+// service, a GSE acknowledge/reply, a photo) fires a 'storage' event here in window B. We reload
+// `data` and re-render so the change appears live — this powers the OOS -> GSE demo with no network.
+// NOT gated on sync/demo: persist() writes elt.data.v1 even offline, so the mirror works fully local
+// and masked. Guards below stop a peer write from disrupting an in-progress count or a reply mid-type.
+(function(){
+  let t=null;
+  const busyReplying=()=>{const ae=document.activeElement;return !!(ae&&ae.closest&&ae.closest(".gse-thread"));};
+  window.addEventListener("storage",e=>{
+    if(!e.key)return;
+    if(e.key!==KEY && e.key.indexOf("elt.oos.photo.")!==0)return;
+    if(curTab==="inventory" && (invSel.size||invOos.size))return;   // don't wipe an uncommitted count
+    if(busyReplying())return;                                        // don't blow away a reply being typed
+    clearTimeout(t); t=setTimeout(()=>{
+      if(busyReplying())return;
+      data=load();
+      if(curTab==="gse")renderGse(); else refreshAll();
+    },200);
+  });
+})();
 function updateHdr(){applyBrandLabels();const cust=data.settings&&data.settings.headerSub;
   if(cust){$("#hdrSub").textContent=cust;return;}
   const n=data.equipment.length,locs=new Set(data.equipment.map(e=>e.location).filter(Boolean)).size;
