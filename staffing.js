@@ -1709,4 +1709,21 @@ window.STAFF={
   who:()=>AUTH?AUTH.name:""
 };
 window.BRIEF={ open:()=>{ loadBids(); briefTabView="edit"; renderBriefTab(); } };
+
+// ---- cross-window live refresh (powers the two-supervisor pitch demo, no network) --------------
+// Two windows/tabs on the same machine share localStorage, so a change one makes (logging a
+// manpower, a new draft, a code/roster update) fires a 'storage' event in the OTHER window. We
+// re-render there so the change appears instantly — exactly like real team sync, but fully local
+// and repeatable. Only refreshes on SAFE view screens; a build in progress is never disrupted.
+(function(){
+  const WATCH=["elt.staff.log","elt.staff.drafts","elt.staff.codes","elt.staff.tempsups","elt.data.v1"];
+  const SAFE=new Set(["menu","logs","drafts","activity","auth"]);
+  let t=null;
+  window.addEventListener("storage",e=>{
+    if(!e.key||WATCH.indexOf(e.key)<0)return;
+    if(!document.querySelector("#staffRoot"))return;   // staffing view not on screen
+    if(!SAFE.has(ST.step))return;                       // mid-board → leave it alone
+    clearTimeout(t); t=setTimeout(()=>{ if(document.querySelector("#staffRoot")&&SAFE.has(ST.step))render(); },250);
+  });
+})();
 })();
