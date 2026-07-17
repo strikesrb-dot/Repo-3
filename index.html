@@ -394,6 +394,18 @@
   .gse-meta{margin-top:2px;font-size:12px;color:var(--muted)}
   .gse-acts{display:flex;gap:6px;flex-wrap:wrap}
   .gse-acts .btn{width:auto}
+  .gse-status{margin-top:6px;font-size:12.5px;font-weight:700;border-radius:8px;padding:5px 9px;display:inline-block}
+  .gse-status.wait{background:#eef2f5;color:#67727e}
+  .gse-status.ack{background:#e7f5ec;color:#15622f}
+  .gse-thread{margin-top:8px;width:100%}
+  .gse-reply-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+  .gse-rchip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer}
+  .gse-rchip:active{background:var(--navy);color:#fff}
+  .gse-reply-row{display:flex;gap:6px;align-items:center}
+  .gse-reply-in{flex:1;min-width:0;font-size:13px;padding:7px 10px;border:1.5px solid var(--line);border-radius:9px}
+  .gse-photo{display:block;margin-top:7px;max-width:120px;max-height:90px;border-radius:8px;border:1px solid var(--line);cursor:pointer;object-fit:cover}
+  .photo-back{position:fixed;inset:0;z-index:9500;background:rgba(6,14,24,.85);display:flex;align-items:center;justify-content:center;padding:20px}
+  .photo-back img{max-width:100%;max-height:100%;border-radius:10px}
   .mv-shift{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:3px 9px;margin:10px 2px 6px}
   .mv-shift.nh{color:#2c2660;background:#e6e3f5}
   .mv-shift.am{color:#15622f;background:var(--good-bg)}
@@ -2108,7 +2120,13 @@ function gseList(){return data.equipment.filter(e=>e.oos).slice().sort((a,b)=>(a
 function gseWho(){return (window.STAFF&&window.STAFF.who&&window.STAFF.who())||"";}
 function setEqOos(id,on,reason,by){const e=data.equipment.find(x=>x.id===id);if(!e)return;
   const fromOos=!!e.oos;e.oos=!!on;e.oosReason=on?(reason||e.oosReason||""):"";e.updated=todayISO();e.when=Date.now();
+  if(!on){ delete e.oosAck; delete e.oosPhoto; try{Store.del("elt.oos.photo."+id);}catch(_){} }   // return to service clears the GSE thread + photo
   logMove(e,e.location||"",e.location||"","edit",e.spot||"",by||gseWho(),fromOos);save();renderGse();refreshAll();}
+// GSE acknowledges an out-of-service unit (optionally with a reply). Persisted on the record so it
+// syncs via elt.data.v1 (and fires the cross-window event for the supervisor's window).
+function gseAck(id,replyText){const e=data.equipment.find(x=>x.id===id);if(!e||!e.oos)return;
+  e.oosAck={by:gseWho()||"GSE",at:Date.now(),reply:(replyText||"").trim()};e_when(e);save();renderGse();}
+const GSE_REPLIES=["Mechanic en route","Parts ordered","Deferred — MEL","Back in service soon"];
 function gseDownloadText(){const list=gseList();const L=["GSE OUT OF SERVICE — "+fmtDate(todayISO()),"====================================",""];
   list.forEach((e,i)=>{L.push(`${i+1}. ${e.tag||""}${e.type?" ("+e.type+")":""}`);L.push(`   Reason: ${e.oosReason||"—"}`);if(e.location)L.push(`   Location: ${e.location}`);L.push("");});
   if(!list.length)L.push("(none out of service)");
@@ -2141,12 +2159,22 @@ function renderGseCat(r){
   const cat=gseCat;
   const inCat=e=>(e.type||"(uncategorized)")===cat;
   const list=gseList().filter(inCat);
-  const rows=list.map(e=>{const ev=eqHistory(e).find(m=>m.oos);
+  const rows=list.map(e=>{const ev=eqHistory(e).find(m=>m.oos);const ack=e.oosAck;
+    const photo=e.oosPhoto?(function(){try{return Store.getRaw("elt.oos.photo."+e.id,null);}catch(_){return null;}})():null;
+    const status=ack
+      ? `<div class="gse-status ack">✓ Confirmed by <b>${esc(nm(ack.by))}</b>${ack.reply?` — “${esc(ack.reply)}”`:""}</div>`
+      : `<div class="gse-status wait">⏳ Awaiting GSE</div>`;
+    const thread=`<div class="gse-thread">
+      <div class="gse-reply-chips">${GSE_REPLIES.map(rp=>`<button class="gse-rchip" data-id="${esc(e.id)}" data-r="${esc(rp)}">${esc(rp)}</button>`).join("")}</div>
+      <div class="gse-reply-row"><input class="gse-reply-in" data-id="${esc(e.id)}" placeholder="Reply to the super…" autocomplete="off" value="${esc(ack&&ack.reply||"")}" />
+        <button class="btn good sm gse-confirm" data-id="${esc(e.id)}">${ack?"Update":"✓ Confirm"}</button></div></div>`;
     return `<li class="gse-row" data-id="${esc(e.id)}"><div class="gse-main">
       <div class="gse-tag">${esc(e.tag||"(no tag)")}</div>
       <div class="gse-reason">⊘ ${esc(e.oosReason||"no reason recorded — tap Reason")}</div>
-      <div class="gse-meta">${e.location?esc(e.location):"no location"}${ev?` · since ${esc(fmtDate(ev.date))}${ev.by?" · "+esc(nm(ev.by)):""}`:""}</div></div>
-      <div class="gse-acts"><button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn good sm gse-back" data-id="${esc(e.id)}">✓ In service</button></div></li>`;}).join("")
+      <div class="gse-meta">${e.location?esc(e.location):"no location"}${ev?` · since ${esc(fmtDate(ev.date))}${ev.by?" · "+esc(nm(ev.by)):""}`:""}</div>
+      ${photo?`<img class="gse-photo" src="${photo}" alt="OOS photo" data-id="${esc(e.id)}" />`:""}
+      ${status}${thread}</div>
+      <div class="gse-acts"><button class="btn ghost sm gse-photo-btn" data-id="${esc(e.id)}">📷 Photo</button><button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn good sm gse-back" data-id="${esc(e.id)}">✓ In service</button></div></li>`;}).join("")
     ||`<p class="hint" style="text-align:center;padding:22px">Nothing in ${esc(cat)} is out of service.</p>`;
   r.innerHTML=`<div class="card pad">
     <button class="btn ghost sm" id="gseHome" style="width:auto;margin-bottom:8px">‹ All categories</button>
@@ -2165,7 +2193,35 @@ function renderGseCat(r){
     pickReason(eq.tag,eq.oosReason||"",v=>{eq.oosReason=v;e_when(eq);save();renderGse();});});
   $$("#gseRoot .gse-back").forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
     if(confirm(`Return ${eq.tag||"this unit"} to service?`))setEqOos(eq.id,false,"");});
+  // GSE acknowledge / reply
+  $$("#gseRoot .gse-rchip").forEach(b=>b.onclick=()=>gseAck(b.dataset.id,b.dataset.r));   // one-tap confirm + canned reply
+  $$("#gseRoot .gse-confirm").forEach(b=>b.onclick=()=>{const inp=b.closest(".gse-thread").querySelector(".gse-reply-in");gseAck(b.dataset.id,inp?inp.value:"");});
+  $$("#gseRoot .gse-photo-btn").forEach(b=>b.onclick=()=>capturePhoto(b.dataset.id));
+  $$("#gseRoot .gse-photo").forEach(img=>img.onclick=()=>enlargePhoto(img.getAttribute("src")));
 }
+// Photo capture for an OOS unit: native camera on mobile / file picker on desktop, downscaled hard
+// so it never bloats storage. Bytes go in a sibling key (elt.oos.photo.<id>); the record only holds
+// a boolean flag, so elt.data.v1 stays small and the sibling key fires its own cross-window event.
+function capturePhoto(id){
+  const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.setAttribute("capture","environment");
+  inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;const fr=new FileReader();
+    fr.onload=()=>{const img=new Image();img.onload=()=>{
+      const max=800,scale=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement("canvas");c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      let q=0.6,url=c.toDataURL("image/jpeg",q);
+      if(url.length>140000){q=0.4;url=c.toDataURL("image/jpeg",q);}
+      if(url.length>200000){toast("Photo too large — try a simpler shot");return;}
+      // write the bytes FIRST; only flag the record once the persist actually stuck
+      if(!Store.setRaw("elt.oos.photo."+id,url)){toast("Storage full — photo not saved");return;}
+      const e=data.equipment.find(x=>x.id===id);if(e){e.oosPhoto=true;e_when(e);save();}
+      renderGse();toast("Photo attached");
+    };img.src=fr.result;};
+    fr.readAsDataURL(f);};
+  inp.click();
+}
+function enlargePhoto(src){const back=document.createElement("div");back.className="photo-back";
+  back.innerHTML=`<img src="${src}" alt="OOS photo" />`;back.onclick=()=>back.remove();document.body.appendChild(back);}
 function e_when(e){e.updated=todayISO();e.when=Date.now();}
 function commitInv(){
   const loc=inv.loc,n=invSel.size;
