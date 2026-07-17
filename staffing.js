@@ -1724,6 +1724,35 @@ function renderBriefTab(){
   g("tbGen").onclick=()=>{ save(); Store.setJSON("elt.staff.focus",b.focus.filter(s=>s.trim())); briefTabView="sheet"; renderBriefTab(); };
 }
 
+// ---- demo seed: realistic past-manpower history + a "worked 7 days straight" fatigue person ------
+// Demo-gated. Fills the archive with ~2 weeks of boards and sets up a viewable current PM pool so
+// the fatigue ⚠ shows live on stage. Deterministic ids so it's idempotent/re-runnable.
+function seedDemoHistory(){
+  const FIRST=["Marcus","Devin","Ray","Luis","Andre","Sean","Priya","Tevin","Omar","Cole","Nate","Jamal","Rico","Vince","Hank","Iris"];
+  const LAST=["Fielding","Barrett","Okafor","Mendez","Cho","Vaughn","Nair","Ellis","Reid","Santos","Park","Doyle","Cruz","Lang","Boyd","Frey"];
+  const roster=FIRST.map((f,i)=>({name:f+" "+LAST[i],emp:"D"+String(i+1).padStart(2,"0"),start:"13:00",end:"21:00",hours:"13:00-21:00",src:"sched"}));
+  const fatigue=roster[0];   // in the 6 most-recent logged days; the live board is today → 7 straight
+  const today=isoDate(todayLocalISO())||todayLocalISO();
+  const SH=["PM","AM","NH"];
+  const entries=[];
+  for(let d=1;d<=14;d++){
+    const date=addDaysISO(today,-d), shift=SH[(d-1)%3];
+    const day=[]; if(d<=6)day.push(fatigue);
+    roster.forEach((p,i)=>{ if(p===fatigue)return; if(((i*7+d*3)%5)!==0)day.push(p); });   // deterministic subset
+    const bodies=day.map(p=>({name:p.name,emp:p.emp,start:p.start,end:p.end,hours:p.hours,src:"sched"}));
+    entries.push({id:date+"|"+shift,date,shift,when:Date.now()-d*86400000,startedAt:null,finishedAt:Date.now()-d*86400000,
+      by:roster[(d+1)%roster.length].name,pool:bodies.length,running:12,crews:8,areasFilled:7,
+      dispatch:roster[(d+2)%roster.length].name,seed:true,snap:{bodies}});
+  }
+  saveLogList(entries);
+  // set up a viewable current PM board so the pool screen shows the fatigue ⚠ live (no PDF needed)
+  ST.shift="PM"; ST.numTugs=12; ST.dbl={}; ST.assign={tugs:{},areas:{}}; AREAS.forEach(a=>ST.assign.areas[a.key]=[]);
+  ST.parsed={date:today,mpRecs:[],otRecs:[],coRows:[]};
+  ST.bodies=roster.map(p=>({name:p.name,emp:p.emp,start:p.start,end:p.end,hours:p.hours,src:"sched"}));
+  ST.startedAt=Date.now(); ST.step="pool"; render();
+  toast("Demo loaded — "+entries.length+" past boards + fatigue example");
+}
+
 /* expose entry points */
 window.STAFF={
   open:()=>{ loadBids(); syncLogs(true); syncDrafts(true); syncCodes(true); syncTempSups(true); if(!AUTH){ ST.step="auth"; authView="pick"; authPick=null; authErr=""; } else { ST.step="menu"; } render(); },
@@ -1736,7 +1765,8 @@ window.STAFF={
   syncRoster:()=>syncTempSups(true),
   resetCode:n=>{ resetCode(n); },
   removeTempSup:n=>{ const tw=Date.now(); const l=loadTempRaw(); l.push({name:n,del:true,when:tw}); saveTempSups(l); pushRow("tempsup","T|"+n,{id:"T|"+n,name:n,del:true,when:tw}); if(AUTH&&AUTH.name===n)AUTH=null; },
-  who:()=>AUTH?AUTH.name:""
+  who:()=>AUTH?AUTH.name:"",
+  seedDemo:()=>seedDemoHistory()
 };
 window.BRIEF={ open:()=>{ loadBids(); briefTabView="edit"; renderBriefTab(); } };
 

@@ -815,6 +815,10 @@
     <div class="card pad">
       <p class="hint" style="margin-top:0">Replaces every real person's name with a stable fake one (e.g. <b>Torres, K.</b>) across the pool, board, sheets and logs — so you can screen-share or pitch the tool to your company without exposing anyone. The same real name always maps to the same fake name. Turn off to show real names again. Nothing is changed in your saved data.</p>
       <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Demo mode<small id="demoStatus"></small></span><input type="checkbox" id="demoChk" class="cfg-chk"></label>
+      <div id="demoSeedBox" hidden style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px">
+        <p class="hint" style="margin:0 0 8px">Load a full demo dataset for a pitch: ~2 weeks of past manpowers, a "worked 7 days straight" person (shows the fatigue ⚠), and a couple of super-tugs incl. one already out of service for the GSE workflow.</p>
+        <div class="btnrow"><button class="btn navy" id="demoSeed" style="flex:0 0 auto">Load demo data</button><button class="btn ghost" id="demoSeedClear" style="flex:0 0 auto">Clear demo data</button></div>
+      </div>
     </div>
 
     <h2 class="section">Master list (shared on the page)</h2>
@@ -1522,8 +1526,16 @@ function renderSyncHealth(){const el=$("#syncHealth");if(!el)return;
   if(okNewer){el.className="sync-health ok";el.textContent="✓ Synced "+agoStr(h.lastOk)+(h.pending?" · "+h.pending+" pending":"");}
   else{el.className="sync-health bad";el.textContent="⚠︎ Last sync failed "+agoStr(h.lastErr)+(h.lastErrMsg?" — "+h.lastErrMsg:"")+(h.lastOk?" · last ok "+agoStr(h.lastOk):"");}}
 $("#syncOnChk").addEventListener("change",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.on=$("#syncOnChk").checked;Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast(c.on?"Online sync on":"Online sync off — local only");});
-function renderDemoCfg(){const on=!!Store.getJSON("elt.demo",false);$("#demoChk").checked=on;$("#demoStatus").textContent=on?" · on — names masked":" · off — real names";document.body.classList.toggle("demo-on",on);}
+function renderDemoCfg(){const on=!!Store.getJSON("elt.demo",false);$("#demoChk").checked=on;$("#demoStatus").textContent=on?" · on — names masked":" · off — real names";document.body.classList.toggle("demo-on",on);const box=$("#demoSeedBox");if(box)box.hidden=!on;}
 $("#demoChk").addEventListener("change",()=>{const on=$("#demoChk").checked;Store.setJSON("elt.demo",on);renderDemoCfg();toast(on?"Demo mode on — names masked":"Demo mode off");});
+// demo super-tugs (incl. one already out of service) so the GSE OOS workflow has something to show
+const DEMO_STUGS=[{id:"demo-stug-1",tag:"STUG-01",type:"Super Tug (STUG)",location:"WestPark",oos:true,oosReason:"Hydraulic leak"},
+  {id:"demo-stug-2",tag:"STUG-02",type:"Super Tug (STUG)",location:"Ballpark",oos:false}];
+function seedDemoEquip(){ DEMO_STUGS.forEach(s=>{ if(!data.equipment.some(e=>e.id===s.id))data.equipment.push({...s,updated:todayISO(),when:Date.now()}); }); save(); refreshAll(); }
+function clearDemoData(){ data.equipment=data.equipment.filter(e=>!/^demo-stug-/.test(e.id)); DEMO_STUGS.forEach(s=>{try{Store.del("elt.oos.photo."+s.id);}catch(_){}}); save();
+  try{Store.del("elt.staff.log");}catch(_){} refreshAll(); toast("Demo data cleared"); }
+$("#demoSeed")?.addEventListener("click",()=>{ seedDemoEquip(); if(window.STAFF&&window.STAFF.seedDemo)window.STAFF.seedDemo(); toast("Demo data loaded"); });
+$("#demoSeedClear")?.addEventListener("click",()=>{ if(confirm("Clear all demo data (seeded super-tugs + past manpowers)?"))clearDemoData(); });
 function renderLogDelCfg(){const on=!!(data.settings&&data.settings.allowLogDelete);$("#allowLogDel").checked=on;$("#logDelStatus").textContent=on?" · on — Delete shown":" · off — read-only";}
 $("#allowLogDel").addEventListener("change",()=>{data.settings.allowLogDelete=$("#allowLogDel").checked;save();renderLogDelCfg();toast(data.settings.allowLogDelete?"Past manpowers can be deleted":"Past manpowers are read-only");});
 $("#syncSave").addEventListener("click",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.url=$("#syncUrl").value.trim();c.key=$("#syncKey").value.trim();Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast("Sync backend saved");});
