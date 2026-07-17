@@ -266,6 +266,35 @@ function onDouble(emp){ return !!emp&&(worksNext(emp)||!!prevWorkLabel(emp)); }
 // leave a time off for someone who only rolls ~1h past their shift.
 function dblUntil(emp){ if(!emp)return ""; const blocks=(ST.bodies||[]).filter(b=>b.emp===emp); if(!blocks.length)return ""; const w=comboWin(blocks); return w?w[1]:""; }
 function dblLabel(emp){ const u=dblUntil(emp); return u?("Double until "+u):"Double"; }
+// ---- fatigue: consecutive days worked (safety flag) --------------------------------------------
+// Counts how many calendar days in a row a person has worked, reading the logged manpower history
+// (each log's snap.bodies = who was in the worked pool that day). Identity = emp id, never the name,
+// so demo masking never affects the count and no PII is needed. The live in-progress board folds
+// into the anchor day so the ⚠ shows on the board being built, before assigning.
+let _fatIndex=null;   // Map<isoDate, Set<emp>>, memoized per render() (cleared at top of render)
+function isoDate(s){ s=String(s||""); let m;
+  if((m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s)))return m[1]+"-"+String(+m[2]).padStart(2,"0")+"-"+String(+m[3]).padStart(2,"0");
+  if((m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s)))return m[3]+"-"+String(+m[1]).padStart(2,"0")+"-"+String(+m[2]).padStart(2,"0");
+  return ""; }
+function addDaysISO(iso,n){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); if(!m)return iso;
+  const d=new Date(+m[1],+m[2]-1,+m[3],12); d.setDate(d.getDate()+n);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dayWorkedIndex(){ if(_fatIndex)return _fatIndex; const idx=new Map();
+  loadLog().filter(e=>e&&!e._deleted).forEach(e=>{ const d=isoDate(e.date); if(!d)return;
+    const set=idx.get(d)||new Set(); ((e.snap&&e.snap.bodies)||[]).forEach(b=>{ if(b&&b.emp)set.add(b.emp); }); idx.set(d,set); });
+  _fatIndex=idx; return idx; }
+function fatigueThreshold(){ try{ const d=Store.getJSON("elt.data.v1",null); const n=d&&d.settings&&d.settings.fatigueDays; return (typeof n==="number"&&n>=2)?n:7; }catch(_){ return 7; } }
+function consecutiveDaysWorked(emp){ if(!emp)return 0;
+  const idx=dayWorkedIndex(); const liveAnchor=(ST.bodies||[]).some(b=>b.emp===emp);
+  let day=isoDate(ST.parsed&&ST.parsed.date)||todayLocalISO(); let count=0,gap=0,guard=0;
+  while(guard++<400){
+    const worked=(idx.get(day)&&idx.get(day).has(emp))||(count===0&&liveAnchor);   // live board counts on the anchor day
+    if(worked){ count++; gap=0; } else { gap++; if(gap>1)break; }   // tolerate one un-logged day; two ends the streak
+    day=addDaysISO(day,-1);
+  }
+  return count; }
+function isFatigued(emp){ return consecutiveDaysWorked(emp)>=fatigueThreshold(); }
+function fatFlag(emp){ const n=consecutiveDaysWorked(emp); return n>=fatigueThreshold()?`<span class="tag fat" title="Worked ${n} days in a row — fatigue">⚠ ${n}</span>`:""; }
 // leaves before the shift's standard end (not staying the full shift) → flag red
 function leavesEarly(o){ if(!o)return false;
   const h=o._hours||o.hours||((o.start&&o.end)?o.start+"-"+o.end:"");
@@ -432,6 +461,7 @@ function absenceTally(){
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
+  _fatIndex=null;   // rebuild the fatigue day-index once per render (cheap, always fresh)
   const fn={auth:rAuth,menu:rMenu,upload:rUpload,shift:rShift,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts,activity:rActivity}[ST.step]||rMenu;
   try{ fn(); }
   catch(err){
@@ -884,7 +914,7 @@ function rPool(){
   const tier=b=>{const m=workedMin(b); return m>=FULL_MIN?'full':(m>60?'part':'one');};   // ≥7h worked = full, else partial
   const row=b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const tr=tier(b);
     return `<div class="prow prow-tap ${tr!=='full'?'partial':''} ${tr==='one'?'onehour':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
-      ${fwd?`<span class="tag db">${esc(dblLabel(b.emp))}</span>`:''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
+      ${fatFlag(b.emp)}${fwd?`<span class="tag db">${esc(dblLabel(b.emp))}</span>`:''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
       ${bid?`<div class="bid-line">Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b></div>`:''}</div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;};
   const full=pool.filter(b=>tier(b)==='full'), parts=pool.filter(b=>tier(b)==='part'), ones=pool.filter(b=>tier(b)==='one');
@@ -1036,7 +1066,7 @@ function rAssign(){
     const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
     const isSel=SEL===b.emp, partial=isPartial(b), ac=empAreaCount(b.emp);
     // cube: name (top) · shift times (middle) · DBL-until + prior-shift note (bottom, centred)
-    const foot=`${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}${pw?`<i class="pw">${esc(pw)}</i>`:''}`;
+    const foot=`${isFatigued(b.emp)?`<em class="fat">⚠ ${consecutiveDaysWorked(b.emp)}d</em>`:''}${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}${pw?`<i class="pw">${esc(pw)}</i>`:''}`;
     return `<button class="abody ${poolShiftClass(b)} ${isSel?(autoMode==='multi'?'sel multisel':'sel'):''} ${autoPick.includes(b.emp)?'apick':''} ${fwd?'dbl':''} ${partial?'partial':''} ${early?'lv':''}" data-emp="${esc(b.emp)}"><span class="cb-name ${early?'early':''}">${esc(nm(b.name))}</span><span class="cb-hrs">${hrs}</span><span class="cb-foot">${foot}</span></button>`;};
   const shgrp=(key,label,list)=>{const col=poolCollapsed.has(key);
     return `<div class="shgrp ${col?'collapsed':''}"><div class="shgrp-h" data-grp="${esc(key)}"><span class="shg-ca">${col?'▸':'▾'}</span>${label}<span>${list.length}</span></div><div class="abody-wrap">${list.map(chip).join("")}</div></div>`;};
