@@ -338,6 +338,8 @@ function buildBodies(){
     if(isExcluded(b.name)&&!ST.prompts["X:"+b.name])return false;
     return true;
   });
+  // manually-added people (walk-ons not on the eTA sheet) — always kept
+  for(const m of (ST.manual||[])) filtered.push({name:m.name,emp:m.emp,start:m.start,end:m.end,src:"manual"});
   return filtered;
 }
 
@@ -400,18 +402,18 @@ function mergeShiftBlocks(emp,shift){
   else if(hi>sHi){ dt=fmtMin(sHi)+"-"+fmtMin(hi); }            // hours picked up AFTER the shift
   return {hours:fmtMin(lo)+"-"+fmtMin(hi),dt,dtLead};
 }
-// render an hours window in red where it's off the standard clock: a picked-up daytrade start, or a
-// non-standard clock-out (e.g. 06:00 when the shift's standard end is 05:00).
+// Render an hours window with any NON-STANDARD boundary in red — a clock-in or clock-out that's off
+// the shift's standard clock (NH 21:00–05:00). A daytrade that pulls the start onto the standard
+// 21:00 is therefore NOT red; a 06:00 clock-out (standard is 05:00) IS red.
 function hoursHTML(b){
   const h=b&&b.hours?String(b.hours):((b&&b._hours)?String(b._hours):"");
   if(h.indexOf("-")<0)return esc(h);
   const parts=h.split("-"), s=parts[0]||"", e=parts[1]||"";
-  const dt=b&&(b.dt||b._dt), lead=b&&(b.dtLead||b._dtLead);
-  const core=SHIFT_CORE[ST.shift], pv=ivl(s,e);
-  const lateEnd=!!(core&&pv&&pv[1]>core[1]);            // clocks out after the standard end
-  const sRed=dt&&lead, eRed=(dt&&!lead)||lateEnd;
-  const sH=sRed?`<span class="dt-hr" title="daytrade pickup">${esc(s)}</span>`:esc(s);
-  const eH=eRed?`<span class="dt-hr" title="${lateEnd?'non-standard clock-out':'daytrade pickup'}">${esc(e)}</span>`:esc(e);
+  const core=SHIFT_CORE[ST.shift], std=STD_START[ST.shift], pv=ivl(s,e);
+  const sRed=!!(std&&mins(s)!=null&&mins(s)!==mins(std));   // non-standard clock-in
+  const eRed=!!(core&&pv&&pv[1]!==core[1]);                 // non-standard clock-out
+  const sH=sRed?`<span class="dt-hr" title="non-standard clock-in">${esc(s)}</span>`:esc(s);
+  const eH=eRed?`<span class="dt-hr" title="non-standard clock-out">${esc(e)}</span>`:esc(e);
   return sH+"-"+eH;
 }
 /* per-shift pool (deduped by emp within shift) */
@@ -956,6 +958,9 @@ function rSetup(){
 }
 
 /* ---- step: pool review ---- */
+let addingPool=false;   // is the "add someone" form open on the pool screen
+// accept "21:00", "2100", or "900" → "HH:MM"
+function coerceTime(v){ v=(v||"").trim(); if(/^\d{1,2}:\d{2}$/.test(v)){const[h,m]=v.split(":");return (h.length<2?"0":"")+h+":"+m;} const m=v.match(/^(\d{1,2})(\d{2})$/); if(m)return (+m[1]<10?"0":"")+(+m[1])+":"+m[2]; return ""; }
 function rPool(){
   const pool=poolFor(ST.shift);
   const disp=dispatchCandidates(ST.shift);
@@ -978,11 +983,32 @@ function rPool(){
     <div class="prow-wrap partial-wrap">${parts.map(row).join("")}</div>`:''}
     ${ones.length?`<div class="pool-sub one"><span>One hour · barely on this shift</span><b>${ones.length}</b></div>
     <div class="prow-wrap partial-wrap">${ones.map(row).join("")}</div>`:''}
+    ${addingPool?`<div class="add-pool">
+      <div class="ap-row"><input id="apName" placeholder="Name (Last, First)" autocomplete="off" /></div>
+      <div class="ap-row"><input id="apStart" placeholder="Start ${esc(STD_START[ST.shift]||'21:00')}" autocomplete="off" inputmode="numeric" /><span class="ap-dash">–</span><input id="apEnd" placeholder="End ${esc(fmtMin(SHIFT_CORE[ST.shift][1]))}" autocomplete="off" inputmode="numeric" /></div>
+      <div class="btnrow"><button class="btn good" id="apSave" style="flex:0 0 auto">Add to pool</button><button class="btn ghost" id="apCancel" style="flex:0 0 auto">Cancel</button></div>
+      <div id="apErr" class="hint" style="color:var(--danger)"></div></div>`
+      :`<button class="btn ghost" id="poolAdd" style="margin-top:10px">＋ Add someone to the pool</button>`}
     <div class="btnrow" style="margin-top:12px"><button class="btn navy" id="toAssign">Assign the board ›</button></div>
     ${back("setup","Setup")}`);
   $$('#staffRoot .prow-tap').forEach(r=>r.addEventListener("click",e=>{ if(e.target.closest(".xrem"))return; r.classList.toggle("open"); }));
   $$('#staffRoot .xrem').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const emp=b.dataset.emp,nm=b.dataset.name;
-    ST.bodies=ST.bodies.filter(x=>!(x.emp===emp&&x.name===nm)); render(); });
+    ST.bodies=ST.bodies.filter(x=>!(x.emp===emp&&x.name===nm));
+    if(ST.manual)ST.manual=ST.manual.filter(x=>x.emp!==emp);   // a manual add stays gone across rebuilds
+    render(); });
+  $("#poolAdd")&&($("#poolAdd").onclick=()=>{ addingPool=true; render(); });
+  $("#apCancel")&&($("#apCancel").onclick=()=>{ addingPool=false; render(); });
+  $("#apSave")&&($("#apSave").onclick=()=>{
+    const name=($("#apName").value||"").trim();
+    const start=coerceTime($("#apStart").value), end=coerceTime($("#apEnd").value);
+    const err=$("#apErr");
+    if(!name){err.textContent="Enter a name.";return;}
+    if(!start||!end){err.textContent="Enter start and end times (e.g. 21:00).";return;}
+    ST.manual=ST.manual||[];
+    ST._mid=(ST._mid||0)+1;
+    ST.manual.push({name,start,end,emp:"M"+ST._mid,hours:start+"-"+end});
+    addingPool=false; ST.bodies=buildBodies(); ST.dbl=buildDoubles(); toast(nm(name)+" added to the pool"); render();
+  });
   $("#toAssign").onclick=()=>{ initTug(); ST.step="reconcile"; render(); };
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
@@ -1112,10 +1138,12 @@ function rAssign(){
   const toMin=t=>{const m=(t||"").match(/^(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):9999;};
   const chip=b=>{const pw=prevWorkLabel(b.emp), fwd=!pw&&worksNext(b.emp);
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
-    const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
-    const core=SHIFT_CORE[ST.shift], pv=ivl(s,e), lateEnd=!!(core&&pv&&pv[1]>core[1]);   // clocks out late
-    const sH=(b.dt&&b.dtLead)?`<span class="dt-hr" title="daytrade pickup">${esc(s)}</span>`:esc(s);
-    const eH=early?`<u class="early">${esc(e)}</u>`:(((b.dt&&!b.dtLead)||lateEnd)?`<span class="dt-hr" title="${lateEnd?'non-standard clock-out':'daytrade pickup'}">${esc(e)}</span>`:esc(e));
+    const early=leavesEarly(b);                            // keep for the cube's leave-early class
+    const core=SHIFT_CORE[ST.shift], std=STD_START[ST.shift], pv=ivl(s,e);
+    const sRed=!!(std&&mins(s)!=null&&mins(s)!==mins(std));   // non-standard clock-in
+    const eRed=!!(core&&pv&&pv[1]!==core[1]);                 // non-standard clock-out (early OR late)
+    const sH=sRed?`<span class="dt-hr" title="non-standard clock-in">${esc(s)}</span>`:esc(s);
+    const eH=eRed?`<span class="dt-hr" title="non-standard clock-out">${esc(e)}</span>`:esc(e);
     const hrs=sH+"-"+eH;
     const isSel=SEL===b.emp, partial=isPartial(b), ac=empAreaCount(b.emp);
     // cube: name (top) · shift times (middle) · DBL-until + prior-shift note (bottom, centred)
