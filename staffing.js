@@ -1772,7 +1772,8 @@ window.STAFF={
   resetCode:n=>{ resetCode(n); },
   removeTempSup:n=>{ const tw=Date.now(); const l=loadTempRaw(); l.push({name:n,del:true,when:tw}); saveTempSups(l); pushRow("tempsup","T|"+n,{id:"T|"+n,name:n,del:true,when:tw}); if(AUTH&&AUTH.name===n)AUTH=null; },
   who:()=>AUTH?AUTH.name:"",
-  seedDemo:()=>seedDemoHistory()
+  seedDemo:()=>seedDemoHistory(),
+  refresh:()=>{ try{render();}catch(_){} }   // re-draw the current staffing view (e.g. after a demo-mode toggle)
 };
 window.BRIEF={ open:()=>{ loadBids(); briefTabView="edit"; renderBriefTab(); } };
 
