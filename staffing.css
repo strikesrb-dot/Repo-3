@@ -252,6 +252,7 @@
 .tag.db{background:#0b3d63;color:#fff}
 .tag.fat{background:#ffe3b0;color:#8a4b00;border:1px solid #e2a04a}
 .dt-hr{color:#c0271e;font-weight:800}   /* a non-standard clock-in/out, shown in red within the window */
+.dt-pk{color:#8a94a0;font-weight:800}   /* a picked-up daytrade hour that lands on a standard time — gray */
 .add-pool{margin-top:10px;padding:12px;border:1.5px dashed var(--line);border-radius:12px;background:#fafbfc}
 .add-pool .ap-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .add-pool input{flex:1;min-width:0;font-size:14px;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px}

@@ -371,6 +371,13 @@ function shiftHours(b,shift){
 }
 // the "standard" clock-in for each shift; anyone else on a full shift is "non-standard"
 const STD_START={AM:"05:00",PM:"13:00",NH:"21:00"};
+// the standard clock-in/out for each shift — team-configurable in Settings; anything off these is
+// "non-standard" and shows red. Defaults: AM 05:00–13:00 · PM 13:00–21:00 · NH 21:00–05:00.
+const STD_SHIFT_DEF={AM:{start:"05:00",end:"13:00"},PM:{start:"13:00",end:"21:00"},NH:{start:"21:00",end:"05:00"}};
+function stdShiftTimes(shift){
+  try{ const d=Store.getJSON("elt.data.v1",null); const s=d&&d.settings&&d.settings.stdShifts&&d.settings.stdShifts[shift]; if(s&&s.start&&s.end)return s; }catch(_){}
+  return STD_SHIFT_DEF[shift]||STD_SHIFT_DEF.NH;
+}
 // how long they actually WORK this shift (from their displayed window) — not core overlap, so a
 // non-standard/offset shift like 12:00–20:00 (8h) reads as a full shift, not a partial
 function workedMin(b){ const h=b&&b.hours?String(b.hours):""; const p=h.split("-");
@@ -402,19 +409,22 @@ function mergeShiftBlocks(emp,shift){
   else if(hi>sHi){ dt=fmtMin(sHi)+"-"+fmtMin(hi); }            // hours picked up AFTER the shift
   return {hours:fmtMin(lo)+"-"+fmtMin(hi),dt,dtLead};
 }
-// Render an hours window with any NON-STANDARD boundary in red — a clock-in or clock-out that's off
-// the shift's standard clock (NH 21:00–05:00). A daytrade that pulls the start onto the standard
-// 21:00 is therefore NOT red; a 06:00 clock-out (standard is 05:00) IS red.
+// Colour an hours window: RED for a non-standard clock-in/out (off the shift's standard clock),
+// GRAY for a picked-up daytrade hour that lands on a standard time (e.g. Sharee's 21:00 — standard,
+// but flagged as picked up), otherwise normal. Standard times are team-configurable in Settings.
+function hrSpan(t,shift,side,dtPick){
+  const std=stdShiftTimes(shift), ref=side==="start"?std.start:std.end;
+  if(mins(t)!=null && mins(ref)!=null && mins(t)!==mins(ref))
+    return `<span class="dt-hr" title="non-standard clock-${side==="start"?"in":"out"}">${esc(t)}</span>`;
+  if(dtPick) return `<span class="dt-pk" title="picked-up hour (daytrade)">${esc(t)}</span>`;
+  return esc(t);
+}
 function hoursHTML(b){
   const h=b&&b.hours?String(b.hours):((b&&b._hours)?String(b._hours):"");
   if(h.indexOf("-")<0)return esc(h);
   const parts=h.split("-"), s=parts[0]||"", e=parts[1]||"";
-  const core=SHIFT_CORE[ST.shift], std=STD_START[ST.shift], pv=ivl(s,e);
-  const sRed=!!(std&&mins(s)!=null&&mins(s)!==mins(std));   // non-standard clock-in
-  const eRed=!!(core&&pv&&pv[1]!==core[1]);                 // non-standard clock-out
-  const sH=sRed?`<span class="dt-hr" title="non-standard clock-in">${esc(s)}</span>`:esc(s);
-  const eH=eRed?`<span class="dt-hr" title="non-standard clock-out">${esc(e)}</span>`:esc(e);
-  return sH+"-"+eH;
+  const dt=b&&(b.dt||b._dt), lead=b&&(b.dtLead||b._dtLead);
+  return hrSpan(s,ST.shift,"start",dt&&lead)+"-"+hrSpan(e,ST.shift,"end",dt&&!lead);
 }
 /* per-shift pool (deduped by emp within shift) */
 function poolFor(shift){
@@ -1139,12 +1149,7 @@ function rAssign(){
   const chip=b=>{const pw=prevWorkLabel(b.emp), fwd=!pw&&worksNext(b.emp);
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=leavesEarly(b);                            // keep for the cube's leave-early class
-    const core=SHIFT_CORE[ST.shift], std=STD_START[ST.shift], pv=ivl(s,e);
-    const sRed=!!(std&&mins(s)!=null&&mins(s)!==mins(std));   // non-standard clock-in
-    const eRed=!!(core&&pv&&pv[1]!==core[1]);                 // non-standard clock-out (early OR late)
-    const sH=sRed?`<span class="dt-hr" title="non-standard clock-in">${esc(s)}</span>`:esc(s);
-    const eH=eRed?`<span class="dt-hr" title="non-standard clock-out">${esc(e)}</span>`:esc(e);
-    const hrs=sH+"-"+eH;
+    const hrs=hrSpan(s,ST.shift,"start",b.dt&&b.dtLead)+"-"+hrSpan(e,ST.shift,"end",b.dt&&!b.dtLead);
     const isSel=SEL===b.emp, partial=isPartial(b), ac=empAreaCount(b.emp);
     // cube: name (top) · shift times (middle) · DBL-until + prior-shift note (bottom, centred)
     const foot=`${isFatigued(b.emp)?`<em class="fat">⚠ ${consecutiveDaysWorked(b.emp)}d</em>`:''}${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}${pw?`<i class="pw">${esc(pw)}</i>`:''}`;

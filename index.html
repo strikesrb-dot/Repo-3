@@ -437,6 +437,10 @@
   .le-addrow{display:flex;gap:6px}
   .le-addrow .le-subin{flex:1;padding:8px 10px;font-size:13px}
   .cfgrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .std-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .std-lbl{width:86px;font-weight:700;font-size:14px;color:var(--ink)}
+  .std-t{width:72px;text-align:center;font-size:14px;padding:7px 8px;border:1.5px solid var(--line);border-radius:8px}
+  .std-dash{color:var(--muted);font-weight:800}
   .cfgrow:last-child{border-bottom:none}
   .cfg-l{font-size:14px;font-weight:600;color:var(--ink);display:flex;flex-direction:column}
   .cfg-l small{font-weight:500;color:var(--muted);font-size:11.5px;margin-top:2px}
@@ -775,6 +779,11 @@
       <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Allow deleting past manpowers<small id="logDelStatus"></small></span><input type="checkbox" id="allowLogDel" class="cfg-chk"></label>
       <label class="cfgrow" style="border-top:1px solid var(--line);padding:10px 0 4px"><span class="cfg-l">Fatigue warning after<small>Flags ⚠ on anyone who's worked this many days in a row, counted from logged manpower history.</small></span>
         <span style="display:flex;align-items:center;gap:6px;flex:none"><input type="number" id="fatigueDays" min="2" max="14" step="1" style="width:64px;text-align:center" /><span class="cfg-l" style="font-size:13px">days</span></span></label>
+      <div style="border-top:1px solid var(--line);padding-top:10px;margin-top:4px">
+        <div class="cfg-l" style="margin-bottom:2px">Standard shift times</div>
+        <small class="cfg-l" style="display:block;color:var(--muted);margin-bottom:8px">A clock-in or clock-out that isn't one of these shows in <b style="color:#c0271e">red</b> on the pool &amp; board. Set your team's standard shifts here.</small>
+        <div id="stdShiftRows"></div>
+      </div>
     </div>
 
     <h2 class="section">Supervisor codes</h2>
@@ -958,7 +967,8 @@ function load(){
   d.settings=Object.assign({
     trackInventory:true,trackEdits:true,trackQuickMove:true,trackDeletions:true,trackClears:true,
     moveCap:300, shiftAM:300,shiftPM:780,shiftNH:1260, nameOrder:"first",
-    shiftNameAM:"AM",shiftNamePM:"PM",shiftNameNH:"Nighthawk", passcode:"3599", fatigueDays:7
+    shiftNameAM:"AM",shiftNamePM:"PM",shiftNameNH:"Nighthawk", passcode:"3599", fatigueDays:7,
+    stdShifts:{AM:{start:"05:00",end:"13:00"},PM:{start:"13:00",end:"21:00"},NH:{start:"21:00",end:"05:00"}}
   }, d.settings||{});
   // One-time restore of the pool-exclusion list (trainers / not-counted people) that an earlier
   // security scrub emptied out of the source. Seeds the team-synced setting once; from then on it's
@@ -1542,7 +1552,26 @@ function clearDemoData(){ data.equipment=data.equipment.filter(e=>!/^demo-stug-/
 $("#demoSeed")?.addEventListener("click",()=>{ seedDemoEquip(); if(window.STAFF&&window.STAFF.seedDemo)window.STAFF.seedDemo(); toast("Demo data loaded"); });
 $("#demoSeedClear")?.addEventListener("click",()=>{ if(confirm("Clear all demo data (seeded super-tugs + past manpowers)?"))clearDemoData(); });
 function renderLogDelCfg(){const on=!!(data.settings&&data.settings.allowLogDelete);$("#allowLogDel").checked=on;$("#logDelStatus").textContent=on?" · on — Delete shown":" · off — read-only";
-  const fd=$("#fatigueDays");if(fd)fd.value=(data.settings&&data.settings.fatigueDays)||7;}
+  const fd=$("#fatigueDays");if(fd)fd.value=(data.settings&&data.settings.fatigueDays)||7;
+  renderStdShifts();}
+const STD_SHIFT_DEF={AM:{start:"05:00",end:"13:00"},PM:{start:"13:00",end:"21:00"},NH:{start:"21:00",end:"05:00"}};
+function renderStdShifts(){ const wrap=$("#stdShiftRows"); if(!wrap)return;
+  const cur=(data.settings&&data.settings.stdShifts)||STD_SHIFT_DEF;
+  const lbl={AM:"AM",PM:"PM",NH:"Nighthawk"};
+  wrap.innerHTML=["AM","PM","NH"].map(sh=>{const t=cur[sh]||STD_SHIFT_DEF[sh];
+    return `<div class="std-row"><span class="std-lbl">${lbl[sh]}</span>
+      <input class="std-t" data-sh="${sh}" data-k="start" value="${esc(t.start)}" inputmode="numeric" autocomplete="off" />
+      <span class="std-dash">–</span>
+      <input class="std-t" data-sh="${sh}" data-k="end" value="${esc(t.end)}" inputmode="numeric" autocomplete="off" /></div>`;}).join("");
+  wrap.querySelectorAll(".std-t").forEach(inp=>inp.addEventListener("change",()=>{
+    const v=coerceTimeStr(inp.value); if(!v){inp.value=(((data.settings.stdShifts||STD_SHIFT_DEF)[inp.dataset.sh])||{})[inp.dataset.k]||"";return;}
+    data.settings.stdShifts=data.settings.stdShifts||JSON.parse(JSON.stringify(STD_SHIFT_DEF));
+    data.settings.stdShifts[inp.dataset.sh]=data.settings.stdShifts[inp.dataset.sh]||{...STD_SHIFT_DEF[inp.dataset.sh]};
+    data.settings.stdShifts[inp.dataset.sh][inp.dataset.k]=v; inp.value=v; save(); toast("Standard shift times saved");
+  }));
+}
+// accept "21:00", "2100", "900" → "HH:MM"
+function coerceTimeStr(v){ v=(v||"").trim(); if(/^\d{1,2}:\d{2}$/.test(v)){const[h,m]=v.split(":");return (h.length<2?"0":"")+h+":"+m;} const m=v.match(/^(\d{1,2})(\d{2})$/); if(m&&+m[1]<24&&+m[2]<60)return (+m[1]<10?"0":"")+(+m[1])+":"+m[2]; return ""; }
 $("#allowLogDel").addEventListener("change",()=>{data.settings.allowLogDelete=$("#allowLogDel").checked;save();renderLogDelCfg();toast(data.settings.allowLogDelete?"Past manpowers can be deleted":"Past manpowers are read-only");});
 $("#fatigueDays").addEventListener("change",e=>{let n=parseInt(e.target.value,10);if(isNaN(n))n=7;n=Math.max(2,Math.min(14,n));data.settings.fatigueDays=n;e.target.value=n;save();toast("Fatigue warning set to "+n+" days");});
 $("#syncSave").addEventListener("click",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.url=$("#syncUrl").value.trim();c.key=$("#syncKey").value.trim();Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast("Sync backend saved");});
