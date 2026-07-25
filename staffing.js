@@ -190,7 +190,11 @@ function primaryShift(start){const a=mins(start);if(a==null)return "PM";if(a>=24
 function shiftsFor(b){
   const p=ivl(b.start,b.end);if(!p)return [];
   const prim=primaryShift(b.start),out=[];
-  for(const sh of SHIFTS){ const o=ovl(p,SHIFT_CORE[sh]); if(sh===prim)out.push({sh,prim:true,ov:o}); else if(o>60)out.push({sh,prim:false,ov:o}); }
+  // A person shows in their PRIMARY shift always. They only ALSO show in another shift if they work
+  // a real chunk of it (>2h = a genuine double) — matching the double detector. A full-shift person
+  // who merely grazes ~1h of the next shift is NOT put on it as a "1 hour barely on the shift"; only
+  // someone strictly working just that window (their primary IS that short block) appears there.
+  for(const sh of SHIFTS){ const o=ovl(p,SHIFT_CORE[sh]); if(sh===prim)out.push({sh,prim:true,ov:o}); else if(o>120)out.push({sh,prim:false,ov:o}); }
   return out;
 }
 const normName=n=>(n||"").toLowerCase().replace(/[.,]/g,"").replace(/\s+/g," ").trim();
@@ -396,15 +400,19 @@ function mergeShiftBlocks(emp,shift){
   else if(hi>sHi){ dt=fmtMin(sHi)+"-"+fmtMin(hi); }            // hours picked up AFTER the shift
   return {hours:fmtMin(lo)+"-"+fmtMin(hi),dt,dtLead};
 }
-// render an hours window with the picked-up daytrade portion in red
+// render an hours window in red where it's off the standard clock: a picked-up daytrade start, or a
+// non-standard clock-out (e.g. 06:00 when the shift's standard end is 05:00).
 function hoursHTML(b){
   const h=b&&b.hours?String(b.hours):((b&&b._hours)?String(b._hours):"");
+  if(h.indexOf("-")<0)return esc(h);
+  const parts=h.split("-"), s=parts[0]||"", e=parts[1]||"";
   const dt=b&&(b.dt||b._dt), lead=b&&(b.dtLead||b._dtLead);
-  if(!dt)return esc(h);
-  const parts=h.split("-");
-  return lead
-    ? `<span class="dt-hr" title="1-hour daytrade pickup">${esc(parts[0]||"")}</span>-${esc(parts[1]||"")}`
-    : `${esc(parts[0]||"")}-<span class="dt-hr" title="daytrade pickup">${esc(parts[1]||"")}</span>`;
+  const core=SHIFT_CORE[ST.shift], pv=ivl(s,e);
+  const lateEnd=!!(core&&pv&&pv[1]>core[1]);            // clocks out after the standard end
+  const sRed=dt&&lead, eRed=(dt&&!lead)||lateEnd;
+  const sH=sRed?`<span class="dt-hr" title="daytrade pickup">${esc(s)}</span>`:esc(s);
+  const eH=eRed?`<span class="dt-hr" title="${lateEnd?'non-standard clock-out':'daytrade pickup'}">${esc(e)}</span>`:esc(e);
+  return sH+"-"+eH;
 }
 /* per-shift pool (deduped by emp within shift) */
 function poolFor(shift){
@@ -1105,8 +1113,9 @@ function rAssign(){
   const chip=b=>{const pw=prevWorkLabel(b.emp), fwd=!pw&&worksNext(b.emp);
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
+    const core=SHIFT_CORE[ST.shift], pv=ivl(s,e), lateEnd=!!(core&&pv&&pv[1]>core[1]);   // clocks out late
     const sH=(b.dt&&b.dtLead)?`<span class="dt-hr" title="daytrade pickup">${esc(s)}</span>`:esc(s);
-    const eH=early?`<u class="early">${esc(e)}</u>`:((b.dt&&!b.dtLead)?`<span class="dt-hr" title="daytrade pickup">${esc(e)}</span>`:esc(e));
+    const eH=early?`<u class="early">${esc(e)}</u>`:(((b.dt&&!b.dtLead)||lateEnd)?`<span class="dt-hr" title="${lateEnd?'non-standard clock-out':'daytrade pickup'}">${esc(e)}</span>`:esc(e));
     const hrs=sH+"-"+eH;
     const isSel=SEL===b.emp, partial=isPartial(b), ac=empAreaCount(b.emp);
     // cube: name (top) · shift times (middle) · DBL-until + prior-shift note (bottom, centred)
