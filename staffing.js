@@ -379,12 +379,22 @@ function poolShiftClass(b){
 }
 /* per-shift pool (deduped by emp within shift) */
 function poolFor(shift){
-  const out=[],seen=new Set();
+  const out=[];
   if(!ST.bodies)return out;
+  // When an emp appears more than once in this shift — e.g. their real shift PLUS a short daytrade
+  // cover they picked up — keep their FULLEST block. Otherwise a 1-hour pickup that happens to be
+  // listed earlier (under the row of whoever they covered) would hide their actual shift.
+  const rawDur=b=>{const p=ivl(b.start,b.end);return p?p[1]-p[0]:0;};
+  const best=new Map(),anon=[];
   for(const b of ST.bodies){
     const sh=shiftsFor(b).find(x=>x.sh===shift);
     if(!sh)continue;
-    if(b.emp&&seen.has(b.emp))continue; if(b.emp)seen.add(b.emp);
+    const cand={b,sh};
+    if(!b.emp){ anon.push(cand); continue; }
+    const prev=best.get(b.emp);
+    if(!prev||rawDur(b)>rawDur(prev.b)) best.set(b.emp,cand);   // fuller block wins
+  }
+  for(const {b,sh} of [...best.values(),...anon]){
     const d=ST.dbl&&ST.dbl[b.emp];
     out.push({...b,prim:sh.prim,ov:sh.ov,double:!!(d&&d.double),hours:shiftHours(b,shift),span:(d&&d.double&&d.combo)?d.combo[0]+"-"+d.combo[1]:""});
   }
