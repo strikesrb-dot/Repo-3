@@ -251,6 +251,7 @@
 /* ===== doubles, gpu toggle in assign, logs ===== */
 .tag.db{background:#0b3d63;color:#fff}
 .tag.fat{background:#ffe3b0;color:#8a4b00;border:1px solid #e2a04a}
+.dt-hr{color:#c0271e;font-weight:800}   /* a picked-up daytrade hour, shown in red within the merged window */
 .abody .cb-foot em.fat{color:#b3651a;font-weight:900;font-style:normal}
 .abody.dbl{border-color:#0b3d63}
 .abody em{font-style:normal;font-size:8.5px;font-weight:900;letter-spacing:.04em;background:#0b3d63;color:#fff;border-radius:4px;padding:1px 4px;margin-left:5px;vertical-align:1px}

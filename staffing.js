@@ -377,6 +377,35 @@ function poolShiftClass(b){
   const start=(b.hours||"").split("-")[0]||b.start||"";
   return start===STD_START[ST.shift] ? "sh-std" : "sh-nonstd";
 }
+// Merge an emp's blocks within a shift into one window and flag any picked-up daytrade portion that
+// butts up against their real shift (e.g. a 21:00–22:00 cover + a 22:00–06:00 shift → 21:00–06:00,
+// with 21:00–22:00 marked as the daytrade). Returns {hours,dt,dtLead} or null if nothing to merge.
+function mergeShiftBlocks(emp,shift){
+  if(!emp)return null;
+  const iv=(ST.bodies||[]).filter(x=>x.emp===emp&&shiftsFor(x).some(s=>s.sh===shift))
+    .map(b=>({a:mins(b.start),z:mins(b.end),cover:b.src==="cover"})).filter(x=>x.a!=null&&x.z!=null);
+  if(iv.length<2)return null;
+  iv.forEach(x=>{ if(x.z<=x.a)x.z+=1440; });                 // unwrap past-midnight ends
+  const maxA=Math.max(...iv.map(x=>x.a));
+  iv.forEach(x=>{ if(maxA-x.a>720){ x.a+=1440; x.z+=1440; } });  // pull a wrapped block onto the same day
+  const lo=Math.min(...iv.map(x=>x.a)), hi=Math.max(...iv.map(x=>x.z));
+  const sched=iv.filter(x=>!x.cover);
+  const sLo=sched.length?Math.min(...sched.map(x=>x.a)):lo, sHi=sched.length?Math.max(...sched.map(x=>x.z)):hi;
+  let dt="",dtLead=false;
+  if(lo<sLo){ dt=fmtMin(lo)+"-"+fmtMin(sLo); dtLead=true; }    // hours picked up BEFORE the shift
+  else if(hi>sHi){ dt=fmtMin(sHi)+"-"+fmtMin(hi); }            // hours picked up AFTER the shift
+  return {hours:fmtMin(lo)+"-"+fmtMin(hi),dt,dtLead};
+}
+// render an hours window with the picked-up daytrade portion in red
+function hoursHTML(b){
+  const h=b&&b.hours?String(b.hours):((b&&b._hours)?String(b._hours):"");
+  const dt=b&&(b.dt||b._dt), lead=b&&(b.dtLead||b._dtLead);
+  if(!dt)return esc(h);
+  const parts=h.split("-");
+  return lead
+    ? `<span class="dt-hr" title="1-hour daytrade pickup">${esc(parts[0]||"")}</span>-${esc(parts[1]||"")}`
+    : `${esc(parts[0]||"")}-<span class="dt-hr" title="daytrade pickup">${esc(parts[1]||"")}</span>`;
+}
 /* per-shift pool (deduped by emp within shift) */
 function poolFor(shift){
   const out=[];
@@ -396,7 +425,10 @@ function poolFor(shift){
   }
   for(const {b,sh} of [...best.values(),...anon]){
     const d=ST.dbl&&ST.dbl[b.emp];
-    out.push({...b,prim:sh.prim,ov:sh.ov,double:!!(d&&d.double),hours:shiftHours(b,shift),span:(d&&d.double&&d.combo)?d.combo[0]+"-"+d.combo[1]:""});
+    const mg=mergeShiftBlocks(b.emp,shift);   // fold a contiguous daytrade pickup into one window
+    out.push({...b,prim:sh.prim,ov:sh.ov,double:!!(d&&d.double),
+      hours:mg?mg.hours:shiftHours(b,shift), dt:mg?mg.dt:"", dtLead:mg?mg.dtLead:false,
+      span:(d&&d.double&&d.combo)?d.combo[0]+"-"+d.combo[1]:""});
   }
   out.sort((a,b)=>(a.prim===b.prim?normName(a.name).localeCompare(normName(b.name)):a.prim?-1:1));
   return out;
@@ -923,7 +955,7 @@ function rPool(){
   // bucket by how much of the shift core each person actually works
   const tier=b=>{const m=workedMin(b); return m>=FULL_MIN?'full':(m>60?'part':'one');};   // ≥7h worked = full, else partial
   const row=b=>{const bid=BIDS&&BIDS[b.emp];const pw=prevWorkLabel(b.emp);const fwd=!pw&&worksNext(b.emp);const tr=tier(b);
-    return `<div class="prow prow-tap ${tr!=='full'?'partial':''} ${tr==='one'?'onehour':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${esc(b.hours)}</span>
+    return `<div class="prow prow-tap ${tr!=='full'?'partial':''} ${tr==='one'?'onehour':''}" data-emp="${esc(b.emp)}"><div class="prow-main"><div><b>${esc(nm(b.name))}</b> <span class="hint">${hoursHTML(b)}</span>
       ${fatFlag(b.emp)}${fwd?`<span class="tag db">${esc(dblLabel(b.emp))}</span>`:''}${tr==='part'?'<span class="tag pt">Partial</span>':''}${tr==='one'?'<span class="tag oh">1 hr</span>':''}${b.src==='OT'?'<span class="tag ot">OT</span>':''}${b.src==='cover'?'<span class="tag cv">Daytrade</span>':''}${b.src==='train'?'<span class="tag tr">OJT</span>':''}${pw?`<span class="tag pw">${esc(pw)}</span>`:''}
       ${bid?`<div class="bid-line">Bid <b>${esc(bid.hours||'—')}</b> · Off <b>${esc(bid.off||'—')}</b></div>`:''}</div>
       <button class="xrem" data-emp="${esc(b.emp)}" data-name="${esc(b.name)}" title="Remove">✕</button></div></div>`;};
@@ -1009,7 +1041,7 @@ function empAreaCount(emp){let n=0;Object.values(ST.assign.areas).forEach(list=>
 function empInTug(emp){return Object.values(ST.assign.tugs).some(t=>["DRIVER","OBSERVR"].some(r=>t[r]&&t[r].emp===emp));}
 // in multi mode the selected person stays in the pool so you can place them in a 2nd spot
 function availBody(b){const emp=b.emp;if(autoMode==='multi'&&SEL===emp)return true;if(dispEmp()===emp)return false;if(empInTug(emp))return false;return empAreaCount(emp)===0;}
-function mkBody(b){return b?{name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double}:null;}
+function mkBody(b){return b?{name:b.name,emp:b.emp,start:b.start,end:b.end,_hours:b.hours,_double:b.double,_dt:b.dt,_dtLead:b.dtLead}:null;}
 function autoPairTugs(){
   const items=autoPick.map(e=>poolFor(ST.shift).find(b=>b.emp===e)).filter(Boolean);
   const used=new Set(),pairs=[];
@@ -1073,7 +1105,9 @@ function rAssign(){
   const chip=b=>{const pw=prevWorkLabel(b.emp), fwd=!pw&&worksNext(b.emp);
     const s=(b.hours||"").split("-")[0]||"", e=(b.hours||"").split("-")[1]||"";
     const early=leavesEarly(b);                            // leaves before the shift's standard end → flag red
-    const hrs=esc(s)+"-"+(early?`<u class="early">${esc(e)}</u>`:esc(e));
+    const sH=(b.dt&&b.dtLead)?`<span class="dt-hr" title="daytrade pickup">${esc(s)}</span>`:esc(s);
+    const eH=early?`<u class="early">${esc(e)}</u>`:((b.dt&&!b.dtLead)?`<span class="dt-hr" title="daytrade pickup">${esc(e)}</span>`:esc(e));
+    const hrs=sH+"-"+eH;
     const isSel=SEL===b.emp, partial=isPartial(b), ac=empAreaCount(b.emp);
     // cube: name (top) · shift times (middle) · DBL-until + prior-shift note (bottom, centred)
     const foot=`${isFatigued(b.emp)?`<em class="fat">⚠ ${consecutiveDaysWorked(b.emp)}d</em>`:''}${fwd?`<em>${esc(dblLabel(b.emp))}</em>`:''}${autoMode==='multi'&&isSel&&ac>0?`<em class="a2">in ${ac}</em>`:''}${pw?`<i class="pw">${esc(pw)}</i>`:''}`;
@@ -1095,7 +1129,7 @@ function rAssign(){
   }
   const slotName=p=>{ if(!p) return `<span class="slot-empty">tap to fill</span>`;
     const pw=prevWorkLabel(p.emp), fwd=!pw&&worksNext(p.emp), early=leavesEarly(p);
-    const t=esc(p._hours||(p.start+"-"+p.end));
+    const t=(p._hours||p._dt)?hoursHTML(p):esc(p.start+"-"+p.end);
     // layout: name (left) · double/worked-prior (center) · hours (right) — matches the sheet
     const mid=fwd?`<em class="sdbl">${esc(dblLabel(p.emp))}</em>`:(pw?`<b class="swln">${esc(pw)}</b>`:"");
     return `<span class="slot-name vname ${early?'early':''}">${crewNameV(p.name)}</span><span class="slot-mid">${mid}</span><span class="slot-t">${t}</span>`; };
@@ -1111,7 +1145,7 @@ function rAssign(){
   const areaCards=AREAS.map(a=>{
     const list=ST.assign.areas[a.key],min=a.min?a.min[ST.shift]:0,need=min&&list.length<min;
     return `<div class="acard ${need?'need':''}"><div class="ahdr">${esc(a.label||a.key)} ${min?`<span class="amin ${need?'bad':''}">${list.length}/${min}</span>`:'<span class="amin disc">disc</span>'}</div>
-      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip ${leavesEarly(p)?'early':''}" data-area="${esc(a.key)}" data-i="${i}">${esc(nm(p.name))}<small>${esc(p._hours||(p.start+"-"+p.end))}</small> ✕</span>`).join("")}
+      <div class="aslots">${list.map((p,i)=>`<span class="slot-chip ${leavesEarly(p)?'early':''}" data-area="${esc(a.key)}" data-i="${i}">${esc(nm(p.name))}<small>${(p._hours||p._dt)?hoursHTML(p):esc(p.start+"-"+p.end)}</small> ✕</span>`).join("")}
         <button class="aadd" data-areaadd="${esc(a.key)}">+ add</button></div></div>`;
   }).join("");
   // tugs — "Concept 3" card: a colour-status tile (STUG # + type + GPU state) on the LEFT,
