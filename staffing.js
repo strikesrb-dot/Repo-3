@@ -1431,6 +1431,22 @@ function drawBolt(ctx,x,y,inop){ // small lightning at (x,y) top-left ~13x15
   if(inop){ctx.strokeStyle="#c0271e";ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(x-1,y-1);ctx.lineTo(x+13,y+16);ctx.stroke();}
   ctx.restore();
 }
+// Draw an hours window right-aligned at xr on the canvas sheet, colouring a non-standard clock-in or
+// clock-out red (off the shift's configurable standard clock). Returns the drawn width. Font must be
+// set by the caller.
+function drawHoursCanvas(ctx,hrs,xr,cy){
+  const base="#5a6772", red="#c0271e";
+  const parts=String(hrs||"").split("-");
+  if(parts.length<2){ ctx.fillStyle=base;ctx.textAlign="right";ctx.fillText(hrs,xr,cy);const w=ctx.measureText(hrs).width;ctx.textAlign="left";return w; }
+  const s=parts[0], e=parts[1], std=stdShiftTimes(ST.shift);
+  const sRed=mins(s)!=null&&mins(std.start)!=null&&mins(s)!==mins(std.start);   // non-standard clock-in
+  const eRed=mins(e)!=null&&mins(std.end)!=null&&mins(e)!==mins(std.end);       // non-standard clock-out
+  const segs=[[s,sRed?red:base],["-",base],[e,eRed?red:base]];
+  const w=segs.reduce((a,sg)=>a+ctx.measureText(sg[0]).width,0);
+  let x=xr-w; ctx.textAlign="left";
+  segs.forEach(sg=>{ctx.fillStyle=sg[1];ctx.fillText(sg[0],x,cy);x+=ctx.measureText(sg[0]).width;});
+  return w;
+}
 function renderStaffCanvas(){
   // ---- two-column list built to fit a single page: header · REMOTES · TUGS ----
   const a=ST.assign,S=2,W=1040,M=26,gap=10,IW=W-2*M,colW=(IW-gap)/2;
@@ -1460,7 +1476,8 @@ function renderStaffCanvas(){
   // edge of the leftmost meta element so the name can be trimmed to never touch it
   const rightMeta=(p,cy,xrEdge,midX)=>{const pw=prevWorkLabel(p.emp),fwd=!pw&&worksNext(p.emp),du=fwd?dblUntil(p.emp):"";
     const hrs=p._hours||(p.start+"-"+p.end);
-    ctx.fillStyle="#5a6772";ctx.font=FA("800 14px");ctx.textAlign="right";ctx.fillText(hrs,xrEdge,cy);const hw=ctx.measureText(hrs).width;ctx.textAlign="left";
+    ctx.font=FA("800 14px");
+    const hw=drawHoursCanvas(ctx,hrs,xrEdge,cy);   // non-standard clock-in/out drawn red
     let leftEdge=xrEdge-hw;
     const label=pw||(fwd?"Double until "+du:"");
     if(label){const bg=pw?"#f3e2f7":"#0b3d63",fg=pw?"#7a3287":"#fff";
