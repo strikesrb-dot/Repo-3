@@ -191,6 +191,13 @@
      The sender sees the outcome + feedback on their card, live. Completed/declined requests move to
      the Archive section and auto-purge after ARCHIVE_DAYS — no manual deletion. */
   let showArchive=false, declining=null;   // declining = id of the card showing the reason picker
+  let othersOpen=false;                     // the all-departments dock at the bottom
+  // one faded preview line per request: "UGE → Ramp · Needs Lights · C109 · 4m ago"
+  function miniRow(x){
+    const br=brandOf(x.from), kind=x.kind?(x.kind==="Need"?"Needs":x.kind):"";
+    const bits=[`${kind?esc(kind)+" ":""}${esc(x.type||"")}`,x.loc||x.gate?esc(x.loc||x.gate):"",timeAgo(x.when)].filter(Boolean).join(" &middot; ");
+    return `<div class="rq-mini"><span class="rq-mini-dot" style="background:${br.bg}" aria-hidden="true"></span><b>${esc(x.from)}</b>&nbsp;&rarr;&nbsp;${esc(x.to)}<span class="rq-mini-sep">&middot;</span>${bits}</div>`;
+  }
   function receiveScreen(nav){
     const all=load().slice().sort((a,b)=>b.when-a.when);
     const open=all.filter(x=>x.status==="open"), arch=all.filter(x=>x.status!=="open");
@@ -198,17 +205,31 @@
     const sentByMe=open.filter(x=>x.from===myDept());
     const elsewhere=open.filter(x=>x.to!==myDept()&&x.from!==myDept());
     const sec=(label,list)=>list.length?`<div class="rq-sechead">${label} <b>${list.length}</b></div>${list.map(reqCard).join("")}`:"";
+    // other departments' traffic lives at the bottom: a faded live preview when collapsed,
+    // the full cards when expanded. Your own sections always stay on top.
+    const others=!elsewhere.length?""
+      :othersOpen?`
+        <div class="rq-sechead rq-others-sec">All departments <b>${elsewhere.length}</b>
+          <button class="link-more" id="rqOthersHide">Collapse</button></div>
+        ${elsewhere.map(reqCard).join("")}`
+      :`<button class="rq-others" id="rqOthersShow" aria-expanded="false">
+          <span class="rq-others-head">All departments <b>${elsewhere.length}</b><span class="rq-others-more">Show all &rsaquo;</span></span>
+          <span class="rq-others-preview">${elsewhere.slice(0,2).map(miniRow).join("")}${elsewhere.length>2?`<span class="rq-mini rq-mini--more">+ ${elsewhere.length-2} more</span>`:""}</span>
+        </button>`;
     const body=`
-      ${open.length?`
+      ${(forMe.length||sentByMe.length)?`
         ${sec("For "+esc(myDept()),forMe)}
-        ${sec("Your requests",sentByMe)}
-        ${sec("Other departments",elsewhere)}`
+        ${sec("Your requests",sentByMe)}`
+      :elsewhere.length?'<p class="rq-empty">Nothing for '+esc(myDept())+' right now.</p>'
       :'<p class="rq-empty">No open requests.<br>Send one from the Send screen — or from another device/window — and it appears here live.</p>'}
+      ${others}
       ${arch.length?`<div class="rq-archrow"><button class="link-more" id="rqArch">${showArchive?"Hide archive":"Archive ("+arch.length+")"}</button>
         <span class="rq-archhint">Completed requests clear after ${ARCHIVE_DAYS} days.</span></div>`:""}
       ${showArchive?arch.map(reqCard).join(""):""}`;
     UI.render(ROOT(),nav,{title:"Requests",sub:`For <b>${esc(myDept())}</b>, what you've requested, and the archive.`,body,mount:r=>{
       $("#rqArch",r)&&($("#rqArch").onclick=()=>{showArchive=!showArchive;nav.refresh();});
+      $("#rqOthersShow",r)&&($("#rqOthersShow").onclick=()=>{othersOpen=true;nav.refresh();});
+      $("#rqOthersHide",r)&&($("#rqOthersHide").onclick=()=>{othersOpen=false;nav.refresh();});
       $$(".rq-copy",r).forEach(b=>b.onclick=()=>copyReq(b.dataset.id,b));
       $$(".rq-done",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);
         if(it){it.status="done";it.fb={by:myName(),dept:myDept(),when:Date.now(),text:""};}saveAll(l);declining=null;nav.refresh();});
