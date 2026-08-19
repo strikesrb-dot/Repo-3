@@ -234,10 +234,10 @@
     it.status="declined";it.fb={by:myName(),dept:myDept(),when:Date.now(),text:reason};
     saveAll(l);declining=null;toast("Reply sent to "+it.from);nav.refresh();
   }
-  /* "Priority Surface" card (design-tournament winner): requests addressed to YOUR department are
-     the only dark objects in the list — surface + FOR YOU pill + wording = three "mine" channels.
-     Gate/aircraft always render (— when empty) so the figures sit in the same x-position card to
-     card. Done cards return to white and recede — finished work leaves the priority surface. */
+  /* "Three Blocks" card (design-tournament winner, round 2): the card is cut into three zones —
+     WHO is asking (their brand color) | WHAT they need | WHERE (gate big, aircraft under it) —
+     so it reads in one sweep. Requests for YOUR department get a sky ring + FOR YOU pill; done
+     and declined cards recede. Notes/replies/actions live in quiet rows under the zones. */
   function reqCard(x){
     const mine=x.to===myDept(), done=x.status==="done", decl=x.status==="declined", closed=done||decl;
     const loc=x.loc||x.gate||"";                      // old records stored the field as "gate"
@@ -253,6 +253,9 @@
              <button class="btn ghost sm rq-declcancel">Cancel</button></div>
          </div>`
       : `<div class="rqp-acts">
+           ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
+           <span class="rqp3-who">${x.by?esc(x.by)+" &middot; ":""}${timeAgo(x.when)}${x.edited?" &middot; edited":""}</span>
+           <span class="rqp3-sp"></span>
            <button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>
            ${own&&!closed?`<button class="rq-linkbtn rq-edit" data-id="${esc(x.id)}">Edit</button>`:""}
            ${own?`<button class="rq-linkbtn rq-linkbtn--red rq-del" data-id="${esc(x.id)}">Delete</button>`:""}
@@ -264,16 +267,32 @@
              :own?`<button class="btn sm rq-done" data-id="${esc(x.id)}" aria-label="Mark request done">Mark done</button>`:""}
          </div>`;
     const br=brandOf(x.from);
+    // middle zone: the kind is the eyebrow ("Needs"/"Remove"), the thing itself is the figure
+    const needLbl=x.kind?(x.kind==="Need"?"Needs":x.kind):(isActionType(x.type)?"Request":"Needs");
+    const needVal=`${x.type||""}${(!x.kind&&x.detail)?" · "+x.detail:""}`;
+    // right zone: gate is the big figure, aircraft under it; degrade to whichever exists
+    const shortType=type?type.replace(/^(Boeing|Airbus|Embraer|Bombardier)\s*/,""):"";
+    const whereLbl=loc?"Gate":(x.aircraft?"Aircraft":"Where");
+    const whereFig=loc||x.aircraft||"—";
+    const whereSub=loc?(x.aircraft?esc(x.aircraft)+(shortType?" · "+esc(shortType):""):""):(x.aircraft&&shortType?esc(shortType):"");
     return `
-    <div class="rq-item rqp${mine&&!closed?" mine":""}${closed?" done":""}" data-id="${esc(x.id)}">
-      <div class="rqp-band" style="background:${br.bg};color:${br.fg};${br.edge?`box-shadow:inset 0 -3px 0 ${br.edge};`:""}">
-        <span class="rqp-bandfrom">${esc(x.from)} is requesting</span>
-        <span class="rqp-bandto">&rarr; ${esc(x.to)}</span>
-        ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
-        <span class="rqp-bandwho">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}${x.edited?" &middot; edited":""}</span>
+    <div class="rq-item rqp3${mine&&!closed?" mine":""}${closed?" done":""}" data-id="${esc(x.id)}">
+      <div class="rqp3-zones">
+        <div class="rqp3-blk rqp3-from" style="background:${br.bg};color:${br.fg}">
+          <span class="rqp3-eyebrow">Request from</span>
+          <span class="rqp3-dept">${esc(x.from)}</span>
+          <span class="rqp3-to">&rarr; ${esc(x.to)}</span>
+        </div>
+        <div class="rqp3-blk rqp3-need">
+          <span class="rqp3-eyebrow">${esc(needLbl)}</span>
+          <span class="rqp3-fig rqp3-needfig">${esc(needVal)}</span>
+        </div>
+        <div class="rqp3-blk rqp3-where">
+          <span class="rqp3-eyebrow">${esc(whereLbl)}</span>
+          <span class="rqp3-fig${String(whereFig).length>8?" rqp3-fig--sm":""}">${esc(whereFig)}</span>
+          ${whereSub?`<span class="rqp3-sub">${whereSub}</span>`:`<span class="rqp3-sub rqp3-sub--none">${loc&&!x.aircraft?"no aircraft":""}</span>`}
+        </div>
       </div>
-      <div class="rqp-need">${x.kind?esc(x.kind)+" ":(isActionType(x.type)?"":"Need ")}${esc(x.type)}${(!x.kind&&x.detail)?` &middot; ${esc(x.detail)}`:""}</div>
-      ${(loc||x.aircraft)?`<div class="rqp-meta2">${loc?`<span class="rqp-loc">${esc(loc)}</span>`:""}${loc&&x.aircraft?`<span class="rqp-msep">&middot;</span>`:""}${x.aircraft?`<b>${esc(x.aircraft)}</b>${type?` <span class="rqp-mtype">${esc(type.replace(/^(Boeing|Airbus|Embraer|Bombardier)\s*/,""))}</span>`:""}`:""}</div>`:""}
       ${x.note?`<div class="rqp-note"><span class="rqp-dot" aria-hidden="true"></span><span class="rqp-notetext">${esc(x.note)}</span></div>`:""}
       ${fb&&fb.text?`<div class="rqp-fb"><span class="rqp-lbl">Reply from ${esc(fb.dept||"")}${fb.by?" &middot; "+esc(fb.by):""}</span><span class="rqp-fbtext">${esc(fb.text)}</span></div>`:""}
       ${actions}
