@@ -14,6 +14,7 @@
 <!-- No web-font CDN: sending each cold start to Google (IP/UA/timing) is a privacy leak and fails
      offline. Every font-family below carries a full system fallback stack, so the UI is unchanged. -->
 <link rel="stylesheet" href="staffing.css" />
+<link rel="stylesheet" href="requests.css" />
 <style>
   :root{--navy:#0b3d63;--navy-d:#08304e;--accent:#f5a623;--accent-d:#d98c0a;--melon:#fc4c4e;--bg:#f4f6f8;--card:#fff;
     --line:#dce1e6;--ink:#1c2530;--muted:#67727e;--good:#1e7d46;--good-bg:#e6f4ec;--danger:#c0392b;--shadow:0 1px 3px rgba(0,0,0,.12);}
@@ -32,6 +33,16 @@
   .hubtile .hi{font-size:34px;line-height:1}
   .hubsec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:16px 4px 8px}
   .hubgrid.one{grid-template-columns:1fr}
+  /* 4-tile home landing (after the lock screen) */
+  .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 4px}
+  .home-tile{position:relative;background:linear-gradient(160deg,var(--navy),var(--navy-d));color:#fff;border:none;border-radius:22px;box-shadow:0 6px 18px rgba(11,61,99,.28);padding:22px 16px;min-height:158px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;cursor:pointer;text-align:left;overflow:hidden}
+  .home-tile:active{transform:scale(.97)}
+  .home-tile .ht-ic{position:absolute;top:16px;left:16px;opacity:.9}
+  .home-tile .ht-ic svg{width:34px;height:34px}
+  .home-tile .ht-t{font-size:19px;font-weight:800;line-height:1.15}
+  .home-tile .ht-s{font-size:12px;font-weight:600;opacity:.82;line-height:1.25}
+  .home-tile.soon{background:linear-gradient(160deg,#5b6b7a,#47535f);box-shadow:0 6px 18px rgba(60,72,84,.22)}
+  .home-tile.soon .ht-t{opacity:.9}
   .ic{width:1em;height:1em;vertical-align:-.15em;display:inline-block;flex:none}
   .hubtile .hi .ic{width:34px;height:34px;vertical-align:0}
   header{position:sticky;top:0;z-index:20;color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 13px;
@@ -536,7 +547,18 @@
 <main>
   <!-- EQUIPMENT -->
   <!-- HUB -->
-  <section id="view-hub" class="view active">
+  <section id="view-home" class="view active">
+    <div class="home-grid">
+      <button class="home-tile" data-home="hub"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span><span class="ht-t">Move Team Hub</span><span class="ht-s">Staffing · equipment · GSE</span></button>
+      <button class="home-tile" data-home="requests"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7Z"/></svg></span><span class="ht-t">Requests</span><span class="ht-s">Send &amp; receive between departments</span></button>
+      <button class="home-tile soon" data-home="soon"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="ht-t">Coming soon</span><span class="ht-s">Tile 3</span></button>
+      <button class="home-tile soon" data-home="soon"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="ht-t">Coming soon</span><span class="ht-s">Tile 4</span></button>
+    </div>
+  </section>
+
+  <section id="view-requests" class="view"><div id="requestsRoot"></div></section>
+
+  <section id="view-hub" class="view">
     <div class="hubsec">Operations</div>
     <div class="hubgrid">
       <button class="hubtile" data-go="staffing"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Manpower / Staffing</button>
@@ -1240,12 +1262,14 @@ function goTab(t){showTab(t);
   if(t==="eos"){renderEos();}
   if(t==="gse"){gseCat=null;renderGse();}
   if(t==="staffing"){window.STAFF&&window.STAFF.open();}
+  if(t==="requests"){window.REQUESTS&&window.REQUESTS.open();}
   if(t==="briefing"){window.BRIEF&&window.BRIEF.open();}
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
   if(t==="park")renderPark();
   if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();renderLabelCfg();refreshPassWarn();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";const nos=$("#nameOrderSel");if(nos)nos.value=(data.settings&&data.settings.nameOrder)==="last"?"last":"first";}}
 $$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
+$$(".home-tile").forEach(b=>b.addEventListener("click",()=>{const d=b.dataset.home;if(d==="soon"){toast("Coming soon");return;}goTab(d);}));
 
 /* settings passcode lock (3599) */
 let settingsUnlocked=false;
@@ -1270,8 +1294,8 @@ function renderSupCodes(){
   $$("#supCodes .supc-rm").forEach(b=>b.onclick=()=>{ if(confirm("Remove temporary supervisor "+b.dataset.n+"?")){ window.STAFF.removeTempSup(b.dataset.n); window.STAFF.resetCode(b.dataset.n); renderSupCodes(); } });
 }
 $("#addBtn").addEventListener("click",()=>requireUnlock(()=>openEdit(null)));
-function updateBackBtn(){$("#homeBtn").hidden=(curTab==="hub");updateFloatBack();}
-function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&curTab!=="staffing"&&$("#wizFoot").hidden);}
+function updateBackBtn(){$("#homeBtn").hidden=(curTab==="home");updateFloatBack();}
+function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&curTab!=="home"&&curTab!=="staffing"&&$("#wizFoot").hidden);}
 // leaving a half-built manpower board should warn (it auto-saves as a draft) and reset it so you return to the start
 function goHome(){
   if(curTab==="staffing"&&window.STAFF&&window.STAFF.inProgress&&window.STAFF.inProgress()){
@@ -1281,7 +1305,7 @@ function goHome(){
   if(curTab==="inventory"&&(invSel.size||invOos.size)){
     if(!confirm("Leave this inventory? The units you've counted at this location aren't saved yet and will be lost. Tap Save first to keep them."))return;
   }
-  showTab("hub");
+  showTab("home");
 }
 $("#homeBtn").addEventListener("click",goHome);
 $("#hdrTitle")?.addEventListener("click",goHome);
@@ -1301,6 +1325,8 @@ function goBack(){
   if(curTab==="secure")return secBack();
   if(curTab==="gse"&&gseCat){gseCat=null;renderGse();return;}
   if(curTab==="staffing")return goHome();
+  if(curTab==="requests"){ if(window.REQUESTS&&window.REQUESTS.back&&window.REQUESTS.back())return; return showTab("home"); }
+  if(curTab==="hub")return showTab("home");
   showTab("hub");}
 $("#floatBack").addEventListener("click",goBack);
 
@@ -3060,5 +3086,6 @@ if("serviceWorker" in navigator){
 }
 </script>
 <script src="staffing.js"></script>
+<script src="requests.js"></script>
 </body>
 </html>
