@@ -1,5 +1,7 @@
 /* requests.js styles — matches the site's navy/card design */
 .rq-wrap{max-width:640px;margin:0 auto;padding:6px 2px 40px}
+@media (min-width:820px){.rq-wrap{max-width:860px}}
+@media (min-width:1200px){.rq-wrap{max-width:1040px}}
 .rq-head h2{margin:6px 0 2px;font-size:24px;font-weight:900;color:var(--ink)}
 .rq-head p{margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.35}
 .rq-back{background:none;border:none;color:var(--navy);font-weight:800;font-size:14px;cursor:pointer;padding:6px 0;margin-bottom:2px}

@@ -120,7 +120,7 @@
           const Q=q.toUpperCase(), sc=d.fleetScope||"All";
           return FLEET
             .filter(a=>sc==="All"||(sc==="Express")===isExpress(a))
-            .filter(a=>a.reg.includes(Q)||a.ship.startsWith(Q)).slice(0,6)
+            .filter(a=>a.reg.includes(Q)||a.ship.startsWith(Q)).slice(0,20)
             .map(a=>({v:a.reg,label:a.reg,cap:(a.ship?"ship "+a.ship+" · ":"")+a.type}));
         },onPick:v=>{d.aircraft=v;}});
       }
