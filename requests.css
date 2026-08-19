@@ -94,6 +94,18 @@
 .rqp-declrow{display:flex;gap:8px;align-items:center;margin-top:10px}
 .rqp-declrow input{flex:1;min-width:0;font:400 15px/1.3 var(--font);padding:9px 12px;
   border:1px solid var(--field-border,#86868b);border-radius:var(--r-sm,10px)}
+/* resend escalation: "2nd request" pill, amber; from the 3rd ask it turns red and the
+   card (and the home Requests tile) pulse gently — the one sanctioned animation, because
+   the owner asked for it. Respects prefers-reduced-motion via the global kill switch. */
+.rq-askpill{flex:none;font-size:12px;font-weight:600;line-height:1;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--ua-amber-text,#b45309);border:1.5px solid currentColor;border-radius:var(--r-pill,980px);padding:4px 10px}
+.rq-askpill.hot{color:#fff;background:var(--ua-red,#c8102e);border-color:var(--ua-red,#c8102e)}
+@keyframes rq-attn-ring{0%,100%{box-shadow:0 0 0 2px rgba(200,16,46,.85),2px 4px 12px rgba(0,24,64,.12)}
+  50%{box-shadow:0 0 0 8px rgba(200,16,46,.15),2px 4px 12px rgba(0,24,64,.12)}}
+.rq-item.rqp3.attn{animation:rq-attn-ring 2s cubic-bezier(.4,0,.6,1) infinite}
+@keyframes rq-attn-tile{0%,100%{box-shadow:0 0 0 0 rgba(200,16,46,.55)}50%{box-shadow:0 0 0 12px rgba(200,16,46,0)}}
+.home-tile.rq-attn{animation:rq-attn-tile 2s cubic-bezier(.4,0,.6,1) infinite}
+
 /* all-departments dock — other departments' traffic sits at the bottom as a faded live
    preview; tapping expands it into full cards, Collapse tucks it back down */
 .rq-others{display:block;width:100%;text-align:left;border:0;cursor:pointer;margin-top:22px;

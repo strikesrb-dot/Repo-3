@@ -46,7 +46,14 @@
   }
 
   const load=()=>{const d=Store.getJSON(KEY,[]);return Array.isArray(d)?d:[];};
-  const saveAll=l=>Store.setJSON(KEY,l);
+  const saveAll=l=>{Store.setJSON(KEY,l);updateAttn();};
+  const ord=n=>n===2?"2nd":n===3?"3rd":n+"th";
+  // heartbeat on the home Requests tile once anything for MY department is on its 3rd+ ask
+  function updateAttn(){
+    const t=document.querySelector('.home-tile[data-home="requests"]');if(!t)return;
+    const hot=!!myDept()&&load().some(x=>x.status==="open"&&x.to===myDept()&&(x.asks||1)>=3);
+    t.classList.toggle("rq-attn",hot);
+  }
   const myDept=()=>Store.getJSON(MYDEPT_KEY,"");
   const myName=()=>Store.getJSON(MYNAME_KEY,"");
   const hasIdentity=()=>!!(myDept()&&myName());
@@ -195,7 +202,7 @@
   // one faded preview line per request: "UGE → Ramp · Needs Lights · C109 · 4m ago"
   function miniRow(x){
     const br=brandOf(x.from), kind=x.kind?(x.kind==="Need"?"Needs":x.kind):"";
-    const bits=[`${kind?esc(kind)+" ":""}${esc(x.type||"")}`,x.loc||x.gate?esc(x.loc||x.gate):"",timeAgo(x.when)].filter(Boolean).join(" &middot; ");
+    const bits=[`${kind?esc(kind)+" ":""}${esc(x.type||"")}`,x.loc||x.gate?esc(x.loc||x.gate):"",(x.asks||1)>1?ord(x.asks)+" ask":"",timeAgo(x.when)].filter(Boolean).join(" &middot; ");
     return `<div class="rq-mini"><span class="rq-mini-dot" style="background:${br.bg}" aria-hidden="true"></span><b>${esc(x.from)}</b>&nbsp;&rarr;&nbsp;${esc(x.to)}<span class="rq-mini-sep">&middot;</span>${bits}</div>`;
   }
   function receiveScreen(nav){
@@ -243,6 +250,9 @@
         saveAll(load().filter(q=>q.id!==b.dataset.id));declining=null;toast("Request deleted");nav.refresh();});
       $$(".rq-reopen",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);
         if(it){it.status="open";delete it.fb;}saveAll(l);toast("Request reopened");nav.refresh();});
+      $$(".rq-resend",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);if(!it)return;
+        it.asks=(it.asks||1)+1;it.when=Date.now();saveAll(l);
+        toast(ord(it.asks)+" request sent to "+it.to);nav.refresh();});
       $$(".rq-cant",r).forEach(b=>b.onclick=()=>{declining=b.dataset.id;nav.refresh();});
       $$(".rq-declcancel",r).forEach(b=>b.onclick=()=>{declining=null;nav.refresh();});
       $$(".rq-reason",r).forEach(b=>b.onclick=()=>declineReq(b.dataset.id,b.dataset.r,nav));
@@ -275,10 +285,12 @@
          </div>`
       : `<div class="rqp-acts">
            ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
+           ${(x.asks||1)>1?`<span class="rq-askpill${(x.asks||1)>=3?" hot":""}">${ord(x.asks)} request</span>`:""}
            <span class="rqp3-who">${x.by?esc(x.by)+" &middot; ":""}${timeAgo(x.when)}${x.edited?" &middot; edited":""}</span>
            <span class="rqp3-sp"></span>
            <button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>
-           ${own&&!closed?`<button class="rq-linkbtn rq-edit" data-id="${esc(x.id)}">Edit</button>`:""}
+           ${own&&!closed?`<button class="rq-linkbtn rq-resend" data-id="${esc(x.id)}">Resend</button>
+             <button class="rq-linkbtn rq-edit" data-id="${esc(x.id)}">Edit</button>`:""}
            ${own?`<button class="rq-linkbtn rq-linkbtn--red rq-del" data-id="${esc(x.id)}">Delete</button>`:""}
            ${closed&&(own||mine)?`<button class="rq-linkbtn rq-reopen" data-id="${esc(x.id)}">Reopen</button>`:""}
            ${done?`<span class="rqp-doneflag" role="status">&#10003; Done${fb&&fb.by?" &middot; "+esc(fb.by):""}</span>`
@@ -297,7 +309,7 @@
     const whereFig=loc||x.aircraft||"—";
     const whereSub=loc?(x.aircraft?esc(x.aircraft)+(shortType?" · "+esc(shortType):""):""):(x.aircraft&&shortType?esc(shortType):"");
     return `
-    <div class="rq-item rqp3${mine&&!closed?" mine":""}${closed?" done":""}" data-id="${esc(x.id)}">
+    <div class="rq-item rqp3${mine&&!closed?" mine":""}${closed?" done":""}${(x.asks||1)>=3&&!closed?" attn":""}" data-id="${esc(x.id)}">
       <div class="rqp3-zones">
         <div class="rqp3-blk rqp3-from" style="background:${br.bg};color:${br.fg}">
           <span class="rqp3-eyebrow">Request from</span>
@@ -337,6 +349,7 @@
     ctx.fillStyle=br.fg;ctx.textAlign="left";ctx.font="600 15px "+FA;
     ctx.fillText(clip(ctx,x.from.toUpperCase()+" IS REQUESTING  →  "+x.to.toUpperCase(),W-170),36,52);
     ctx.textAlign="right";ctx.font="600 13px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
+    if((x.asks||1)>1){ctx.fillStyle="#c8102e";ctx.textAlign="left";ctx.font="600 15px "+FA;ctx.fillText(ord(x.asks).toUpperCase()+" REQUEST",36,102);}
     const headTxt=(x.kind?String(x.kind).toUpperCase()+" ":(isActionType(x.type)?"":"NEED "))+String(x.type).toUpperCase()+((!x.kind&&x.detail)?" · "+String(x.detail).toUpperCase():"");
     ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,headTxt,W-72),36,136);
     // one quiet meta line: location · tail (short type) — only what exists
@@ -368,7 +381,8 @@
   }
 
   /* ---- cross-window mirror (Send here → Receive there, no network) ---- */
-  window.addEventListener("storage",e=>{ if(e.key!==KEY)return; if(navApi&&ROOT())navApi.refresh(); });
+  window.addEventListener("storage",e=>{ if(e.key!==KEY)return; updateAttn(); if(navApi&&ROOT())navApi.refresh(); });
+  updateAttn();   // set the home-tile heartbeat on load
 
   /* ---- module entry ---- */
   // archive hygiene: completed/declined requests older than ARCHIVE_DAYS purge on open
