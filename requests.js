@@ -12,7 +12,19 @@
 
   const DEPTS=["Move Team","UGE","Customer Service","Ramp"];
   const TYPES=["Ground Power","Air","Lights","Pushback","Water / Lav","Bag Runner","Other"];
+  const DECLINE_REASONS=["Already has power","Already done","MX hold","No equipment available","Wrong department"];
+  const ARCHIVE_DAYS=7;   // completed/declined requests auto-purge after a week
   const KEY="elt.requests", MYDEPT_KEY="elt.requests.dept", MYNAME_KEY="elt.requests.name";
+
+  // fleet lookup (aircraft.json: {ship, reg, type}) — resolves a tail or ship number to the type
+  let FLEET=null;
+  fetch("aircraft.json").then(r=>r.json()).then(d=>{FLEET=(d&&d.aircraft)||[];if(navApi&&ROOT())navApi.refresh();}).catch(()=>{FLEET=[];});
+  function acType(t){
+    if(!FLEET||!t)return "";
+    const n=String(t).trim().toUpperCase();
+    const hit=FLEET.find(a=>a.reg===n||a.reg.slice(1)===n||a.ship===n||("N"+n)===a.reg);
+    return hit?hit.type:"";
+  }
 
   const load=()=>{const d=Store.getJSON(KEY,[]);return Array.isArray(d)?d:[];};
   const saveAll=l=>Store.setJSON(KEY,l);
@@ -63,7 +75,7 @@
   /* ---- screen: send ---- */
   function sendScreen(nav){
     const others=DEPTS.filter(x=>x!==myDept());
-    draft=draft||{to:others[0]||"Ramp",type:"Ground Power",gate:"",aircraft:"",note:""};
+    draft=draft||{to:others[0]||"Ramp",type:"Ground Power",loc:"",aircraft:"",note:""};
     const d=draft;
     const body=UI.card(`
       <span class="ui-flabel">From</span>
@@ -71,8 +83,8 @@
       <span class="ui-flabel" style="margin-top:12px">To</span>${UI.chips(others,d.to,'data-set="to" data-v')}
       <span class="ui-flabel" style="margin-top:12px">Need</span>${UI.chips(TYPES,d.type,'data-set="type" data-v')}
       <div class="rq-two" style="margin-top:12px">
-        <div>${UI.field({label:"Gate",id:"rqGate",value:d.gate,placeholder:"e.g. 109",inputmode:"numeric"})}</div>
-        <div>${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"e.g. N762YX"})}</div>
+        <div>${UI.field({label:"Location",id:"rqLoc",value:d.loc,placeholder:"Gate 109 · Spot 12 · pad"})}</div>
+        <div>${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"Tail or ship number"})}</div>
       </div>
       ${UI.field({label:"Note (optional)",id:"rqNote",value:d.note,placeholder:"Anything else…"})}
       <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">Send request</button></div>`);
@@ -81,49 +93,87 @@
       $("#rqSend",r).onclick=()=>{
         syncInputs();
         if(!d.to||d.to===myDept()){toast("Pick a department to send to");return;}
-        if(!d.gate&&!d.aircraft){toast("Add a gate or an aircraft");return;}
+        if(!d.loc&&!d.aircraft){toast("Add a location or an aircraft");return;}
         const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,type:d.type,
-          gate:d.gate.trim(),aircraft:d.aircraft.trim().toUpperCase(),note:d.note.trim(),when:Date.now(),status:"open"};
+          loc:d.loc.trim(),aircraft:d.aircraft.trim().toUpperCase(),note:d.note.trim(),when:Date.now(),status:"open"};
         const l=load();l.unshift(req);saveAll(l);
         draft=null;toast("Request sent to "+req.to);
         nav.back(); nav.go(receiveScreen);   // pop the send screen, show receive
       };
     }});
   }
-  function syncInputs(){if(!draft)return;const g=$("#rqGate"),a=$("#rqAc"),n=$("#rqNote");if(g)draft.gate=g.value;if(a)draft.aircraft=a.value;if(n)draft.note=n.value;}
+  function syncInputs(){if(!draft)return;const g=$("#rqLoc"),a=$("#rqAc"),n=$("#rqNote");if(g)draft.loc=g.value;if(a)draft.aircraft=a.value;if(n)draft.note=n.value;}
 
-  /* ---- screen: receive ---- */
+  /* ---- screen: receive (open inbox + archive) ----------------------------------------------------
+     Lifecycle: open → done (one tap) or declined (reason chips: "Already has power", "MX hold"…).
+     The sender sees the outcome + feedback on their card, live. Completed/declined requests move to
+     the Archive section and auto-purge after ARCHIVE_DAYS — no manual deletion. */
+  let showArchive=false, declining=null;   // declining = id of the card showing the reason picker
   function receiveScreen(nav){
-    const list=load().slice().sort((a,b)=>b.when-a.when);
-    const body=list.length?list.map(reqCard).join(""):'<p class="rq-empty">No requests yet.<br>Send one from the Send screen — or from another device/window — and it appears here live.</p>';
+    const all=load().slice().sort((a,b)=>b.when-a.when);
+    const open=all.filter(x=>x.status==="open"), arch=all.filter(x=>x.status!=="open");
+    const body=`
+      ${open.length?open.map(reqCard).join(""):'<p class="rq-empty">No open requests.<br>Send one from the Send screen — or from another device/window — and it appears here live.</p>'}
+      ${arch.length?`<div class="rq-archrow"><button class="link-more" id="rqArch">${showArchive?"Hide archive":"Archive ("+arch.length+")"}</button>
+        <span class="rq-archhint">Completed requests clear after ${ARCHIVE_DAYS} days.</span></div>`:""}
+      ${showArchive?arch.map(reqCard).join(""):""}`;
     UI.render(ROOT(),nav,{title:"Incoming requests",sub:`Addressed to <b>${esc(myDept())}</b> are highlighted.`,body,mount:r=>{
+      $("#rqArch",r)&&($("#rqArch").onclick=()=>{showArchive=!showArchive;nav.refresh();});
       $$(".rq-copy",r).forEach(b=>b.onclick=()=>copyReq(b.dataset.id,b));
-      $$(".rq-done",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);if(it)it.status="done";saveAll(l);nav.refresh();});
+      $$(".rq-done",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);
+        if(it){it.status="done";it.fb={by:myName(),dept:myDept(),when:Date.now(),text:""};}saveAll(l);declining=null;nav.refresh();});
+      $$(".rq-cant",r).forEach(b=>b.onclick=()=>{declining=b.dataset.id;nav.refresh();});
+      $$(".rq-declcancel",r).forEach(b=>b.onclick=()=>{declining=null;nav.refresh();});
+      $$(".rq-reason",r).forEach(b=>b.onclick=()=>declineReq(b.dataset.id,b.dataset.r,nav));
+      $$(".rq-reasonsend",r).forEach(b=>b.onclick=()=>{const t=($("#rqReasonTxt")&&$("#rqReasonTxt").value||"").trim();
+        if(!t){toast("Type a reason");return;}declineReq(b.dataset.id,t,nav);});
     }});
+  }
+  function declineReq(id,reason,nav){
+    const l=load();const it=l.find(x=>x.id===id);if(!it)return;
+    it.status="declined";it.fb={by:myName(),dept:myDept(),when:Date.now(),text:reason};
+    saveAll(l);declining=null;toast("Reply sent to "+it.from);nav.refresh();
   }
   /* "Priority Surface" card (design-tournament winner): requests addressed to YOUR department are
      the only dark objects in the list — surface + FOR YOU pill + wording = three "mine" channels.
      Gate/aircraft always render (— when empty) so the figures sit in the same x-position card to
      card. Done cards return to white and recede — finished work leaves the priority surface. */
   function reqCard(x){
-    const mine=x.to===myDept(), done=x.status==="done";
+    const mine=x.to===myDept(), done=x.status==="done", decl=x.status==="declined", closed=done||decl;
+    const loc=x.loc||x.gate||"";                      // old records stored the field as "gate"
+    const type=acType(x.aircraft);
+    const fb=x.fb||null;
+    const actions = declining===x.id
+      ? `<div class="rqp-declpick">
+           <span class="rqp-lbl" style="margin-bottom:6px">Why can't it be completed?</span>
+           <div class="ui-chips">${DECLINE_REASONS.map(rr=>`<button class="ui-chip rq-reason" data-id="${esc(x.id)}" data-r="${esc(rr)}">${esc(rr)}</button>`).join("")}</div>
+           <div class="rqp-declrow"><input id="rqReasonTxt" placeholder="Or type a reason…" autocomplete="off">
+             <button class="btn sm rq-reasonsend" data-id="${esc(x.id)}">Send</button>
+             <button class="btn ghost sm rq-declcancel">Cancel</button></div>
+         </div>`
+      : `<div class="rqp-acts">
+           <button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>
+           ${done?`<span class="rqp-doneflag" role="status">&#10003; Done${fb&&fb.by?" &middot; "+esc(fb.by):""}</span>`
+             :decl?`<span class="rqp-declflag" role="status">&#10005; Can't complete</span>`
+             :`<button class="btn ghost sm rq-cant" data-id="${esc(x.id)}">Can't do</button>
+                <button class="btn sm rq-done" data-id="${esc(x.id)}" aria-label="Mark request done">Mark done</button>`}
+         </div>`;
     return `
-    <div class="rq-item rqp${mine?" mine":""}${done?" done":""}" data-id="${esc(x.id)}">
+    <div class="rq-item rqp${mine&&!closed?" mine":""}${closed?" done":""}" data-id="${esc(x.id)}">
       <div class="rqp-route">
         <span class="rqp-path">${esc(x.from)} <span class="rqp-arr" aria-hidden="true">&rarr;</span> ${esc(x.to)}</span>
-        ${mine&&!done?`<span class="rqp-foryou">For you</span>`:""}
+        ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
         <span class="rqp-who">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
       </div>
       <div class="rqp-need">${esc(x.type)}</div>
       <div class="rqp-where">
-        <span class="rqp-cell"><span class="rqp-lbl">Gate</span><span class="rqp-fig">${esc(x.gate||"—")}</span></span>
-        <span class="rqp-cell"><span class="rqp-lbl">Aircraft</span><span class="rqp-fig">${x.aircraft?esc(x.aircraft):"—"}</span></span>
+        <span class="rqp-cell"><span class="rqp-lbl">Location</span><span class="rqp-fig">${esc(loc||"—")}</span></span>
+        <span class="rqp-cell"><span class="rqp-lbl">Aircraft</span><span class="rqp-fig">${x.aircraft?esc(x.aircraft):"—"}</span>
+          ${type?`<span class="rqp-type">${esc(type)}</span>`:""}</span>
       </div>
       ${x.note?`<div class="rqp-note"><span class="rqp-dot" aria-hidden="true"></span><span class="rqp-notetext">${esc(x.note)}</span></div>`:""}
-      <div class="rqp-acts">
-        <button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>
-        ${done?`<span class="rqp-doneflag" role="status">&#10003; Done</span>`:`<button class="btn sm rq-done" data-id="${esc(x.id)}" aria-label="Mark request done">Mark done</button>`}
-      </div>
+      ${fb&&fb.text?`<div class="rqp-fb"><span class="rqp-lbl">Reply from ${esc(fb.dept||"")}${fb.by?" &middot; "+esc(fb.by):""}</span><span class="rqp-fbtext">${esc(fb.text)}</span></div>`:""}
+      ${actions}
     </div>`;
   }
   function timeAgo(t){const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<60)return "just now";const m=Math.round(s/60);if(m<60)return m+"m ago";const h=Math.round(m/60);if(h<24)return h+"h ago";return Math.round(h/24)+"d ago";}
@@ -142,12 +192,14 @@
     ctx.fillStyle="#ffffff";ctx.textAlign="left";ctx.font="600 16px "+FA;ctx.fillText("REQUEST · "+x.from.toUpperCase()+"  →  "+x.to.toUpperCase(),36,52);
     ctx.textAlign="right";ctx.fillStyle="#a6e3f5";ctx.font="600 14px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
     ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,"NEED "+String(x.type).toUpperCase(),W-72),36,136);
-    // labeled figures — GATE | AIRCRAFT
+    // labeled figures — LOCATION | AIRCRAFT (+ type from the fleet database)
     ctx.fillStyle="#5c6470";ctx.font="600 12px "+FA;
-    ctx.fillText("GATE",36,170);ctx.fillText("AIRCRAFT",216,170);
+    ctx.fillText("LOCATION",36,170);ctx.fillText("AIRCRAFT",256,170);
     ctx.fillStyle="#0a1f44";ctx.font="600 30px "+FA;
-    ctx.fillText(clip(ctx,x.gate||"—",160),36,202);ctx.fillText(clip(ctx,x.aircraft||"—",260),216,202);
-    if(x.note){ctx.fillStyle="#5c6470";ctx.font="400 15px "+FA;ctx.fillText(clip(ctx,x.note,W-72),36,240);}
+    ctx.fillText(clip(ctx,(x.loc||x.gate||"—"),200),36,202);ctx.fillText(clip(ctx,x.aircraft||"—",220),256,202);
+    const ty=acType(x.aircraft);
+    if(ty){ctx.fillStyle="#5c6470";ctx.font="400 13px "+FA;ctx.fillText(clip(ctx,ty,220),256,222);}
+    if(x.note){ctx.fillStyle="#5c6470";ctx.font="400 15px "+FA;ctx.fillText(clip(ctx,x.note,W-72),36,244);}
     ctx.fillStyle="#8d8983";ctx.textAlign="right";ctx.font="400 12px "+FA;ctx.fillText(new Date(x.when).toLocaleString(),W-36,H-30);
     return c;
   }
@@ -175,8 +227,14 @@
   window.addEventListener("storage",e=>{ if(e.key!==KEY)return; if(navApi&&ROOT())navApi.refresh(); });
 
   /* ---- module entry ---- */
+  // archive hygiene: completed/declined requests older than ARCHIVE_DAYS purge on open
+  function purgeArchive(){
+    const cut=Date.now()-ARCHIVE_DAYS*86400000;
+    const l=load();const kept=l.filter(x=>x.status==="open"||((x.fb&&x.fb.when)||x.when)>cut);
+    if(kept.length!==l.length)saveAll(kept);
+  }
   window.REQUESTS={
-    open:()=>{ const r=ROOT(); if(!r)return; navApi=UI.nav(r,{onExit:()=>{try{window.goHome&&window.goHome();}catch(_){}}});
+    open:()=>{ const r=ROOT(); if(!r)return; purgeArchive(); navApi=UI.nav(r,{onExit:()=>{try{window.goHome&&window.goHome();}catch(_){}}});
       navApi.reset(hasIdentity()?menuScreen:identityScreen); },
     back:()=>navApi?navApi.back():false
   };

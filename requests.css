@@ -75,6 +75,29 @@
 .rq-item.rqp.mine .btn.ghost:active{background:rgba(255,255,255,.12)}
 .rq-item.rqp.mine .btn:focus-visible{outline-color:var(--ua-sky,#a6e3f5)}
 .rq-item.rqp.mine .rq-done{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+/* aircraft type caption under the tail figure (resolved from aircraft.json) */
+.rqp-type{font-size:12px;font-weight:400;line-height:1.3;color:var(--muted,#5c6470);margin-top:2px}
+.rq-item.rqp.mine .rqp-type{color:rgba(255,255,255,.78)}
+/* reply/feedback from the receiving department (decline reason etc.) */
+.rqp-fb{display:flex;flex-direction:column;gap:2px;margin-top:12px;padding:9px 12px;
+  background:var(--bg-inset,#efeae3);border-radius:var(--r-md,10px)}
+.rqp-fbtext{font-size:14px;font-weight:600;line-height:1.4;color:var(--ink,#0a1f44);overflow-wrap:anywhere}
+.rq-item.rqp.mine .rqp-fb{background:rgba(255,255,255,.10)}
+.rq-item.rqp.mine .rqp-fbtext{color:#fff}
+/* can't-complete flag + the inline reason picker */
+.rqp-declflag{margin-left:auto;display:inline-flex;align-items:center;min-height:44px;
+  font-size:14px;font-weight:600;line-height:1;letter-spacing:.02em;color:var(--ua-red,#c8102e)}
+.rqp-declpick{margin-top:14px;padding:12px;background:var(--bg,#f7f4f0);border-radius:var(--r-md,10px)}
+.rqp-declpick .rqp-lbl{display:block}
+.rqp-declrow{display:flex;gap:8px;align-items:center;margin-top:10px}
+.rqp-declrow input{flex:1;min-width:0;font:400 15px/1.3 var(--font);padding:9px 12px;
+  border:1px solid var(--field-border,#86868b);border-radius:var(--r-sm,10px)}
+.rq-item.rqp.mine .rqp-declpick{background:rgba(255,255,255,.10)}
+.rq-item.rqp.mine .rqp-declpick .ui-chip{background:transparent;border-color:rgba(255,255,255,.55);color:#fff}
+.rq-item.rqp.mine .rqp-declrow input{background:rgba(255,255,255,.9)}
+/* archive section */
+.rq-archrow{display:flex;align-items:baseline;gap:12px;margin:18px 2px 12px}
+.rq-archhint{font-size:12px;color:var(--muted,#5c6470)}
 /* DONE — recedes; declared AFTER .mine so it wins. Always returns to white. */
 .rq-item.rqp.done{background:var(--card,#fff);box-shadow:0 1px 3px rgba(0,24,64,.05)}
 .rq-item.rqp.done .rqp-path,
