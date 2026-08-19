@@ -156,3 +156,10 @@
 /* option edit mode: chips show an X and delete on tap */
 .rq-opt--del{border-style:dashed}
 .rq-editopt{border-style:dashed;color:var(--muted,#5c6470);border-color:var(--muted,#5c6470)}
+
+/* small text actions on cards (no chevron — these don't navigate) */
+.rq-linkbtn{background:none;border:0;padding:6px 4px;cursor:pointer;
+  font:600 14px/1 var(--font);letter-spacing:-.01em;color:var(--ua-blue,#0033a0);min-height:44px}
+.rq-linkbtn--red{color:var(--ua-red,#c8102e)}
+.rq-item.rqp.mine .rq-linkbtn{color:var(--ua-sky,#a6e3f5)}
+.rq-item.rqp.mine .rq-linkbtn--red{color:var(--bad-dark,#ff5a5c)}

@@ -87,12 +87,12 @@
       </div>`;
     UI.render(ROOT(),nav,{title:"Requests",sub:"Structured requests between departments — no more digging through chat threads.",body,mount:r=>{
       $("#rqSwitch",r).onclick=()=>{ if(confirm("Switch department or name? Requests you send are signed with your identity."))nav.go(identityScreen); };
-      $$(".ui-tile",r).forEach(b=>b.onclick=()=>nav.go(b.dataset.v==="send"?sendScreen:receiveScreen));
+      $$(".ui-tile",r).forEach(b=>b.onclick=()=>{if(b.dataset.v==="send"){editingId=null;draft=null;}nav.go(b.dataset.v==="send"?sendScreen:receiveScreen);});
     }});
   }
 
   /* ---- screen: send ---- */
-  let addingOpt=false, optColorSel=OPT_COLORS[0], optWord="", editingOpts=false;
+  let addingOpt=false, optColorSel=OPT_COLORS[0], optWord="", editingOpts=false, editingId=null;
   function sendScreen(nav){
     const others=DEPTS.filter(x=>x!==myDept());
     draft=draft||{to:others[0]||"Ramp",kind:"Need",types:[],loc:"",aircraft:"",note:""};
@@ -121,8 +121,8 @@
           <div class="rq-fleetscope">${UI.chips(["All","Mainline","Express"],d.fleetScope||"All",'data-set="fleetScope" data-v')}</div></div>
       </div>
       ${UI.field({label:"Note (optional)",id:"rqNote",value:d.note,placeholder:"Anything else…"})}
-      <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">Send request</button></div>`);
-    UI.render(ROOT(),nav,{title:"New request",body,mount:r=>{
+      <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">${editingId?"Save changes":"Send request"}</button></div>`);
+    UI.render(ROOT(),nav,{title:editingId?"Edit request":"New request",body,mount:r=>{
       $$(".ui-chip",r).forEach(b=>b.onclick=()=>{if(!b.dataset.set)return;syncInputs();
         if(b.dataset.set==="type"){
           const v=b.dataset.v;
@@ -170,6 +170,12 @@
         if(!d.to||d.to===myDept()){toast("Pick a department to send to");return;}
         if(!d.types.length){toast(d.kind==="Remove"?"Pick or add what needs removing":"Pick or add what you need");return;}
         if(!d.loc&&!d.aircraft){toast("Add a location or an aircraft");return;}
+        if(editingId){   // saving an edit: update the record in place, keep id/sender/time
+          const l=load();const it=l.find(q=>q.id===editingId);
+          if(it){it.to=d.to;it.kind=d.kind;it.type=d.types.join(" · ");it.types=d.types.slice();
+            it.loc=d.loc.trim();it.aircraft=d.aircraft.trim().toUpperCase();it.note=d.note.trim();it.edited=Date.now();}
+          saveAll(l);editingId=null;draft=null;toast("Request updated");nav.back();return;
+        }
         const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,kind:d.kind,type:d.types.join(" · "),types:d.types.slice(),
           loc:d.loc.trim(),aircraft:d.aircraft.trim().toUpperCase(),note:d.note.trim(),when:Date.now(),status:"open"};
         const l=load();l.unshift(req);saveAll(l);
@@ -201,11 +207,19 @@
       ${arch.length?`<div class="rq-archrow"><button class="link-more" id="rqArch">${showArchive?"Hide archive":"Archive ("+arch.length+")"}</button>
         <span class="rq-archhint">Completed requests clear after ${ARCHIVE_DAYS} days.</span></div>`:""}
       ${showArchive?arch.map(reqCard).join(""):""}`;
-    UI.render(ROOT(),nav,{title:"Inbox",sub:`For <b>${esc(myDept())}</b>, what you've requested, and the archive.`,body,mount:r=>{
+    UI.render(ROOT(),nav,{title:"Requests",sub:`For <b>${esc(myDept())}</b>, what you've requested, and the archive.`,body,mount:r=>{
       $("#rqArch",r)&&($("#rqArch").onclick=()=>{showArchive=!showArchive;nav.refresh();});
       $$(".rq-copy",r).forEach(b=>b.onclick=()=>copyReq(b.dataset.id,b));
       $$(".rq-done",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);
         if(it){it.status="done";it.fb={by:myName(),dept:myDept(),when:Date.now(),text:""};}saveAll(l);declining=null;nav.refresh();});
+      $$(".rq-edit",r).forEach(b=>b.onclick=()=>{const x=load().find(q=>q.id===b.dataset.id);if(!x)return;
+        editingId=x.id;
+        draft={to:x.to,kind:x.kind||"Need",types:(x.types&&x.types.slice())||(x.type?[x.type]:[]),
+          loc:x.loc||x.gate||"",aircraft:x.aircraft||"",note:x.note||""};
+        addingOpt=false;editingOpts=false;nav.go(sendScreen);});
+      $$(".rq-del",r).forEach(b=>b.onclick=()=>{
+        if(!confirm("Delete this request? It will be removed for everyone."))return;
+        saveAll(load().filter(q=>q.id!==b.dataset.id));declining=null;toast("Request deleted");nav.refresh();});
       $$(".rq-reopen",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);
         if(it){it.status="open";delete it.fb;}saveAll(l);toast("Request reopened");nav.refresh();});
       $$(".rq-cant",r).forEach(b=>b.onclick=()=>{declining=b.dataset.id;nav.refresh();});
@@ -229,6 +243,7 @@
     const loc=x.loc||x.gate||"";                      // old records stored the field as "gate"
     const type=acType(x.aircraft);
     const fb=x.fb||null;
+    const own=x.from===myDept();
     const actions = declining===x.id
       ? `<div class="rqp-declpick">
            <span class="rqp-lbl" style="margin-bottom:6px">Why can't it be completed?</span>
@@ -239,11 +254,14 @@
          </div>`
       : `<div class="rqp-acts">
            <button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>
-           ${closed?`<button class="link-more rq-reopen" data-id="${esc(x.id)}" style="font-size:14px">Reopen</button>`:""}
+           ${own&&!closed?`<button class="rq-linkbtn rq-edit" data-id="${esc(x.id)}">Edit</button>`:""}
+           ${own?`<button class="rq-linkbtn rq-linkbtn--red rq-del" data-id="${esc(x.id)}">Delete</button>`:""}
+           ${closed&&(own||mine)?`<button class="rq-linkbtn rq-reopen" data-id="${esc(x.id)}">Reopen</button>`:""}
            ${done?`<span class="rqp-doneflag" role="status">&#10003; Done${fb&&fb.by?" &middot; "+esc(fb.by):""}</span>`
              :decl?`<span class="rqp-declflag" role="status">&#10005; Can't complete</span>`
-             :`<button class="btn ghost sm rq-cant" data-id="${esc(x.id)}">Can't do</button>
-                <button class="btn sm rq-done" data-id="${esc(x.id)}" aria-label="Mark request done">Mark done</button>`}
+             :mine?`<button class="btn ghost sm rq-cant" data-id="${esc(x.id)}">Can't do</button>
+                <button class="btn sm rq-done" data-id="${esc(x.id)}" aria-label="Mark request done">Mark done</button>`
+             :own?`<button class="btn sm rq-done" data-id="${esc(x.id)}" aria-label="Mark request done">Mark done</button>`:""}
          </div>`;
     const br=brandOf(x.from);
     return `
@@ -252,7 +270,7 @@
         <span class="rqp-bandfrom">${esc(x.from)} is requesting</span>
         <span class="rqp-bandto">&rarr; ${esc(x.to)}</span>
         ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
-        <span class="rqp-bandwho">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
+        <span class="rqp-bandwho">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}${x.edited?" &middot; edited":""}</span>
       </div>
       <div class="rqp-need">${x.kind?esc(x.kind)+" ":(isActionType(x.type)?"":"Need ")}${esc(x.type)}${(!x.kind&&x.detail)?` &middot; ${esc(x.detail)}`:""}</div>
       ${(loc||x.aircraft)?`<div class="rqp-meta2">${loc?`<span class="rqp-loc">${esc(loc)}</span>`:""}${loc&&x.aircraft?`<span class="rqp-msep">&middot;</span>`:""}${x.aircraft?`<b>${esc(x.aircraft)}</b>${type?` <span class="rqp-mtype">${esc(type.replace(/^(Boeing|Airbus|Embraer|Bombardier)\s*/,""))}</span>`:""}`:""}</div>`:""}
