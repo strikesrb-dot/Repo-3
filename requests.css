@@ -86,9 +86,9 @@
 /* REMOVE requests read red — something is in the way */
 .rq-item.rqp .rqp-need--rem{color:var(--ua-red,#c8102e)}
 .rq-item.rqp.mine .rqp-need--rem{color:var(--bad-dark,#ff5a5c)}
-/* the Remove category chip is red in the form */
-#requestsRoot .ui-chip[data-v="Remove"][data-set="kind"]{border-color:var(--ua-red,#c8102e);color:var(--ua-red,#c8102e)}
-#requestsRoot .ui-chip.on[data-v="Remove"][data-set="kind"]{background:var(--ua-red,#c8102e);border-color:var(--ua-red,#c8102e);color:#fff}
+/* Remove-type chips are red in the form */
+#requestsRoot .ui-chip[data-set="type"][data-v^="Remove"]{border-color:var(--ua-red,#c8102e);color:var(--ua-red,#c8102e)}
+#requestsRoot .ui-chip.on[data-set="type"][data-v^="Remove"]{background:var(--ua-red,#c8102e);border-color:var(--ua-red,#c8102e);color:#fff}
 /* inbox section headers */
 .rq-sechead{font:600 12px/1.33 var(--font);letter-spacing:.08em;text-transform:uppercase;
   color:var(--muted,#5c6470);margin:20px 2px 10px;font-variant-numeric:tabular-nums}
