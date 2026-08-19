@@ -20,21 +20,71 @@
 .rq-two>div{flex:1;min-width:0}
 .rq-card input{width:100%;font-size:15px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px}
 
-.rq-item{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:11px;box-shadow:0 2px 8px rgba(20,40,70,.05)}
-.rq-item.mine{border-left-color:var(--navy);background:#f6fafd}
-.rq-item.done{opacity:.55}
-.rqi-top{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);flex-wrap:wrap}
-.rqi-from b{color:var(--ink)}
-.rqi-arrow{color:var(--muted)}
-.rqi-to{font-weight:700;color:var(--navy)}
-.rqi-time{margin-left:auto;font-size:12px}
-.rqi-need{font-size:22px;font-weight:900;color:var(--navy);margin:6px 0 2px;letter-spacing:.3px}
-.rqi-meta{font-size:15px;color:var(--ink)}
-.rqi-meta b{font-weight:800}
-.rqi-note{margin-top:5px;font-size:13px;color:#8a4a44}
-.rqi-acts{display:flex;align-items:center;gap:8px;margin-top:11px}
-.rqi-acts .btn{width:auto}
-.rqi-doneflag{font-size:13px;font-weight:800;color:var(--good,#1f9d4d)}
+/* ============ Priority Surface — incoming request card (tournament winner) ============
+   Mine = full --ua-navy dark card (the app's important-ground language).
+   Other = quiet white card. Done = receded flat white card — even if it was mine.
+   Contrast annotated; motion = color/shadow transitions + press scale only. */
+.rq-item.rqp{background:var(--card,#fff);border:0;border-radius:var(--r-lg,18px);
+  padding:16px 18px 14px;margin-bottom:12px;box-shadow:2px 4px 12px rgba(0,24,64,.08);
+  transition:background-color .2s ease,box-shadow .2s ease}
+/* row 1: route eyebrow · requester · time */
+.rqp-route{display:flex;align-items:center;gap:10px;min-height:24px;flex-wrap:wrap}
+.rqp-path{font-size:12px;font-weight:600;line-height:1.3;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted,#5c6470);min-width:0;overflow-wrap:anywhere}
+.rqp-arr{opacity:.6}
+.rqp-foryou{flex:none;font-size:12px;font-weight:600;line-height:1;text-transform:uppercase;letter-spacing:.08em;
+  background:var(--ua-sky,#a6e3f5);color:var(--ua-navy,#0a1f44);border-radius:var(--r-pill,980px);padding:5px 11px}
+.rqp-who{margin-left:auto;flex:none;font-size:14px;font-weight:400;line-height:1.3;
+  color:var(--muted,#5c6470);font-variant-numeric:tabular-nums}
+/* row 2: the need — what to bring, read first */
+.rqp-need{margin:12px 0 10px;font-size:24px;font-weight:600;line-height:1.1;text-transform:uppercase;
+  letter-spacing:.01em;color:var(--ua-blue,#0033a0);overflow-wrap:anywhere}
+/* row 3: GATE | AIRCRAFT — eyebrow over 28px tabular figure, fixed x-positions card to card */
+.rqp-where{display:flex;gap:0;align-items:stretch}
+.rqp-cell{flex:1;min-width:0;display:flex;flex-direction:column}
+.rqp-cell + .rqp-cell{border-left:1px solid var(--hairline,rgba(0,24,64,.14));padding-left:16px;margin-left:16px}
+.rqp-lbl{font-size:12px;font-weight:600;line-height:1.3;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted,#5c6470);margin-bottom:2px}
+.rqp-fig{font-size:28px;font-weight:600;line-height:1.1;color:var(--ink,#0a1f44);
+  font-variant-numeric:tabular-nums;letter-spacing:.01em;overflow-wrap:anywhere}
+/* optional note: inset strip, amber DOT only (never amber text) */
+.rqp-note{display:flex;align-items:flex-start;gap:9px;margin-top:12px;padding:9px 12px;
+  background:var(--bg,#f7f4f0);border-radius:var(--r-md,10px)}
+.rqp-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--ua-amber,#f5a623);margin-top:5px}
+.rqp-notetext{min-width:0;font-size:14px;font-weight:400;line-height:1.4;color:var(--ink,#0a1f44);overflow-wrap:anywhere}
+/* actions: ghost left, True Blue primary hugs the right, 44px floor */
+.rqp-acts{display:flex;align-items:center;gap:10px;margin-top:14px}
+.rqp-acts .btn{min-height:44px}
+.rqp-acts .rq-done{margin-left:auto}
+.rqp-acts .btn:active{transform:scale(.97)}
+.rqp-acts .btn:focus-visible{outline:2px solid var(--ua-blue,#0033a0);outline-offset:2px}
+.rq-copy.is-copied{color:var(--ua-green,#008009)}
+.rqp-doneflag{margin-left:auto;display:inline-flex;align-items:center;min-height:44px;
+  font-size:14px;font-weight:600;line-height:1;letter-spacing:.02em;color:var(--ua-green,#008009)}
+/* MINE — the priority surface: the only dark objects in the list */
+.rq-item.rqp.mine{background:var(--ua-navy,#0a1f44);box-shadow:2px 4px 12px rgba(0,24,64,.28)}
+.rq-item.rqp.mine .rqp-path{color:var(--ua-sky,#a6e3f5)}
+.rq-item.rqp.mine .rqp-who{color:rgba(255,255,255,.78)}
+.rq-item.rqp.mine .rqp-need{color:#fff}
+.rq-item.rqp.mine .rqp-lbl{color:rgba(255,255,255,.78)}
+.rq-item.rqp.mine .rqp-fig{color:#fff}
+.rq-item.rqp.mine .rqp-cell + .rqp-cell{border-left-color:rgba(255,255,255,.22)}
+.rq-item.rqp.mine .rqp-note{background:rgba(255,255,255,.10)}
+.rq-item.rqp.mine .rqp-notetext{color:#fff}
+.rq-item.rqp.mine .btn.ghost{border-color:rgba(255,255,255,.55);color:#fff;background:transparent}
+.rq-item.rqp.mine .btn.ghost:active{background:rgba(255,255,255,.12)}
+.rq-item.rqp.mine .btn:focus-visible{outline-color:var(--ua-sky,#a6e3f5)}
+.rq-item.rqp.mine .rq-done{box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+/* DONE — recedes; declared AFTER .mine so it wins. Always returns to white. */
+.rq-item.rqp.done{background:var(--card,#fff);box-shadow:0 1px 3px rgba(0,24,64,.05)}
+.rq-item.rqp.done .rqp-path,
+.rq-item.rqp.done .rqp-who,
+.rq-item.rqp.done .rqp-lbl{color:var(--muted,#5c6470)}
+.rq-item.rqp.done .rqp-need{font-size:17px;color:var(--muted,#5c6470);margin:8px 0 8px}
+.rq-item.rqp.done .rqp-fig{font-size:20px;color:var(--muted,#5c6470)}
+.rq-item.rqp.done .rqp-notetext{color:var(--muted,#5c6470)}
+.rq-item.rqp.done .rqp-dot{background:rgba(0,24,64,.22)}
+.rq-item.rqp.done .rqp-acts{margin-top:10px}
 .rq-empty{text-align:center;color:var(--muted);font-size:14px;line-height:1.5;padding:34px 10px}
 
 .rq-imgback{position:fixed;inset:0;z-index:9600;background:rgba(6,14,24,.86);display:flex;align-items:center;justify-content:center;padding:20px}

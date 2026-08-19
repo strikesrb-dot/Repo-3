@@ -97,18 +97,33 @@
     const list=load().slice().sort((a,b)=>b.when-a.when);
     const body=list.length?list.map(reqCard).join(""):'<p class="rq-empty">No requests yet.<br>Send one from the Send screen — or from another device/window — and it appears here live.</p>';
     UI.render(ROOT(),nav,{title:"Incoming requests",sub:`Addressed to <b>${esc(myDept())}</b> are highlighted.`,body,mount:r=>{
-      $$(".rq-copy",r).forEach(b=>b.onclick=()=>copyReq(b.dataset.id));
+      $$(".rq-copy",r).forEach(b=>b.onclick=()=>copyReq(b.dataset.id,b));
       $$(".rq-done",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);if(it)it.status="done";saveAll(l);nav.refresh();});
     }});
   }
+  /* "Priority Surface" card (design-tournament winner): requests addressed to YOUR department are
+     the only dark objects in the list — surface + FOR YOU pill + wording = three "mine" channels.
+     Gate/aircraft always render (— when empty) so the figures sit in the same x-position card to
+     card. Done cards return to white and recede — finished work leaves the priority surface. */
   function reqCard(x){
-    const mine=x.to===myDept();
-    return `<div class="rq-item ${mine?"mine":""} ${x.status==="done"?"done":""}">
-      <div class="rqi-top"><span class="rqi-from">From <b>${esc(x.from)}</b>${x.by?` · ${esc(x.by)}`:""}</span><span class="rqi-arrow">→</span><span class="rqi-to">${esc(x.to)}</span><span class="rqi-time">${timeAgo(x.when)}</span></div>
-      <div class="rqi-need">NEED ${esc(String(x.type).toUpperCase())}</div>
-      <div class="rqi-meta">${x.gate?`Gate <b>${esc(x.gate)}</b>`:""}${x.gate&&x.aircraft?" · ":""}${x.aircraft?`<b>${esc(x.aircraft)}</b>`:""}</div>
-      ${x.note?`<div class="rqi-note">${esc(x.note)}</div>`:""}
-      <div class="rqi-acts"><button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>${x.status==="done"?'<span class="rqi-doneflag">✓ Done</span>':`<button class="btn good sm rq-done" data-id="${esc(x.id)}">Mark done</button>`}</div>
+    const mine=x.to===myDept(), done=x.status==="done";
+    return `
+    <div class="rq-item rqp${mine?" mine":""}${done?" done":""}" data-id="${esc(x.id)}">
+      <div class="rqp-route">
+        <span class="rqp-path">${esc(x.from)} <span class="rqp-arr" aria-hidden="true">&rarr;</span> ${esc(x.to)}</span>
+        ${mine&&!done?`<span class="rqp-foryou">For you</span>`:""}
+        <span class="rqp-who">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
+      </div>
+      <div class="rqp-need">${esc(x.type)}</div>
+      <div class="rqp-where">
+        <span class="rqp-cell"><span class="rqp-lbl">Gate</span><span class="rqp-fig">${esc(x.gate||"—")}</span></span>
+        <span class="rqp-cell"><span class="rqp-lbl">Aircraft</span><span class="rqp-fig">${x.aircraft?esc(x.aircraft):"—"}</span></span>
+      </div>
+      ${x.note?`<div class="rqp-note"><span class="rqp-dot" aria-hidden="true"></span><span class="rqp-notetext">${esc(x.note)}</span></div>`:""}
+      <div class="rqp-acts">
+        <button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>
+        ${done?`<span class="rqp-doneflag" role="status">&#10003; Done</span>`:`<button class="btn sm rq-done" data-id="${esc(x.id)}" aria-label="Mark request done">Mark done</button>`}
+      </div>
     </div>`;
   }
   function timeAgo(t){const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<60)return "just now";const m=Math.round(s/60);if(m<60)return m+"m ago";const h=Math.round(m/60);if(h<24)return h+"h ago";return Math.round(h/24)+"d ago";}
@@ -116,28 +131,36 @@
   /* ---- copy a request as a small image for Teams ---- */
   function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
   function clip(ctx,t,maxW){t=String(t||"");if(ctx.measureText(t).width<=maxW)return t;while(t.length>1&&ctx.measureText(t+"…").width>maxW)t=t.slice(0,-1);return t+"…";}
+  // Teams PNG mirrors the card's read order: navy band (from/to), need in caps, then GATE and
+  // AIRCRAFT as big labeled figures — what lands in chat is recognizably the same object.
   function reqCanvas(x){
-    const W=540,H=286,S=2,FA="-apple-system,Segoe UI,Roboto,Arial,sans-serif";
+    const W=540,H=300,S=2,FA="-apple-system,Segoe UI,Roboto,Arial,sans-serif";
     const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
-    ctx.fillStyle="#eef2f6";ctx.fillRect(0,0,W,H);
-    ctx.fillStyle="#ffffff";roundRect(ctx,14,14,W-28,H-28,20);ctx.fill();
-    ctx.fillStyle="#0b3d63";roundRect(ctx,14,14,W-28,66,20);ctx.fill();ctx.fillRect(14,54,W-28,26);
-    ctx.fillStyle="#ffffff";ctx.textAlign="left";ctx.font="800 16px "+FA;ctx.fillText("REQUEST",36,52);
-    ctx.textAlign="right";ctx.font="700 15px "+FA;ctx.fillText("from "+x.from+(x.by?" · "+x.by:""),W-36,52);
-    ctx.textAlign="left";ctx.fillStyle="#0b3d63";ctx.font="900 42px "+FA;ctx.fillText(clip(ctx,"NEED "+String(x.type).toUpperCase(),W-72),36,142);
-    const ga=[x.gate?("Gate "+x.gate):"",x.aircraft].filter(Boolean).join("      ");
-    ctx.fillStyle="#12202c";ctx.font="800 24px "+FA;ctx.fillText(ga||"—",36,188);
-    ctx.fillStyle="#41505c";ctx.font="700 17px "+FA;ctx.fillText("To:  "+x.to,36,224);
-    if(x.note){ctx.fillStyle="#8a4a44";ctx.font="600 15px "+FA;ctx.fillText(clip(ctx,x.note,W-72),36,250);}
-    ctx.fillStyle="#9aa5b1";ctx.textAlign="right";ctx.font="600 12px "+FA;ctx.fillText(new Date(x.when).toLocaleString(),W-36,H-30);
+    ctx.fillStyle="#f7f4f0";ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="#ffffff";roundRect(ctx,14,14,W-28,H-28,18);ctx.fill();
+    ctx.fillStyle="#0a1f44";roundRect(ctx,14,14,W-28,66,18);ctx.fill();ctx.fillRect(14,54,W-28,26);
+    ctx.fillStyle="#ffffff";ctx.textAlign="left";ctx.font="600 16px "+FA;ctx.fillText("REQUEST · "+x.from.toUpperCase()+"  →  "+x.to.toUpperCase(),36,52);
+    ctx.textAlign="right";ctx.fillStyle="#a6e3f5";ctx.font="600 14px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
+    ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,"NEED "+String(x.type).toUpperCase(),W-72),36,136);
+    // labeled figures — GATE | AIRCRAFT
+    ctx.fillStyle="#5c6470";ctx.font="600 12px "+FA;
+    ctx.fillText("GATE",36,170);ctx.fillText("AIRCRAFT",216,170);
+    ctx.fillStyle="#0a1f44";ctx.font="600 30px "+FA;
+    ctx.fillText(clip(ctx,x.gate||"—",160),36,202);ctx.fillText(clip(ctx,x.aircraft||"—",260),216,202);
+    if(x.note){ctx.fillStyle="#5c6470";ctx.font="400 15px "+FA;ctx.fillText(clip(ctx,x.note,W-72),36,240);}
+    ctx.fillStyle="#8d8983";ctx.textAlign="right";ctx.font="400 12px "+FA;ctx.fillText(new Date(x.when).toLocaleString(),W-36,H-30);
     return c;
   }
-  function copyReq(id){
+  function copyReq(id,btn){
     const x=load().find(r=>r.id===id);if(!x)return;
     const canvas=reqCanvas(x);
     canvas.toBlob(blob=>{
       if(blob&&navigator.clipboard&&window.ClipboardItem){
-        navigator.clipboard.write([new ClipboardItem({"image/png":blob})]).then(()=>toast("Copied — paste into Teams")).catch(()=>showImage(canvas));
+        navigator.clipboard.write([new ClipboardItem({"image/png":blob})]).then(()=>{
+          if(btn){btn.classList.add("is-copied");btn.textContent="Copied ✓";
+            setTimeout(()=>{btn.classList.remove("is-copied");btn.textContent="Copy for Teams";},1200);}
+          else toast("Copied — paste into Teams");
+        }).catch(()=>showImage(canvas));
       }else showImage(canvas);
     },"image/png");
   }
