@@ -152,3 +152,7 @@
 .rq-item.rqp.mine .rqp-meta2{color:#fff}
 .rq-item.rqp.mine .rqp-msep,.rq-item.rqp.mine .rqp-mtype{color:rgba(255,255,255,.75)}
 .rq-item.rqp.done .rqp-meta2{color:var(--muted,#5c6470)}
+
+/* option edit mode: chips show an X and delete on tap */
+.rq-opt--del{border-style:dashed}
+.rq-editopt{border-style:dashed;color:var(--muted,#5c6470);border-color:var(--muted,#5c6470)}

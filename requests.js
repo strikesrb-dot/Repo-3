@@ -92,14 +92,15 @@
   }
 
   /* ---- screen: send ---- */
-  let addingOpt=false, optColorSel=OPT_COLORS[0], optWord="";
+  let addingOpt=false, optColorSel=OPT_COLORS[0], optWord="", editingOpts=false;
   function sendScreen(nav){
     const others=DEPTS.filter(x=>x!==myDept());
-    draft=draft||{to:others[0]||"Ramp",kind:"Need",type:"",loc:"",aircraft:"",note:""};
-    const d=draft;
+    draft=draft||{to:others[0]||"Ramp",kind:"Need",types:[],loc:"",aircraft:"",note:""};
+    const d=draft; d.types=d.types||[];
     const opts=loadOpts()[d.kind==="Remove"?"remove":"need"];
-    const optChips=opts.map(o=>`<button class="ui-chip rq-opt${d.type===o.v?" on":""}" data-set="type" data-v="${esc(o.v)}"
-      style="${d.type===o.v?`background:${esc(o.color)};border-color:${esc(o.color)};color:#fff`:`border-color:${esc(o.color)};color:${esc(o.color)}`}">${esc(o.v)}</button>`).join("");
+    const optChips=opts.map(o=>{const on=d.types.includes(o.v);
+      return `<button class="ui-chip rq-opt${on?" on":""}${editingOpts?" rq-opt--del":""}" data-set="type" data-v="${esc(o.v)}"
+      style="${on&&!editingOpts?`background:${esc(o.color)};border-color:${esc(o.color)};color:#fff`:`border-color:${esc(o.color)};color:${esc(o.color)}`}">${esc(o.v)}${editingOpts?" &#10005;":""}</button>`;}).join("");
     const addPanel=addingOpt?`<div class="rq-addpanel">
         <input id="optWord" placeholder="${d.kind==="Remove"?"e.g. Pushback, bag carts…":"e.g. Ground power, stairs…"}" autocomplete="off" value="${esc(optWord)}">
         <div class="rq-swatches">${OPT_COLORS.map(c=>`<button class="rq-swatch${optColorSel===c?" on":""}" data-c="${c}" style="background:${c}" aria-label="chip color"></button>`).join("")}</div>
@@ -111,7 +112,7 @@
       <span class="ui-flabel" style="margin-top:12px">Who can help</span>${UI.chips(others,d.to,'data-set="to" data-v')}
       <span class="ui-flabel" style="margin-top:12px">Request</span>${UI.chips(KINDS,d.kind,'data-set="kind" data-v')}
       <span class="ui-flabel" style="margin-top:12px">${d.kind==="Remove"?"What needs removing?":"What do you need?"}</span>
-      <div class="ui-chips">${optChips}<button class="ui-chip rq-addopt">+ Add</button></div>
+      <div class="ui-chips">${optChips}<button class="ui-chip rq-addopt">+ Add</button>${opts.length?`<button class="ui-chip rq-editopt">${editingOpts?"Done":"Edit"}</button>`:""}</div>
       ${addPanel}
       <div class="rq-two" style="margin-top:12px">
         <div>${UI.field({label:"Location",id:"rqLoc",value:d.loc,placeholder:"Gate 109 · Spot 12 · pad"})}</div>
@@ -122,9 +123,23 @@
       ${UI.field({label:"Note (optional)",id:"rqNote",value:d.note,placeholder:"Anything else…"})}
       <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">Send request</button></div>`);
     UI.render(ROOT(),nav,{title:"New request",body,mount:r=>{
-      $$(".ui-chip",r).forEach(b=>b.onclick=()=>{if(!b.dataset.set)return;syncInputs();d[b.dataset.set]=b.dataset.v;
-        if(b.dataset.set==="kind"){d.type="";addingOpt=false;optWord="";}
+      $$(".ui-chip",r).forEach(b=>b.onclick=()=>{if(!b.dataset.set)return;syncInputs();
+        if(b.dataset.set==="type"){
+          const v=b.dataset.v;
+          if(editingOpts){
+            if(confirm('Remove "'+v+'" from the list?')){
+              const o=loadOpts();const k=d.kind==="Remove"?"remove":"need";
+              o[k]=o[k].filter(x=>x.v!==v);saveOpts(o);
+              d.types=d.types.filter(x=>x!==v);
+              if(!o[k].length)editingOpts=false;
+            }
+          }else d.types=d.types.includes(v)?d.types.filter(x=>x!==v):[...d.types,v];   // multiselect
+        }else{
+          d[b.dataset.set]=b.dataset.v;
+          if(b.dataset.set==="kind"){d.types=[];addingOpt=false;editingOpts=false;optWord="";}
+        }
         nav.refresh();});
+      $(".rq-editopt",r)&&($(".rq-editopt",r).onclick=()=>{editingOpts=!editingOpts;addingOpt=false;nav.refresh();});
       // + Add option: word + chip color, saved per category (team-shared like everything else)
       $(".rq-addopt",r)&&($(".rq-addopt",r).onclick=()=>{syncInputs();addingOpt=true;nav.refresh();});
       $$(".rq-swatch",r).forEach(b=>b.onclick=()=>{const w=$("#optWord");if(w)optWord=w.value;optColorSel=b.dataset.c;nav.refresh();});
@@ -134,7 +149,7 @@
         if(!w){toast("Type the option name");return;}
         const o=loadOpts();const k=d.kind==="Remove"?"remove":"need";
         if(!o[k].some(x=>x.v.toLowerCase()===w.toLowerCase()))o[k].push({v:w,color:optColorSel});
-        saveOpts(o);d.type=w;addingOpt=false;optWord="";nav.refresh();
+        saveOpts(o);if(!d.types.includes(w))d.types.push(w);addingOpt=false;optWord="";nav.refresh();
       });
       // aircraft typeahead (UI.typeahead) — fleet suggestions, scoped Mainline/Express to narrow the search
       const acIn=$("#rqAc",r), acList=$("#rqAcList",r);
@@ -153,9 +168,9 @@
       $("#rqSend",r).onclick=()=>{
         syncInputs();
         if(!d.to||d.to===myDept()){toast("Pick a department to send to");return;}
-        if(!d.type){toast(d.kind==="Remove"?"Pick or add what needs removing":"Pick or add what you need");return;}
+        if(!d.types.length){toast(d.kind==="Remove"?"Pick or add what needs removing":"Pick or add what you need");return;}
         if(!d.loc&&!d.aircraft){toast("Add a location or an aircraft");return;}
-        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,kind:d.kind,type:d.type,
+        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,kind:d.kind,type:d.types.join(" · "),types:d.types.slice(),
           loc:d.loc.trim(),aircraft:d.aircraft.trim().toUpperCase(),note:d.note.trim(),when:Date.now(),status:"open"};
         const l=load();l.unshift(req);saveAll(l);
         draft=null;toast("Request sent to "+req.to);
