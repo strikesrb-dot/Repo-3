@@ -1,7 +1,7 @@
 /* ELT service worker — network-first with offline cache fallback */
-const CACHE = 'elt-v158';
+const CACHE = 'elt-v159';
 const CORE = ['./', './index.html', './manifest.webmanifest', './aircraft.json', './equipment.json',
-              './store.js', './staffing.js', './staffing.css', './requests.js', './requests.css',
+              './store.js', './staffing.js', './staffing.css', './ui.js', './ui.css', './requests.js', './requests.css',
               './vendor/pdf.min.mjs', './vendor/pdf.worker.min.mjs',
               './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 

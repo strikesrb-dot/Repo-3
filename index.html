@@ -14,6 +14,7 @@
 <!-- No web-font CDN: sending each cold start to Google (IP/UA/timing) is a privacy leak and fails
      offline. Every font-family below carries a full system fallback stack, so the UI is unchanged. -->
 <link rel="stylesheet" href="staffing.css" />
+<link rel="stylesheet" href="ui.css" />
 <link rel="stylesheet" href="requests.css" />
 <style>
   :root{--navy:#0b3d63;--navy-d:#08304e;--accent:#f5a623;--accent-d:#d98c0a;--melon:#fc4c4e;--bg:#f4f6f8;--card:#fff;
@@ -1295,7 +1296,7 @@ function renderSupCodes(){
 }
 $("#addBtn").addEventListener("click",()=>requireUnlock(()=>openEdit(null)));
 function updateBackBtn(){$("#homeBtn").hidden=(curTab==="home");updateFloatBack();}
-function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&curTab!=="home"&&curTab!=="staffing"&&$("#wizFoot").hidden);}
+function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&curTab!=="home"&&curTab!=="staffing"&&curTab!=="requests"&&$("#wizFoot").hidden);}
 // leaving a half-built manpower board should warn (it auto-saves as a draft) and reset it so you return to the start
 function goHome(){
   if(curTab==="staffing"&&window.STAFF&&window.STAFF.inProgress&&window.STAFF.inProgress()){
@@ -3086,6 +3087,7 @@ if("serviceWorker" in navigator){
 }
 </script>
 <script src="staffing.js"></script>
+<script src="ui.js"></script>
 <script src="requests.js"></script>
 </body>
 </html>
