@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="staffing.css" />
 <link rel="stylesheet" href="ui.css" />
 <link rel="stylesheet" href="requests.css" />
+<link rel="stylesheet" href="gse.css" />
 <style>
   /* ===== EWR MT HUB design tokens — Apple-structured, United-skinned (see CLAUDE.md) ===== */
   :root{
@@ -79,6 +80,7 @@
   .home-tile:active{transform:scale(.98);transition-duration:var(--dur-tap)}
   @media (hover:hover) and (pointer:fine){.home-tile:hover{transform:scale(1.01)}}
   .home-tile[data-home="requests"]{background:var(--ua-action)}
+  .home-tile[data-home="gse"]{background:var(--ua-sky);color:var(--ink)}
   .home-tile .ht-ic{position:absolute;top:18px;left:20px;opacity:.9}
   .home-tile .ht-ic svg{width:32px;height:32px}
   .home-tile .ht-t{font:600 24px/1.125 var(--font);letter-spacing:0}
@@ -446,15 +448,6 @@
   .hist-top{font-size:14px;color:var(--ink)}
   .hist-meta{margin-top:2px;font-size:12px;color:var(--muted)}
   .hist-reason{margin-top:3px;font-size:12.5px;color:#b3251d;font-weight:600}
-  .gse-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
-  .gse-cat{border:1.5px solid var(--line);border-radius:14px;padding:15px 13px;background:#fff;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px}
-  .gse-cat:active{transform:scale(.98)}
-  .gse-cat.has{border-color:#e7a59f;background:#fdeceb}
-  .gse-cat .gc-n{font-weight:800;color:var(--ink);font-size:15px}
-  .gse-cat .gc-c{font-size:13px;font-weight:700;color:var(--good)}
-  .gse-cat.has .gc-c{color:#b3251d}
-  .gse-cat .gc-c b{font-size:16px}
-  .gse-cat .gc-tot{font-size:11.5px;color:var(--muted)}
   .gse-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}
   .gse-row{border:1px solid var(--line);border-left:4px solid var(--danger);border-radius:12px;padding:11px 13px;background:#fff;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .gse-main{flex:1;min-width:0}
@@ -608,9 +601,9 @@
   <!-- HUB -->
   <section id="view-home" class="view active">
     <div class="home-grid">
-      <button class="home-tile" data-home="hub"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span><span class="ht-t">Move Team Hub</span><span class="ht-s">Staffing · equipment · GSE</span></button>
+      <button class="home-tile" data-home="hub"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span><span class="ht-t">Move Team Hub</span><span class="ht-s">Staffing · equipment · reports</span></button>
       <button class="home-tile" data-home="requests"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7Z"/></svg></span><span class="ht-t">Requests</span><span class="ht-s">Send &amp; receive between departments</span></button>
-      <button class="home-tile soon" data-home="soon"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="ht-t">Coming soon</span><span class="ht-s">Tile 3</span></button>
+      <button class="home-tile" data-home="gse"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span class="ht-t">GSE</span><span class="ht-s">Out of service · confirm &amp; reply</span></button>
       <button class="home-tile soon" data-home="soon"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="ht-t">Coming soon</span><span class="ht-s">Tile 4</span></button>
     </div>
   </section>
@@ -628,7 +621,6 @@
     <div class="hubgrid">
       <button class="hubtile" data-go="inventory"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg></span>Do Inventory</button>
       <button class="hubtile" data-go="secure"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>Aircraft Secure Log</button>
-      <button class="hubtile" data-go="gse"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>GSE Out of Service</button>
     </div>
     <div class="hubsec">Lookups &amp; Lists</div>
     <div class="hubgrid">
@@ -1319,7 +1311,7 @@ function goTab(t){showTab(t);
   if(t==="inventory"){inv={stage:"loc",loc:null,covered:[],by:(data.invLastBy||"")};invSel=new Set();invOos=new Set();invSpot=new Map();invNose=new Map();invReason=new Map();renderInventory();}
   if(t==="movement"){renderMovement();}
   if(t==="eos"){renderEos();}
-  if(t==="gse"){gseCat=null;renderGse();}
+  if(t==="gse"){window.GSE&&window.GSE.open();}
   if(t==="staffing"){window.STAFF&&window.STAFF.open();}
   if(t==="requests"){window.REQUESTS&&window.REQUESTS.open();}
   if(t==="briefing"){window.BRIEF&&window.BRIEF.open();}
@@ -1382,7 +1374,7 @@ function goBack(){
   if(curTab==="inventory")return invStepBack();
   if(curTab==="park")return parkBack();
   if(curTab==="secure")return secBack();
-  if(curTab==="gse"&&gseCat){gseCat=null;renderGse();return;}
+  if(curTab==="gse"){ if(window.GSE&&window.GSE.back&&window.GSE.back())return; return showTab("home"); }
   if(curTab==="staffing")return goHome();
   if(curTab==="requests"){ if(window.REQUESTS&&window.REQUESTS.back&&window.REQUESTS.back())return; return showTab("home"); }
   if(curTab==="hub")return showTab("home");
@@ -1527,7 +1519,7 @@ $("#moveWipe").addEventListener("click",async()=>{
   data.movements=[];save();renderMovement();toast("Movement log wiped");});
 /* ---- configurable app settings ---- */
 const HUB_TILES=[["staffing","Manpower / Staffing"],["briefing","Briefing & Focus"],["eos","End of Shift Report"],
-  ["inventory","Do Inventory"],["secure","Aircraft Secure Log"],["gse","GSE Out of Service"],["aircraft","Aircraft Lookup"],["park","Stop Mark Lookup"],
+  ["inventory","Do Inventory"],["secure","Aircraft Secure Log"],["aircraft","Aircraft Lookup"],["park","Stop Mark Lookup"],
   ["equipment","Equipment List"],["movement","Equipment Movement"]];
 function renderMoveTrack(){
   const S=data.settings;
@@ -2265,73 +2257,15 @@ function gseDownloadText(){const list=gseList();const L=["GSE OUT OF SERVICE —
   if(!list.length)L.push("(none out of service)");
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download=`GSE-OOS-${todayISO()}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
-let gseCat=null;  // null = category hub; otherwise the equipment type being viewed
 function gseCats(){ // every equipment category + its counts
   const oos={},tot={};
   data.equipment.forEach(e=>{const t=e.type||"(uncategorized)";tot[t]=(tot[t]||0)+1;if(e.oos)oos[t]=(oos[t]||0)+1;});
   const names=[...new Set([...(data.types||[]),...Object.keys(tot)])];
   return names.map(t=>({type:t,oos:oos[t]||0,total:tot[t]||0})).filter(c=>c.total>0).sort((a,b)=>(b.oos-a.oos)||a.type.localeCompare(b.type));
 }
-function renderGse(){const r=$("#gseRoot");if(!r)return;
-  if(gseCat!=null)return renderGseCat(r);
-  const cats=gseCats(), totalOos=data.equipment.filter(e=>e.oos).length;
-  const tiles=cats.map(c=>`<button class="gse-cat ${c.oos?'has':''}" data-cat="${esc(c.type)}">
-      <span class="gc-n">${esc(c.type)}</span>
-      <span class="gc-c">${c.oos?`<b>${c.oos}</b> out of service`:'all in service'}</span>
-      <span class="gc-tot">${c.total} unit${c.total===1?"":"s"}</span></button>`).join("")
-    ||`<p class="hint" style="padding:20px;text-align:center">No equipment yet.</p>`;
-  r.innerHTML=`<div class="card pad">
-    <div class="pool-head"><h2 class="staff-h" style="margin:0">GSE — Out of Service</h2><span class="cnt">${totalOos}</span></div>
-    <p class="hint" style="margin:2px 0 10px">Pick a category to see what's out of service and why. Tap a unit's category to drill in.</p>
-    <div class="gse-cats">${tiles}</div>
-    ${totalOos?`<div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="gseTxt">↓ Text list (all)</button></div>`:""}</div>`;
-  $$("#gseRoot .gse-cat").forEach(b=>b.onclick=()=>{gseCat=b.dataset.cat;renderGse();});
-  $("#gseTxt")?.addEventListener("click",gseDownloadText);
-}
-function renderGseCat(r){
-  const cat=gseCat;
-  const inCat=e=>(e.type||"(uncategorized)")===cat;
-  const list=gseList().filter(inCat);
-  const rows=list.map(e=>{const ev=eqHistory(e).find(m=>m.oos);const ack=e.oosAck;
-    const photo=e.oosPhoto?(function(){try{return Store.getRaw("elt.oos.photo."+e.id,null);}catch(_){return null;}})():null;
-    const status=ack
-      ? `<div class="gse-status ack">✓ Confirmed by <b>${esc(nm(ack.by))}</b>${ack.reply?` — “${esc(ack.reply)}”`:""}</div>`
-      : `<div class="gse-status wait">Awaiting GSE</div>`;
-    const thread=`<div class="gse-thread">
-      <div class="gse-reply-chips">${GSE_REPLIES.map(rp=>`<button class="gse-rchip" data-id="${esc(e.id)}" data-r="${esc(rp)}">${esc(rp)}</button>`).join("")}</div>
-      <div class="gse-reply-row"><input class="gse-reply-in" data-id="${esc(e.id)}" placeholder="Reply to the super…" autocomplete="off" value="${esc(ack&&ack.reply||"")}" />
-        <button class="btn good sm gse-confirm" data-id="${esc(e.id)}">${ack?"Update":"✓ Confirm"}</button></div></div>`;
-    return `<li class="gse-row" data-id="${esc(e.id)}"><div class="gse-main">
-      <div class="gse-tag">${esc(e.tag||"(no tag)")}</div>
-      <div class="gse-reason">⊘ ${esc(e.oosReason||"no reason recorded — tap Reason")}</div>
-      <div class="gse-meta">${e.location?esc(e.location):"no location"}${ev?` · since ${esc(fmtDate(ev.date))}${ev.by?" · "+esc(nm(ev.by)):""}`:""}</div>
-      ${photo?`<img class="gse-photo" src="${photo}" alt="OOS photo" data-id="${esc(e.id)}" />`:""}
-      ${status}${thread}</div>
-      <div class="gse-acts"><button class="btn ghost sm gse-photo-btn" data-id="${esc(e.id)}">Photo</button><button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn good sm gse-back" data-id="${esc(e.id)}">✓ In service</button></div></li>`;}).join("")
-    ||`<p class="hint" style="text-align:center;padding:22px">Nothing in ${esc(cat)} is out of service.</p>`;
-  r.innerHTML=`<div class="card pad">
-    <button class="btn ghost sm" id="gseHome" style="width:auto;margin-bottom:8px">‹ All categories</button>
-    <div class="pool-head"><h2 class="staff-h" style="margin:0">${esc(cat)} — Out of Service</h2><span class="cnt">${list.length}</span></div>
-    <p class="hint" style="margin:2px 0 10px">Add a ${esc(cat)} unit to out-of-service, or mark units during Do Inventory.</p>
-    <label class="inv-by"><span>Mark a ${esc(cat)} unit out of service</span><input id="gseAdd" placeholder="Type a tag…" autocomplete="off" list="gseTags" /></label>
-    <datalist id="gseTags">${data.equipment.filter(e=>!e.oos&&inCat(e)).map(e=>`<option value="${esc(e.tag)}">`).join("")}</datalist>
-    <ul class="gse-list">${rows}</ul></div>`;
-  $("#gseHome").onclick=()=>{gseCat=null;renderGse();};
-  $("#gseAdd").addEventListener("change",ev=>{const tag=ev.target.value.trim().toUpperCase();if(!tag)return;ev.target.value="";
-    const eq=data.equipment.find(x=>(x.tag||"").toUpperCase()===tag);
-    if(!eq){toast("No unit with that tag");return;}
-    if(eq.oos){toast(eq.tag+" is already out of service");return;}
-    pickReason(eq.tag,"",v=>setEqOos(eq.id,true,v));});
-  $$("#gseRoot .gse-edit").forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
-    pickReason(eq.tag,eq.oosReason||"",v=>{eq.oosReason=v;e_when(eq);save();renderGse();});});
-  $$("#gseRoot .gse-back").forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
-    if(confirm(`Return ${eq.tag||"this unit"} to service?`))setEqOos(eq.id,false,"");});
-  // GSE acknowledge / reply
-  $$("#gseRoot .gse-rchip").forEach(b=>b.onclick=()=>gseAck(b.dataset.id,b.dataset.r));   // one-tap confirm + canned reply
-  $$("#gseRoot .gse-confirm").forEach(b=>b.onclick=()=>{const inp=b.closest(".gse-thread").querySelector(".gse-reply-in");gseAck(b.dataset.id,inp?inp.value:"");});
-  $$("#gseRoot .gse-photo-btn").forEach(b=>b.onclick=()=>capturePhoto(b.dataset.id));
-  $$("#gseRoot .gse-photo").forEach(img=>img.onclick=()=>enlargePhoto(img.getAttribute("src")));
-}
+// GSE screens live in gse.js (UI-kit module). This shim keeps every legacy call site
+// (setEqOos, gseAck, capturePhoto, the storage mirror) refreshing the module's current screen.
+function renderGse(){ if(window.GSE&&curTab==="gse")window.GSE.refresh(); }
 // Photo capture for an OOS unit: native camera on mobile / file picker on desktop, downscaled hard
 // so it never bloats storage. Bytes go in a sibling key (elt.oos.photo.<id>); the record only holds
 // a boolean flag, so elt.data.v1 stays small and the sibling key fires its own cross-window event.
@@ -3147,5 +3081,6 @@ if("serviceWorker" in navigator){
 <script src="staffing.js"></script>
 <script src="ui.js"></script>
 <script src="requests.js"></script>
+<script src="gse.js"></script>
 </body>
 </html>

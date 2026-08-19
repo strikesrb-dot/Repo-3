@@ -125,6 +125,6 @@ body>header :focus-visible{outline-color:var(--focus-dark)}
   transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
 
 /* app-wide press feedback: snap in (transition:none on press), ease out on release */
-.hubtile,.gse-cat,.iconbtn,.chip,.home-tile{transition:transform var(--dur-1) var(--ease-out),
+.hubtile,.iconbtn,.chip,.home-tile{transition:transform var(--dur-1) var(--ease-out),
   background var(--dur-tap) linear,color var(--dur-tap) linear}
-.hubtile:active,.gse-cat:active,.iconbtn:active,.chip:active,.home-tile:active{transition:none}
+.hubtile:active,.iconbtn:active,.chip:active,.home-tile:active{transition:none}

@@ -1,0 +1,6 @@
+/* gse.css — GSE Out of Service module (gse.js). Screen anatomy comes from the UI kit;
+   this file only holds the module's few local layout rules. */
+.gsem-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.gsem-bad{color:var(--ua-red);font-weight:600}
+/* the add-a-unit card must not clip its typeahead dropdown (ui-card is overflow:hidden) */
+.gsem-addcard{overflow:visible}

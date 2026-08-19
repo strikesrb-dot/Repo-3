@@ -14,6 +14,7 @@ button, everything discombobulated."
 | `staffing.js` / `staffing.css` | Manpower / staffing feature (its own module, loaded by the shell). |
 | `ui.js` / `ui.css` | **The shared UI kit** — the design + function language below. Everything new builds on this. |
 | `requests.js` / `requests.css` | Cross-department Send/Receive requests. The **reference implementation** of the UI kit. |
+| `gse.js` / `gse.css` | GSE Out of Service (home-screen tile). Owns the screens only — the OOS data + actions (`setEqOos`, `gseAck`, `capturePhoto`, …) still live in `index.html`, whose `renderGse()` is now a shim that calls `GSE.refresh()`. |
 | `sw.js` | Service worker. Bump `CACHE` (`elt-vNNN`) on every deploy and add any new file to `CORE`. |
 
 ## Design language (`ui.js` / `ui.css`)
@@ -81,7 +82,8 @@ cannot ship without one.
 
 Goal: shrink `index.html` by **extracting one subsystem at a time in place** (the way `staffing.js`,
 `requests.js`, and `ui.js` already are) — NOT a parallel rewrite. Each extracted feature adopts the
-UI kit. Order after the current pitch work: equipment → inventory → GSE → movement → settings.
+UI kit. GSE is done (screens in `gse.js`; its data layer stays in the shell for now). Order for the
+rest: equipment → inventory → movement → settings.
 
 ## Simplicity rules (owner's standing direction — do not violate)
 
