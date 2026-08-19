@@ -210,7 +210,7 @@
         ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
         <span class="rqp-bandwho">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
       </div>
-      <div class="rqp-need${(isRemoveType(x.type)||x.kind==="Remove")?" rqp-need--rem":""}">${x.kind?esc(x.kind)+" ":(isActionType(x.type)?"":"Need ")}${esc(x.type)}${(!x.kind&&x.detail)?` &middot; ${esc(x.detail)}`:""}</div>
+      <div class="rqp-need">${x.kind?esc(x.kind)+" ":(isActionType(x.type)?"":"Need ")}${esc(x.type)}${(!x.kind&&x.detail)?` &middot; ${esc(x.detail)}`:""}</div>
       <div class="rqp-where">
         <span class="rqp-cell"><span class="rqp-lbl">Location</span><span class="rqp-fig">${esc(loc||"—")}</span></span>
         <span class="rqp-cell"><span class="rqp-lbl">Aircraft</span><span class="rqp-fig">${x.aircraft?esc(x.aircraft):"—"}</span>
@@ -239,9 +239,8 @@
     ctx.fillStyle=br.fg;ctx.textAlign="left";ctx.font="600 15px "+FA;
     ctx.fillText(clip(ctx,x.from.toUpperCase()+" IS REQUESTING  →  "+x.to.toUpperCase(),W-170),36,52);
     ctx.textAlign="right";ctx.font="600 13px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
-    const isRem=isRemoveType(x.type)||x.kind==="Remove";
     const headTxt=(x.kind?String(x.kind).toUpperCase()+" ":(isActionType(x.type)?"":"NEED "))+String(x.type).toUpperCase()+((!x.kind&&x.detail)?" · "+String(x.detail).toUpperCase():"");
-    ctx.textAlign="left";ctx.fillStyle=isRem?"#c8102e":"#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,headTxt,W-72),36,136);
+    ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,headTxt,W-72),36,136);
     // labeled figures — LOCATION | AIRCRAFT (+ type from the fleet database)
     ctx.fillStyle="#5c6470";ctx.font="600 12px "+FA;
     ctx.fillText("LOCATION",36,170);ctx.fillText("AIRCRAFT",256,170);
