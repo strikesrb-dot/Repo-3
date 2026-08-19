@@ -9,6 +9,10 @@
   const $$=(s,r)=>[...(r||document).querySelectorAll(s)];
   const ROOT=()=>$("#gseRoot");
   let navApi=null;
+  // attachment ownership: only whoever attached the photo (oosPhotoBy, stamped from oosWho())
+  // gets Replace/Remove — everyone else (e.g. GSE confirming) just sees it. Legacy photos with
+  // no stamp stay editable so nothing gets stranded.
+  const photoMine=e=>String(e.oosPhotoBy||"")===String((window.oosWho&&oosWho())||"");
 
   /* ---- screen: category list (root) ---- */
   function homeScreen(nav){
@@ -54,13 +58,17 @@
           <div class="gse-tag">${esc(e.tag||"(no tag)")}</div>
           <div class="gse-reason">&#8856; ${esc(e.oosReason||"no reason recorded — tap Reason")}</div>
           <div class="gse-meta">${e.location?esc(e.location):"no location"}${ev?` &middot; since ${esc(fmtDate(ev.date))}${ev.by?" &middot; "+esc(nm(ev.by)):""}`:""}</div>
-          ${photo?`<img class="gse-photo" src="${photo}" alt="OOS photo" data-id="${esc(e.id)}" />`:""}
+          ${photo?`<img class="gse-photo" src="${photo}" alt="OOS photo" data-id="${esc(e.id)}" />
+            <div class="gsem-photoacts">${photoMine(e)
+              ?`<button class="gsem-plink gse-photoedit" data-id="${esc(e.id)}">Replace photo</button>
+                <button class="gsem-plink gsem-plink--red gse-photodel" data-id="${esc(e.id)}">Remove photo</button>`
+              :`<span class="gsem-pby">Photo${e.oosPhotoBy?" by "+esc(nm(String(e.oosPhotoBy).split(" · ")[0])):""}</span>`}</div>`:""}
           ${status}
           <div class="gse-thread">
             <div class="gse-reply-chips">${GSE_REPLIES.map(rp=>`<button class="gse-rchip" data-id="${esc(e.id)}" data-r="${esc(rp)}">${esc(rp)}</button>`).join("")}</div>
             <div class="gse-reply-row"><input class="gse-reply-in" data-id="${esc(e.id)}" placeholder="Reply to the super…" autocomplete="off" value="${esc(ack&&ack.reply||"")}" />
               <button class="btn green sm gse-confirm" data-id="${esc(e.id)}">${ack?"Update":"Confirm"}</button></div></div></div>
-          <div class="gse-acts"><button class="btn ghost sm gse-photo-btn" data-id="${esc(e.id)}">Photo</button><button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn green sm gse-back2" data-id="${esc(e.id)}">In service</button></div></li>`;}).join("")
+          <div class="gse-acts">${e.oosPhoto?"":`<button class="btn ghost sm gse-photo-btn" data-id="${esc(e.id)}">Photo</button>`}<button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn green sm gse-back2" data-id="${esc(e.id)}">In service</button></div></li>`;}).join("")
         ||`<p class="rq-empty">Nothing in ${esc(cat)} is out of service.</p>`;
       const body=`
         <div class="ui-card gsem-addcard" style="margin-bottom:14px">
@@ -86,6 +94,11 @@
         $$(".gse-rchip",r).forEach(b=>b.onclick=()=>gseAck(b.dataset.id,b.dataset.r));
         $$(".gse-confirm",r).forEach(b=>b.onclick=()=>{const i=b.closest(".gse-thread").querySelector(".gse-reply-in");gseAck(b.dataset.id,i?i.value:"");});
         $$(".gse-photo-btn",r).forEach(b=>b.onclick=()=>capturePhoto(b.dataset.id));
+        $$(".gse-photoedit",r).forEach(b=>b.onclick=()=>capturePhoto(b.dataset.id));
+        $$(".gse-photodel",r).forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
+          if(!confirm("Remove this photo?"))return;
+          try{Store.del("elt.oos.photo."+eq.id);}catch(_){}
+          delete eq.oosPhoto;delete eq.oosPhotoBy;e_when(eq);save();nav.refresh();});
         $$(".gse-photo",r).forEach(img=>img.onclick=()=>enlargePhoto(img.getAttribute("src")));
         $$(".gse-edit",r).forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
           pickReason(eq.tag,eq.oosReason||"",v=>{eq.oosReason=v;e_when(eq);save();nav.refresh();});});

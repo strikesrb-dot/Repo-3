@@ -4,3 +4,8 @@
 .gsem-bad{color:var(--ua-red);font-weight:600}
 /* the add-a-unit card must not clip its typeahead dropdown (ui-card is overflow:hidden) */
 .gsem-addcard{overflow:visible}
+/* owner-only photo controls under the OOS photo; non-owners get a quiet caption */
+.gsem-photoacts{display:flex;align-items:center;gap:14px;margin-top:4px}
+.gsem-plink{background:none;border:0;padding:6px 0;cursor:pointer;font:600 13px/1 var(--font);color:var(--ua-blue)}
+.gsem-plink--red{color:var(--ua-red)}
+.gsem-pby{font:400 12px/1.3 var(--font);color:var(--muted)}

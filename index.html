@@ -2243,6 +2243,13 @@ function openOosReason(pill,id,after){const e=data.equipment.find(x=>x.id===id);
 /* ---- GSE: out-of-service registry ---- */
 function gseList(){return data.equipment.filter(e=>e.oos).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"")||(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));}
 function gseWho(){return (window.STAFF&&window.STAFF.who&&window.STAFF.who())||"";}
+// who is acting on this device — the requests "working as" identity first, staffing pick as fallback.
+// Stamped onto attachments (e.g. oosPhotoBy) so only the sender can replace/remove their own photo.
+function oosWho(){
+  try{const n=Store.getJSON("elt.requests.name",""),d=Store.getJSON("elt.requests.dept","");
+    const s=[n,d].filter(Boolean).join(" · ");if(s)return s;}catch(_){}
+  return gseWho()||"";
+}
 function setEqOos(id,on,reason,by){const e=data.equipment.find(x=>x.id===id);if(!e)return;
   const fromOos=!!e.oos;e.oos=!!on;e.oosReason=on?(reason||e.oosReason||""):"";e.updated=todayISO();e.when=Date.now();
   if(!on){ delete e.oosAck; delete e.oosPhoto; try{Store.del("elt.oos.photo."+id);}catch(_){} }   // return to service clears the GSE thread + photo
@@ -2281,7 +2288,7 @@ function capturePhoto(id){
       if(url.length>200000){toast("Photo too large — try a simpler shot");return;}
       // write the bytes FIRST; only flag the record once the persist actually stuck
       if(!Store.setRaw("elt.oos.photo."+id,url)){toast("Storage full — photo not saved");return;}
-      const e=data.equipment.find(x=>x.id===id);if(e){e.oosPhoto=true;e_when(e);save();}
+      const e=data.equipment.find(x=>x.id===id);if(e){e.oosPhoto=true;e.oosPhotoBy=oosWho();e_when(e);save();}
       renderGse();toast("Photo attached");
     };img.src=fr.result;};
     fr.readAsDataURL(f);};

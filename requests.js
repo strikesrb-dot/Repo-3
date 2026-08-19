@@ -51,7 +51,7 @@
   // heartbeat on the home Requests tile once anything for MY department is on its 3rd+ ask
   function updateAttn(){
     const t=document.querySelector('.home-tile[data-home="requests"]');if(!t)return;
-    const hot=!!myDept()&&load().some(x=>x.status==="open"&&x.to===myDept()&&(x.asks||1)>=3);
+    const hot=!!myDept()&&load().some(x=>x.status==="open"&&(x.to===myDept()||(x.to==="All"&&x.from!==myDept()))&&(x.asks||1)>=3);
     t.classList.toggle("rq-attn",hot);
   }
   const myDept=()=>Store.getJSON(MYDEPT_KEY,"");
@@ -101,8 +101,9 @@
   /* ---- screen: send ---- */
   let addingOpt=false, optColorSel=OPT_COLORS[0], optWord="", editingOpts=false, editingId=null;
   function sendScreen(nav){
-    const others=DEPTS.filter(x=>x!==myDept());
-    draft=draft||{to:others[0]||"Ramp",kind:"Need",types:[],loc:"",aircraft:"",note:""};
+    // "All" broadcasts the request to every department (a special card on the receive side)
+    const others=[...DEPTS.filter(x=>x!==myDept()).map(v=>({v,label:v})),{v:"All",label:"All departments"}];
+    draft=draft||{to:(others[0]&&others[0].v)||"Ramp",kind:"Need",types:[],loc:"",aircraft:"",note:""};
     const d=draft; d.types=d.types||[];
     const opts=loadOpts()[d.kind==="Remove"?"remove":"need"];
     const optChips=opts.map(o=>{const on=d.types.includes(o.v);
@@ -208,9 +209,9 @@
   function receiveScreen(nav){
     const all=load().slice().sort((a,b)=>b.when-a.when);
     const open=all.filter(x=>x.status==="open"), arch=all.filter(x=>x.status!=="open");
-    const forMe=open.filter(x=>x.to===myDept());
+    const forMe=open.filter(x=>x.to===myDept()||(x.to==="All"&&x.from!==myDept()));
     const sentByMe=open.filter(x=>x.from===myDept());
-    const elsewhere=open.filter(x=>x.to!==myDept()&&x.from!==myDept());
+    const elsewhere=open.filter(x=>x.to!==myDept()&&x.to!=="All"&&x.from!==myDept());
     const sec=(label,list)=>list.length?`<div class="rq-sechead">${label} <b>${list.length}</b></div>${list.map(reqCard).join("")}`:"";
     // other departments' traffic lives at the bottom: a faded live preview when collapsed,
     // the full cards when expanded. Your own sections always stay on top.
@@ -270,7 +271,8 @@
      so it reads in one sweep. Requests for YOUR department get a sky ring + FOR YOU pill; done
      and declined cards recede. Notes/replies/actions live in quiet rows under the zones. */
   function reqCard(x){
-    const mine=x.to===myDept(), done=x.status==="done", decl=x.status==="declined", closed=done||decl;
+    const toAll=x.to==="All";
+    const mine=(x.to===myDept()||(toAll&&x.from!==myDept())), done=x.status==="done", decl=x.status==="declined", closed=done||decl;
     const loc=x.loc||x.gate||"";                      // old records stored the field as "gate"
     const type=acType(x.aircraft);
     const fb=x.fb||null;
@@ -311,10 +313,15 @@
     return `
     <div class="rq-item rqp3${mine&&!closed?" mine":""}${closed?" done":""}${(x.asks||1)>=3&&!closed?" attn":""}" data-id="${esc(x.id)}">
       <div class="rqp3-zones">
-        <div class="rqp3-blk rqp3-from" style="background:${br.bg};color:${br.fg}">
-          <span class="rqp3-eyebrow">Request from</span>
-          <span class="rqp3-dept">${esc(x.from)}</span>
-          <span class="rqp3-to">&rarr; ${esc(x.to)}</span>
+        <div class="rqp3-whocol">
+          <div class="rqp3-blk rqp3-from" style="background:${br.bg};color:${br.fg}">
+            <span class="rqp3-eyebrow">Request from</span>
+            <span class="rqp3-dept">${esc(x.from)}</span>
+          </div>
+          <span class="rqp3-tolabel" aria-hidden="true">to</span>
+          ${toAll
+            ?`<div class="rqp3-blk rqp3-toblk rqp3-toall"><span class="rqp3-dept">All departments</span></div>`
+            :(()=>{const bt=brandOf(x.to);return `<div class="rqp3-blk rqp3-toblk" style="background:${bt.bg};color:${bt.fg}"><span class="rqp3-dept">${esc(x.to)}</span></div>`;})()}
         </div>
         <div class="rqp3-blk rqp3-need">
           <span class="rqp3-eyebrow">${esc(needLbl)}</span>

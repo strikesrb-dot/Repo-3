@@ -62,6 +62,10 @@ function detailScreen(nav){ UI.render(container, nav, {title:"Detail", body:"…
 - `UI.render(container, nav, opts)` draws a header (title/sub + **back button auto-wired to
   `nav.back()`**) and the body, then runs `opts.mount(container)`.
 - A module exposes `window.FEATURE = { open(){ nav=UI.nav(root,{onExit:goHome}); nav.reset(homeScreen); }, back:()=>nav.back() }`.
+- **Attachments carry an owner.** Anything a user attaches (photos, etc.) is stamped with
+  `oosWho()` (the requests "working as" identity, staffing pick as fallback). Only the owner sees
+  Replace/Remove on it; every other role sees a quiet "Photo by X" caption. Reference: the OOS
+  photo in `gse.js` (`oosPhotoBy`, `photoMine`).
 
 Because the back button and header come from `UI.render`, a new "continuation" screen physically
 cannot ship without one.
