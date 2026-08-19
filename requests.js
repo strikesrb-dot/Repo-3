@@ -11,12 +11,15 @@
   const ROOT=()=>$("#requestsRoot");
 
   const DEPTS=["Move Team","UGE","Tech Ops","Ramp","SOC","Customer Service"];
-  /* One flat list of request types — no subcategories. "Remove …" types read red (something is in
-     the way); specifics go in the note. Card phrasing: needs get a "Need " prefix, actions read as-is. */
-  const TYPES=["Ground Power","Air","Lights","Pushback","Water / Lav","Bag Runner",
-               "Remove equipment","Remove garbage","Move equipment","Other"];
-  const isRemoveType=t=>/^remove/i.test(t||"");
-  const isActionType=t=>/^(remove|move)\b/i.test(t||"");
+  /* Two categories — Need | Remove — with USER-DEFINED options under each. The option lists start
+     empty (no clutter); the + Add button lets the team add their own basics, each with a name and a
+     chip color. Options live in elt.requests.opts and sync across windows like everything else. */
+  const KINDS=["Need","Remove"];
+  const OPT_COLORS=["#0033a0","#c8102e","#008009","#b45309","#6244bb","#141414"];   // all AA with white fill-text
+  const OPTS_KEY="elt.requests.opts";
+  const loadOpts=()=>{const o=Store.getJSON(OPTS_KEY,null);return (o&&Array.isArray(o.need)&&Array.isArray(o.remove))?o:{need:[],remove:[]};};
+  const saveOpts=o=>Store.setJSON(OPTS_KEY,o);
+  const isActionType=t=>/^(remove|move)\b/i.test(t||"");   // legacy flat-type records
   /* Sender identity — every department has a brand color so a card reads "who's asking" at a
      glance. Text pairings are AA on each band. Unknown/legacy departments fall back to United blue. */
   const DEPT_BRAND={
@@ -89,15 +92,27 @@
   }
 
   /* ---- screen: send ---- */
+  let addingOpt=false, optColorSel=OPT_COLORS[0], optWord="";
   function sendScreen(nav){
     const others=DEPTS.filter(x=>x!==myDept());
-    draft=draft||{to:others[0]||"Ramp",type:"Ground Power",loc:"",aircraft:"",note:""};
+    draft=draft||{to:others[0]||"Ramp",kind:"Need",type:"",loc:"",aircraft:"",note:""};
     const d=draft;
+    const opts=loadOpts()[d.kind==="Remove"?"remove":"need"];
+    const optChips=opts.map(o=>`<button class="ui-chip rq-opt${d.type===o.v?" on":""}" data-set="type" data-v="${esc(o.v)}"
+      style="${d.type===o.v?`background:${esc(o.color)};border-color:${esc(o.color)};color:#fff`:`border-color:${esc(o.color)};color:${esc(o.color)}`}">${esc(o.v)}</button>`).join("");
+    const addPanel=addingOpt?`<div class="rq-addpanel">
+        <input id="optWord" placeholder="${d.kind==="Remove"?"e.g. Pushback, bag carts…":"e.g. Ground power, stairs…"}" autocomplete="off" value="${esc(optWord)}">
+        <div class="rq-swatches">${OPT_COLORS.map(c=>`<button class="rq-swatch${optColorSel===c?" on":""}" data-c="${c}" style="background:${c}" aria-label="chip color"></button>`).join("")}</div>
+        <div class="btnrow" style="margin-top:10px"><button class="btn sm" id="optAdd" style="flex:0 0 auto">Add option</button><button class="btn ghost sm" id="optCancel" style="flex:0 0 auto">Cancel</button></div>
+      </div>`:"";
     const body=UI.card(`
       <span class="ui-flabel">From</span>
       <div class="rq-fromlock">${esc(myDept())} · ${esc(myName())}</div>
       <span class="ui-flabel" style="margin-top:12px">Who can help</span>${UI.chips(others,d.to,'data-set="to" data-v')}
-      <span class="ui-flabel" style="margin-top:12px">Request</span>${UI.chips(TYPES,d.type,'data-set="type" data-v')}
+      <span class="ui-flabel" style="margin-top:12px">Request</span>${UI.chips(KINDS,d.kind,'data-set="kind" data-v')}
+      <span class="ui-flabel" style="margin-top:12px">${d.kind==="Remove"?"What needs removing?":"What do you need?"}</span>
+      <div class="ui-chips">${optChips}<button class="ui-chip rq-addopt">+ Add</button></div>
+      ${addPanel}
       <div class="rq-two" style="margin-top:12px">
         <div>${UI.field({label:"Location",id:"rqLoc",value:d.loc,placeholder:"Gate 109 · Spot 12 · pad"})}</div>
         <div class="ui-ta-wrap">${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"Tail or ship number"})}
@@ -107,7 +122,20 @@
       ${UI.field({label:"Note (optional)",id:"rqNote",value:d.note,placeholder:"Anything else…"})}
       <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">Send request</button></div>`);
     UI.render(ROOT(),nav,{title:"New request",body,mount:r=>{
-      $$(".ui-chip",r).forEach(b=>b.onclick=()=>{syncInputs();d[b.dataset.set]=b.dataset.v;nav.refresh();});
+      $$(".ui-chip",r).forEach(b=>b.onclick=()=>{if(!b.dataset.set)return;syncInputs();d[b.dataset.set]=b.dataset.v;
+        if(b.dataset.set==="kind"){d.type="";addingOpt=false;optWord="";}
+        nav.refresh();});
+      // + Add option: word + chip color, saved per category (team-shared like everything else)
+      $(".rq-addopt",r)&&($(".rq-addopt",r).onclick=()=>{syncInputs();addingOpt=true;nav.refresh();});
+      $$(".rq-swatch",r).forEach(b=>b.onclick=()=>{const w=$("#optWord");if(w)optWord=w.value;optColorSel=b.dataset.c;nav.refresh();});
+      $("#optCancel",r)&&($("#optCancel").onclick=()=>{addingOpt=false;optWord="";nav.refresh();});
+      $("#optAdd",r)&&($("#optAdd").onclick=()=>{
+        const w=($("#optWord")&&$("#optWord").value||"").trim();
+        if(!w){toast("Type the option name");return;}
+        const o=loadOpts();const k=d.kind==="Remove"?"remove":"need";
+        if(!o[k].some(x=>x.v.toLowerCase()===w.toLowerCase()))o[k].push({v:w,color:optColorSel});
+        saveOpts(o);d.type=w;addingOpt=false;optWord="";nav.refresh();
+      });
       // aircraft typeahead (UI.typeahead) — fleet suggestions, scoped Mainline/Express to narrow the search
       const acIn=$("#rqAc",r), acList=$("#rqAcList",r);
       const isExpress=a=>/Embraer|Bombardier|CRJ/i.test(a.type);
@@ -125,8 +153,9 @@
       $("#rqSend",r).onclick=()=>{
         syncInputs();
         if(!d.to||d.to===myDept()){toast("Pick a department to send to");return;}
+        if(!d.type){toast(d.kind==="Remove"?"Pick or add what needs removing":"Pick or add what you need");return;}
         if(!d.loc&&!d.aircraft){toast("Add a location or an aircraft");return;}
-        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,type:d.type,
+        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,kind:d.kind,type:d.type,
           loc:d.loc.trim(),aircraft:d.aircraft.trim().toUpperCase(),note:d.note.trim(),when:Date.now(),status:"open"};
         const l=load();l.unshift(req);saveAll(l);
         draft=null;toast("Request sent to "+req.to);
@@ -134,7 +163,7 @@
       };
     }});
   }
-  function syncInputs(){if(!draft)return;const g=$("#rqLoc"),a=$("#rqAc"),n=$("#rqNote");if(g)draft.loc=g.value;if(a)draft.aircraft=a.value;if(n)draft.note=n.value;}
+  function syncInputs(){if(!draft)return;const g=$("#rqLoc"),a=$("#rqAc"),n=$("#rqNote"),ow=$("#optWord");if(g)draft.loc=g.value;if(a)draft.aircraft=a.value;if(n)draft.note=n.value;if(ow)optWord=ow.value;}
 
   /* ---- screen: receive (open inbox + archive) ----------------------------------------------------
      Lifecycle: open → done (one tap) or declined (reason chips: "Already has power", "MX hold"…).
@@ -211,11 +240,7 @@
         <span class="rqp-bandwho">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
       </div>
       <div class="rqp-need">${x.kind?esc(x.kind)+" ":(isActionType(x.type)?"":"Need ")}${esc(x.type)}${(!x.kind&&x.detail)?` &middot; ${esc(x.detail)}`:""}</div>
-      <div class="rqp-where">
-        <span class="rqp-cell"><span class="rqp-lbl">Location</span><span class="rqp-fig">${esc(loc||"—")}</span></span>
-        <span class="rqp-cell"><span class="rqp-lbl">Aircraft</span><span class="rqp-fig">${x.aircraft?esc(x.aircraft):"—"}</span>
-          ${type?`<span class="rqp-type">${esc(type)}</span>`:""}</span>
-      </div>
+      ${(loc||x.aircraft)?`<div class="rqp-meta2">${loc?`<span class="rqp-loc">${esc(loc)}</span>`:""}${loc&&x.aircraft?`<span class="rqp-msep">&middot;</span>`:""}${x.aircraft?`<b>${esc(x.aircraft)}</b>${type?` <span class="rqp-mtype">${esc(type.replace(/^(Boeing|Airbus|Embraer|Bombardier)\s*/,""))}</span>`:""}`:""}</div>`:""}
       ${x.note?`<div class="rqp-note"><span class="rqp-dot" aria-hidden="true"></span><span class="rqp-notetext">${esc(x.note)}</span></div>`:""}
       ${fb&&fb.text?`<div class="rqp-fb"><span class="rqp-lbl">Reply from ${esc(fb.dept||"")}${fb.by?" &middot; "+esc(fb.by):""}</span><span class="rqp-fbtext">${esc(fb.text)}</span></div>`:""}
       ${actions}
@@ -241,14 +266,11 @@
     ctx.textAlign="right";ctx.font="600 13px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
     const headTxt=(x.kind?String(x.kind).toUpperCase()+" ":(isActionType(x.type)?"":"NEED "))+String(x.type).toUpperCase()+((!x.kind&&x.detail)?" · "+String(x.detail).toUpperCase():"");
     ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,headTxt,W-72),36,136);
-    // labeled figures — LOCATION | AIRCRAFT (+ type from the fleet database)
-    ctx.fillStyle="#5c6470";ctx.font="600 12px "+FA;
-    ctx.fillText("LOCATION",36,170);ctx.fillText("AIRCRAFT",256,170);
-    ctx.fillStyle="#0a1f44";ctx.font="600 30px "+FA;
-    ctx.fillText(clip(ctx,(x.loc||x.gate||"—"),200),36,202);ctx.fillText(clip(ctx,x.aircraft||"—",220),256,202);
+    // one quiet meta line: location · tail (short type) — only what exists
     const ty=acType(x.aircraft);
-    if(ty){ctx.fillStyle="#5c6470";ctx.font="400 13px "+FA;ctx.fillText(clip(ctx,ty,220),256,222);}
-    if(x.note){ctx.fillStyle="#5c6470";ctx.font="400 15px "+FA;ctx.fillText(clip(ctx,x.note,W-72),36,244);}
+    const meta=[(x.loc||x.gate||""),x.aircraft?x.aircraft+(ty?" ("+ty.replace(/^(Boeing|Airbus|Embraer|Bombardier)\s*/,"")+")":""):""].filter(Boolean).join("  ·  ");
+    if(meta){ctx.fillStyle="#0a1f44";ctx.font="600 24px "+FA;ctx.fillText(clip(ctx,meta,W-72),36,186);}
+    if(x.note){ctx.fillStyle="#5c6470";ctx.font="400 15px "+FA;ctx.fillText(clip(ctx,x.note,W-72),36,224);}
     ctx.fillStyle="#8d8983";ctx.textAlign="right";ctx.font="400 12px "+FA;ctx.fillText(new Date(x.when).toLocaleString(),W-36,H-30);
     return c;
   }
