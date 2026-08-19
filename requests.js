@@ -11,7 +11,10 @@
   const ROOT=()=>$("#requestsRoot");
 
   const DEPTS=["Move Team","UGE","Tech Ops","Ramp","SOC","Customer Service"];
-  const TYPES=["Ground Power","Air","Lights","Remove","Pushback","Water / Lav","Bag Runner","Other"];
+  /* Two request categories: NEED something brought/done, or REMOVE something in the way (urgent —
+     reads red). Each has its own options; Remove also accepts free text. */
+  const KINDS=["Need","Remove"];
+  const NEED_OPTS=["Ground Power","Air","Lights","Pushback","Water / Lav","Bag Runner","Other"];
   const REMOVE_OPTS=["Pushback","Tug","Bag carts","Belt loader","GPU","Stairs"];   // what's in the way
   /* Sender identity — every department has a brand color so a card reads "who's asking" at a
      glance. Text pairings are AA on each band. Unknown/legacy departments fall back to United blue. */
@@ -87,17 +90,19 @@
   /* ---- screen: send ---- */
   function sendScreen(nav){
     const others=DEPTS.filter(x=>x!==myDept());
-    draft=draft||{to:others[0]||"Ramp",type:"Ground Power",detail:"",loc:"",aircraft:"",note:""};
+    draft=draft||{to:others[0]||"Ramp",kind:"Need",type:"Ground Power",detail:"",loc:"",aircraft:"",note:""};
     const d=draft;
     const body=UI.card(`
       <span class="ui-flabel">From</span>
       <div class="rq-fromlock">${esc(myDept())} · ${esc(myName())}</div>
       <span class="ui-flabel" style="margin-top:12px">Who can help</span>${UI.chips(others,d.to,'data-set="to" data-v')}
-      <span class="ui-flabel" style="margin-top:12px">Need</span>${UI.chips(TYPES,d.type,'data-set="type" data-v')}
-      ${d.type==="Remove"?`
+      <span class="ui-flabel" style="margin-top:12px">Request</span>${UI.chips(KINDS,d.kind,'data-set="kind" data-v')}
+      ${d.kind==="Remove"?`
         <span class="ui-flabel" style="margin-top:12px">What needs removing?</span>
-        ${UI.chips(REMOVE_OPTS,d.detail,'data-set="detail" data-v')}
-        ${UI.field({id:"rqDetail",value:d.detail,placeholder:"Or type what's in the way…"})}`:""}
+        ${UI.chips(REMOVE_OPTS,d.type,'data-set="type" data-v')}
+        ${UI.field({id:"rqDetail",value:d.detail,placeholder:"Or type what's in the way…"})}`
+      :`<span class="ui-flabel" style="margin-top:12px">What do you need?</span>
+        ${UI.chips(NEED_OPTS,d.type,'data-set="type" data-v')}`}
       <div class="rq-two" style="margin-top:12px">
         <div>${UI.field({label:"Location",id:"rqLoc",value:d.loc,placeholder:"Gate 109 · Spot 12 · pad"})}</div>
         <div class="ui-ta-wrap">${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"Tail or ship number"})}
@@ -108,7 +113,7 @@
       <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">Send request</button></div>`);
     UI.render(ROOT(),nav,{title:"New request",body,mount:r=>{
       $$(".ui-chip",r).forEach(b=>b.onclick=()=>{syncInputs();d[b.dataset.set]=b.dataset.v;
-        if(b.dataset.set==="type"&&b.dataset.v!=="Remove")d.detail="";
+        if(b.dataset.set==="kind"){d.type=b.dataset.v==="Remove"?"Pushback":"Ground Power";d.detail="";}
         nav.refresh();});
       // aircraft typeahead (UI.typeahead) — fleet suggestions, scoped Mainline/Express to narrow the search
       const acIn=$("#rqAc",r), acList=$("#rqAcList",r);
@@ -128,7 +133,8 @@
         syncInputs();
         if(!d.to||d.to===myDept()){toast("Pick a department to send to");return;}
         if(!d.loc&&!d.aircraft){toast("Add a location or an aircraft");return;}
-        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,type:d.type,detail:(d.detail||"").trim(),
+        const finalType=(d.kind==="Remove"&&(d.detail||"").trim())?(d.detail||"").trim():d.type;
+        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,kind:d.kind,type:finalType,
           loc:d.loc.trim(),aircraft:d.aircraft.trim().toUpperCase(),note:d.note.trim(),when:Date.now(),status:"open"};
         const l=load();l.unshift(req);saveAll(l);
         draft=null;toast("Request sent to "+req.to);
@@ -146,12 +152,20 @@
   function receiveScreen(nav){
     const all=load().slice().sort((a,b)=>b.when-a.when);
     const open=all.filter(x=>x.status==="open"), arch=all.filter(x=>x.status!=="open");
+    const forMe=open.filter(x=>x.to===myDept());
+    const sentByMe=open.filter(x=>x.from===myDept());
+    const elsewhere=open.filter(x=>x.to!==myDept()&&x.from!==myDept());
+    const sec=(label,list)=>list.length?`<div class="rq-sechead">${label} <b>${list.length}</b></div>${list.map(reqCard).join("")}`:"";
     const body=`
-      ${open.length?open.map(reqCard).join(""):'<p class="rq-empty">No open requests.<br>Send one from the Send screen — or from another device/window — and it appears here live.</p>'}
+      ${open.length?`
+        ${sec("For "+esc(myDept()),forMe)}
+        ${sec("Your requests",sentByMe)}
+        ${sec("Other departments",elsewhere)}`
+      :'<p class="rq-empty">No open requests.<br>Send one from the Send screen — or from another device/window — and it appears here live.</p>'}
       ${arch.length?`<div class="rq-archrow"><button class="link-more" id="rqArch">${showArchive?"Hide archive":"Archive ("+arch.length+")"}</button>
         <span class="rq-archhint">Completed requests clear after ${ARCHIVE_DAYS} days.</span></div>`:""}
       ${showArchive?arch.map(reqCard).join(""):""}`;
-    UI.render(ROOT(),nav,{title:"Incoming requests",sub:`Addressed to <b>${esc(myDept())}</b> are highlighted.`,body,mount:r=>{
+    UI.render(ROOT(),nav,{title:"Inbox",sub:`For <b>${esc(myDept())}</b>, what you've requested, and the archive.`,body,mount:r=>{
       $("#rqArch",r)&&($("#rqArch").onclick=()=>{showArchive=!showArchive;nav.refresh();});
       $$(".rq-copy",r).forEach(b=>b.onclick=()=>copyReq(b.dataset.id,b));
       $$(".rq-done",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);
@@ -204,7 +218,7 @@
         ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
         <span class="rqp-bandwho">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
       </div>
-      <div class="rqp-need">${esc(x.type)}${x.detail?` &middot; ${esc(x.detail)}`:""}</div>
+      <div class="rqp-need${(x.kind==="Remove"||x.type==="Remove")?" rqp-need--rem":""}">${x.kind?esc(x.kind)+" ":""}${esc(x.type)}${(!x.kind&&x.detail)?` &middot; ${esc(x.detail)}`:""}</div>
       <div class="rqp-where">
         <span class="rqp-cell"><span class="rqp-lbl">Location</span><span class="rqp-fig">${esc(loc||"—")}</span></span>
         <span class="rqp-cell"><span class="rqp-lbl">Aircraft</span><span class="rqp-fig">${x.aircraft?esc(x.aircraft):"—"}</span>
@@ -233,7 +247,9 @@
     ctx.fillStyle=br.fg;ctx.textAlign="left";ctx.font="600 15px "+FA;
     ctx.fillText(clip(ctx,x.from.toUpperCase()+" IS REQUESTING  →  "+x.to.toUpperCase(),W-170),36,52);
     ctx.textAlign="right";ctx.font="600 13px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
-    ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,"NEED "+String(x.type).toUpperCase()+(x.detail?" · "+String(x.detail).toUpperCase():""),W-72),36,136);
+    const isRem=x.kind==="Remove"||x.type==="Remove";
+    const headTxt=(x.kind?String(x.kind).toUpperCase()+" ":"NEED ")+String(x.type).toUpperCase()+((!x.kind&&x.detail)?" · "+String(x.detail).toUpperCase():"");
+    ctx.textAlign="left";ctx.fillStyle=isRem?"#c8102e":"#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,headTxt,W-72),36,136);
     // labeled figures — LOCATION | AIRCRAFT (+ type from the fleet database)
     ctx.fillStyle="#5c6470";ctx.font="600 12px "+FA;
     ctx.fillText("LOCATION",36,170);ctx.fillText("AIRCRAFT",256,170);
