@@ -133,6 +133,8 @@
       $$(".rq-copy",r).forEach(b=>b.onclick=()=>copyReq(b.dataset.id,b));
       $$(".rq-done",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);
         if(it){it.status="done";it.fb={by:myName(),dept:myDept(),when:Date.now(),text:""};}saveAll(l);declining=null;nav.refresh();});
+      $$(".rq-reopen",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(x=>x.id===b.dataset.id);
+        if(it){it.status="open";delete it.fb;}saveAll(l);toast("Request reopened");nav.refresh();});
       $$(".rq-cant",r).forEach(b=>b.onclick=()=>{declining=b.dataset.id;nav.refresh();});
       $$(".rq-declcancel",r).forEach(b=>b.onclick=()=>{declining=null;nav.refresh();});
       $$(".rq-reason",r).forEach(b=>b.onclick=()=>declineReq(b.dataset.id,b.dataset.r,nav));
@@ -164,6 +166,7 @@
          </div>`
       : `<div class="rqp-acts">
            <button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>
+           ${closed?`<button class="link-more rq-reopen" data-id="${esc(x.id)}" style="font-size:14px">Reopen</button>`:""}
            ${done?`<span class="rqp-doneflag" role="status">&#10003; Done${fb&&fb.by?" &middot; "+esc(fb.by):""}</span>`
              :decl?`<span class="rqp-declflag" role="status">&#10005; Can't complete</span>`
              :`<button class="btn ghost sm rq-cant" data-id="${esc(x.id)}">Can't do</button>
