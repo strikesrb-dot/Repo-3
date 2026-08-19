@@ -10,8 +10,19 @@
   const toast=m=>{try{if(window.toast)window.toast(m);}catch(_){}}
   const ROOT=()=>$("#requestsRoot");
 
-  const DEPTS=["Move Team","UGE","Customer Service","Ramp"];
+  const DEPTS=["Move Team","UGE","Tech Ops","Ramp","SOC","Customer Service"];
   const TYPES=["Ground Power","Air","Lights","Pushback","Water / Lav","Bag Runner","Other"];
+  /* Sender identity — every department has a brand color so a card reads "who's asking" at a
+     glance. Text pairings are AA on each band. Unknown/legacy departments fall back to United blue. */
+  const DEPT_BRAND={
+    "UGE":              {bg:"#141414", fg:"#ff8a1e", edge:"#ff8a1e"},   // United Ground Express: black + orange
+    "Tech Ops":         {bg:"#f97316", fg:"#221100"},                    // straight orange
+    "Move Team":        {bg:"#fc4c4e", fg:"#3f0a10"},                    // watermelon red
+    "Ramp":             {bg:"#cbf22c", fg:"#1a2000"},                    // neon green-yellow
+    "SOC":              {bg:"#000000", fg:"#ffffff"},                    // straight black
+    "Customer Service": {bg:"#0033a0", fg:"#ffffff"}                     // United blue
+  };
+  const brandOf=d=>DEPT_BRAND[d]||{bg:"#0033a0",fg:"#ffffff"};
   const DECLINE_REASONS=["Already has power","Already done","MX hold","No equipment available","Wrong department"];
   const ARCHIVE_DAYS=7;   // completed/declined requests auto-purge after a week
   const KEY="elt.requests", MYDEPT_KEY="elt.requests.dept", MYNAME_KEY="elt.requests.name";
@@ -158,12 +169,14 @@
              :`<button class="btn ghost sm rq-cant" data-id="${esc(x.id)}">Can't do</button>
                 <button class="btn sm rq-done" data-id="${esc(x.id)}" aria-label="Mark request done">Mark done</button>`}
          </div>`;
+    const br=brandOf(x.from);
     return `
     <div class="rq-item rqp${mine&&!closed?" mine":""}${closed?" done":""}" data-id="${esc(x.id)}">
-      <div class="rqp-route">
-        <span class="rqp-path">${esc(x.from)} <span class="rqp-arr" aria-hidden="true">&rarr;</span> ${esc(x.to)}</span>
+      <div class="rqp-band" style="background:${br.bg};color:${br.fg};${br.edge?`box-shadow:inset 0 -3px 0 ${br.edge};`:""}">
+        <span class="rqp-bandfrom">${esc(x.from)} is requesting</span>
+        <span class="rqp-bandto">&rarr; ${esc(x.to)}</span>
         ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
-        <span class="rqp-who">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
+        <span class="rqp-bandwho">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
       </div>
       <div class="rqp-need">${esc(x.type)}</div>
       <div class="rqp-where">
@@ -186,11 +199,14 @@
   function reqCanvas(x){
     const W=540,H=300,S=2,FA="-apple-system,Segoe UI,Roboto,Arial,sans-serif";
     const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
+    const br=brandOf(x.from);
     ctx.fillStyle="#f7f4f0";ctx.fillRect(0,0,W,H);
     ctx.fillStyle="#ffffff";roundRect(ctx,14,14,W-28,H-28,18);ctx.fill();
-    ctx.fillStyle="#0a1f44";roundRect(ctx,14,14,W-28,66,18);ctx.fill();ctx.fillRect(14,54,W-28,26);
-    ctx.fillStyle="#ffffff";ctx.textAlign="left";ctx.font="600 16px "+FA;ctx.fillText("REQUEST · "+x.from.toUpperCase()+"  →  "+x.to.toUpperCase(),36,52);
-    ctx.textAlign="right";ctx.fillStyle="#a6e3f5";ctx.font="600 14px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
+    ctx.fillStyle=br.bg;roundRect(ctx,14,14,W-28,66,18);ctx.fill();ctx.fillRect(14,54,W-28,26);
+    if(br.edge){ctx.fillStyle=br.edge;ctx.fillRect(14,77,W-28,3);}
+    ctx.fillStyle=br.fg;ctx.textAlign="left";ctx.font="600 15px "+FA;
+    ctx.fillText(clip(ctx,x.from.toUpperCase()+" IS REQUESTING  →  "+x.to.toUpperCase(),W-170),36,52);
+    ctx.textAlign="right";ctx.font="600 13px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
     ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,"NEED "+String(x.type).toUpperCase(),W-72),36,136);
     // labeled figures — LOCATION | AIRCRAFT (+ type from the fleet database)
     ctx.fillStyle="#5c6470";ctx.font="600 12px "+FA;

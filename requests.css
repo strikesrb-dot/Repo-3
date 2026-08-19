@@ -27,11 +27,17 @@
 .rq-item.rqp{background:var(--card,#fff);border:0;border-radius:var(--r-lg,18px);
   padding:16px 18px 14px;margin-bottom:12px;box-shadow:2px 4px 12px rgba(0,24,64,.08);
   transition:background-color .2s ease,box-shadow .2s ease}
-/* row 1: route eyebrow · requester · time */
-.rqp-route{display:flex;align-items:center;gap:10px;min-height:24px;flex-wrap:wrap}
-.rqp-path{font-size:12px;font-weight:600;line-height:1.3;text-transform:uppercase;letter-spacing:.08em;
-  color:var(--muted,#5c6470);min-width:0;overflow-wrap:anywhere}
-.rqp-arr{opacity:.6}
+/* sender identity band — full-bleed strip in the FROM department's brand colors,
+   so a card reads "who's asking" before any text ("UGE IS REQUESTING → MOVE TEAM") */
+.rqp-band{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:-16px -18px 14px;padding:11px 18px;border-radius:var(--r-lg,18px) var(--r-lg,18px) 0 0;
+  font-size:12.5px;font-weight:600;line-height:1.3;text-transform:uppercase;letter-spacing:.07em}
+.rqp-bandfrom{min-width:0;overflow-wrap:anywhere}
+.rqp-bandto{opacity:.85}
+.rqp-bandwho{margin-left:auto;flex:none;font-size:12px;font-weight:600;letter-spacing:.03em;
+  text-transform:none;opacity:.9;font-variant-numeric:tabular-nums}
+.rqp-band .rqp-foryou{margin-left:2px}
+.rq-item.rqp.done .rqp-band{opacity:.6}
 .rqp-foryou{flex:none;font-size:12px;font-weight:600;line-height:1;text-transform:uppercase;letter-spacing:.08em;
   background:var(--ua-sky,#a6e3f5);color:var(--ua-navy,#0a1f44);border-radius:var(--r-pill,980px);padding:5px 11px}
 .rqp-who{margin-left:auto;flex:none;font-size:14px;font-weight:400;line-height:1.3;
