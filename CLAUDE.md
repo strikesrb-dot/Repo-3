@@ -78,6 +78,19 @@ Goal: shrink `index.html` by **extracting one subsystem at a time in place** (th
 `requests.js`, and `ui.js` already are) — NOT a parallel rewrite. Each extracted feature adopts the
 UI kit. Order after the current pitch work: equipment → inventory → GSE → movement → settings.
 
+## Simplicity rules (owner's standing direction — do not violate)
+
+1. **No advanced motion.** No screen-slide/push-pop animations, no parallax, no staggered
+   entrances, no scroll-snap carousels with paddles, no video, no blur choreography. The ONLY
+   motion allowed: press/active states, and simple color/opacity/transform transitions of 320ms or
+   less. Screens change instantly; content never "arrives."
+2. **No emojis in the UI.** Plain text first. Where an icon genuinely helps, use a monochrome
+   inline SVG line icon (24-box, stroke 2, round caps) or a typographic glyph (✓ ✕ ⚠ › ▲ ▼).
+   Never a color pictograph.
+3. **Keep components basic.** Tiles, cards, chips, fields, grouped list rows, banners, stat cards —
+   that's the whole vocabulary. If a screen seems to need something fancier, simplify the screen.
+4. **Every screen still gets a back button** (via `UI.render`) and one clear primary action.
+
 ## Conventions
 
 - Storage keys are namespaced `elt.*`. Real employee names never ship in source; demo mode

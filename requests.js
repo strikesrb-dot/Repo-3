@@ -11,7 +11,7 @@
   const ROOT=()=>$("#requestsRoot");
 
   const DEPTS=["Move Team","UGE","Customer Service","Ramp"];
-  const TYPES=[{v:"Power",label:"⚡ Power"},{v:"Air",label:"❄ Air"},{v:"Pushback",label:"🛫 Pushback"},{v:"Water / Lav",label:"💧 Water / Lav"},{v:"Bag Runner",label:"🧳 Bag Runner"},{v:"Other",label:"• Other"}];
+  const TYPES=["Power","Air","Pushback","Water / Lav","Bag Runner","Other"];
   const KEY="elt.requests", MYDEPT_KEY="elt.requests.dept";
 
   const load=()=>{const d=Store.getJSON(KEY,[]);return Array.isArray(d)?d:[];};
@@ -28,8 +28,8 @@
       <label class="rq-deptsel"><span>I'm working as</span>
         <select id="rqMyDept">${DEPTS.map(d=>`<option ${d===myDept()?"selected":""}>${esc(d)}</option>`).join("")}</select></label>
       <div class="rq-tiles">
-        ${UI.tile({icon:"➤",title:"Send",sub:"Make a request to another department",attr:'data-v="send"'})}
-        ${UI.tile({icon:"📥",title:"Receive",sub:`Requests sent to you${mine?` · <b>${mine} new</b>`:""}`,tone:"navy",attr:'data-v="receive"'})}
+        ${UI.tile({icon:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7Z"/></svg>',title:"Send",sub:"Make a request to another department",attr:'data-v="send"'})}
+        ${UI.tile({icon:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',title:"Receive",sub:`Requests sent to you${mine?` · <b>${mine} new</b>`:""}`,tone:"navy",attr:'data-v="receive"'})}
       </div>`;
     UI.render(ROOT(),nav,{title:"Requests",sub:"Structured requests between departments — no more digging through chat threads.",body,mount:r=>{
       $("#rqMyDept",r).onchange=e=>{setMyDept(e.target.value);nav.refresh();};
@@ -83,7 +83,7 @@
       <div class="rqi-need">NEED ${esc(String(x.type).toUpperCase())}</div>
       <div class="rqi-meta">${x.gate?`Gate <b>${esc(x.gate)}</b>`:""}${x.gate&&x.aircraft?" · ":""}${x.aircraft?`<b>${esc(x.aircraft)}</b>`:""}</div>
       ${x.note?`<div class="rqi-note">${esc(x.note)}</div>`:""}
-      <div class="rqi-acts"><button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">⧉ Copy for Teams</button>${x.status==="done"?'<span class="rqi-doneflag">✓ Done</span>':`<button class="btn good sm rq-done" data-id="${esc(x.id)}">Mark done</button>`}</div>
+      <div class="rqi-acts"><button class="btn ghost sm rq-copy" data-id="${esc(x.id)}">Copy for Teams</button>${x.status==="done"?'<span class="rqi-doneflag">✓ Done</span>':`<button class="btn good sm rq-done" data-id="${esc(x.id)}">Mark done</button>`}</div>
     </div>`;
   }
   function timeAgo(t){const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<60)return "just now";const m=Math.round(s/60);if(m<60)return m+"m ago";const h=Math.round(m/60);if(h<24)return h+"h ago";return Math.round(h/24)+"d ago";}

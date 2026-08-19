@@ -652,12 +652,12 @@
     <p class="hint" style="margin-top:0">Every time a unit changes location — counting it during inventory, editing it, or a quick move — the change is logged here.</p>
     <div class="toolbar"><input id="moveSearch" type="search" placeholder="Search tag, location…" autocomplete="off" /></div>
     <div id="moveList" style="margin-top:10px"></div>
-    <div class="btnrow no-print" style="margin-top:14px"><button class="btn ghost" id="moveWipe">🔒 Wipe log (passcode)</button></div>
+    <div class="btnrow no-print" style="margin-top:14px"><button class="btn ghost" id="moveWipe">Wipe log (passcode)</button></div>
   </section>
 
   <section id="view-equipment" class="view">
     <div id="lockBar"></div>
-    <div class="btnrow" style="margin-top:0;margin-bottom:10px"><button class="btn navy" id="addBtn">➕ Add equipment</button></div>
+    <div class="btnrow" style="margin-top:0;margin-bottom:10px"><button class="btn navy" id="addBtn">+ Add equipment</button></div>
     <details class="card acItem" id="sheetGen" style="margin-bottom:12px">
       <summary><div class="main"><div class="tag"> Generate sheet</div>
         <div class="meta">All areas, one area, or one category — grouped &amp; check-off ready</div></div></summary>
@@ -792,7 +792,7 @@
       <input id="newSpot" placeholder="Spot name e.g. AML17, Staging Area" />
       <div class="row2" style="margin-top:8px">
         <input id="newArea" list="areaList" placeholder="Area e.g. Amelia" />
-        <button type="button" class="chip" id="acFlag" style="text-align:center">✈ Holds aircraft</button>
+        <button type="button" class="chip" id="acFlag" style="text-align:center">Holds aircraft</button>
       </div>
       <datalist id="areaList"></datalist>
       <button class="btn sm navy" id="addSpotBtn" style="width:100%;margin-top:8px">Add spot</button>
@@ -806,7 +806,7 @@
         </div>
         <div class="row2" style="margin-top:8px">
           <input id="bArea" list="areaList" placeholder="Area e.g. Amelia" />
-          <button type="button" class="chip sel" id="bAcFlag" style="text-align:center">✈ Holds aircraft</button>
+          <button type="button" class="chip sel" id="bAcFlag" style="text-align:center">Holds aircraft</button>
         </div>
         <button class="btn sm navy" id="bulkBtn" style="width:100%;margin-top:8px">Generate spots</button>
       </details>
@@ -1397,9 +1397,9 @@ function eqCardHTML(e){
   const det=invDetail(e.spot,e.nose);
   const loc=e.location?`<span class="loc"> ${esc(e.location)}${det?` · ${esc(det)}`:""}</span>`:`<span class="loc none">No location</span>`;
   return `<li class="item card" data-id="${e.id}"><div class="main">
-    <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE${e.oosReason?` · ${esc(e.oosReason)}`:""}</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.subtype?`<span class="subt">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="volt">⚡ ${esc(e.volt)}</span>`:""}</div>
+    <div class="tag">${esc(e.tag||"(no tag)")}${e.oos?`<span class="oos-mark">⊘ OUT OF SERVICE${e.oosReason?` · ${esc(e.oosReason)}`:""}</span>`:""}</div><div class="meta">${esc(e.type||"")}${e.subtype?`<span class="subt">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="volt">${esc(e.volt)}</span>`:""}</div>
     ${e.notes?`<div class="notes"> ${esc(e.notes)}</div>`:""}<div style="margin-top:6px">${loc}</div></div>
-    <div class="acts"><button class="iconbtn act-hist" title="History">🕘</button><button class="iconbtn act-move" title="Move">⇄</button>
+    <div class="acts"><button class="iconbtn act-hist" title="History">↺</button><button class="iconbtn act-move" title="Move">⇄</button>
     <button class="iconbtn act-edit" title="Edit (passcode)">✎</button></div></li>`;
 }
 function renderList(){
@@ -1417,7 +1417,7 @@ function renderList(){
   const list=$("#eqList");
   $$("#grpSeg .seg").forEach(b=>b.classList.toggle("on",b.dataset.g===eqGroup));
   $("#eqCount").textContent=`${items.length} of ${data.equipment.length} item${data.equipment.length===1?"":"s"}`;
-  if(!data.equipment.length){list.innerHTML=`<div class="empty"><div class="big"></div><p>No equipment yet.<br>Tap <b>➕ Add equipment</b>.</p></div>`;return;}
+  if(!data.equipment.length){list.innerHTML=`<div class="empty"><div class="big"></div><p>No equipment yet.<br>Tap <b>+ Add equipment</b>.</p></div>`;return;}
   if(!items.length){list.innerHTML=`<div class="empty"><p>Nothing matches your filter.</p></div>`;return;}
   // build groups
   let groups;
@@ -1465,9 +1465,9 @@ function setPattern(){openPattern("Set a new pattern","Connect at least 4 dots",
     if(p1===p2){data.lockPattern=p1;unlocked=true;save();closePattern();updateLockBar();toast("Lock pattern set");}
     else patError("Patterns didn't match");});});}
 function updateLockBar(){const el=$("#lockBar");if(!el)return;
-  if(!data.lockPattern)el.innerHTML=`<button class="btn ghost" id="setLockBtn" style="margin-bottom:10px">🔒 Set lock pattern</button>`;
-  else if(unlocked)el.innerHTML=`<div class="lockrow"><span>🔓 Unlocked — editing enabled</span><span><button class="lockmini" id="changeLockBtn">Change</button><button class="lockmini" id="lockNowBtn">Lock</button></span></div>`;
-  else el.innerHTML=`<button class="btn navy" id="unlockBtn" style="margin-bottom:10px">🔒 Locked — tap to unlock &amp; edit</button>`;
+  if(!data.lockPattern)el.innerHTML=`<button class="btn ghost" id="setLockBtn" style="margin-bottom:10px">Set lock pattern</button>`;
+  else if(unlocked)el.innerHTML=`<div class="lockrow"><span>Unlocked — editing enabled</span><span><button class="lockmini" id="changeLockBtn">Change</button><button class="lockmini" id="lockNowBtn">Lock</button></span></div>`;
+  else el.innerHTML=`<button class="btn navy" id="unlockBtn" style="margin-bottom:10px">Locked — tap to unlock &amp; edit</button>`;
   $("#setLockBtn")?.addEventListener("click",setPattern);
   $("#unlockBtn")?.addEventListener("click",()=>requireUnlock(()=>{}));
   $("#lockNowBtn")?.addEventListener("click",()=>{unlocked=false;updateLockBar();toast("Locked");});
@@ -1685,10 +1685,10 @@ function refreshTypeFilter(){const sel=$("#filterType");if(!sel)return;const cur
 
 /* ---- add/edit ---- */
 let editingId=null;
-function fillTypeSelect(sel,val){sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")+`<option value="__new__">➕ Add new type…</option>`;if(val!=null)sel.value=val;}
+function fillTypeSelect(sel,val){sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")+`<option value="__new__">+ Add new type…</option>`;if(val!=null)sel.value=val;}
 // subtype dropdown built from the presets you create in Settings for the chosen category
 function fillSubtypeSelect(type,val){const presets=(data.subtypes[type]||[]).slice();if(val&&!presets.includes(val))presets.unshift(val);
-  $("#fSub").innerHTML=`<option value="">— None —</option>`+presets.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("")+`<option value="__custom__">➕ Custom…</option>`;
+  $("#fSub").innerHTML=`<option value="">— None —</option>`+presets.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("")+`<option value="__custom__">+ Custom…</option>`;
   $("#fSub").value=val||"";}
 $("#fSub").addEventListener("change",function(){if(this.value!=="__custom__")return;
   const type=$("#fType").value,v=(prompt("New subtype for "+type+":")||"").trim();
@@ -2296,7 +2296,7 @@ function renderGseCat(r){
     const photo=e.oosPhoto?(function(){try{return Store.getRaw("elt.oos.photo."+e.id,null);}catch(_){return null;}})():null;
     const status=ack
       ? `<div class="gse-status ack">✓ Confirmed by <b>${esc(nm(ack.by))}</b>${ack.reply?` — “${esc(ack.reply)}”`:""}</div>`
-      : `<div class="gse-status wait">⏳ Awaiting GSE</div>`;
+      : `<div class="gse-status wait">Awaiting GSE</div>`;
     const thread=`<div class="gse-thread">
       <div class="gse-reply-chips">${GSE_REPLIES.map(rp=>`<button class="gse-rchip" data-id="${esc(e.id)}" data-r="${esc(rp)}">${esc(rp)}</button>`).join("")}</div>
       <div class="gse-reply-row"><input class="gse-reply-in" data-id="${esc(e.id)}" placeholder="Reply to the super…" autocomplete="off" value="${esc(ack&&ack.reply||"")}" />
@@ -2307,7 +2307,7 @@ function renderGseCat(r){
       <div class="gse-meta">${e.location?esc(e.location):"no location"}${ev?` · since ${esc(fmtDate(ev.date))}${ev.by?" · "+esc(nm(ev.by)):""}`:""}</div>
       ${photo?`<img class="gse-photo" src="${photo}" alt="OOS photo" data-id="${esc(e.id)}" />`:""}
       ${status}${thread}</div>
-      <div class="gse-acts"><button class="btn ghost sm gse-photo-btn" data-id="${esc(e.id)}">📷 Photo</button><button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn good sm gse-back" data-id="${esc(e.id)}">✓ In service</button></div></li>`;}).join("")
+      <div class="gse-acts"><button class="btn ghost sm gse-photo-btn" data-id="${esc(e.id)}">Photo</button><button class="btn ghost sm gse-edit" data-id="${esc(e.id)}">Reason</button><button class="btn good sm gse-back" data-id="${esc(e.id)}">✓ In service</button></div></li>`;}).join("")
     ||`<p class="hint" style="text-align:center;padding:22px">Nothing in ${esc(cat)} is out of service.</p>`;
   r.innerHTML=`<div class="card pad">
     <button class="btn ghost sm" id="gseHome" style="width:auto;margin-bottom:8px">‹ All categories</button>
@@ -2538,7 +2538,7 @@ function renderSecHome(r){
   r.innerHTML=`<div class="card pad">
     <h3 style="margin:0 0 6px"> Aircraft Secure Log</h3>
     <p class="hint" style="margin-top:0">Log spots where an aircraft was left open / not secured — who had it and why.</p>
-    <button class="btn navy" id="secAdd">➕ Log open aircraft</button>
+    <button class="btn navy" id="secAdd">+ Log open aircraft</button>
     ${log.length?`<div class="btnrow"><button class="btn ghost" id="secPdf"> PDF</button><button class="btn ghost" id="secImg"> Image</button><button class="btn ghost" id="secTxt">↓ Text</button></div>`:""}
   </div>
   ${log.length?`<p class="count">${log.length} entr${log.length===1?"y":"ies"}</p><ul class="list">${log.slice().reverse().map(secCard).join("")}</ul>`:`<div class="empty"><div class="big"></div><p>No entries yet. Tap <b>Log open aircraft</b>.</p></div>`}`;
@@ -2886,7 +2886,7 @@ function equipScopeData(scope){
 function buildEquipSheetHTML(scope){
   const {title,mode,groups}=equipScopeData(scope);
   const date=fmtDate(todayISO()),by=$("#auditBy")?.value.trim()||"____________";
-  const rowFor=e=>{const sp=invDetail(e.spot,e.nose);return `<tr><td><b>${esc(e.tag)}</b>${sp?` <span style="color:#888;font-size:10px">· ${esc(sp)}</span>`:""}${e.oos?' <span style="color:#c0271e;font-size:10px;font-weight:800">OOS</span>':""}${e.volt?` <span style="color:#15622f;font-size:10px;font-weight:700">⚡${esc(e.volt)}</span>`:""}</td><td>${esc(e.subtype||e.notes||"")}</td><td class="chk">☐</td></tr>`;};
+  const rowFor=e=>{const sp=invDetail(e.spot,e.nose);return `<tr><td><b>${esc(e.tag)}</b>${sp?` <span style="color:#888;font-size:10px">· ${esc(sp)}</span>`:""}${e.oos?' <span style="color:#c0271e;font-size:10px;font-weight:800">OOS</span>':""}${e.volt?` <span style="color:#15622f;font-size:10px;font-weight:700">${esc(e.volt)}</span>`:""}</td><td>${esc(e.subtype||e.notes||"")}</td><td class="chk">☐</td></tr>`;};
   let total=0;
   const blocks=groups.map(g=>{total+=g.items.length;let body;
     if(!g.items.length){body=`<table class="audit"><tbody><tr><td style="text-align:center;color:#888;padding:12px">No equipment.</td></tr></tbody></table>`;}

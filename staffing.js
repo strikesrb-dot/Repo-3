@@ -831,9 +831,9 @@ function rMenu(){
       <button class="mp-tile" id="mpDraft">
         <span class="mp-ic">✎</span><span class="mp-tx"><b>Draft Manpowers</b><span>${drafts?drafts+" saved · resume where you left off":"Nothing in progress"}</span></span><span class="mp-n">${drafts||""}</span></button>
       <button class="mp-tile" id="mpPast">
-        <span class="mp-ic">🗂</span><span class="mp-tx"><b>Past Manpowers</b><span>${logs?logs+" logged · AM · PM · NH (read-only)":"Nothing logged yet"}</span></span><span class="mp-n">${logs||""}</span></button>
+        <span class="mp-ic">▤</span><span class="mp-tx"><b>Past Manpowers</b><span>${logs?logs+" logged · AM · PM · NH (read-only)":"Nothing logged yet"}</span></span><span class="mp-n">${logs||""}</span></button>
       <button class="mp-tile" id="mpActivity">
-        <span class="mp-ic">🕘</span><span class="mp-tx"><b>Activity Log</b><span>Track record of who did what &amp; when</span></span></button>
+        <span class="mp-ic">↺</span><span class="mp-tx"><b>Activity Log</b><span>Track record of who did what &amp; when</span></span></button>
     </div>`);
   $("#mpCreate").onclick=()=>{ ST.files={mp:null,ot:null,co:null}; ST.parsed=null; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST.dispatch=null; ST.startedAt=Date.now(); logAct("Started manpower",""); ST.step="upload"; render(); };
   $("#mpDraft").onclick=()=>{ ST.step="drafts"; render(); };
@@ -1038,7 +1038,7 @@ function rReconcile(){
   const unsetN=TUGS.filter(id=>tugSt(id)==="unset").length;
   const tile=id=>{const s=tugSt(id);
     return `<button class="rtile ${s}" data-tug="${id}">
-        <span class="rt-top"><span class="rt-n">${id}</span>${ELECTRIC.has(id)?'<span class="rt-e">⚡ ELECTRIC</span>':''}</span>
+        <span class="rt-top"><span class="rt-n">${id}</span>${ELECTRIC.has(id)?'<span class="rt-e">ELECTRIC</span>':''}</span>
         <span class="rt-st">${s==='ready'?'✓ ':''}${STATUS_LABEL[s]}</span>
       </button>`;};
   const grp=g=>`<div class="rgroup"><div class="rg-h">STUG ${g.label}${tugType(g.ids[0])?` · <b>${tugType(g.ids[0])}</b>`:''}</div><div class="rt-grid">${g.ids.map(tile).join("")}</div></div>`;
