@@ -8,9 +8,9 @@
 <link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="EWR MT HUB" />
+<meta name="apple-mobile-web-app-title" content="Operational Success" />
 <meta name="mobile-web-app-capable" content="yes" />
-<title>EWR MT HUB — Equipment Location Tracker</title>
+<title>Operational Success</title>
 <!-- No web-font CDN: sending each cold start to Google (IP/UA/timing) is a privacy leak and fails
      offline. Every font-family below carries a full system fallback stack, so the UI is unchanged. -->
 <link rel="stylesheet" href="staffing.css" />
@@ -576,7 +576,7 @@
 <div id="siteLock">
   <div class="sl-inner">
     <div class="sl-logo"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
-    <div class="sl-title">EWR MT HUB</div>
+    <div class="sl-title">Operational Success</div>
     <div class="sl-sub" id="siteMsg">Draw your pattern to unlock</div>
     <div class="patpad sl-pad" id="sitePad"></div>
   </div>
@@ -596,7 +596,7 @@
   <div class="hdr-row">
     <div class="brand" id="hdrTitle">
       <span class="logo"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
-      <span class="brand-txt"><span class="eyebrow">United Ground Ops · Move Team</span><span class="wordmark">EWR MT HUB</span></span>
+      <span class="brand-txt"><span class="eyebrow">United Ground Ops</span><span class="wordmark">Operational Success</span></span>
     </div>
     <button id="homeBtn" class="homebtn" hidden aria-label="Home" title="Home"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
   </div>
@@ -3086,8 +3086,8 @@ function updateHdr(){applyBrandLabels();const cust=data.settings&&data.settings.
 // apply the user's custom app-name / eyebrow to the header (blank eyebrow hides it)
 function applyBrandLabels(){ const L=(data.settings&&data.settings.labels)||{};
   const eb=document.querySelector('.brand .eyebrow');
-  if(eb){const t=('eyebrow' in L)?String(L.eyebrow||'').trim():'United Ground Ops · Move Team';eb.textContent=t;eb.style.display=t?'':'none';}
-  const wordmark=(L.wordmark&&String(L.wordmark).trim())||'EWR MT HUB';
+  if(eb){const t=('eyebrow' in L)?String(L.eyebrow||'').trim():'United Ground Ops';eb.textContent=t;eb.style.display=t?'':'none';}
+  const wordmark=(L.wordmark&&String(L.wordmark).trim())||'Operational Success';
   const wm=document.querySelector('.brand .wordmark'); if(wm)wm.textContent=wordmark;
   const sl=document.querySelector('.sl-title'); if(sl)sl.textContent=wordmark;   // lock-screen splash
   const ib=document.querySelector('.inv-banner .ib-brand'); if(ib)ib.textContent=wordmark;
@@ -3096,7 +3096,7 @@ function applyBrandLabels(){ const L=(data.settings&&data.settings.labels)||{};
 function renderLabelCfg(){ const wrap=$("#labelCfg"); if(!wrap)return; const L=(data.settings&&data.settings.labels)||{};
   const val=(g,k)=>g==='top'?(L[k]!=null?L[k]:''):((L[g]&&L[g][k]!=null)?L[g][k]:'');
   const field=(g,k,label,def)=>`<label class="lbl-row"><span>${esc(label)}</span><input data-lg="${g}" data-lk="${esc(k)}" placeholder="${esc(def)}" value="${esc(val(g,k))}" autocomplete="off" spellcheck="false"></label>`;
-  const top=[["sheetTitle","Staffing sheet title","EWR AMT STAFFING"],["briefTitle","Briefing title","DAILY MOVE TEAM SHIFT BRIEFING"],["wordmark","App name (header)","EWR MT HUB"],["eyebrow","Header eyebrow — blank hides it","United Ground Ops · Move Team"],["eosTitle","End-of-shift report title","EWR Move Team — Shift EWR Report"],["equipBrand","Equipment-list heading","EWR MOVE TEAM"]];
+  const top=[["sheetTitle","Staffing sheet title","EWR AMT STAFFING"],["briefTitle","Briefing title","DAILY MOVE TEAM SHIFT BRIEFING"],["wordmark","App name (header)","Operational Success"],["eyebrow","Header eyebrow — blank hides it","United Ground Ops"],["eosTitle","End-of-shift report title","EWR Move Team — Shift EWR Report"],["equipBrand","Equipment-list heading","EWR MOVE TEAM"]];
   const areas=[["Ballpark","Ballpark"],["WestPark","WestPark"],["South Team","South Team"],["Terminal B","Terminal B"],["APU","APU/T.O.C.S"],["Support","Support"],["C4","C4"]];
   const tugs=[["TBL-400","TBL-400"],["TBL-280","TBL-280"],["GOLDHOFER","GOLDHOFER"],["Kalmar","Kalmar"]];
   wrap.innerHTML=`<div class="lbl-grp">Titles &amp; app name</div>`+top.map(([k,la,def])=>field('top',k,la,def)).join("")

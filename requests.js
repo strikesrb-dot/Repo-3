@@ -11,39 +11,64 @@
   const ROOT=()=>$("#requestsRoot");
 
   const DEPTS=["Move Team","UGE","Customer Service","Ramp"];
-  const TYPES=["Power","Air","Pushback","Water / Lav","Bag Runner","Other"];
-  const KEY="elt.requests", MYDEPT_KEY="elt.requests.dept";
+  const TYPES=["Ground Power","Air","Lights","Pushback","Water / Lav","Bag Runner","Other"];
+  const KEY="elt.requests", MYDEPT_KEY="elt.requests.dept", MYNAME_KEY="elt.requests.name";
 
   const load=()=>{const d=Store.getJSON(KEY,[]);return Array.isArray(d)?d:[];};
   const saveAll=l=>Store.setJSON(KEY,l);
-  const myDept=()=>Store.getJSON(MYDEPT_KEY,"Move Team");
-  const setMyDept=d=>Store.setJSON(MYDEPT_KEY,d);
+  const myDept=()=>Store.getJSON(MYDEPT_KEY,"");
+  const myName=()=>Store.getJSON(MYNAME_KEY,"");
+  const hasIdentity=()=>!!(myDept()&&myName());
 
   let navApi=null, draft=null;
+
+  /* ---- screen: identity (who's working) — gate before the module opens ------------------------
+     Department + name are set HERE, deliberately, and lock the From side of every request.
+     No inline switcher elsewhere: changing identity means coming back through this screen. */
+  let idPick=null;
+  function identityScreen(nav){
+    idPick=idPick||myDept()||null;
+    const body=UI.card(`
+      <span class="ui-flabel">Your department</span>${UI.chips(DEPTS,idPick,'data-dept')}
+      ${UI.field({label:"Your name",id:"idName",value:myName(),placeholder:"First name or initials"})}
+      <div class="btnrow" style="margin-top:14px"><button class="btn" id="idGo">Continue</button></div>`);
+    UI.render(ROOT(),nav,{title:"Who's working?",sub:"Requests you send are signed with this. Your department decides what's highlighted for you.",body,mount:r=>{
+      $$(".ui-chip",r).forEach(b=>b.onclick=()=>{idPick=b.dataset.dept;nav.refresh();});
+      $("#idGo",r).onclick=()=>{
+        const nm=($("#idName").value||"").trim();
+        if(!idPick){toast("Pick your department");return;}
+        if(!nm){toast("Enter your name");return;}
+        Store.setJSON(MYDEPT_KEY,idPick);Store.setJSON(MYNAME_KEY,nm);
+        idPick=null;nav.reset(menuScreen);
+      };
+    }});
+  }
 
   /* ---- screen: menu ---- */
   function menuScreen(nav){
     const mine=load().filter(x=>x.to===myDept()&&x.status!=="done").length;
     const body=`
-      <label class="rq-deptsel"><span>I'm working as</span>
-        <select id="rqMyDept">${DEPTS.map(d=>`<option ${d===myDept()?"selected":""}>${esc(d)}</option>`).join("")}</select></label>
+      <div class="rq-idrow"><span>Working as <b>${esc(myName())}</b> · ${esc(myDept())}</span>
+        <button class="link-more" id="rqSwitch" style="font-size:14px">Switch</button></div>
       <div class="rq-tiles">
         ${UI.tile({icon:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7Z"/></svg>',title:"Send",sub:"Make a request to another department",attr:'data-v="send"'})}
         ${UI.tile({icon:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',title:"Receive",sub:`Requests sent to you${mine?` · <b>${mine} new</b>`:""}`,tone:"navy",attr:'data-v="receive"'})}
       </div>`;
     UI.render(ROOT(),nav,{title:"Requests",sub:"Structured requests between departments — no more digging through chat threads.",body,mount:r=>{
-      $("#rqMyDept",r).onchange=e=>{setMyDept(e.target.value);nav.refresh();};
+      $("#rqSwitch",r).onclick=()=>{ if(confirm("Switch department or name? Requests you send are signed with your identity."))nav.go(identityScreen); };
       $$(".ui-tile",r).forEach(b=>b.onclick=()=>nav.go(b.dataset.v==="send"?sendScreen:receiveScreen));
     }});
   }
 
   /* ---- screen: send ---- */
   function sendScreen(nav){
-    draft=draft||{from:myDept(),to:DEPTS.find(d=>d!==myDept())||"Ramp",type:"Power",gate:"",aircraft:"",note:""};
+    const others=DEPTS.filter(x=>x!==myDept());
+    draft=draft||{to:others[0]||"Ramp",type:"Ground Power",gate:"",aircraft:"",note:""};
     const d=draft;
     const body=UI.card(`
-      <span class="ui-flabel">From</span>${UI.chips(DEPTS,d.from,'data-set="from" data-v')}
-      <span class="ui-flabel" style="margin-top:12px">To</span>${UI.chips(DEPTS,d.to,'data-set="to" data-v')}
+      <span class="ui-flabel">From</span>
+      <div class="rq-fromlock">${esc(myDept())} · ${esc(myName())}</div>
+      <span class="ui-flabel" style="margin-top:12px">To</span>${UI.chips(others,d.to,'data-set="to" data-v')}
       <span class="ui-flabel" style="margin-top:12px">Need</span>${UI.chips(TYPES,d.type,'data-set="type" data-v')}
       <div class="rq-two" style="margin-top:12px">
         <div>${UI.field({label:"Gate",id:"rqGate",value:d.gate,placeholder:"e.g. 109",inputmode:"numeric"})}</div>
@@ -55,9 +80,9 @@
       $$(".ui-chip",r).forEach(b=>b.onclick=()=>{syncInputs();d[b.dataset.set]=b.dataset.v;nav.refresh();});
       $("#rqSend",r).onclick=()=>{
         syncInputs();
-        if(d.from===d.to){toast("Pick a different department to send to");return;}
+        if(!d.to||d.to===myDept()){toast("Pick a department to send to");return;}
         if(!d.gate&&!d.aircraft){toast("Add a gate or an aircraft");return;}
-        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:d.from,to:d.to,type:d.type,
+        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,type:d.type,
           gate:d.gate.trim(),aircraft:d.aircraft.trim().toUpperCase(),note:d.note.trim(),when:Date.now(),status:"open"};
         const l=load();l.unshift(req);saveAll(l);
         draft=null;toast("Request sent to "+req.to);
@@ -79,7 +104,7 @@
   function reqCard(x){
     const mine=x.to===myDept();
     return `<div class="rq-item ${mine?"mine":""} ${x.status==="done"?"done":""}">
-      <div class="rqi-top"><span class="rqi-from">From <b>${esc(x.from)}</b></span><span class="rqi-arrow">→</span><span class="rqi-to">${esc(x.to)}</span><span class="rqi-time">${timeAgo(x.when)}</span></div>
+      <div class="rqi-top"><span class="rqi-from">From <b>${esc(x.from)}</b>${x.by?` · ${esc(x.by)}`:""}</span><span class="rqi-arrow">→</span><span class="rqi-to">${esc(x.to)}</span><span class="rqi-time">${timeAgo(x.when)}</span></div>
       <div class="rqi-need">NEED ${esc(String(x.type).toUpperCase())}</div>
       <div class="rqi-meta">${x.gate?`Gate <b>${esc(x.gate)}</b>`:""}${x.gate&&x.aircraft?" · ":""}${x.aircraft?`<b>${esc(x.aircraft)}</b>`:""}</div>
       ${x.note?`<div class="rqi-note">${esc(x.note)}</div>`:""}
@@ -98,7 +123,7 @@
     ctx.fillStyle="#ffffff";roundRect(ctx,14,14,W-28,H-28,20);ctx.fill();
     ctx.fillStyle="#0b3d63";roundRect(ctx,14,14,W-28,66,20);ctx.fill();ctx.fillRect(14,54,W-28,26);
     ctx.fillStyle="#ffffff";ctx.textAlign="left";ctx.font="800 16px "+FA;ctx.fillText("REQUEST",36,52);
-    ctx.textAlign="right";ctx.font="700 15px "+FA;ctx.fillText("from "+x.from,W-36,52);
+    ctx.textAlign="right";ctx.font="700 15px "+FA;ctx.fillText("from "+x.from+(x.by?" · "+x.by:""),W-36,52);
     ctx.textAlign="left";ctx.fillStyle="#0b3d63";ctx.font="900 42px "+FA;ctx.fillText(clip(ctx,"NEED "+String(x.type).toUpperCase(),W-72),36,142);
     const ga=[x.gate?("Gate "+x.gate):"",x.aircraft].filter(Boolean).join("      ");
     ctx.fillStyle="#12202c";ctx.font="800 24px "+FA;ctx.fillText(ga||"—",36,188);
@@ -128,7 +153,8 @@
 
   /* ---- module entry ---- */
   window.REQUESTS={
-    open:()=>{ const r=ROOT(); if(!r)return; navApi=UI.nav(r,{onExit:()=>{try{window.goHome&&window.goHome();}catch(_){}}}); navApi.reset(menuScreen); },
+    open:()=>{ const r=ROOT(); if(!r)return; navApi=UI.nav(r,{onExit:()=>{try{window.goHome&&window.goHome();}catch(_){}}});
+      navApi.reset(hasIdentity()?menuScreen:identityScreen); },
     back:()=>navApi?navApi.back():false
   };
 })();
