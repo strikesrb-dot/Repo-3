@@ -100,8 +100,9 @@
         ${UI.field({id:"rqDetail",value:d.detail,placeholder:"Or type what's in the way…"})}`:""}
       <div class="rq-two" style="margin-top:12px">
         <div>${UI.field({label:"Location",id:"rqLoc",value:d.loc,placeholder:"Gate 109 · Spot 12 · pad"})}</div>
-        <div class="rq-acwrap">${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"Tail or ship number"})}
-          <div class="rq-aclist" id="rqAcList" hidden></div></div>
+        <div class="ui-ta-wrap">${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"Tail or ship number"})}
+          <div class="ui-ta-list" id="rqAcList" hidden></div>
+          <div class="rq-fleetscope">${UI.chips(["All","Mainline","Express"],d.fleetScope||"All",'data-set="fleetScope" data-v')}</div></div>
       </div>
       ${UI.field({label:"Note (optional)",id:"rqNote",value:d.note,placeholder:"Anything else…"})}
       <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">Send request</button></div>`);
@@ -109,18 +110,20 @@
       $$(".ui-chip",r).forEach(b=>b.onclick=()=>{syncInputs();d[b.dataset.set]=b.dataset.v;
         if(b.dataset.set==="type"&&b.dataset.v!=="Remove")d.detail="";
         nav.refresh();});
-      // aircraft typeahead — live suggestions from the fleet database as you type
+      // aircraft typeahead (UI.typeahead) — fleet suggestions, scoped Mainline/Express to narrow the search
       const acIn=$("#rqAc",r), acList=$("#rqAcList",r);
-      if(acIn&&acList)acIn.addEventListener("input",()=>{
-        d.aircraft=acIn.value;
-        const q=acIn.value.trim().toUpperCase();
-        if(!FLEET||q.length<2){acList.hidden=true;acList.innerHTML="";return;}
-        const hits=FLEET.filter(a=>a.reg.includes(q)||a.ship.startsWith(q)).slice(0,6);
-        acList.innerHTML=hits.map(a=>`<button type="button" class="rq-acrow" data-reg="${esc(a.reg)}">
-          <b>${esc(a.reg)}</b><span>ship ${esc(a.ship)} · ${esc(a.type)}</span></button>`).join("");
-        acList.hidden=!hits.length;
-        $$(".rq-acrow",acList).forEach(bb=>bb.onclick=()=>{acIn.value=bb.dataset.reg;d.aircraft=bb.dataset.reg;acList.hidden=true;acList.innerHTML="";});
-      });
+      const isExpress=a=>/Embraer|Bombardier|CRJ/i.test(a.type);
+      if(acIn&&acList){
+        acIn.addEventListener("input",()=>{d.aircraft=acIn.value;});
+        UI.typeahead(acIn,acList,{min:2,source:q=>{
+          if(!FLEET)return [];
+          const Q=q.toUpperCase(), sc=d.fleetScope||"All";
+          return FLEET
+            .filter(a=>sc==="All"||(sc==="Express")===isExpress(a))
+            .filter(a=>a.reg.includes(Q)||a.ship.startsWith(Q)).slice(0,6)
+            .map(a=>({v:a.reg,label:a.reg,cap:(a.ship?"ship "+a.ship+" · ":"")+a.type}));
+        },onPick:v=>{d.aircraft=v;}});
+      }
       $("#rqSend",r).onclick=()=>{
         syncInputs();
         if(!d.to||d.to===myDept()){toast("Pick a department to send to");return;}

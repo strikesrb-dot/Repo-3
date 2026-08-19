@@ -25,6 +25,11 @@ Build markup from these component helpers instead of hand-writing HTML, so every
 - `UI.field({label,id,value,placeholder,inputmode})` — labelled text input.
 - `UI.chips(items, current, attr)` — a wrapped row of selectable chips. `items` = `["A"]` or
   `[{v,label}]`; `attr` is the data-attribute name used to read the pick back.
+- `UI.typeahead(inputEl, listEl, {min, source, onPick})` — live suggestions under a field.
+  `source(q)` returns `[{v, label, cap}]`. **Rule: any input backed by a known dataset (aircraft,
+  equipment tags, people) gets a typeahead, built with this** — wrap the field in `.ui-ta-wrap`,
+  add a `.ui-ta-list` div. Pure DOM updates on input; never re-renders the screen (focus survives).
+  Reference: the Aircraft field in `requests.js` (fleet-scoped Mainline/Express).
 - `UI.esc(s)` — HTML-escape.
 
 Colours/spacing/radius/motion come from the tokens in `index.html` `:root` — the United palette

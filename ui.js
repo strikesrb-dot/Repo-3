@@ -69,5 +69,28 @@
     if(opts.mount)opts.mount(container);
   }
 
-  window.UI={esc,screenHTML,tile,card,field,chips,nav,render};
+  /* ---------------- function language: typeahead ----------------
+     Any input backed by a known dataset gets live suggestions, built the same way everywhere.
+     UI.typeahead(inputEl, listEl, {min, source, onPick})
+       source(q) -> [{v, label, cap}]  (v = value to fill; label bold; cap = small caption line)
+     Pure DOM updates on input — never re-renders the screen, so focus is preserved. */
+  function typeahead(inputEl,listEl,opts){
+    if(!isEl(inputEl)||!isEl(listEl))return;
+    const min=(opts&&opts.min)||2, source=(opts&&opts.source)||(()=>[]);
+    const hide=()=>{listEl.hidden=true;listEl.innerHTML="";};
+    inputEl.addEventListener("input",()=>{
+      const q=inputEl.value.trim();
+      if(q.length<min){hide();return;}
+      const items=source(q)||[];
+      if(!items.length){hide();return;}
+      listEl.innerHTML=items.map(it=>`<button type="button" class="ui-ta-row" data-v="${esc(it.v)}"><b>${esc(it.label)}</b>${it.cap?`<span>${esc(it.cap)}</span>`:""}</button>`).join("");
+      listEl.hidden=false;
+      [...listEl.querySelectorAll(".ui-ta-row")].forEach(b=>b.onclick=()=>{
+        inputEl.value=b.dataset.v;hide();
+        if(opts&&opts.onPick)opts.onPick(b.dataset.v);
+      });
+    });
+  }
+
+  window.UI={esc,screenHTML,tile,card,field,chips,nav,render,typeahead};
 })();
