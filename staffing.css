@@ -134,7 +134,7 @@
 .rt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
 /* tap-cycle tile — grey/opaque by default, colors as state advances */
 .rtile{position:relative;display:flex;flex-direction:column;gap:3px;text-align:left;border:2px solid #d7dce1;background:#f4f6f8;color:#8a939c;
-  border-radius:14px;padding:12px 13px;min-height:74px;cursor:pointer;transition:transform .05s,background .12s,border-color .12s,color .12s;opacity:.92}
+  border-radius:14px;padding:12px 13px;min-height:74px;cursor:pointer;transition:transform var(--dur-tap) linear,background var(--dur-tap) linear,border-color var(--dur-tap) linear,color var(--dur-tap) linear;opacity:.92}
 .rtile:active{transform:scale(.97)}
 .rt-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .rt-n{font-size:26px;font-weight:900;line-height:1}
@@ -341,9 +341,9 @@
 .shgrp .abody-wrap{max-height:none}
 .shgrp.collapsed .abody-wrap{display:none}
 .shgrp.collapsed{margin-bottom:6px}
-.staff-modal{position:fixed;inset:0;background:rgba(10,20,35,.55);display:flex;align-items:center;justify-content:center;z-index:400;padding:24px;animation:smFade .15s ease}
+.staff-modal{position:fixed;inset:0;background:rgba(10,20,35,.55);display:flex;align-items:center;justify-content:center;z-index:400;padding:24px;animation:smFade var(--dur-1) var(--ease)}
 @keyframes smFade{from{opacity:0}to{opacity:1}}
-.sm-box{background:#fff;border-radius:18px;box-shadow:0 22px 60px rgba(10,25,45,.4);padding:24px 22px;max-width:340px;width:100%;text-align:center;animation:smPop .18s cubic-bezier(.2,.9,.3,1.2)}
+.sm-box{background:#fff;border-radius:18px;box-shadow:0 22px 60px rgba(10,25,45,.4);padding:24px 22px;max-width:340px;width:100%;text-align:center;animation:smPop var(--dur-1) var(--ease-out)}
 @keyframes smPop{from{transform:scale(.9)}to{transform:scale(1)}}
 .sm-bang{font-size:40px;font-weight:900;color:#c0271e;letter-spacing:.06em;line-height:1}
 .sm-title{font-size:18px;font-weight:900;color:#c0271e;margin:10px 0 6px;letter-spacing:.01em}
@@ -365,7 +365,8 @@
   .asg2-pool .abody{width:100%}
   .asg-gutter{display:flex;align-items:center;justify-content:center;position:sticky;top:8px;height:calc(100vh - 96px);cursor:col-resize;touch-action:none}
   .asg-gutter span{display:block;width:4px;height:46px;border-radius:3px;background:#c8d2db}
-  .asg-gutter:hover span,.asg-gutter:active span{background:var(--navy)}
+  .asg-gutter:active span{background:var(--navy)}
+  @media (hover:hover){.asg-gutter:hover span{background:var(--navy)}}
 }
 /* full-width board (≥1100) → give the staff pool much more room so its shift
    columns sit side-by-side without cramping/horizontal-scrolling */
@@ -599,3 +600,13 @@
 .tstrip.muted:active{transform:scale(.99);opacity:.7}
 .tstrip.muted .ts-id{color:#7a8792}
 .tstrip.muted .muse{font-size:10px;font-weight:800;color:#7a8792;flex:none}
+
+/* ===== motion pass — press feedback everywhere, timings from the motion tokens only ===== */
+/* press = instant (transition:none on :active); release eases back over --dur-1 */
+.mp-tile,.shift-opt,.numb,.xrem,.up-slot,.yn,.tos-b,.seg,.abody,.slot,.oosr,.gse-rchip{
+  transition:transform var(--dur-1) var(--ease-out),background var(--dur-tap) linear,
+    border-color var(--dur-tap) linear,color var(--dur-tap) linear}
+.mp-tile:active,.numb:active,.xrem:active,.up-slot:active,.seg:active,.abody:active,.ticon:active{transition:none}
+.seg:active{transform:scale(.96)}
+.abody:active{transform:scale(.98)}
+.dr-main:active,.lr-main:active,.prow-tap:active{background:rgba(0,51,160,.06)}
