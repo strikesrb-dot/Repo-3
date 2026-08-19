@@ -11,7 +11,8 @@
   const ROOT=()=>$("#requestsRoot");
 
   const DEPTS=["Move Team","UGE","Tech Ops","Ramp","SOC","Customer Service"];
-  const TYPES=["Ground Power","Air","Lights","Pushback","Water / Lav","Bag Runner","Other"];
+  const TYPES=["Ground Power","Air","Lights","Remove","Pushback","Water / Lav","Bag Runner","Other"];
+  const REMOVE_OPTS=["Pushback","Tug","Bag carts","Belt loader","GPU","Stairs"];   // what's in the way
   /* Sender identity — every department has a brand color so a card reads "who's asking" at a
      glance. Text pairings are AA on each band. Unknown/legacy departments fall back to United blue. */
   const DEPT_BRAND={
@@ -86,26 +87,45 @@
   /* ---- screen: send ---- */
   function sendScreen(nav){
     const others=DEPTS.filter(x=>x!==myDept());
-    draft=draft||{to:others[0]||"Ramp",type:"Ground Power",loc:"",aircraft:"",note:""};
+    draft=draft||{to:others[0]||"Ramp",type:"Ground Power",detail:"",loc:"",aircraft:"",note:""};
     const d=draft;
     const body=UI.card(`
       <span class="ui-flabel">From</span>
       <div class="rq-fromlock">${esc(myDept())} · ${esc(myName())}</div>
-      <span class="ui-flabel" style="margin-top:12px">To</span>${UI.chips(others,d.to,'data-set="to" data-v')}
+      <span class="ui-flabel" style="margin-top:12px">Who can help</span>${UI.chips(others,d.to,'data-set="to" data-v')}
       <span class="ui-flabel" style="margin-top:12px">Need</span>${UI.chips(TYPES,d.type,'data-set="type" data-v')}
+      ${d.type==="Remove"?`
+        <span class="ui-flabel" style="margin-top:12px">What needs removing?</span>
+        ${UI.chips(REMOVE_OPTS,d.detail,'data-set="detail" data-v')}
+        ${UI.field({id:"rqDetail",value:d.detail,placeholder:"Or type what's in the way…"})}`:""}
       <div class="rq-two" style="margin-top:12px">
         <div>${UI.field({label:"Location",id:"rqLoc",value:d.loc,placeholder:"Gate 109 · Spot 12 · pad"})}</div>
-        <div>${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"Tail or ship number"})}</div>
+        <div class="rq-acwrap">${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"Tail or ship number"})}
+          <div class="rq-aclist" id="rqAcList" hidden></div></div>
       </div>
       ${UI.field({label:"Note (optional)",id:"rqNote",value:d.note,placeholder:"Anything else…"})}
       <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">Send request</button></div>`);
     UI.render(ROOT(),nav,{title:"New request",body,mount:r=>{
-      $$(".ui-chip",r).forEach(b=>b.onclick=()=>{syncInputs();d[b.dataset.set]=b.dataset.v;nav.refresh();});
+      $$(".ui-chip",r).forEach(b=>b.onclick=()=>{syncInputs();d[b.dataset.set]=b.dataset.v;
+        if(b.dataset.set==="type"&&b.dataset.v!=="Remove")d.detail="";
+        nav.refresh();});
+      // aircraft typeahead — live suggestions from the fleet database as you type
+      const acIn=$("#rqAc",r), acList=$("#rqAcList",r);
+      if(acIn&&acList)acIn.addEventListener("input",()=>{
+        d.aircraft=acIn.value;
+        const q=acIn.value.trim().toUpperCase();
+        if(!FLEET||q.length<2){acList.hidden=true;acList.innerHTML="";return;}
+        const hits=FLEET.filter(a=>a.reg.includes(q)||a.ship.startsWith(q)).slice(0,6);
+        acList.innerHTML=hits.map(a=>`<button type="button" class="rq-acrow" data-reg="${esc(a.reg)}">
+          <b>${esc(a.reg)}</b><span>ship ${esc(a.ship)} · ${esc(a.type)}</span></button>`).join("");
+        acList.hidden=!hits.length;
+        $$(".rq-acrow",acList).forEach(bb=>bb.onclick=()=>{acIn.value=bb.dataset.reg;d.aircraft=bb.dataset.reg;acList.hidden=true;acList.innerHTML="";});
+      });
       $("#rqSend",r).onclick=()=>{
         syncInputs();
         if(!d.to||d.to===myDept()){toast("Pick a department to send to");return;}
         if(!d.loc&&!d.aircraft){toast("Add a location or an aircraft");return;}
-        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,type:d.type,
+        const req={id:"R"+Date.now()+"-"+Math.floor(Math.random()*1e4),from:myDept(),by:myName(),to:d.to,type:d.type,detail:(d.detail||"").trim(),
           loc:d.loc.trim(),aircraft:d.aircraft.trim().toUpperCase(),note:d.note.trim(),when:Date.now(),status:"open"};
         const l=load();l.unshift(req);saveAll(l);
         draft=null;toast("Request sent to "+req.to);
@@ -113,7 +133,7 @@
       };
     }});
   }
-  function syncInputs(){if(!draft)return;const g=$("#rqLoc"),a=$("#rqAc"),n=$("#rqNote");if(g)draft.loc=g.value;if(a)draft.aircraft=a.value;if(n)draft.note=n.value;}
+  function syncInputs(){if(!draft)return;const g=$("#rqLoc"),a=$("#rqAc"),n=$("#rqNote"),dt=$("#rqDetail");if(g)draft.loc=g.value;if(a)draft.aircraft=a.value;if(n)draft.note=n.value;if(dt)draft.detail=dt.value;}
 
   /* ---- screen: receive (open inbox + archive) ----------------------------------------------------
      Lifecycle: open → done (one tap) or declined (reason chips: "Already has power", "MX hold"…).
@@ -181,7 +201,7 @@
         ${mine&&!closed?`<span class="rqp-foryou">For you</span>`:""}
         <span class="rqp-bandwho">${x.by?esc(x.by)+" &middot; ":""}${done?"&#10003; ":""}${timeAgo(x.when)}</span>
       </div>
-      <div class="rqp-need">${esc(x.type)}</div>
+      <div class="rqp-need">${esc(x.type)}${x.detail?` &middot; ${esc(x.detail)}`:""}</div>
       <div class="rqp-where">
         <span class="rqp-cell"><span class="rqp-lbl">Location</span><span class="rqp-fig">${esc(loc||"—")}</span></span>
         <span class="rqp-cell"><span class="rqp-lbl">Aircraft</span><span class="rqp-fig">${x.aircraft?esc(x.aircraft):"—"}</span>
@@ -210,7 +230,7 @@
     ctx.fillStyle=br.fg;ctx.textAlign="left";ctx.font="600 15px "+FA;
     ctx.fillText(clip(ctx,x.from.toUpperCase()+" IS REQUESTING  →  "+x.to.toUpperCase(),W-170),36,52);
     ctx.textAlign="right";ctx.font="600 13px "+FA;if(x.by)ctx.fillText(x.by,W-36,52);
-    ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,"NEED "+String(x.type).toUpperCase(),W-72),36,136);
+    ctx.textAlign="left";ctx.fillStyle="#0033a0";ctx.font="600 38px "+FA;ctx.fillText(clip(ctx,"NEED "+String(x.type).toUpperCase()+(x.detail?" · "+String(x.detail).toUpperCase():""),W-72),36,136);
     // labeled figures — LOCATION | AIRCRAFT (+ type from the fleet database)
     ctx.fillStyle="#5c6470";ctx.font="600 12px "+FA;
     ctx.fillText("LOCATION",36,170);ctx.fillText("AIRCRAFT",256,170);
