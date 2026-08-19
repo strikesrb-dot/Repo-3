@@ -27,9 +27,12 @@ Build markup from these component helpers instead of hand-writing HTML, so every
   `[{v,label}]`; `attr` is the data-attribute name used to read the pick back.
 - `UI.esc(s)` — HTML-escape.
 
-Colours/spacing come from the site tokens in `index.html` `:root` (`--navy`, `--navy-d`, `--card`,
-`--line`, `--ink`, `--muted`, `--good`…). Use those variables; never hard-code a hex that a token
-already covers.
+Colours/spacing/radius/motion come from the tokens in `index.html` `:root` — the United palette
+(`--ua-blue` #0033a0 links/chips, `--ua-action` #1414d2 CTAs, `--ua-navy` grounds, tile accents
+`--ua-purple/lavender/sky/plum`), warmed neutrals (`--bg` #f7f4f0), the radius ladder (`--r-sm/md/lg/tile/pill`),
+and the three-easing motion budget. Legacy names (`--navy`→United Blue, `--accent`→status amber only)
+still resolve. Never hard-code a hex a token covers. Full spec: the Apple-structured, United-skinned
+design system (scratchpad/Apple_United_System.md in session history; §1.5 is the token source of truth).
 
 ## Function language (`ui.js`) — how to build a screen
 

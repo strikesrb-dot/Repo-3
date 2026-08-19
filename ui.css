@@ -1,34 +1,110 @@
 /* ui.css — the design language: shared component styles used by every feature built on the UI kit.
-   Colours/spacing come from the site tokens (--navy, --card, --line, --ink, --muted…) in index.html. */
+   Apple-structured geometry (radius ladder, motion budget, press-first feedback), United palette.
+   All values come from the tokens in index.html :root — never hard-code a hex a token covers. */
 
 .ui-screen{max-width:640px;margin:0 auto;padding:2px 2px 44px}
 
-/* page header: back button (always present) + title/subtitle + optional right slot */
-.ui-header{display:flex;align-items:flex-start;gap:10px;padding:4px 0 12px}
-.ui-back{flex:none;width:38px;height:38px;border:1.5px solid var(--line);background:var(--card);border-radius:12px;font-size:24px;font-weight:800;line-height:1;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.ui-back:active{transform:scale(.94)}
-.ui-back.ph{border:none;background:none;pointer-events:none}
-.ui-htext{flex:1;min-width:0;padding-top:1px}
-.ui-title{margin:0;font-size:23px;font-weight:900;color:var(--ink);line-height:1.15}
-.ui-sub{margin:2px 0 0;font-size:13px;color:var(--muted);line-height:1.35}
-.ui-hright{flex:none}
+/* screen header: naked chevron back (always present) + title/subtitle + optional right slot */
+.ui-header{display:flex;align-items:flex-start;gap:6px;padding:6px 0 14px}
+.ui-back{flex:none;width:var(--hit);height:var(--hit);margin-left:-10px;border:0;background:none;
+  color:var(--ua-blue);display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);
+  cursor:pointer;transition:opacity var(--dur-1) var(--ease)}
+.ui-back:active{opacity:.4;transition:none}
+.ui-back svg{width:22px;height:22px}
+.ui-back.ph{border:none;background:none;pointer-events:none;visibility:hidden}
+.ui-htext{flex:1;min-width:0;padding-top:8px}
+.ui-title{margin:0;font:600 28px/1.14 var(--font);letter-spacing:0;color:var(--ink)}
+.ui-sub{margin:4px 0 0;font:400 14px/1.4286 var(--font);letter-spacing:-.016em;color:var(--muted)}
+.ui-hright{flex:none;padding-top:6px}
 
-/* action tile */
-.ui-tile{position:relative;background:linear-gradient(160deg,var(--navy),var(--navy-d));color:#fff;border:none;border-radius:20px;box-shadow:0 6px 16px rgba(11,61,99,.26);padding:20px 15px;min-height:140px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:5px;cursor:pointer;text-align:left}
-.ui-tile:active{transform:scale(.97)}
-.ui-tile.t-teal{background:linear-gradient(160deg,#0f5a86,#0b3d63)}
-.ui-tile.t-slate{background:linear-gradient(160deg,#5b6b7a,#47535f)}
-.ui-tile .ui-tile-ic{position:absolute;top:15px;left:16px;font-size:26px;opacity:.95}
-.ui-tile .ui-tile-t{font-size:20px;font-weight:900;line-height:1.15}
-.ui-tile .ui-tile-s{font-size:12px;font-weight:600;opacity:.85;line-height:1.25}
-.ui-tile .ui-tile-s b{color:#ffd76a}
+/* action tile — flat United accents, r22, press scale, no shadows on solid tiles */
+.ui-tile{position:relative;background:var(--ua-action);color:#fff;border:none;border-radius:var(--r-tile);
+  box-shadow:none;padding:24px 20px 22px;min-height:150px;display:flex;flex-direction:column;
+  align-items:flex-start;justify-content:flex-end;gap:5px;cursor:pointer;text-align:left;overflow:hidden;
+  transition:transform var(--dur-2) var(--ease-out)}
+.ui-tile:active{transform:scale(.98);transition-duration:var(--dur-tap)}
+@media (hover:hover) and (pointer:fine){.ui-tile:hover{transform:scale(1.01)}}
+.ui-tile.t-navy{background:var(--ua-navy)}
+.ui-tile.t-teal{background:var(--ua-blue)}          /* legacy name → United Blue */
+.ui-tile.t-purple{background:var(--ua-purple)}
+.ui-tile.t-plum{background:var(--ua-plum)}
+.ui-tile.t-sky{background:var(--ua-sky);color:var(--ink)}
+.ui-tile.t-lavender{background:var(--ua-lavender);color:var(--ink)}
+.ui-tile.t-slate{background:var(--bg-inset);color:var(--muted)}
+.ui-tile .ui-tile-ic{position:absolute;top:16px;left:18px;font-size:24px;opacity:.95}
+.ui-tile .ui-tile-t{font:600 22px/1.15 var(--font);letter-spacing:0}
+.ui-tile .ui-tile-s{font:400 13.5px/1.35 var(--font);letter-spacing:-.016em;opacity:.9}
+.ui-tile .ui-tile-s b{color:var(--ua-sky)}
+.ui-tile.t-sky .ui-tile-s b,.ui-tile.t-lavender .ui-tile-s b{color:var(--ua-blue)}
 
-/* card + form field + chips */
-.ui-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(20,40,70,.06)}
+/* card — zero perimeter border; white-on-warm ground + navy shadow do the separation */
+.ui-card{background:var(--card);border:0;border-radius:var(--r-lg);padding:var(--pad-card);
+  box-shadow:var(--shadow-1);overflow:hidden;position:relative}
+
+/* form field */
 .ui-field{display:block;margin-top:12px}
 .ui-field:first-child{margin-top:0}
-.ui-flabel{display:block;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px}
-.ui-field input{width:100%;font-size:15px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px}
-.ui-chips{display:flex;flex-wrap:wrap;gap:7px}
-.ui-chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 13px;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer}
-.ui-chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.ui-flabel{display:block;font:600 12px/1.33 var(--font);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px}
+.ui-field input{width:100%;font:400 17px/1.235 var(--font);letter-spacing:-.022em;padding:12px 14px;
+  border:1px solid var(--field-border);border-radius:var(--r-md);background:rgba(255,255,255,.85);color:var(--ink)}
+.ui-field input:focus{border-color:var(--focus);outline:none}
+.ui-field input:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+/* chips — outlined United Blue pills, 36px visual / 44px hit, selection snaps in 100ms */
+.ui-chips{display:flex;flex-wrap:wrap;gap:8px}
+.ui-chip{min-height:36px;padding:7px 14px;border-radius:var(--r-pill);border:1.5px solid var(--ua-blue);
+  background:#fff;color:var(--ua-blue);font:600 14px/1.3 var(--font);letter-spacing:-.016em;
+  position:relative;cursor:pointer;transition:background var(--dur-tap) linear,color var(--dur-tap) linear}
+.ui-chip::before{content:'';position:absolute;inset:-4px 0}
+.ui-chip.on{background:var(--ua-blue);color:#fff}
+.ui-chip:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+
+/* text link with chevron — the "Learn more ›" convention */
+.link-more{color:var(--ua-blue);font:400 17px/1.3 var(--font);letter-spacing:-.022em;background:none;border:0;padding:0;cursor:pointer;text-decoration:none}
+.link-more::after{content:'\203A';display:inline-block;padding-left:.24em;position:relative;top:-.02em}
+@media (hover:hover){.link-more:hover{text-decoration:underline}.link-more:hover::after{text-decoration:none}}
+
+/* banner */
+.ui-banner{display:flex;align-items:center;gap:12px;min-height:var(--hit);margin:0 0 12px;
+  padding:12px 16px;border-radius:var(--r-md);font:400 14px/1.4286 var(--font);letter-spacing:-.016em}
+.ui-banner--info{background:#e7edf9;color:var(--ua-blue)}
+.ui-banner--warn{background:#fdf2e2;color:var(--ua-amber-text)}
+.ui-banner--urgent{background:var(--ua-plum);color:#fff}
+
+/* stat card (navy) + royal variant */
+.ui-stat{background:var(--ua-navy);color:#fff;border-radius:var(--r-lg);padding:20px 22px;border:0;box-shadow:none}
+.ui-stat--royal{background:var(--ua-blue);box-shadow:var(--shadow-1)}
+.ui-stat__eyebrow{font:600 12px/1.33 var(--font);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--dk-link);display:block;margin-bottom:.4em}
+.ui-stat__num{font:600 40px/1 var(--font);letter-spacing:-.015em;font-variant-numeric:tabular-nums}
+.ui-stat__cap{font:400 12px/1.33 var(--font);letter-spacing:-.01em;color:var(--dk-muted);margin-top:6px}
+
+/* grouped list rows (iOS-settings anatomy) */
+.ui-group{background:var(--card);border-radius:var(--r-md);overflow:hidden;
+  box-shadow:0 1px 2px rgba(0,24,64,.06);margin-bottom:20px}
+.ui-group__head{font:600 12px/1.33 var(--font);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);padding:0 16px 8px;margin-top:20px;font-variant-numeric:tabular-nums}
+.ui-row{display:flex;align-items:center;gap:12px;min-height:var(--row-h);padding:6px 16px;width:100%;
+  background:var(--card);border:0;text-align:left;position:relative;cursor:pointer;
+  transition:background var(--dur-1) var(--ease-out)}
+.ui-row + .ui-row::before{content:'';position:absolute;top:0;left:16px;right:0;height:1px;
+  background:var(--hairline);transform:scaleY(.5);transform-origin:top}
+.ui-row:active{background:rgba(0,51,160,.08);transition:none}
+.ui-row__main{flex:1;min-width:0}
+.ui-row__title{font:400 17px/1.29 var(--font);letter-spacing:-.022em;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ui-row__sub{font:400 14px/1.38 var(--font);color:var(--muted);margin-top:1px}
+.ui-row__value{font-size:17px;color:var(--muted);flex-shrink:0;max-width:45%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.ui-row__chev{flex-shrink:0;width:8px;height:8px;border-top:2px solid #9aa3b2;border-right:2px solid #9aa3b2;
+  transform:rotate(45deg);border-radius:1px}
+
+/* global hygiene */
+:where(a,button,[role=button],input,select,textarea,.ui-tile,.ui-chip,.ui-row){
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+body>header :focus-visible{outline-color:var(--focus-dark)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{
+  transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}

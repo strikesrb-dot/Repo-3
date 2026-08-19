@@ -16,10 +16,12 @@
   const isEl=x=>x&&x.nodeType===1;
 
   /* ---------------- design language: component builders ---------------- */
+  // back = naked SF-style SVG chevron (24-box, stroke 2, round caps) — never a text glyph
+  const BACK_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg>`;
   function screenHTML({title,sub,back,right,body}){
     return `<div class="ui-screen">
       <header class="ui-header">
-        ${back?`<button class="ui-back" data-ui-back aria-label="Back">‹</button>`:`<span class="ui-back ph"></span>`}
+        ${back?`<button class="ui-back" data-ui-back aria-label="Back">${BACK_SVG}</button>`:`<span class="ui-back ph"></span>`}
         <div class="ui-htext"><h2 class="ui-title">${esc(title||"")}</h2>${sub?`<p class="ui-sub">${sub}</p>`:""}</div>
         <div class="ui-hright">${right||""}</div>
       </header>

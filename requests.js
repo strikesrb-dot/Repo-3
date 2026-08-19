@@ -28,8 +28,8 @@
       <label class="rq-deptsel"><span>I'm working as</span>
         <select id="rqMyDept">${DEPTS.map(d=>`<option ${d===myDept()?"selected":""}>${esc(d)}</option>`).join("")}</select></label>
       <div class="rq-tiles">
-        ${UI.tile({icon:"➤",title:"Send",sub:"Make a request to another department",tone:"navy",attr:'data-v="send"'})}
-        ${UI.tile({icon:"📥",title:"Receive",sub:`Requests sent to you${mine?` · <b>${mine} new</b>`:""}`,tone:"teal",attr:'data-v="receive"'})}
+        ${UI.tile({icon:"➤",title:"Send",sub:"Make a request to another department",attr:'data-v="send"'})}
+        ${UI.tile({icon:"📥",title:"Receive",sub:`Requests sent to you${mine?` · <b>${mine} new</b>`:""}`,tone:"navy",attr:'data-v="receive"'})}
       </div>`;
     UI.render(ROOT(),nav,{title:"Requests",sub:"Structured requests between departments — no more digging through chat threads.",body,mount:r=>{
       $("#rqMyDept",r).onchange=e=>{setMyDept(e.target.value);nav.refresh();};
@@ -50,7 +50,7 @@
         <div>${UI.field({label:"Aircraft",id:"rqAc",value:d.aircraft,placeholder:"e.g. N762YX"})}</div>
       </div>
       ${UI.field({label:"Note (optional)",id:"rqNote",value:d.note,placeholder:"Anything else…"})}
-      <div class="btnrow" style="margin-top:14px"><button class="btn navy" id="rqSend">Send request ➤</button></div>`);
+      <div class="btnrow" style="margin-top:14px"><button class="btn" id="rqSend">Send request</button></div>`);
     UI.render(ROOT(),nav,{title:"New request",body,mount:r=>{
       $$(".ui-chip",r).forEach(b=>b.onclick=()=>{syncInputs();d[b.dataset.set]=b.dataset.v;nav.refresh();});
       $("#rqSend",r).onclick=()=>{

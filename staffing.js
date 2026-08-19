@@ -1480,7 +1480,7 @@ function renderStaffCanvas(){
     const hw=drawHoursCanvas(ctx,hrs,xrEdge,cy);   // non-standard clock-in/out drawn red
     let leftEdge=xrEdge-hw;
     const label=pw||(fwd?"Double until "+du:"");
-    if(label){const bg=pw?"#f3e2f7":"#0b3d63",fg=pw?"#7a3287":"#fff";
+    if(label){const bg=pw?"#f3e2f7":"#0033a0",fg=pw?"#7a3287":"#fff";
       ctx.font=FA("800 12px");const w=ctx.measureText(label).width+12;
       let px=(midX!=null?midX:leftEdge)-w/2;const maxR=leftEdge-8;if(px+w>maxR)px=maxR-w;
       ctx.fillStyle=bg;rr(px,cy-9,w,18,5);ctx.fill();ctx.fillStyle=fg;ctx.textAlign="center";ctx.fillText(label,px+w/2,cy);ctx.textAlign="left";
@@ -1490,17 +1490,17 @@ function renderStaffCanvas(){
   // title + date + shift
   ctx.fillStyle="#10171f";ctx.font=FA("900 32px");ctx.textAlign="left";ctx.fillText(lblOf("sheetTitle","EWR AMT STAFFING"),M,y+22);
   ctx.fillStyle="#67727e";ctx.font=FA("700 14px");ctx.fillText(fmtNiceDate((ST.parsed&&ST.parsed.date)||todayLocalISO()),M,y+45);
-  ctx.fillStyle="#0b3d63";rr(W-M-92,y+4,92,40,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 18px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-46,y+26);
+  ctx.fillStyle="#0033a0";rr(W-M-92,y+4,92,40,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 18px");ctx.textAlign="center";ctx.fillText(ST.shift,W-M-46,y+26);
   y+=52+8;
   // info band
   const iW=(IW-2*gap)/3;
   [["DISPATCHER",[dn||"OPEN"],!dn,true],["SUPERVISORS",supers.length?supers:["—"]],["MANAGERS",mgrs.length?mgrs:["—"]]].forEach((b,i)=>{const bx=M+i*(iW+gap);
     ctx.fillStyle="#fff";ctx.fillRect(bx,y,iW,infoH);ctx.strokeStyle="#d7dce1";ctx.lineWidth=1;ctx.strokeRect(bx+.5,y+.5,iW-1,infoH-1);
-    ctx.fillStyle=b[3]?"#0b3d63":"#f5a623";ctx.fillRect(bx,y,iW,22);
+    ctx.fillStyle=b[3]?"#0033a0":"#f5a623";ctx.fillRect(bx,y,iW,22);
     ctx.fillStyle=b[3]?"#fff":"#3a2500";ctx.font=FA("900 12px");ctx.textAlign="left";ctx.fillText(b[0],bx+9,y+11);
     b[1].forEach((v,j)=>{ctx.fillStyle=b[2]?"#c0271e":"#1c2530";ctx.font=FA("700 16px");ctx.fillText(clip(v,iW-16,FA("700 16px")),bx+9,y+22+18+j*20);});});
   y+=infoH+10;
-  const sectionHead=label=>{ctx.fillStyle="#0b3d63";rr(M,y,IW,28,5);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("900 16px");ctx.textAlign="left";ctx.fillText(label,M+12,y+15);y+=32;};
+  const sectionHead=label=>{ctx.fillStyle="#0033a0";rr(M,y,IW,28,5);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("900 16px");ctx.textAlign="left";ctx.fillText(label,M+12,y+15);y+=32;};
   // ---- REMOTES / AREAS (2 columns) ----
   sectionHead("REMOTES / AREAS");
   const aTop=y;
@@ -1552,7 +1552,7 @@ function renderAbsentCanvas(){
   const clip=(t,mw,font)=>{ctx.font=font;t=t||"";if(ctx.measureText(t).width<=mw)return t;while(t.length&&ctx.measureText(t+"…").width>mw)t=t.slice(0,-1);return t+"…";};
   // title + shift + count
   ctx.fillStyle="#10171f";ctx.font=FA("900 30px");ctx.textAlign="left";ctx.fillText("NOT HERE THIS SHIFT",M,M+26);
-  ctx.fillStyle="#0b3d63";rr(W-M-150,M+6,150,38,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 16px");ctx.textAlign="center";ctx.fillText(ST.shift+" · "+absent.length,W-M-75,M+26);
+  ctx.fillStyle="#0033a0";rr(W-M-150,M+6,150,38,8);ctx.fill();ctx.fillStyle="#fff";ctx.font=FA("800 16px");ctx.textAlign="center";ctx.fillText(ST.shift+" · "+absent.length,W-M-75,M+26);
   let y=M+headH+12;
   if(!absent.length){ctx.fillStyle="#8a97a3";ctx.font=FA("700 20px");ctx.textAlign="left";ctx.fillText("Everyone is here this shift.",M+4,y+20);}
   absent.forEach((x,i)=>{const col=i%cols,row=Math.floor(i/cols),bx=M+col*(colW+16),by=y+row*rowH;
@@ -1601,14 +1601,14 @@ function renderBriefCanvas(){
   const H=y+M;
   const c=document.createElement("canvas");c.width=W*S;c.height=H*S;const ctx=c.getContext("2d");ctx.scale(S,S);
   ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
-  ctx.fillStyle="#0b3d63";ctx.fillRect(0,0,W,4);
+  ctx.fillStyle="#0033a0";ctx.fillRect(0,0,W,4);
   ctx.fillStyle="#10171f";ctx.font=FA("900 24px");ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.fillText(lblOf("briefTitle","DAILY MOVE TEAM SHIFT BRIEFING"),M,M+24);
   ctx.fillStyle="#67727e";ctx.font=FA("600 13px");ctx.textAlign="right";ctx.fillText(fmtNiceDate((ST.parsed&&ST.parsed.date)||todayLocalISO()),W-M,M+24);
   let yy=M+40;  // match the height-simulation origin so tblY/mgrY line up with the draw flow
   segs.forEach(s=>{
     // the table + MGR line are drawn separately at absolute tblY/mgrY; skip the draw cursor
     // past that reserved block before the focus items, or they overprint the staffing table
-    if(s.focusTitle){yy=mgrY+24;ctx.fillStyle="#0b3d63";ctx.font=FA("800 14px");ctx.textAlign="left";ctx.fillText("BRIEFING FOCUS ITEMS",M,yy+4);yy+=24;
+    if(s.focusTitle){yy=mgrY+24;ctx.fillStyle="#0033a0";ctx.font=FA("800 14px");ctx.textAlign="left";ctx.fillText("BRIEFING FOCUS ITEMS",M,yy+4);yy+=24;
       focus.forEach((f,i)=>{const fl=focusLines[i];ctx.fillStyle="#1c2530";ctx.font=FA("400 14px");
         fl.forEach((ln,k)=>ctx.fillText((k===0?(i+1)+". ":"   ")+ln,M+4,yy+14+k*18));yy+=fl.length*18+6;});return;}
     ctx.fillStyle="#8a939c";ctx.font=FA("800 11px");ctx.textAlign="left";ctx.fillText(s.label.toUpperCase(),M,yy+2);
@@ -1616,7 +1616,7 @@ function renderBriefCanvas(){
     yy+=18+s.lines.length*(s.fs+4)+6;
   });
   // staffing table
-  ctx.fillStyle="#0b3d63";ctx.font=FA("800 13px");ctx.textAlign="left";ctx.fillText("MOVE TEAM STAFFING COUNT",M,tblY+2);
+  ctx.fillStyle="#0033a0";ctx.font=FA("800 13px");ctx.textAlign="left";ctx.fillText("MOVE TEAM STAFFING COUNT",M,tblY+2);
   const cols=["Shift","Avail","Max tugs","VAC|DAT|CB","SICK|OUT|OJI"],cx=[M,M+90,M+170,M+290,M+440];
   ctx.font=FA("800 11px");ctx.fillStyle="#67727e";cols.forEach((h,i)=>ctx.fillText(h,cx[i],tblY+22));
   ctx.font=FA("600 13px");
@@ -1624,7 +1624,7 @@ function renderBriefCanvas(){
     ctx.fillText(r.sh,cx[0],ry);ctx.fillText(""+r.n,cx[1],ry);ctx.fillText(""+r.max,cx[2],ry);
     ctx.fillText(r.t.VAC+" | "+r.t.DAT+" | "+r.t.CB,cx[3],ry);ctx.fillText(r.t.SICK+" | "+r.t.OUT+" | "+r.t.OJI,cx[4],ry);});
   ctx.fillStyle="#67727e";ctx.font=FA("600 12px");ctx.fillText("MGR "+(ST.manager?nm(ST.manager):"—")+"   ·   ASST "+(ST.asst.map(nm).join(", ")||"—")+"   ·   SUP "+(ST.supers.map(nm).join(", ")||"—"),M,mgrY+6);
-  if(b.notes){ctx.fillStyle="#0b3d63";ctx.font=FA("800 12px");ctx.fillText("NOTES",M,H-M-((wrap(b.notes,W-2*M-20,FA("400 14px")).length)*18)-2);
+  if(b.notes){ctx.fillStyle="#0033a0";ctx.font=FA("800 12px");ctx.fillText("NOTES",M,H-M-((wrap(b.notes,W-2*M-20,FA("400 14px")).length)*18)-2);
     ctx.fillStyle="#1c2530";ctx.font=FA("400 14px");wrap(b.notes,W-2*M-20,FA("400 14px")).forEach((ln,k)=>ctx.fillText(ln,M,H-M-((wrap(b.notes,W-2*M-20,FA("400 14px")).length-1-k)*18)));}
   ctx.strokeStyle="#cfd6dd";ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);
   return c;

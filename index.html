@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0b3d63" />
+<meta name="theme-color" content="#000000" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,13 +17,51 @@
 <link rel="stylesheet" href="ui.css" />
 <link rel="stylesheet" href="requests.css" />
 <style>
-  :root{--navy:#0b3d63;--navy-d:#08304e;--accent:#f5a623;--accent-d:#d98c0a;--melon:#fc4c4e;--bg:#f4f6f8;--card:#fff;
-    --line:#dce1e6;--ink:#1c2530;--muted:#67727e;--good:#1e7d46;--good-bg:#e6f4ec;--danger:#c0392b;--shadow:0 1px 3px rgba(0,0,0,.12);}
+  /* ===== EWR MT HUB design tokens — Apple-structured, United-skinned (see CLAUDE.md) ===== */
+  :root{
+    /* United palette */
+    --ua-blue:#0033a0; --ua-action:#1414d2; --ua-action-hi:#2222d8; --ua-action-lo:#0f0fae;
+    --ua-vivid:#2f5ae5; --ua-navy:#0a1f44; --ua-navy-deep:#001840; --ua-navy-2:#14305e;
+    --ua-purple:#6244bb; --ua-lavender:#cfc4f2; --ua-sky:#a6e3f5; --ua-plum:#5c1f4b;
+    --ua-red:#c8102e; --ua-green:#008009; --ua-amber:#f5a623; --ua-amber-text:#b45309;
+    /* neutrals (warmed Apple roles) */
+    --bg:#f7f4f0; --bg-inset:#efeae3; --card:#fff;
+    --ink:#0a1f44; --muted:#5c6470; --muted-weak:#8d8983;
+    --line:#e2dcd3; --hairline:rgba(0,24,64,.14); --field-border:#86868b;
+    /* on-dark */
+    --dk-ink:#f7f4f0; --dk-muted:#96a3bd; --dk-line:rgba(247,244,240,.2);
+    --dk-link:#a6e3f5; --ok-dark:#3ddc74; --bad-dark:#ff5a5c;
+    /* LEGACY REPOINTS — old names keep working, new values */
+    --navy:#0033a0;      /* was #0b3d63 → United Blue (legacy accent duty) */
+    --navy-d:#0a1f44;    /* was #08304e → deep navy surface */
+    --accent:#f5a623; --accent-d:#d98c0a;   /* demoted to status amber only */
+    --melon:#fc4c4e;     /* badge/urgent fill only; text-red is --ua-red */
+    --good:#008009; --good-bg:#e6f4ea; --danger:#c8102e;
+    /* radius / shadow */
+    --r-xs:6px; --r-sm:10px; --r-md:12px; --r-lg:18px; --r-tile:22px; --r-2xl:28px; --r-pill:980px;
+    --shadow-1:2px 4px 12px rgba(0,24,64,.08);
+    --shadow-2:2px 4px 16px rgba(0,24,64,.16);
+    --shadow-modal:3px 5px 30px rgba(0,24,64,.22);
+    --shadow:var(--shadow-1);
+    /* motion */
+    --ease:cubic-bezier(.4,0,.6,1); --ease-out:cubic-bezier(0,0,.5,1); --ease-enter:cubic-bezier(.28,.11,.32,1);
+    --dur-tap:100ms; --dur-1:240ms; --dur-2:320ms; --dur-push:350ms; --dur-modal:400ms; --stagger:20ms;
+    /* spacing / layout / chrome */
+    --gap:12px; --sect-pad:48px; --pad-card:20px; --content-max:980px;
+    --nav-h:48px; --ribbon-h:52px; --hit:44px; --row-h:48px; --field-h:56px; --disabled:.42;
+    --nav-bg:rgba(0,0,0,.8); --nav-bg-solid:#000; --nav-blur:saturate(180%) blur(20px);
+    --nav-ink:rgba(255,255,255,.8);
+    --scrim:rgba(0,24,64,.45);
+    --focus:#2f5ae5; --focus-dark:#a6e3f5;
+    --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif;
+  }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html{color-scheme:light}  /* app is a fixed light theme; keep native autofill/date pickers light too */
   html,body{margin:0;padding:0}
-  body{font-family:'Manrope',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4;padding-bottom:24px;touch-action:manipulation;}
+  body{font:400 17px/1.47059 var(--font);letter-spacing:-.022em;
+    background:var(--bg);color:var(--ink);padding-bottom:24px;touch-action:manipulation;
+    -webkit-font-smoothing:antialiased;}
+  b,strong{font-weight:600}
   html{touch-action:manipulation}
   button,a,.chip,.selpill,.hubtile,.iconbtn,summary{touch-action:manipulation}
   #hdrTitle{cursor:pointer}
@@ -34,31 +72,40 @@
   .hubtile .hi{font-size:34px;line-height:1}
   .hubsec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:16px 4px 8px}
   .hubgrid.one{grid-template-columns:1fr}
-  /* 4-tile home landing (after the lock screen) */
-  .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 4px}
-  .home-tile{position:relative;background:linear-gradient(160deg,var(--navy),var(--navy-d));color:#fff;border:none;border-radius:22px;box-shadow:0 6px 18px rgba(11,61,99,.28);padding:22px 16px;min-height:158px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;cursor:pointer;text-align:left;overflow:hidden}
-  .home-tile:active{transform:scale(.97)}
-  .home-tile .ht-ic{position:absolute;top:16px;left:16px;opacity:.9}
-  .home-tile .ht-ic svg{width:34px;height:34px}
-  .home-tile .ht-t{font-size:19px;font-weight:800;line-height:1.15}
-  .home-tile .ht-s{font-size:12px;font-weight:600;opacity:.82;line-height:1.25}
-  .home-tile.soon{background:linear-gradient(160deg,#5b6b7a,#47535f);box-shadow:0 6px 18px rgba(60,72,84,.22)}
-  .home-tile.soon .ht-t{opacity:.9}
+  /* 4-tile home landing — flat United accents, Apple tile geometry (r22, press scale, no shadow) */
+  .home-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);padding:14px 4px}
+  @media (max-width:480px){.home-grid{grid-template-columns:1fr}}
+  .home-tile{position:relative;background:var(--ua-navy);color:#fff;border:none;border-radius:var(--r-tile);box-shadow:none;padding:24px 24px 26px;min-height:180px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;cursor:pointer;text-align:left;overflow:hidden;transition:transform var(--dur-2) var(--ease-out)}
+  .home-tile:active{transform:scale(.98);transition-duration:var(--dur-tap)}
+  @media (hover:hover) and (pointer:fine){.home-tile:hover{transform:scale(1.01)}}
+  .home-tile[data-home="requests"]{background:var(--ua-action)}
+  .home-tile .ht-ic{position:absolute;top:18px;left:20px;opacity:.9}
+  .home-tile .ht-ic svg{width:32px;height:32px}
+  .home-tile .ht-t{font:600 24px/1.125 var(--font);letter-spacing:0}
+  .home-tile .ht-s{font:400 14px/1.4286 var(--font);letter-spacing:-.016em;opacity:.9}
+  .home-tile.soon{background:var(--bg-inset);color:var(--muted);box-shadow:none}
+  .home-tile.soon:active{transform:none}
   .ic{width:1em;height:1em;vertical-align:-.15em;display:inline-block;flex:none}
   .hubtile .hi .ic{width:34px;height:34px;vertical-align:0}
-  header{position:sticky;top:0;z-index:20;color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 13px;
-    background:var(--navy);border-bottom:3px solid var(--accent);box-shadow:0 4px 14px rgba(11,61,99,.22)}
-  .hdr-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  /* black identity bar — Apple nav geometry, United black. Blur scrim is the only separation.
+     Scoped to body>header: in-screen <header class="ui-header"> elements must NOT pick this up. */
+  body>header{position:sticky;top:0;z-index:100;color:#fff;
+    padding:calc(env(safe-area-inset-top) + 8px) 16px 8px;
+    background:var(--nav-bg-solid);-webkit-user-select:none;user-select:none}
+  @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    body>header{background:var(--nav-bg);-webkit-backdrop-filter:var(--nav-blur);backdrop-filter:var(--nav-blur)}}
+  .hdr-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px}
   .brand{display:flex;align-items:center;gap:10px;cursor:pointer}
-  .brand .logo{width:34px;height:34px;border-radius:9px;background:var(--accent);color:#10171f;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.2)}
-  .brand .logo .ic{width:20px;height:20px;vertical-align:0}
+  .brand .logo{width:30px;height:30px;border-radius:7px;background:var(--ua-action);color:#fff;display:flex;align-items:center;justify-content:center}
+  .brand .logo .ic{width:18px;height:18px;vertical-align:0}
   .brand-txt{display:flex;flex-direction:column;gap:3px}
-  .brand .eyebrow{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);line-height:1}
-  .brand .wordmark{font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:19px;font-weight:800;letter-spacing:.8px;line-height:1;white-space:nowrap}
-  .homebtn{width:38px;height:38px;border:none;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
-  .homebtn:active{background:rgba(255,255,255,.3);transform:scale(.94)}
+  .brand .eyebrow{font:400 9.5px/1 var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--nav-ink)}
+  .brand .wordmark{font:600 17px/1.235 var(--font);letter-spacing:-.022em;line-height:1;white-space:nowrap;color:#fff}
+  .homebtn{width:38px;height:38px;border:none;border-radius:50%;background:transparent;color:var(--nav-ink);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color var(--dur-2) var(--ease)}
+  .homebtn:active{color:#fff;transform:scale(.94);transition:none}
+  @media (hover:hover){.homebtn:hover{color:#fff}}
   .homebtn .ic{width:20px;height:20px;vertical-align:0}
-  header .sub{margin:9px 2px 0;font-size:12px;font-weight:500;color:rgba(255,255,255,.82);letter-spacing:.2px}
+  body>header .sub{margin:6px 2px 0;font:400 12px/1.3333 var(--font);letter-spacing:-.01em;color:var(--nav-ink)}
   main{max-width:760px;margin:0 auto;padding:14px}
   /* 13" iPad (portrait ~1032 / landscape ~1366) gets more room */
   @media (min-width:820px){ main{max-width:980px;padding:18px} }
@@ -89,15 +136,26 @@
   textarea{min-height:64px;resize:vertical}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-  button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;font-size:16px;font-weight:600}
-  .btn{padding:13px 16px;width:100%;background:var(--accent);color:#3a2600}.btn:active{background:var(--accent-d)}
-  .btn.navy{background:var(--navy);color:#fff}.btn.navy:active{background:var(--navy-d)}
-  .btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line)}
-  .btn.green{background:var(--good);color:#fff}.btn.green:active{filter:brightness(.92)}
-  .more-ic{width:54px;height:54px;margin:6px auto 0;border-radius:50%;background:var(--good-bg);color:var(--good);font-size:28px;font-weight:900;display:flex;align-items:center;justify-content:center}
-  .btn.sm{width:auto;padding:9px 13px;font-size:14px}
-  .btn.danger{background:#fff;color:var(--danger);border:1px solid #eccfcb}
-  .btn[disabled]{opacity:.5}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:var(--r-sm);font-size:17px;font-weight:400;letter-spacing:-.022em}
+  /* CTA family — Apple pill geometry, United action blue. Full-width buttons de-pill to r-md. */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:var(--hit);
+    padding:11px 21px;width:100%;border-radius:var(--r-md);border:1px solid transparent;
+    background:var(--ua-action);color:#fff;font:400 17px/1.176 var(--font);letter-spacing:-.022em;
+    white-space:nowrap;transition:background-color var(--dur-tap) linear}
+  .btn:active{background:var(--ua-action-lo);transition:none}
+  @media (hover:hover){.btn:hover{background:var(--ua-action-hi)}}
+  .btn.navy{background:var(--ua-navy);color:#fff}.btn.navy:active{background:var(--ua-navy-2)}
+  .btn.ghost{background:transparent;color:var(--ua-blue);border-color:var(--ua-blue)}
+  .btn.ghost:active{background:var(--ua-blue);color:#fff}
+  @media (hover:hover){.btn.ghost:hover{background:var(--ua-blue);color:#fff}}
+  .btn.green{background:var(--ua-green);color:#fff}.btn.green:active{filter:brightness(.92)}
+  .more-ic{width:54px;height:54px;margin:6px auto 0;border-radius:50%;background:var(--good-bg);color:var(--good);font-size:28px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .btn.sm{width:auto;padding:8px 15px;font-size:14px;line-height:1.2857;letter-spacing:-.016em;min-height:36px;border-radius:var(--r-pill);position:relative}
+  .btn.sm::after{content:'';position:absolute;inset:-4px 0}
+  .btn.danger{background:#fff;color:var(--ua-red);border:1px solid rgba(200,16,46,.35)}
+  .btn.danger:active{background:var(--ua-red);color:#fff}
+  .btn[disabled]{opacity:var(--disabled);pointer-events:none}
+  .btn:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
   .btnrow{display:flex;gap:10px;margin-top:12px}
   .toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
   .toolbar input,.toolbar select{flex:1;min-width:120px}
@@ -211,7 +269,7 @@
   .patpad.err .patdot.on{border-color:var(--danger);background:var(--danger);box-shadow:0 0 0 6px rgba(192,57,43,.14)}
   .patpad.err #patLine{stroke:var(--danger)}
   /* full-site lock screen */
-  #siteLock{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#0f4b79,#0b3d63 65%,#082a45);display:flex;align-items:center;justify-content:center;color:#fff;transition:opacity .35s ease}
+  #siteLock{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#14305e,#0a1f44 65%,#001840);display:flex;align-items:center;justify-content:center;color:#fff;transition:opacity .35s ease}
   #siteLock.done{opacity:0;pointer-events:none}
   .sl-inner{display:flex;flex-direction:column;align-items:center;padding:24px;width:100%;max-width:360px}
   .sl-logo{width:60px;height:60px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);margin-bottom:14px}
@@ -433,7 +491,7 @@
   .eos-in{flex:1;min-width:0;padding:8px 10px;font-size:14px;border:1px solid var(--line);border-radius:8px}
   .eos-row.red .eos-in{border-color:#e7a59f}
   .eos-op{width:100%;padding:10px;font-size:14px;border:1px solid var(--line);border-radius:10px;resize:vertical}
-  .eos-ph{font-weight:800;color:#0b3d63;margin:12px 0 3px;text-decoration:underline}
+  .eos-ph{font-weight:800;color:var(--ua-blue);margin:12px 0 3px;text-decoration:underline}
   .eos-pl{margin:1px 0}
   .invloc-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .le-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:9px;background:#fff}
@@ -474,7 +532,7 @@
   .ck-row{display:flex;align-items:center;gap:12px;padding:8px 2px;border-bottom:1px dashed #e7ebef;font-size:16px;font-weight:600}
   .ck-row:last-child{border-bottom:none}
   .ck-box{width:22px;height:22px;border:2px solid #9aa7b2;border-radius:5px;flex:none}
-  @media print{.seg-wrap{display:none}.sh-loc-h{background:#0b3d63 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.cat-h{background:#eef2f5 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sh-loc{page-break-inside:avoid}}
+  @media print{.seg-wrap{display:none}.sh-loc-h{background:#0033a0 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.cat-h{background:#eef2f5 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sh-loc{page-break-inside:avoid}}
   .spot-block{margin:0 0 12px}
   .spot-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;background:#eef3f7;border:1px solid var(--line);border-radius:8px 8px 0 0;padding:6px 10px}
   .spot-h .sn{font-size:15px;font-weight:800}
@@ -483,7 +541,7 @@
   .sheet-head .title{font-size:20px;font-weight:800}
   .sheet-head .info{font-size:13px;color:var(--muted);text-align:right}
   /* branded header banner on generated inventory sheet */
-  .inv-banner{background:linear-gradient(135deg,#0f4b79,#0b3d63);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:0 4px 14px rgba(11,61,99,.25)}
+  .inv-banner{background:linear-gradient(135deg,#14305e,#0a1f44);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow-1)}
   .inv-banner .ib-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .inv-banner .ib-brand{font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:13px;font-weight:800;letter-spacing:1.2px}
   .inv-banner .ib-date{font-size:12px;font-weight:700;background:rgba(255,255,255,.2);border-radius:999px;padding:3px 11px;white-space:nowrap}
@@ -1862,7 +1920,7 @@ function eosDownloadText(){const blob=new Blob([eosLines().join("\n")],{type:"te
   a.href=u;a.download=`EWR-Shift-Report-${eos.date}-${eos.shift}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
 function eosDownloadImage(){const d=eosEnsure();
   const items=[{t:eosTitle(),b:true,size:28},{t:"Date: "+fmtDate(eos.date)+"   ·   Shift: "+eos.shift,size:18,color:"#555"},{gap:10}];
-  const sec=t=>{items.push({sep:true});items.push({t:t,b:true,size:20,color:"#0b3d63"});};
+  const sec=t=>{items.push({sep:true});items.push({t:t,b:true,size:20,color:"#0033a0"});};
   const line=(l,k,red)=>items.push({t:l+": "+(d[k]||"—"),size:18,color:red&&d[k]?"#c0271e":"#111"});
   ["weather:Weather Conditions","supervisors:Supervisors","manager:Manager","asst:Assistant Managers","dispatcher:Dispatcher"].forEach(x=>{const[k,l]=x.split(":");line(l,k);});
   sec("Staffing & Equipment Summary");
@@ -3069,7 +3127,7 @@ if("serviceWorker" in navigator){
   function applyUpdate(){ iInitiatedUpdate=true; if(waitingWorker)waitingWorker.postMessage("skipWaiting"); }
   function showUpdateToast(w){ waitingWorker=w; if(document.getElementById("swUpdate"))return;
     const el=document.createElement("div");el.id="swUpdate";
-    el.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));z-index:9998;background:#0b3d63;color:#fff;padding:10px 8px 10px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.28);font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px";
+    el.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));z-index:9998;background:var(--ua-navy);color:#fff;padding:10px 8px 10px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.28);font-weight:700;font-size:14px;display:flex;align-items:center;gap:12px";
     const b=document.createElement("button");b.textContent="Update";b.style.cssText="background:#f5a623;color:#10171f;border:none;border-radius:999px;padding:7px 16px;font-weight:800;font:inherit;cursor:pointer";
     b.onclick=applyUpdate; el.append("New version ready",b); document.body.appendChild(el); }
   // only prompt when replacing an existing controller (not on the very first install)
