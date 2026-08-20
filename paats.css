@@ -1,0 +1,20 @@
+/* paats.css — PAATS dispatch module. Kit anatomy; these are the module's local pieces. */
+.pt-trucks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+.pt-trucks .ui-tile{min-height:104px;padding:16px 14px 14px}
+.pt-trucks .ui-tile-s b{color:var(--bad-dark,#ff5a5c)}
+#paatsRoot>.ui-screen .ui-tile[data-go="soc"]{width:100%}
+/* dispatch card — the gate is the figure the crew reads from across the cab */
+.pt-card{margin-bottom:12px}
+.pt-card.onit{box-shadow:inset 3px 0 0 var(--ua-green),var(--shadow-1)}
+.pt-eyebrow{font:600 11px/1.3 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pt-eyebrow b{color:var(--ua-green)}
+.pt-gate{font:600 40px/1.05 var(--font);letter-spacing:.01em;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:6px}
+.pt-ac{font:600 19px/1.25 var(--font);color:var(--ua-blue);margin-top:2px}
+.pt-ac span{font:600 14px/1.3 var(--font);color:var(--muted)}
+.pt-task{font:400 14px/1.4 var(--font);color:var(--muted);margin-top:2px}
+.pt-declpick{margin-top:12px;padding:12px;background:var(--bg,#f7f4f0);border-radius:var(--r-md,10px)}
+/* status chips in SOC's in-flight list and the log */
+.pt-st{font:600 12px/1 var(--font);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);
+  border:1.5px solid currentColor;border-radius:var(--r-pill,980px);padding:5px 10px}
+.pt-st.ok{color:var(--ua-green)}
+.pt-st.bad{color:var(--ua-red)}

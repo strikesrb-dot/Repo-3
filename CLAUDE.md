@@ -18,6 +18,8 @@ button, everything discombobulated."
 | `equipment.js` / `equipment.css` | Global equipment list screens: list (search/grouping), unit detail, add/edit, move, history, sheet generator. Screens only — writes go through shell globals. |
 | `inventory.js` / `inventory.css` | Do Inventory screens: election (One area vs Complete), the pill-cycle count (ported tap-for-tap), proof sheet. `inv` state + `commitInv` stay in the shell; sheets get COMPLETE/PARTIAL + NOT SEEN from `invProofHTML`. |
 | `movement.js` | Movement log screen + passcode wipe. Read-only over `data.movements`. |
+| `safety.js` | Safety tile home — routes to Stop Mark Lookup (`openParkFrom("safety")` so back returns here). |
+| `paats.js` / `paats.css` | PAATS lightning-hold dispatch: SOC → truck 1/2/3 structured dispatches (gate/aircraft/flight/task), acknowledge → Parked / Couldn't-park + reason, 14-day log. `elt.paats`. |
 | `sw.js` | Service worker. Bump `CACHE` (`elt-vNNN`) on every deploy and add any new file to `CORE`. |
 
 ## Design language (`ui.js` / `ui.css`)
