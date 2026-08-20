@@ -223,8 +223,27 @@ const ST={
 /* 4-state tug cycle: unset(grey) → ready(green) → inop(yellow) → oos(red) → unset */
 const TUG_ORDER=["unset","ready","inop","oos"];
 function tugSt(id){ return ST.tug[id]||"unset"; }
-function setTug(id,s){ ST.tug[id]=s; }
-function cycleTug(id){ ST.tug[id]=TUG_ORDER[(TUG_ORDER.indexOf(tugSt(id))+1)%TUG_ORDER.length]; }
+function setTug(id,s){ ST.tug[id]=s; tugBridgeOut(id); }
+function cycleTug(id){ ST.tug[id]=TUG_ORDER[(TUG_ORDER.indexOf(tugSt(id))+1)%TUG_ORDER.length]; tugBridgeOut(id); }
+/* ---- STUG bridge: the equipment record (GSE live-see thread) is the source of truth ----
+   Board writes through so a tug marked down on manpower lights up for the GSE department;
+   equipment-side changes flow back before each render via tugBridgeIn(). */
+let _tugBridging=false;
+function tugBridgeOut(id){
+  if(_tugBridging||!window.eqTugBridge)return;
+  const oos=tugSt(id)==="oos";
+  try{eqTugBridge(id,oos,oos?((ST.tugOos&&ST.tugOos[id])||""):"",(window.STAFF&&STAFF.who&&STAFF.who())||"");}catch(_){}
+}
+function tugBridgeIn(){
+  if(!window.eqTugOosInfo)return;
+  _tugBridging=true;
+  try{
+    TUGS.forEach(id=>{const info=eqTugOosInfo(id);if(!info.exists)return;   // no record → board stands alone
+      if(info.oos&&tugSt(id)!=="oos"){ST.tug[id]="oos";ST.tugOos=ST.tugOos||{};if(info.reason)ST.tugOos[id]=info.reason;if(ST.assign&&ST.assign.tugs)delete ST.assign.tugs[id];}
+      else if(!info.oos&&tugSt(id)==="oos"){ST.tug[id]="ready";if(ST.tugOos)delete ST.tugOos[id];}});
+  }catch(_){}
+  _tugBridging=false;
+}
 // compatibility view used by sheets/board/exports
 function tugState(id){ const s=tugSt(id); return {state:s, oos:s==="oos", gpu:s==="inop"?"inop":"ok", running:s==="ready"||s==="inop", unset:s==="unset"}; }
 // tug make/model by id range
@@ -523,6 +542,7 @@ function absenceTally(){
 let ROOT=null;
 function render(){
   ROOT=$("#staffRoot");if(!ROOT)return;
+  tugBridgeIn();    // equipment-side OOS changes (GSE thread) land on the board before drawing
   _fatIndex=null;   // rebuild the fatigue day-index once per render (cheap, always fresh)
   const fn={auth:rAuth,menu:rMenu,upload:rUpload,shift:rShift,setup:rSetup,pool:rPool,reconcile:rReconcile,assign:rAssign,brief:rBrief,sheet:rSheet,logs:rLogs,drafts:rDrafts,activity:rActivity}[ST.step]||rMenu;
   try{ fn(); }
@@ -1283,9 +1303,9 @@ function rAssign(){
     const who=selRaw(); place(p=>{ST.assign.tugs[id]=ST.assign.tugs[id]||{};ST.assign.tugs[id][role]=p;}); if(who)logAct("Assigned to STUG "+id,role,who); }); // tap filled slot = pick up & move
   $$('#staffRoot .toos').forEach(b=>b.onclick=()=>{ const id=+b.dataset.oos,t=tugState(id); ST.tugOos=ST.tugOos||{};
     if(t.oos){setTug(id,"ready");delete ST.tugOos[id];}
-    else {setTug(id,"oos");delete ST.assign.tugs[id]; const r=prompt("Why is STUG "+id+" out of service? (optional)",""); if(r!=null)ST.tugOos[id]=r.trim();}
+    else {setTug(id,"oos");delete ST.assign.tugs[id]; const r=prompt("Why is STUG "+id+" out of service? (optional)",""); if(r!=null)ST.tugOos[id]=r.trim(); tugBridgeOut(id);}
     render(); });
-  $$('#staffRoot .tc3-oos[data-oosedit]').forEach(el=>el.onclick=()=>{ const id=+el.dataset.oosedit; ST.tugOos=ST.tugOos||{}; const r=prompt("Out-of-service reason for STUG "+id+":",ST.tugOos[id]||""); if(r!=null){ST.tugOos[id]=r.trim();render();} });
+  $$('#staffRoot .tc3-oos[data-oosedit]').forEach(el=>el.onclick=()=>{ const id=+el.dataset.oosedit; ST.tugOos=ST.tugOos||{}; const r=prompt("Out-of-service reason for STUG "+id+":",ST.tugOos[id]||""); if(r!=null){ST.tugOos[id]=r.trim();tugBridgeOut(id);render();} });
   $$('#staffRoot .gpubtn').forEach(b=>b.onclick=()=>{ const id=+b.dataset.gpu,t=tugState(id); if(t.oos)return; setTug(id,t.gpu==='inop'?"ready":"inop"); render(); });
   $$('#staffRoot .tc3.muted[data-add]').forEach(c=>c.onclick=()=>{ setTug(+c.dataset.add,"ready"); render(); });
   $("#toggleUnused")?.addEventListener("click",()=>{ showUnusedTugs=!showUnusedTugs; render(); });

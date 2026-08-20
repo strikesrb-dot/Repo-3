@@ -9,12 +9,15 @@ button, everything discombobulated."
 
 | File | What it owns |
 |------|--------------|
-| `index.html` | App shell, brand header, the view/tab system, and (still) the equipment / inventory / GSE / movement / settings features. The big legacy file — being peeled apart over time (see Migration). |
+| `index.html` | App shell, brand header, the view/tab system, the equipment DATA layer (save/load/sync, logMove, commitInv, setEqOos, pickReason/openInvPop pickers, pattern lock, sheet builders), and the settings/secure/park/aircraft/EOS features still awaiting extraction. |
 | `store.js` | `window.Store` — the localStorage/remote persistence seam (`getJSON/setJSON/getRaw/setRaw/del`). |
 | `staffing.js` / `staffing.css` | Manpower / staffing feature (its own module, loaded by the shell). |
 | `ui.js` / `ui.css` | **The shared UI kit** — the design + function language below. Everything new builds on this. |
 | `requests.js` / `requests.css` | Cross-department Send/Receive requests. The **reference implementation** of the UI kit. |
-| `gse.js` / `gse.css` | GSE Out of Service (home-screen tile). Owns the screens only — the OOS data + actions (`setEqOos`, `gseAck`, `capturePhoto`, …) still live in `index.html`, whose `renderGse()` is now a shim that calls `GSE.refresh()`. |
+| `gse.js` / `gse.css` | The **equipment home** (home-screen GSE tile): stat cards + four tiles (Equipment List / Do Inventory / Movement Log / Out of Service) and the OOS screens. Owns the single nav stack the three sibling modules below push onto (`GSE.go`, `GSE.openSub`). Data + actions stay in `index.html` (`renderGse()` is a shim → `GSE.refresh()`). |
+| `equipment.js` / `equipment.css` | Global equipment list screens: list (search/grouping), unit detail, add/edit, move, history, sheet generator. Screens only — writes go through shell globals. |
+| `inventory.js` / `inventory.css` | Do Inventory screens: election (One area vs Complete), the pill-cycle count (ported tap-for-tap), proof sheet. `inv` state + `commitInv` stay in the shell; sheets get COMPLETE/PARTIAL + NOT SEEN from `invProofHTML`. |
+| `movement.js` | Movement log screen + passcode wipe. Read-only over `data.movements`. |
 | `sw.js` | Service worker. Bump `CACHE` (`elt-vNNN`) on every deploy and add any new file to `CORE`. |
 
 ## Design language (`ui.js` / `ui.css`)
@@ -86,8 +89,12 @@ cannot ship without one.
 
 Goal: shrink `index.html` by **extracting one subsystem at a time in place** (the way `staffing.js`,
 `requests.js`, and `ui.js` already are) — NOT a parallel rewrite. Each extracted feature adopts the
-UI kit. GSE is done (screens in `gse.js`; its data layer stays in the shell for now). Order for the
-rest: equipment → inventory → movement → settings.
+UI kit. GSE, equipment, inventory, and movement are done — their screens live in kit modules on
+one nav stack under the GSE tile; the shell keeps the data layer (the seam is documented in each
+module header). `goTab("equipment"|"inventory"|"movement")` reroutes into `GSE.openSub(...)`, so
+the old hub tiles keep working. Left to extract: settings (and secure/park/aircraft/EOS).
+The staffing tug board bridges to the equipment records both ways (`eqTugBridge`/`tugBridgeIn`) —
+the equipment record is the source of truth for SuperTug OOS.
 
 ## Simplicity rules (owner's standing direction — do not violate)
 

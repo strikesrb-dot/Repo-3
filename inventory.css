@@ -1,0 +1,13 @@
+/* inventory.css — inventory.js module styles. The pill grid / count visuals stay in index.html
+   (shared with the shell pickers); these are the module-only pieces. */
+.inv2-hint{font:400 13.5px/1.45 var(--font);color:var(--muted);margin:8px 0 0}
+.inv2-lochead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:16px 4px 8px}
+.inv2-cover{font:600 13px/1.45 var(--font);color:var(--ink);background:var(--bg-inset);
+  border-radius:var(--r-md);padding:10px 14px;margin-top:12px;font-variant-numeric:tabular-nums}
+/* sticky save footer — the commit action stays thumb-reachable on long pill lists */
+.inv2-foot{position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;gap:10px;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(247,244,240,.96);
+  box-shadow:0 -1px 0 var(--hairline)}
+.inv2-foot .btn{min-height:48px}
+/* keep the last pills reachable above the footer */
+#gseRoot .inv2-foot~*, .inv2-footpad{height:74px}

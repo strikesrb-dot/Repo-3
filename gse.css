@@ -2,6 +2,12 @@
    this file only holds the module's few local layout rules. */
 .gsem-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .gsem-bad{color:var(--ua-red);font-weight:600}
+.gsem-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.gsem-tiles .ui-tile[data-open="oos"] .ui-tile-s b{color:var(--ua-sky)}
+/* how long a unit has been down — red until GSE confirms */
+.gsem-age{display:inline-block;margin-left:8px;font:600 11px/1 var(--font);color:var(--muted);
+  background:var(--bg-inset);border-radius:var(--r-pill,980px);padding:4px 8px;vertical-align:1px;font-variant-numeric:tabular-nums}
+.gsem-age.hot{color:#fff;background:var(--ua-red)}
 /* the add-a-unit card must not clip its typeahead dropdown (ui-card is overflow:hidden) */
 .gsem-addcard{overflow:visible}
 /* owner-only photo controls under the OOS photo; non-owners get a quiet caption */
