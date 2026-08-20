@@ -4,6 +4,7 @@
    No motion — slides swap instantly, per the house rules. */
 (function(){
   const esc=UI.esc;
+  const KEY="elt.present";   // edited deck lives here; the built-in slides are the fallback
 
   const S=[
     {kicker:"Move Team · Newark (EWR)",title:"OPERATIONAL SUCCESS",lines:["Built on the ramp, for the ramp.","A working app — live on real shifts today."],cls:"title"},
@@ -56,33 +57,89 @@
       "We did United Next for the airplanes. This is United Next for how we work."],cls:"title"},
   ];
 
-  let idx=0,ov=null;
+  const slides=()=>{const d=Store.getJSON(KEY,null);return (Array.isArray(d)&&d.length)?d:S;};
+  const saveSlides=l=>Store.setJSON(KEY,l);
+  let idx=0,ov=null,editing=false;
   function draw(){
     if(!ov)return;
-    const s=S[idx];
+    const L=slides();
+    if(idx>=L.length)idx=L.length-1;
+    const s=L[idx];
+    if(editing){drawEdit(L,s);return;}
     ov.innerHTML=`
       <button class="pr-x" aria-label="Exit presentation">&#10005;</button>
+      <button class="pr-edit">Edit</button>
       <div class="pr-slide ${s.cls||""}">
         <div class="pr-kicker">${esc(s.kicker)}</div>
         <div class="pr-title">${esc(s.title)}</div>
         <div class="pr-lines">${s.lines.map(l=>`<div class="pr-line">${esc(l)}</div>`).join("")}</div>
       </div>
-      <div class="pr-foot"><span>${idx+1} / ${S.length}</span><span class="pr-hint">tap right to advance · left to go back</span></div>
+      <div class="pr-foot"><span>${idx+1} / ${L.length}</span><span class="pr-hint">tap right to advance · left to go back</span></div>
       <button class="pr-zone left" aria-label="Previous slide"></button>
       <button class="pr-zone right" aria-label="Next slide"></button>`;
     ov.querySelector(".pr-x").onclick=close;
+    ov.querySelector(".pr-edit").onclick=()=>{editing=true;draw();};
     ov.querySelector(".pr-zone.left").onclick=()=>{ if(idx>0){idx--;draw();} };
-    ov.querySelector(".pr-zone.right").onclick=()=>{ if(idx<S.length-1){idx++;draw();} else close(); };
+    ov.querySelector(".pr-zone.right").onclick=()=>{ if(idx<L.length-1){idx++;draw();} else close(); };
+  }
+  /* edit mode: plain fields for the current slide + add / delete / reorder / reset */
+  function drawEdit(L,s){
+    ov.innerHTML=`
+      <button class="pr-x" aria-label="Exit presentation">&#10005;</button>
+      <div class="pr-editbox">
+        <div class="pr-ehead">Editing slide ${idx+1} of ${L.length}</div>
+        <label class="pr-elabel">Kicker (small line on top)</label>
+        <input id="prKicker" class="pr-ein" value="${esc(s.kicker||"")}" autocomplete="off">
+        <label class="pr-elabel">Title</label>
+        <input id="prTitle" class="pr-ein" value="${esc(s.title||"")}" autocomplete="off">
+        <label class="pr-elabel">Lines — one per row</label>
+        <textarea id="prLines" class="pr-eta">${esc((s.lines||[]).join("\n"))}</textarea>
+        <label class="pr-elabel">Style</label>
+        <div class="pr-echips">${[["","Standard"],["title","Big title"],["nums","Numbers"]].map(([v,l])=>
+          `<button class="pr-echip${(s.cls||"")===v?" on":""}" data-cls="${v}">${l}</button>`).join("")}</div>
+        <div class="pr-erow">
+          <button class="pr-ebtn primary" id="prSave">Save</button>
+          <button class="pr-ebtn" id="prCancel">Done</button>
+        </div>
+        <div class="pr-erow">
+          <button class="pr-ebtn" id="prBefore">&#8249; Move</button>
+          <button class="pr-ebtn" id="prAfter">Move &#8250;</button>
+          <button class="pr-ebtn" id="prAdd">+ Slide after</button>
+          <button class="pr-ebtn danger" id="prDel">Delete</button>
+        </div>
+        <div class="pr-erow"><button class="pr-ebtn" id="prReset">Reset whole deck to original</button></div>
+      </div>`;
+    let cls=s.cls||"";
+    const read=()=>({kicker:ov.querySelector("#prKicker").value.trim(),
+      title:ov.querySelector("#prTitle").value.trim(),
+      lines:ov.querySelector("#prLines").value.split("\n").map(x=>x.trim()).filter(Boolean),
+      ...(cls?{cls}:{})});
+    ov.querySelector(".pr-x").onclick=close;
+    ov.querySelectorAll(".pr-echip").forEach(b=>b.onclick=()=>{cls=b.dataset.cls;
+      ov.querySelectorAll(".pr-echip").forEach(x=>x.classList.toggle("on",x===b));});
+    ov.querySelector("#prSave").onclick=()=>{const l=slides().slice();l[idx]=read();saveSlides(l);toast&&toast("Slide saved");};
+    ov.querySelector("#prCancel").onclick=()=>{editing=false;draw();};
+    ov.querySelector("#prAdd").onclick=()=>{const l=slides().slice();l[idx]=read();l.splice(idx+1,0,{kicker:"",title:"New slide",lines:[]});saveSlides(l);idx++;draw();};
+    ov.querySelector("#prDel").onclick=()=>{if(!confirm("Delete this slide?"))return;
+      const l=slides().slice();l.splice(idx,1);if(!l.length)l.push({kicker:"",title:"New slide",lines:[]});
+      saveSlides(l);if(idx>=l.length)idx=l.length-1;draw();};
+    ov.querySelector("#prBefore").onclick=()=>{if(idx===0)return;const l=slides().slice();l[idx]=read();
+      [l[idx-1],l[idx]]=[l[idx],l[idx-1]];saveSlides(l);idx--;draw();};
+    ov.querySelector("#prAfter").onclick=()=>{const l=slides().slice();if(idx>=l.length-1)return;l[idx]=read();
+      [l[idx+1],l[idx]]=[l[idx],l[idx+1]];saveSlides(l);idx++;draw();};
+    ov.querySelector("#prReset").onclick=()=>{if(!confirm("Reset the whole deck to the built-in slides? Your edits will be lost."))return;
+      try{Store.del(KEY);}catch(_){}editing=false;idx=0;draw();};
   }
   function onKey(e){
     if(!ov)return;
+    if(editing){ if(e.key==="Escape"){editing=false;draw();} return; }   // typing must not flip slides
     if(e.key==="Escape")close();
-    else if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){ if(idx<S.length-1){idx++;draw();} }
+    else if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){ if(idx<slides().length-1){idx++;draw();} }
     else if(e.key==="ArrowLeft"||e.key==="PageUp"){ if(idx>0){idx--;draw();} }
   }
   function open(){
     if(ov)return;
-    idx=0;
+    idx=0;editing=false;
     ov=document.createElement("div");ov.className="pr-ov";
     document.body.appendChild(ov);
     document.addEventListener("keydown",onKey);
