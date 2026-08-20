@@ -1,6 +1,6 @@
 /* paats.js — PAATS lightning-hold dispatch. During ramp closures the PAATS guide trucks bring
    aircraft in; today the assignment travels by radio and handwriting. Here SOC sends a structured
-   dispatch (gate · aircraft · flight · task) to PAATS 1/2/3; the truck acknowledges with one tap,
+   dispatch (gate · aircraft · flight) to PAATS 1/2/3 — one job, park the plane —; the truck acknowledges with one tap,
    then logs the outcome — Parked, or Couldn't park with a reason. Every dispatch is kept in the
    log, so there is zero loss in translation and a record of what blocked the failures.
    UI-kit module: screens are fn(nav) on a UI.nav stack; storage-event mirror keeps SOC and the
@@ -14,16 +14,44 @@
 
   const KEY="elt.paats";
   const TRUCKS=[1,2,3];
-  const TASKS=["Park it","Bring it in","Reposition"];
   const CANT_REASONS=["Equipment blocking the gate","Gate occupied","Aircraft not there","Sent to another gate","Called off"];
   const KEEP_DAYS=14;
 
   const load=()=>{const d=Store.getJSON(KEY,[]);return Array.isArray(d)?d:[];};
-  const saveAll=l=>Store.setJSON(KEY,l);
+  const saveAll=l=>{Store.setJSON(KEY,l);updateAttn();};
   const purge=()=>{const cut=Date.now()-KEEP_DAYS*86400000;const l=load();const k=l.filter(x=>(x.when||0)>cut);if(k.length!==l.length)saveAll(k);};
   const uid=()=>"p"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
   const timeAgo=t=>{const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?"just now":m<60?m+"m ago":Math.round(m/60)+"h ago";};
   const hhmm=t=>new Date(t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+
+  // a couldn't-park is a NOTIFICATION back to SOC: it sits in an attention section on the
+  // PAATS home and the SOC screen until dismissed, and the home-screen PAATS tile pulses.
+  const alerts=()=>load().filter(x=>x.status==="unable"&&!x.socSeen);
+  function updateAttn(){
+    const t=document.querySelector('.home-tile[data-home="paats"]');if(!t)return;
+    t.classList.toggle("rq-attn",alerts().length>0);
+  }
+  function alertsHTML(){
+    const a=alerts().sort((x,y)=>(y.endAt||y.when)-(x.endAt||x.when));
+    if(!a.length)return "";
+    return `<div class="rq-sechead" style="color:var(--ua-red)">Needs attention <b>${a.length}</b></div>`+
+      a.map(x=>`<div class="ui-card pt-alert">
+        <div class="pt-eyebrow" style="color:var(--ua-red)">PAATS ${x.truck} couldn't park · ${timeAgo(x.endAt||x.when)}</div>
+        <div class="pt-alert-line"><b>${esc(x.aircraft)}</b>${x.flight?" · "+esc(x.flight):""} at <b>${esc(x.gate)}</b></div>
+        <div class="pt-alert-reason">${esc(x.reason||"no reason given")}</div>
+        <div class="btnrow" style="margin-top:10px">
+          <button class="btn ghost sm pt-dismiss" data-id="${esc(x.id)}" style="flex:0 0 auto">Got it — dismiss</button>
+          <button class="rq-linkbtn pt-redis" data-id="${esc(x.id)}">Re-dispatch</button>
+        </div></div>`).join("");
+  }
+  function wireAlerts(r,nav){
+    $$(".pt-dismiss",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(y=>y.id===b.dataset.id);
+      if(it)it.socSeen=true;saveAll(l);nav.refresh();});
+    $$(".pt-redis",r).forEach(b=>b.onclick=()=>{const x=load().find(y=>y.id===b.dataset.id);if(!x)return;
+      const l=load();const it=l.find(y=>y.id===b.dataset.id);if(it)it.socSeen=true;saveAll(l);
+      d={truck:x.truck,gate:x.gate,aircraft:x.aircraft,flight:x.flight||"",note:x.note||""};
+      nav.go(socScreen);});
+  }
 
   // fleet lookup — same source as Requests (aircraft.json: {ship, reg, type})
   let FLEET=null;
@@ -44,7 +72,8 @@
         <span class="ui-tile-s">${q.length?`${waiting?`<b>${waiting} waiting</b>`:""}${waiting&&q.length-waiting?" · ":""}${q.length-waiting?`${q.length-waiting} on it`:""}`:"clear"}</span>
       </button>`;}).join("");
     const body=`
-      ${UI.tile({title:"SOC — dispatch a truck",sub:"gate · aircraft · flight · task, straight to the crew",attr:'data-go="soc"'})}
+      ${alertsHTML()}
+      ${UI.tile({title:"SOC — dispatch a truck",sub:"gate · aircraft · flight, straight to the crew",attr:'data-go="soc"'})}
       <div class="pt-trucks">${truckTiles}</div>
       <div class="ui-group" style="margin-top:12px">
         <button class="ui-row" data-go="log">
@@ -55,6 +84,7 @@
         </button>
       </div>`;
     UI.render(ROOT(),nav,{title:"PAATS",sub:"Lightning-hold dispatch — zero loss in translation.",body,mount:r=>{
+      wireAlerts(r,nav);
       $('[data-go="soc"]',r).onclick=()=>nav.go(socScreen);
       $$(".pt-truck",r).forEach(t=>t.onclick=()=>nav.go(truckScreen(+t.dataset.truck)));
       $('[data-go="log"]',r).onclick=()=>nav.go(logScreen);
@@ -62,15 +92,16 @@
   }
 
   /* ================= SOC: send a dispatch ================= */
-  let d={truck:1,gate:"",aircraft:"",flight:"",task:TASKS[0],note:""};
+  let d={truck:1,gate:"",aircraft:"",flight:"",note:""};
   function socScreen(nav){
     const sent=load().filter(x=>x.status!=="done"&&x.status!=="unable").sort((a,b)=>b.when-a.when).slice(0,8);
     const sentRows=sent.map(x=>`<div class="ui-row" style="cursor:default">
         <div class="ui-row__main"><div class="ui-row__title">PAATS ${x.truck} &middot; ${esc(x.gate||"—")} &middot; ${esc(x.aircraft||"")}</div>
-          <div class="ui-row__sub">${esc(x.task||"")}${x.flight?" · "+esc(x.flight):""} · ${timeAgo(x.when)}</div></div>
+          <div class="ui-row__sub">${x.flight?esc(x.flight)+" · ":""}${timeAgo(x.when)}</div></div>
         <span class="ui-row__value">${x.status==="ack"?'<span class="pt-st ok">On it</span>':'<span class="pt-st">Sent</span>'}</span>
+        <button class="rq-linkbtn rq-linkbtn--red pt-del" data-id="${esc(x.id)}">Delete</button>
       </div>`).join("");
-    const body=`${UI.card(`
+    const body=`${alertsHTML()}${UI.card(`
         <span class="ui-flabel">Which truck</span>
         ${UI.chips(TRUCKS.map(n=>({v:String(n),label:"PAATS "+n})),String(d.truck),'data-set="truck" data-v')}
         <div class="rq-two" style="margin-top:12px">
@@ -79,15 +110,12 @@
         </div>
         <div class="ui-ta-wrap" style="margin-top:12px">${UI.field({label:"Aircraft",id:"ptAc",value:d.aircraft,placeholder:"Tail or ship number"})}
           <div class="ui-ta-list" id="ptAcList" hidden></div></div>
-        <span class="ui-flabel" style="margin-top:12px">Task</span>
-        ${UI.chips(TASKS,d.task,'data-set="task" data-v')}
         ${UI.field({label:"Note (optional)",id:"ptNote",value:d.note,placeholder:"Anything the crew should know…"})}
         <div class="btnrow" style="margin-top:14px"><button class="btn" id="ptSend">Send to PAATS ${d.truck}</button></div>`)}
       ${sent.length?`<div class="rq-sechead" style="margin-top:18px">In flight <b>${sent.length}</b></div><div class="ui-group">${sentRows}</div>`:""}`;
     UI.render(ROOT(),nav,{title:"SOC dispatch",sub:"The crew gets the whole assignment — nothing read over the radio.",body,mount:r=>{
       const sync=()=>{d.gate=$("#ptGate",r).value;d.flight=$("#ptFlight",r).value;d.aircraft=$("#ptAc",r).value;d.note=$("#ptNote",r).value;};
       $$('.ui-chip[data-set="truck"]',r).forEach(b=>b.onclick=()=>{sync();d.truck=+b.dataset.v;nav.refresh();});
-      $$('.ui-chip[data-set="task"]',r).forEach(b=>b.onclick=()=>{sync();d.task=b.dataset.v;nav.refresh();});
       const acIn=$("#ptAc",r),acList=$("#ptAcList",r);
       if(acIn&&acList)UI.typeahead(acIn,acList,{min:2,source:q=>{
         if(!FLEET)return [];
@@ -95,17 +123,21 @@
         return FLEET.filter(a=>a.reg.includes(Q)||a.ship.startsWith(Q)).slice(0,20)
           .map(a=>({v:a.reg,label:a.reg,cap:(a.ship?"ship "+a.ship+" · ":"")+a.type}));
       },onPick:v=>{d.aircraft=v;}});
+      wireAlerts(r,nav);
+      $$(".pt-del",r).forEach(b=>b.onclick=()=>{
+        if(!confirm("Delete this dispatch? The truck will no longer see it."))return;
+        saveAll(load().filter(y=>y.id!==b.dataset.id));toast("Dispatch deleted");nav.refresh();});
       $("#ptSend",r).onclick=()=>{
         sync();
         if(!d.gate.trim()){toast("Enter the gate");$("#ptGate",r).focus();return;}
         if(!d.aircraft.trim()){toast("Enter the aircraft");$("#ptAc",r).focus();return;}
         const l=load();
         l.push({id:uid(),truck:d.truck,gate:d.gate.trim(),aircraft:d.aircraft.trim().toUpperCase(),
-          actype:acType(d.aircraft),flight:d.flight.trim().toUpperCase(),task:d.task,note:d.note.trim(),
+          actype:acType(d.aircraft),flight:d.flight.trim().toUpperCase(),note:d.note.trim(),
           by:(window.oosWho&&oosWho())||"SOC",when:Date.now(),status:"open"});
         saveAll(l);
         toast(`Sent to PAATS ${d.truck}`);
-        d={truck:d.truck,gate:"",aircraft:"",flight:"",task:d.task,note:""};
+        d={truck:d.truck,gate:"",aircraft:"",flight:"",note:""};
         nav.refresh();
       };
     }});
@@ -135,7 +167,6 @@
           <div class="pt-eyebrow">SOC &rarr; PAATS ${n} · ${x.by?esc(x.by)+" · ":""}${timeAgo(x.when)}${x.status==="ack"?' · <b>acknowledged</b>':""}</div>
           <div class="pt-gate">${esc(x.gate)}</div>
           <div class="pt-ac">${esc(x.aircraft)}${x.actype?` <span>${esc(shortType(x.actype))}</span>`:""}${x.flight?` · ${esc(x.flight)}`:""}</div>
-          <div class="pt-task">${esc(x.task||"")}</div>
           ${x.note?`<div class="rqp-note" style="margin:10px 0 0"><span class="rqp-dot" aria-hidden="true"></span><span class="rqp-notetext">${esc(x.note)}</span></div>`:""}
           ${acts}
         </div>`;}).join("")
@@ -165,7 +196,7 @@
         <div class="ui-row" style="cursor:default">
           <div class="ui-row__main">
             <div class="ui-row__title">PAATS ${x.truck} &middot; ${esc(x.gate)} &middot; ${esc(x.aircraft)}${x.actype?` <span style="color:var(--muted);font-size:13px">${esc(shortType(x.actype))}</span>`:""}</div>
-            <div class="ui-row__sub">${x.flight?esc(x.flight)+" · ":""}${esc(x.task||"")} · ${hhmm(x.endAt||x.when)}${x.status==="unable"&&x.reason?` · <span style="color:var(--ua-red)">${esc(x.reason)}</span>`:""}</div>
+            <div class="ui-row__sub">${x.flight?esc(x.flight)+" · ":""}${hhmm(x.endAt||x.when)}${x.status==="unable"&&x.reason?` · <span style="color:var(--ua-red)">${esc(x.reason)}</span>`:""}</div>
           </div>
           <span class="ui-row__value">${x.status==="done"?'<span class="pt-st ok">&#10003; Parked</span>':'<span class="pt-st bad">&#10005; Not parked</span>'}</span>
         </div>`).join("")}</div>`).join("")
@@ -174,7 +205,8 @@
   }
 
   /* ---- cross-window mirror: SOC sends here → the truck sees it there, live ---- */
-  window.addEventListener("storage",e=>{ if(e.key!==KEY)return; if(navApi&&ROOT())navApi.refresh(); });
+  window.addEventListener("storage",e=>{ if(e.key!==KEY)return; updateAttn(); if(navApi&&ROOT())navApi.refresh(); });
+  updateAttn();   // set the home-tile pulse on load
 
   window.PAATS={
     open:()=>{ const r=ROOT(); if(!r)return; navApi=UI.nav(r,{onExit:()=>{try{window.goHome&&window.goHome();}catch(_){}}}); navApi.reset(homeScreen); },
