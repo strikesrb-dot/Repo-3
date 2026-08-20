@@ -15,10 +15,13 @@
           style="width:100%;font:400 17px/1.3 var(--font);padding:12px 14px;border:1px solid var(--field-border);border-radius:var(--r-md);background:rgba(255,255,255,.85)">
       </div>
       <div id="mv2List" style="margin-top:12px"></div>
-      <div class="btnrow no-print" style="margin-top:14px"><button class="btn ghost" id="mv2Wipe">Wipe log (passcode)</button></div>`;
+      <div class="btnrow no-print" style="margin-top:14px">
+        <button class="btn ghost" id="mv2Cfg" style="flex:0 0 44%">Log settings</button>
+        <button class="btn ghost" id="mv2Wipe">Wipe log (passcode)</button></div>`;
     UI.render(ROOT(),nav,{title:"Movement log",sub:"Every location change — inventory counts, edits, quick moves.",body,mount:r=>{
       const q=$("#mv2Q",r);
       q.oninput=()=>{MQ=q.value;paint(r);};              // pure DOM repaint — focus survives
+      $("#mv2Cfg",r).onclick=()=>requireEditPass(()=>nav.go(SETTINGS.screens.tracking));
       $("#mv2Wipe",r).onclick=async()=>{
         if(!data.movements.length){toast("Nothing to wipe");return;}
         const pass=await askPass("Wipe movement log","Enter the settings passcode.");

@@ -9,7 +9,7 @@ button, everything discombobulated."
 
 | File | What it owns |
 |------|--------------|
-| `index.html` | App shell, brand header, the view/tab system, the equipment DATA layer (save/load/sync, logMove, commitInv, setEqOos, pickReason/openInvPop pickers, pattern lock, sheet builders), and the settings/secure/park/aircraft/EOS features still awaiting extraction. |
+| `index.html` | App shell, brand header, the view/tab system, the equipment DATA layer (save/load/sync, logMove, commitInv, setEqOos, pickReason/openInvPop pickers, pattern lock, passcode gate + askPass, sheet builders), and the secure/aircraft/EOS features still awaiting extraction. |
 | `store.js` | `window.Store` — the localStorage/remote persistence seam (`getJSON/setJSON/getRaw/setRaw/del`). |
 | `staffing.js` / `staffing.css` | Manpower / staffing feature (its own module, loaded by the shell). |
 | `ui.js` / `ui.css` | **The shared UI kit** — the design + function language below. Everything new builds on this. |
@@ -20,6 +20,9 @@ button, everything discombobulated."
 | `movement.js` | Movement log screen + passcode wipe. Read-only over `data.movements`. |
 | `safety.js` | Safety tile home — routes to Stop Mark Lookup (`openParkFrom("safety")` so back returns here). |
 | `paats.js` / `paats.css` | PAATS lightning-hold dispatch: SOC → truck 1/2/3 structured dispatches (gate/aircraft/flight/task), acknowledge → Parked / Couldn't-park + reason, 14-day log. `elt.paats`. |
+| `hub.js` | The Move Team Hub as a kit screen — grouped rows (Operations / Field logging / Lookups / App) routing through `goTab`; honors the tile-visibility toggles. |
+| `present.js` / `present.css` | The built-in pitch deck overlay (fresh slides, editable — edits persist in `elt.present`). |
+| `settings.js` / `settings.css` | Settings as a kit module ("Six Rows, Two Taps"): root of six rows with live value sub-lines; Admin & security holds passcode/pattern/sync/demo with the wipe at its bottom (fresh passcode + double confirm). Its catalog screens (`SETTINGS.screens.types/subtypes/equipLocs/spots/tracking`) are **shared factories** rendered via `nav.el`, pushed next to the data from equipment ("Manage categories"), inventory ("Edit locations" — asks the passcode fresh every open), and movement ("Log settings"). `settings.staffExclude` deliberately has no UI. |
 | `sw.js` | Service worker. Bump `CACHE` (`elt-vNNN`) on every deploy and add any new file to `CORE`. |
 
 ## Design language (`ui.js` / `ui.css`)
@@ -91,10 +94,12 @@ cannot ship without one.
 
 Goal: shrink `index.html` by **extracting one subsystem at a time in place** (the way `staffing.js`,
 `requests.js`, and `ui.js` already are) — NOT a parallel rewrite. Each extracted feature adopts the
-UI kit. GSE, equipment, inventory, and movement are done — their screens live in kit modules on
-one nav stack under the GSE tile; the shell keeps the data layer (the seam is documented in each
-module header). `goTab("equipment"|"inventory"|"movement")` reroutes into `GSE.openSub(...)`, so
-the old hub tiles keep working. Left to extract: settings (and secure/park/aircraft/EOS).
+UI kit. GSE, equipment, inventory, movement, and settings are done — their screens live in kit modules
+(one nav stack under the GSE tile; settings on its own stack in `#settingsRoot` behind the
+unchanged passcode gate); the shell keeps the data layer (the seam is documented in each module
+header). `goTab("equipment"|"inventory"|"movement")` reroutes into `GSE.openSub(...)`, so the
+old hub tiles keep working. `UI.nav` exposes `nav.el` so shared screen factories paint into
+whichever stack pushed them. Left to extract: secure/aircraft/EOS.
 The staffing tug board bridges to the equipment records both ways (`eqTugBridge`/`tugBridgeIn`) —
 the equipment record is the source of truth for SuperTug OOS.
 

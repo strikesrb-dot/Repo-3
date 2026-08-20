@@ -53,7 +53,13 @@
         if(inv.mode==="complete"&&!inv.startTs)inv.startTs=Date.now();
         nav.refresh();});
       $$(".ui-row[data-loc]",r).forEach(b=>b.onclick=()=>{inv.loc=b.dataset.loc;nav.go(countScreen(b.dataset.loc));});
-      $("#inv2EditLoc",r).onclick=openLocEdit;
+      // fresh passcode every open (same posture as the old overlay), then the shared kit screen
+      $("#inv2EditLoc",r).onclick=async()=>{
+        const pass=await askPass("Edit locations","Enter the settings passcode.");
+        if(pass===null)return;
+        if(pass!==curPass()){toast("Wrong passcode");return;}
+        nav.go(SETTINGS.screens.equipLocs);
+      };
       $("#inv2Done",r)&&($("#inv2Done").onclick=()=>{
         const rem=topLocs().filter(l=>!inv.covered.includes(l));
         if(inv.mode==="complete"&&rem.length&&!confirm(`${rem.length} area(s) not covered (${rem.join(", ")}) — the sheet will say PARTIAL. Generate anyway?`))return;

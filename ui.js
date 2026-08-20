@@ -51,6 +51,7 @@
   function nav(container,opts){
     opts=opts||{}; const stack=[];
     const api={
+      el:container,           // the stack's container — shared screen factories render into nav.el
       go(fn){stack.push(fn);draw();},
       reset(fn){stack.length=0;stack.push(fn);draw();},
       back(){ if(stack.length>1){stack.pop();draw();return true;} if(opts.onExit){opts.onExit();return true;} return false; },

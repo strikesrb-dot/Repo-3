@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="paats.css" />
 <link rel="stylesheet" href="safety.css" />
 <link rel="stylesheet" href="present.css" />
+<link rel="stylesheet" href="settings.css" />
 <style>
   /* ===== EWR MT HUB design tokens — Apple-structured, United-skinned (see CLAUDE.md) ===== */
   :root{
@@ -129,17 +130,6 @@
   @media (min-width:1100px){ body[data-tab="staffing"] main{max-width:none;padding-left:20px;padding-right:20px} }
   .view{display:none}.view.active{display:block}
   h2.section{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:18px 4px 8px}
-  #view-settings .section{cursor:pointer;user-select:none;display:flex;align-items:center;gap:10px;
-    text-transform:none;letter-spacing:0;font-size:15px;font-weight:800;color:var(--ink);
-    background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin:10px 0 0;
-    box-shadow:var(--shadow);transition:background var(--dur-tap) linear}
-  #view-settings .section:active{background:#f3f6f9}
-  #view-settings .section::after{content:'▾';margin-left:auto;color:var(--muted);font-size:13px;transition:transform var(--dur-1) var(--ease)}
-  #view-settings .section.collapsed::after{transform:rotate(-90deg)}
-  #view-settings .section + .card{margin-top:8px}
-  #view-settings .section.collapsed + .card{display:none}
-  #setBar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
-  #setBar .sb-t{font-size:13px;color:var(--muted)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
   .catblock{overflow:hidden;border-radius:16px}
   .catblock .cathdr{border-radius:16px 16px 0 0}
@@ -655,206 +645,7 @@
   <section id="view-paats" class="view"><div id="paatsRoot"></div></section>
 
   <!-- SETTINGS -->
-  <section id="view-settings" class="view">
-    <div id="setBar"><span class="sb-t">Tap a section to open it</span><button class="btn ghost sm" id="setExpandAll" style="width:auto">Expand all</button></div>
-    <h2 class="section">Inventory locations &amp; zones</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">The locations you pick in <b>Do Inventory</b> and when adding equipment. Drag order with ▲▼.</p>
-      <div id="equipLocManage"></div>
-      <div class="toolbar" style="margin-top:10px;margin-bottom:0">
-        <input id="newEquipLoc" placeholder="Add a location / zone" />
-        <button class="btn sm navy" id="addEquipLocBtn" style="width:auto">Add</button>
-      </div>
-    </div>
-
-    <h2 class="section">Equipment Movement tracking</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Choose what gets recorded in the Equipment Movement log and how the day splits into shifts.</p>
-      <div id="moveTrackToggles"></div>
-      <div id="moveShiftCfg" style="margin-top:14px"></div>
-      <label for="moveCapIn" style="margin-top:14px">Keep at most</label>
-      <div class="toolbar" style="margin-bottom:0"><input id="moveCapIn" inputmode="numeric" style="max-width:120px" /><span class="hint" style="align-self:center;margin:0">most recent moves</span></div>
-    </div>
-
-    <h2 class="section">Home screen tiles</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Turn off tiles you don't use to declutter the home screen.</p>
-      <div id="tileToggles"></div>
-    </div>
-
-    <h2 class="section">Staffing names</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">How people's names show across the staffing board, tug crews and the sheet.</p>
-      <select id="nameOrderSel">
-        <option value="first">First name first — David Tavarez</option>
-        <option value="last">Last name first — Tavarez, David</option>
-      </select>
-    </div>
-
-    <h2 class="section">App passcode</h2>
-    <div class="card pad">
-      <div id="passDefaultWarn" class="pass-warn" hidden>⚠︎ You're still using the default passcode. Set your own before the team uses this.</div>
-      <p class="hint" style="margin-top:0">Unlocks Settings, the inventory location editor, and the movement-log wipe. 3–8 digits.</p>
-      <div class="toolbar" style="margin-bottom:0">
-        <input id="passNew" type="text" inputmode="numeric" placeholder="New passcode" autocomplete="off" maxlength="8" />
-        <button class="btn sm navy" id="passSave" style="width:auto">Update</button>
-      </div>
-    </div>
-
-    <h2 class="section">Header subtitle</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">The small line under the title on the home screen.</p>
-      <div class="toolbar" style="margin-bottom:0">
-        <input id="subEdit" type="text" placeholder="Ground support equipment · staging &amp; audits" autocomplete="off" />
-        <button class="btn sm navy" id="subSave" style="width:auto">Save</button>
-      </div>
-    </div>
-
-    <h2 class="section">Names &amp; labels</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Rename anything on the sheets and screens — titles, areas, tug types. Blank = keep the built-in name. Changes sync to the whole team.</p>
-      <div id="labelCfg"></div>
-    </div>
-
-    <h2 class="section">Areas &amp; spots</h2>
-    <div class="card pad">
-      <div id="locManage" style="max-height:280px;overflow:auto"></div>
-      <label for="newSpot" style="margin-top:14px">Add a spot</label>
-      <input id="newSpot" placeholder="Spot name e.g. AML17, Staging Area" />
-      <div class="row2" style="margin-top:8px">
-        <input id="newArea" list="areaList" placeholder="Area e.g. Amelia" />
-        <button type="button" class="chip" id="acFlag" style="text-align:center">Holds aircraft</button>
-      </div>
-      <datalist id="areaList"></datalist>
-      <button class="btn sm navy" id="addSpotBtn" style="width:100%;margin-top:8px">Add spot</button>
-      <details style="margin-top:12px">
-        <summary style="font-weight:700;color:var(--navy);cursor:pointer"> Bulk add a range of spots</summary>
-        <p class="hint" style="margin-top:6px">Generate many spots at once, e.g. prefix <b>AML</b>, 17 → 38 makes AML17…AML38.</p>
-        <div class="row3" style="margin-top:6px">
-          <input id="bPrefix" placeholder="Prefix AML" />
-          <input id="bStart" inputmode="numeric" placeholder="From 17" />
-          <input id="bEnd" inputmode="numeric" placeholder="To 38" />
-        </div>
-        <div class="row2" style="margin-top:8px">
-          <input id="bArea" list="areaList" placeholder="Area e.g. Amelia" />
-          <button type="button" class="chip sel" id="bAcFlag" style="text-align:center">Holds aircraft</button>
-        </div>
-        <button class="btn sm navy" id="bulkBtn" style="width:100%;margin-top:8px">Generate spots</button>
-      </details>
-    </div>
-
-    <h2 class="section">Equipment categories</h2>
-    <div class="card pad">
-      <p class="hint" style="margin:0 0 8px">Tap a name to rename it (updates every unit). Use ▲▼ to reorder.</p>
-      <div id="typeManage"></div>
-      <div class="toolbar" style="margin-top:10px;margin-bottom:0">
-        <input id="newType" placeholder="Add a category (e.g. Belt Loader)" />
-        <button class="btn sm navy" id="addTypeBtn" style="width:auto">Add</button>
-      </div>
-    </div>
-
-    <h2 class="section">Subtype presets</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Create subtypes per category (e.g. <b>Stairs</b> → Airbus, Wide-body). They become the dropdown choices when you set a unit's subtype.</p>
-      <label for="subtypeCat" style="margin-top:0">Category</label>
-      <select id="subtypeCat"></select>
-      <div id="subtypePresets"></div>
-      <div class="toolbar" style="margin-top:8px;margin-bottom:0">
-        <input id="newSubtype" placeholder="Add a subtype" autocomplete="off" />
-        <button class="btn sm navy" id="addSubtypeBtn" style="width:auto">Add</button>
-      </div>
-    </div>
-
-    <h2 class="section">Aircraft fleet</h2>
-    <div class="card pad">
-      <p class="hint" id="fleetStatus" style="margin-top:0"></p>
-      <div class="btnrow">
-        <button class="btn ghost" id="reloadFleet">↻ Reload fleet</button>
-        <a class="btn ghost" href="https://docs.google.com/spreadsheets/d/1ZlYgN_IZmd6CSx_nXnuP0L0PiodapDRx3RmNkIpxXAo/htmlview" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;line-height:1.2"> Look up ship #</a>
-      </div>
-      <p class="hint">Type a ship number and the tail # + type fill in. Unknown ones you enter are remembered.</p>
-    </div>
-
-    <h2 class="section">Output &amp; backup</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Export everything (equipment, areas/spots, types, aircraft) as one file — send it to update the shared page, back it up, or load on another phone.</p>
-      <div class="btnrow">
-        <button class="btn ghost" id="exportMaster">↓ Export all data</button>
-        <button class="btn ghost" id="importBtn">↑ Import</button>
-      </div>
-      <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
-    </div>
-
-    <h2 class="section">Manpower</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Past manpowers are read-only by default. Turn this on to allow deleting them from the Past view (removes the entry for the whole team).</p>
-      <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Allow deleting past manpowers<small id="logDelStatus"></small></span><input type="checkbox" id="allowLogDel" class="cfg-chk"></label>
-      <label class="cfgrow" style="border-top:1px solid var(--line);padding:10px 0 4px"><span class="cfg-l">Fatigue warning after<small>Flags ⚠ on anyone who's worked this many days in a row, counted from logged manpower history.</small></span>
-        <span style="display:flex;align-items:center;gap:6px;flex:none"><input type="number" id="fatigueDays" min="2" max="14" step="1" style="width:64px;text-align:center" /><span class="cfg-l" style="font-size:13px">days</span></span></label>
-      <div style="border-top:1px solid var(--line);padding-top:10px;margin-top:4px">
-        <div class="cfg-l" style="margin-bottom:2px">Standard shift times</div>
-        <small class="cfg-l" style="display:block;color:var(--muted);margin-bottom:8px">A clock-in or clock-out that isn't one of these shows in <b style="color:#c0271e">red</b> on the pool &amp; board. Set your team's standard shifts here.</small>
-        <div id="stdShiftRows"></div>
-      </div>
-    </div>
-
-    <h2 class="section">Supervisor codes</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Each supervisor sets their own code the first time they open Manpower. Reset a code here if someone forgot theirs — they'll create a new one next time.</p>
-      <div id="supCodes"></div>
-    </div>
-
-    <h2 class="section">Team sync (online)</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Shares the whole site across supervisors — manpower logs &amp; drafts, sign-in codes, the equipment list, inventory, movement &amp; secure logs, and settings. Everyone sees the same data. Demo mode stays local to each device. Turn off to go fully local (offline).</p>
-      <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Online sync<small id="syncStatus"></small></span><input type="checkbox" id="syncOnChk" class="cfg-chk"></label>
-      <div id="syncHealth" class="sync-health"></div>
-      <div id="syncAuthBox" class="sync-auth">
-        <div class="sync-auth-h">Team sync sign-in</div>
-        <p class="hint" style="margin:2px 0 8px">Signs this device in to the shared backend. Ask your admin for the team email &amp; password — it's never stored in the app's code, only the login token is kept on this device.</p>
-        <div id="syncAuthOut">
-          <input id="syncAuthEmail" type="email" autocomplete="username" placeholder="Team email" />
-          <input id="syncAuthPass" type="password" autocomplete="current-password" placeholder="Team password" />
-          <div class="btnrow" style="margin-top:8px"><button class="btn navy" id="syncSignIn" style="flex:0 0 120px">Sign in</button></div>
-        </div>
-        <div id="syncAuthIn" hidden>
-          <div class="sync-auth-status">✓ Signed in as <b id="syncAuthWho"></b></div>
-          <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="syncSignOut" style="flex:0 0 120px">Sign out</button></div>
-        </div>
-        <p class="hint" id="syncAuthMsg" style="margin:6px 0 0"></p>
-      </div>
-      <details style="margin-top:6px">
-        <summary style="font-weight:700;color:var(--navy);cursor:pointer;font-size:13px">Backend (advanced)</summary>
-        <label for="syncUrl" style="margin-top:8px">Supabase REST URL</label>
-        <input id="syncUrl" autocomplete="off" placeholder="https://xxxx.supabase.co/rest/v1" />
-        <label for="syncKey">anon public key</label>
-        <input id="syncKey" autocomplete="off" placeholder="eyJ…" />
-        <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="syncTest">Test connection</button><button class="btn navy" id="syncSave" style="flex:0 0 110px">Save</button></div>
-        <p class="hint" id="syncMsg" style="margin-bottom:0"></p>
-      </details>
-    </div>
-
-    <h2 class="section">Demo mode (mask names)</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">Replaces every real person's name with a stable fake one (e.g. <b>Torres, K.</b>) across the pool, board, sheets and logs — so you can screen-share or pitch the tool to your company without exposing anyone. The same real name always maps to the same fake name. Turn off to show real names again. Nothing is changed in your saved data.</p>
-      <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Demo mode<small id="demoStatus"></small></span><input type="checkbox" id="demoChk" class="cfg-chk"></label>
-      <div id="demoSeedBox" hidden style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px">
-        <p class="hint" style="margin:0 0 8px">Load a full demo dataset for a pitch: ~2 weeks of past manpowers, a "worked 7 days straight" person (shows the fatigue ⚠), and a couple of super-tugs incl. one already out of service for the GSE workflow.</p>
-        <div class="btnrow"><button class="btn navy" id="demoSeed" style="flex:0 0 auto">Load demo data</button><button class="btn ghost" id="demoSeedClear" style="flex:0 0 auto">Clear demo data</button></div>
-      </div>
-    </div>
-
-    <h2 class="section">Master list (shared on the page)</h2>
-    <div class="card pad">
-      <p class="hint" style="margin-top:0">To make your list global: <b>Export all data</b>, save as <code>equipment.json</code>, add it to the repo. New phones auto-load it.</p>
-      <button class="btn ghost" id="syncMaster">↻ Load master list</button>
-      <p class="hint" id="masterStatus"></p>
-    </div>
-
-    <h2 class="section">Danger zone</h2>
-    <div class="card pad"><button class="btn danger" id="clearBtn">Delete all my data</button></div>
-    <p class="hint" style="text-align:center">Equipment Location Tracker · works offline</p>
-  </section>
+  <section id="view-settings" class="view"><div id="settingsRoot"></div></section>
 </main>
 
 <!-- PATTERN LOCK -->
@@ -869,21 +660,6 @@
 </div>
 
 <!-- ADD/EDIT MODAL -->
-<!-- INVENTORY LOCATION EDITOR (password-locked) -->
-<div class="overlay" id="locEditOverlay">
-  <div class="sheet">
-    <div class="grab"></div>
-    <h3>Edit inventory locations</h3>
-    <p class="hint" style="margin-top:0">Add or remove locations and their sub-locations. These show up in <b>Do Inventory</b>.</p>
-    <div id="locEditBody" style="max-height:52vh;overflow:auto"></div>
-    <div class="toolbar" style="margin-top:12px;margin-bottom:0">
-      <input id="locEditNew" placeholder="Add a location" autocomplete="off" />
-      <button class="btn sm navy" id="locEditAdd" style="width:auto">Add</button>
-    </div>
-    <div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="locEditDone">Done</button></div>
-  </div>
-</div>
-
 <button id="floatBack" class="floatback" hidden>‹ Back</button>
 <div id="printArea"></div>
 <div class="toast" id="toast"></div>
@@ -1067,7 +843,7 @@ async function syncSite(force){
     changed=await window.SYNC.shared("config",   ()=>[configRow()], arr=>{applyConfigRow(arr[0]);persist();}, 1)||changed;
   }catch(_){}
   _siteBusy=false;
-  if(changed){ try{refreshAll();}catch(_){} if(curTab==="settings"&&typeof settingsUnlocked!=="undefined"&&settingsUnlocked&&typeof goTab==="function")goTab("settings"); }
+  if(changed){ try{refreshAll();}catch(_){} if(curTab==="settings"&&typeof settingsUnlocked!=="undefined"&&settingsUnlocked&&window.SETTINGS)SETTINGS.refresh(); }
   return changed;
 }
 function uid(){return "e"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);}
@@ -1124,14 +900,13 @@ function effFuture(a){const k=(a.reg||"").toUpperCase();return (k in fstat)?!!fs
 function setFstat(reg,isFuture){fstat[(reg||"").toUpperCase()]=isFuture;Store.setJSON("elt.fleet.fstat",fstat);}
 function indexFleet(){byShip=new Map();byReg=new Map();FLEET.forEach(a=>{if(a.ship)byShip.set(String(a.ship),a);if(a.reg)byReg.set(String(a.reg).toUpperCase(),a);});}
 function loadFleetCache(){const d=Store.getJSON(FLEET_KEY,null);if(d&&Array.isArray(d.aircraft)){FLEET=d.aircraft;indexFleet();return true;}return false;}
-function saveFleetCache(){Store.setJSON(FLEET_KEY,{aircraft:FLEET});}
+function saveFleetCache(){Store.setJSON(FLEET_KEY,{aircraft:FLEET,cachedAt:Date.now()});}
 async function fetchFleet(){try{const r=await fetch(FLEET_URL+"?t="+todayISO(),{cache:"no-store"});if(!r.ok)return false;
   const d=await r.json();if(!d||!Array.isArray(d.aircraft))return false;
   FLEET=d.aircraft.map(a=>({ship:String(a.ship||""),reg:(a.reg||"").toUpperCase(),type:a.type||"",future:!!a.future}));indexFleet();saveFleetCache();return true;}catch(e){return false;}}
 function lookupShip(s){s=String(s).trim();return byShip.get(s)||byReg.get(s.toUpperCase());}
 function rememberAircraft(ship,reg,type){ship=String(ship).trim();reg=(reg||"").toUpperCase().trim();if(!ship)return;
   const ex=byShip.get(ship);if(ex){ex.reg=reg||ex.reg;ex.type=type||ex.type;}else FLEET.push({ship,reg,type:type||""});indexFleet();saveFleetCache();}
-function updateFleetStatus(){const el=$("#fleetStatus");if(el)el.textContent=`${FLEET.length.toLocaleString()} aircraft loaded (ship # → tail # + type).`;}
 const TYPE_SPECS={
  "Boeing 737-700":{united:"1998",seats:"126 (12F · 36E+ · 78Y)",len:"110 ft 4 in",span:"117 ft 5 in",range:"3,010 nm (~5,570 km)",speed:"Mach 0.785 (~453 kn)",engines:"2× CFM56-7B",first:"1997",mtow:"154,500 lb",notes:"Shortest 737NG in the fleet."},
  "Boeing 737-800":{united:"1998",seats:"166 (16F · 54E+ · 96Y)",len:"129 ft 6 in",span:"117 ft 5 in",range:"2,935 nm (~5,436 km)",speed:"Mach 0.785 (~453 kn)",engines:"2× CFM56-7B",first:"1997",mtow:"174,200 lb",notes:"Workhorse narrowbody — largest type by count."},
@@ -1222,7 +997,7 @@ function goTab(t){
   if(t==="hub"){window.HUB&&HUB.open();}
   if(t==="safety"){window.SAFETY&&SAFETY.open();}
   if(t==="paats"){window.PAATS&&PAATS.open();}
-  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();renderLabelCfg();refreshPassWarn();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";const nos=$("#nameOrderSel");if(nos)nos.value=(data.settings&&data.settings.nameOrder)==="last"?"last":"first";}}
+  if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} window.SETTINGS&&SETTINGS.open(); }}
 $$(".home-tile").forEach(b=>b.addEventListener("click",()=>{const d=b.dataset.home;if(d==="present"){window.PRESENT&&PRESENT.open();return;}goTab(d);}));
 
 /* settings passcode lock (3599) */
@@ -1234,18 +1009,6 @@ function openSettingsGate(){
   $("#setgGo").onclick=submit;
   inp.onkeydown=e=>{ if(e.key==="Enter")submit(); };
   $("#setgCancel").onclick=()=>{ g.hidden=true; showTab("hub"); };
-}
-function renderSupCodes(){
-  const wrap=$("#supCodes"); if(!wrap||!window.STAFF||!window.STAFF.roster)return;
-  // pull the latest shared codes so "code set / no code" reflects every device, then re-render if it changed
-  if(window.STAFF.syncCodes)window.STAFF.syncCodes().then(changed=>{ if(changed&&document.querySelector("#supCodes"))renderSupCodes(); });
-  const roster=window.STAFF.roster();
-  wrap.innerHTML=roster.map(r=>{const set=window.STAFF.hasCode(r.name);
-    return `<div class="supc-row"><div><b>${r.name}</b> <span class="supc-role">${r.role}${r.temp?' · temp':''}</span> ${set?'<span class="supc-set">code set</span>':'<span class="supc-unset">no code</span>'}</div>
-      <div class="supc-btns">${set?`<button class="btn ghost sm supc-reset" data-n="${r.name.replace(/"/g,'&quot;')}">Reset code</button>`:''}${r.temp?`<button class="btn ghost sm supc-rm" data-n="${r.name.replace(/"/g,'&quot;')}">Remove</button>`:''}</div></div>`;
-  }).join("")||'<p class="hint">No supervisors.</p>';
-  $$("#supCodes .supc-reset").forEach(b=>b.onclick=()=>{ if(confirm("Reset "+b.dataset.n+"'s code? They'll set a new one next time.")){ window.STAFF.resetCode(b.dataset.n); renderSupCodes(); } });
-  $$("#supCodes .supc-rm").forEach(b=>b.onclick=()=>{ if(confirm("Remove temporary supervisor "+b.dataset.n+"?")){ window.STAFF.removeTempSup(b.dataset.n); window.STAFF.resetCode(b.dataset.n); renderSupCodes(); } });
 }
 function updateBackBtn(){$("#homeBtn").hidden=(curTab==="home");updateFloatBack();}
 function updateFloatBack(){$("#floatBack").hidden=!(curTab!=="hub"&&curTab!=="home"&&curTab!=="staffing"&&curTab!=="requests");}
@@ -1274,6 +1037,7 @@ function goBack(){
   if(curTab==="staffing")return goHome();
   if(curTab==="requests"){ if(window.REQUESTS&&window.REQUESTS.back&&window.REQUESTS.back())return; return showTab("home"); }
   if(curTab==="hub"){ if(window.HUB&&HUB.back())return; return showTab("home"); }
+  if(curTab==="settings"){ if(window.SETTINGS&&SETTINGS.back())return; return showTab("hub"); }
   showTab("hub");}
 $("#floatBack").addEventListener("click",goBack);
 
@@ -1347,145 +1111,17 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
 const HUB_TILES=[["staffing","Manpower / Staffing"],["briefing","Briefing & Focus"],["eos","End of Shift Report"],
   ["inventory","Do Inventory"],["secure","Aircraft Secure Log"],["aircraft","Aircraft Lookup"],["park","Stop Mark Lookup"],
   ["equipment","Equipment List"],["movement","Equipment Movement"]];
-function renderMoveTrack(){
-  const S=data.settings;
-  const tog=(k,l,d)=>`<label class="cfgrow"><span class="cfg-l">${l}${d?`<small>${d}</small>`:""}</span><input type="checkbox" class="cfg-chk" data-k="${k}" ${S[k]?"checked":""}></label>`;
-  $("#moveTrackToggles").innerHTML=
-    tog("trackInventory","Inventory counts","When you count a location")+
-    tog("trackEdits","Manual edits","Changing a unit's location in its editor")+
-    tog("trackQuickMove","Quick moves","The ⇄ move button on the list")+
-    tog("trackDeletions","Location deletions","Units unassigned when a location is deleted")+
-    tog("trackClears","Clear to unassigned","Units dropped from a location during a recount");
-  const tm=(k,l)=>`<div class="cfg-time"><label>${l} starts</label><input type="time" class="cfg-shift" data-k="${k}" value="${minToTime(S[k])}"></div>`;
-  const nm=(k,ph)=>`<input type="text" class="cfg-sname" data-k="${k}" value="${esc(S[k]||"")}" placeholder="${ph}">`;
-  $("#moveShiftCfg").innerHTML=`<label style="margin-top:0">Shift split (by clock time)</label>
-    <div class="cfg-shifts">${tm("shiftAM","AM")}${tm("shiftPM","PM")}${tm("shiftNH","Nighthawk")}</div>
-    <label>Shift names</label>
-    <div class="cfg-shifts">${nm("shiftNameNH","Nighthawk")}${nm("shiftNameAM","AM")}${nm("shiftNamePM","PM")}</div>`;
-  $("#moveCapIn").value=S.moveCap;
-  $$("#moveTrackToggles .cfg-chk").forEach(c=>c.onchange=()=>{S[c.dataset.k]=c.checked;save();});
-  $$("#moveShiftCfg .cfg-shift").forEach(c=>c.onchange=()=>{S[c.dataset.k]=timeToMin(c.value);save();});
-  $$("#moveShiftCfg .cfg-sname").forEach(c=>c.onchange=()=>{S[c.dataset.k]=c.value.trim()||c.dataset.k;save();});
-  $("#moveCapIn").onchange=()=>{const v=Math.max(10,Math.min(2000,parseInt($("#moveCapIn").value)||300));S.moveCap=v;$("#moveCapIn").value=v;if(data.movements.length>v)data.movements=data.movements.slice(-v);save();};
-}
-function renderTileToggles(){
-  const hidden=new Set(data.hiddenTiles||[]);
-  $("#tileToggles").innerHTML=HUB_TILES.map(([k,l])=>`<label class="cfgrow"><span class="cfg-l">${l}</span><input type="checkbox" class="tile-chk" data-k="${k}" ${hidden.has(k)?"":"checked"}></label>`).join("");
-  $$("#tileToggles .tile-chk").forEach(c=>c.onchange=()=>{
-    const set=new Set(data.hiddenTiles||[]);
-    if(c.checked)set.delete(c.dataset.k);else set.add(c.dataset.k);
-    data.hiddenTiles=[...set];save();applyTileVisibility();});
-}
 function applyTileVisibility(){ if(window.HUB)HUB.refresh(); }
-function updateExpandAllBtn(){const b=$("#setExpandAll");if(!b)return;
-  const anyOpen=$$('#view-settings .section').some(s=>!s.classList.contains('collapsed'));
-  b.textContent=anyOpen?'Collapse all':'Expand all';}
-function initSettingsCollapse(){
-  $$('#view-settings .section').forEach(h=>{
-    if(h._wired)return;h._wired=true;h.classList.add('collapsed'); // collapsible, start collapsed
-    h.addEventListener('click',()=>{h.classList.toggle('collapsed');updateExpandAllBtn();});
-  });
-  updateExpandAllBtn();
-}
-$("#setExpandAll").addEventListener("click",()=>{
-  const secs=$$('#view-settings .section');const anyOpen=secs.some(s=>!s.classList.contains('collapsed'));
-  secs.forEach(s=>s.classList.toggle('collapsed',anyOpen));updateExpandAllBtn();});
-function renderSubtypePresets(){
-  const sel=$("#subtypeCat");if(!sel)return;const cur=sel.value;
-  sel.innerHTML=data.types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
-  if([...sel.options].some(o=>o.value===cur))sel.value=cur;
-  const cat=sel.value,subs=data.subtypes[cat]||[];
-  $("#subtypePresets").innerHTML=subs.length
-    ?`<div class="le-subs" style="margin:10px 0 0">`+subs.map((s,i)=>`<span class="le-sub">${esc(s)}<button class="le-subdel" data-i="${i}" title="Remove">✕</button></span>`).join("")+`</div>`
-    :`<p class="hint" style="margin:10px 0 0">No subtypes for ${esc(cat||"this category")} yet.</p>`;
-}
-$("#subtypeCat").addEventListener("change",renderSubtypePresets);
-$("#subtypePresets").addEventListener("click",e=>{const t=e.target.closest(".le-subdel");if(!t)return;
-  const cat=$("#subtypeCat").value,arr=data.subtypes[cat]||[];arr.splice(+t.dataset.i,1);
-  if(arr.length)data.subtypes[cat]=arr;else delete data.subtypes[cat];save();renderSubtypePresets();});
-$("#addSubtypeBtn").addEventListener("click",()=>{const cat=$("#subtypeCat").value,v=$("#newSubtype").value.trim();if(!cat||!v)return;
-  data.subtypes[cat]=data.subtypes[cat]||[];
-  if(data.subtypes[cat].some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already listed");return;}
-  data.subtypes[cat].push(v);$("#newSubtype").value="";save();renderSubtypePresets();toast("Subtype added");});
-$("#newSubtype").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addSubtypeBtn").click();});
-function renderSyncCfg(){const c=Store.getJSON("elt.sync.cfg",null)||{on:true,url:"",key:""};
-  $("#syncOnChk").checked=c.on!==false;$("#syncUrl").value=c.url||"";$("#syncKey").value=c.key||"";
-  $("#syncStatus").textContent=(c.on!==false)?(c.url?" · sharing with the team":" · no backend set"):" · off (local only)";
-  renderSyncHealth();renderSyncAuth();}
-function renderSyncAuth(){const box=$("#syncAuthBox");if(!box)return;
-  const on=window.SYNC&&window.SYNC.signedIn&&window.SYNC.signedIn();
-  const inB=$("#syncAuthIn"),outB=$("#syncAuthOut");
-  if(inB)inB.hidden=!on; if(outB)outB.hidden=!!on;
-  if(on){const who=$("#syncAuthWho");if(who)who.textContent=(window.SYNC.email&&window.SYNC.email())||"team";}
-  const msg=$("#syncAuthMsg");if(msg&&!on)msg.textContent="";}
-$("#syncSignIn")?.addEventListener("click",async()=>{
-  const email=$("#syncAuthEmail").value.trim(),pass=$("#syncAuthPass").value;
-  if(!email||!pass){$("#syncAuthMsg").textContent="Enter the team email and password.";return;}
-  $("#syncAuthMsg").textContent="Signing in…";
-  try{ await window.SYNC.signIn(email,pass); $("#syncAuthPass").value=""; $("#syncAuthMsg").textContent="✓ Signed in — syncing as the team account.";
-    renderSyncAuth(); if(typeof scheduleSiteSync==="function")scheduleSiteSync(); }
-  catch(e){ $("#syncAuthMsg").textContent="✗ Sign-in failed: "+(e&&e.message||e); }});
-$("#syncSignOut")?.addEventListener("click",()=>{ window.SYNC.signOut(); renderSyncAuth(); $("#syncAuthMsg").textContent="Signed out — this device will use the public key only (blocked once RLS is on)."; });
 function agoStr(t){if(!t)return"never";const s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<60)return s+"s ago";if(s<3600)return Math.round(s/60)+"m ago";if(s<86400)return Math.round(s/3600)+"h ago";return Math.round(s/86400)+"d ago";}
-function renderSyncHealth(){const el=$("#syncHealth");if(!el)return;
-  const c=Store.getJSON("elt.sync.cfg",null)||{on:true};
-  if(c.on===false){el.hidden=true;return;} el.hidden=false;
-  const h=(window.SYNC&&window.SYNC.health&&window.SYNC.health())||null;
-  if(!h||(!h.lastOk&&!h.lastErr)){el.className="sync-health";el.textContent="No sync activity yet this session.";return;}
-  const okNewer=(h.lastOk||0)>=(h.lastErr||0);
-  if(okNewer){el.className="sync-health ok";el.textContent="✓ Synced "+agoStr(h.lastOk)+(h.pending?" · "+h.pending+" pending":"");}
-  else{el.className="sync-health bad";el.textContent="⚠︎ Last sync failed "+agoStr(h.lastErr)+(h.lastErrMsg?" — "+h.lastErrMsg:"")+(h.lastOk?" · last ok "+agoStr(h.lastOk):"");}}
-$("#syncOnChk").addEventListener("change",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.on=$("#syncOnChk").checked;Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast(c.on?"Online sync on":"Online sync off — local only");});
-function renderDemoCfg(){const on=!!Store.getJSON("elt.demo",false);$("#demoChk").checked=on;$("#demoStatus").textContent=on?" · on — names masked":" · off — real names";document.body.classList.toggle("demo-on",on);const box=$("#demoSeedBox");if(box)box.hidden=!on;}
-$("#demoChk").addEventListener("change",()=>{const on=$("#demoChk").checked;Store.setJSON("elt.demo",on);renderDemoCfg();
-  try{refreshAll();}catch(_){}                                   // re-draw equipment views now
-  try{if(window.STAFF&&window.STAFF.refresh)window.STAFF.refresh();}catch(_){}   // and the staffing view
-  toast(on?"Demo mode on — names masked":"Demo mode off — real names");});
 // demo super-tugs (incl. one already out of service) so the GSE OOS workflow has something to show
 const DEMO_STUGS=[{id:"demo-stug-1",tag:"STUG-01",type:"Super Tug (STUG)",location:"WestPark",oos:true,oosReason:"Hydraulic leak"},
   {id:"demo-stug-2",tag:"STUG-02",type:"Super Tug (STUG)",location:"Ballpark",oos:false}];
 function seedDemoEquip(){ DEMO_STUGS.forEach(s=>{ if(!data.equipment.some(e=>e.id===s.id))data.equipment.push({...s,updated:todayISO(),when:Date.now()}); }); save(); refreshAll(); }
 function clearDemoData(){ data.equipment=data.equipment.filter(e=>!/^demo-stug-/.test(e.id)); DEMO_STUGS.forEach(s=>{try{Store.del("elt.oos.photo."+s.id);}catch(_){}}); save();
   try{Store.del("elt.staff.log");}catch(_){} refreshAll(); toast("Demo data cleared"); }
-$("#demoSeed")?.addEventListener("click",()=>{ seedDemoEquip(); if(window.STAFF&&window.STAFF.seedDemo)window.STAFF.seedDemo(); toast("Demo data loaded"); });
-$("#demoSeedClear")?.addEventListener("click",()=>{ if(confirm("Clear all demo data (seeded super-tugs + past manpowers)?"))clearDemoData(); });
-function renderLogDelCfg(){const on=!!(data.settings&&data.settings.allowLogDelete);$("#allowLogDel").checked=on;$("#logDelStatus").textContent=on?" · on — Delete shown":" · off — read-only";
-  const fd=$("#fatigueDays");if(fd)fd.value=(data.settings&&data.settings.fatigueDays)||7;
-  renderStdShifts();}
 const STD_SHIFT_DEF={AM:{start:"05:00",end:"13:00"},PM:{start:"13:00",end:"21:00"},NH:{start:"21:00",end:"05:00"}};
-function renderStdShifts(){ const wrap=$("#stdShiftRows"); if(!wrap)return;
-  const cur=(data.settings&&data.settings.stdShifts)||STD_SHIFT_DEF;
-  const lbl={AM:"AM",PM:"PM",NH:"Nighthawk"};
-  wrap.innerHTML=["AM","PM","NH"].map(sh=>{const t=cur[sh]||STD_SHIFT_DEF[sh];
-    return `<div class="std-row"><span class="std-lbl">${lbl[sh]}</span>
-      <input class="std-t" data-sh="${sh}" data-k="start" value="${esc(t.start)}" inputmode="numeric" autocomplete="off" />
-      <span class="std-dash">–</span>
-      <input class="std-t" data-sh="${sh}" data-k="end" value="${esc(t.end)}" inputmode="numeric" autocomplete="off" /></div>`;}).join("");
-  wrap.querySelectorAll(".std-t").forEach(inp=>inp.addEventListener("change",()=>{
-    const v=coerceTimeStr(inp.value); if(!v){inp.value=(((data.settings.stdShifts||STD_SHIFT_DEF)[inp.dataset.sh])||{})[inp.dataset.k]||"";return;}
-    data.settings.stdShifts=data.settings.stdShifts||JSON.parse(JSON.stringify(STD_SHIFT_DEF));
-    data.settings.stdShifts[inp.dataset.sh]=data.settings.stdShifts[inp.dataset.sh]||{...STD_SHIFT_DEF[inp.dataset.sh]};
-    data.settings.stdShifts[inp.dataset.sh][inp.dataset.k]=v; inp.value=v; save(); toast("Standard shift times saved");
-  }));
-}
 // accept "21:00", "2100", "900" → "HH:MM"
 function coerceTimeStr(v){ v=(v||"").trim(); if(/^\d{1,2}:\d{2}$/.test(v)){const[h,m]=v.split(":");return (h.length<2?"0":"")+h+":"+m;} const m=v.match(/^(\d{1,2})(\d{2})$/); if(m&&+m[1]<24&&+m[2]<60)return (+m[1]<10?"0":"")+(+m[1])+":"+m[2]; return ""; }
-$("#allowLogDel").addEventListener("change",()=>{data.settings.allowLogDelete=$("#allowLogDel").checked;save();renderLogDelCfg();toast(data.settings.allowLogDelete?"Past manpowers can be deleted":"Past manpowers are read-only");});
-$("#fatigueDays").addEventListener("change",e=>{let n=parseInt(e.target.value,10);if(isNaN(n))n=7;n=Math.max(2,Math.min(14,n));data.settings.fatigueDays=n;e.target.value=n;save();toast("Fatigue warning set to "+n+" days");});
-$("#syncSave").addEventListener("click",()=>{const c=Store.getJSON("elt.sync.cfg",null)||{};c.url=$("#syncUrl").value.trim();c.key=$("#syncKey").value.trim();Store.setJSON("elt.sync.cfg",c);renderSyncCfg();toast("Sync backend saved");});
-$("#syncTest").addEventListener("click",async()=>{const url=$("#syncUrl").value.trim(),key=$("#syncKey").value.trim();$("#syncMsg").textContent="Testing…";
-  try{const r=await fetch(url.replace(/\/+$/,"")+"/manpower_shared?select=id&limit=1",{headers:{apikey:key,Authorization:"Bearer "+key}});
-    $("#syncMsg").textContent=r.ok?"✓ Connected — table reachable.":"✗ HTTP "+r.status+" "+(await r.text()).slice(0,120);}catch(e){$("#syncMsg").textContent="✗ "+(e.message||e);}});
-function refreshPassWarn(){const w=$("#passDefaultWarn");if(w)w.hidden=(curPass()!==SETTINGS_PASS);}
-$("#passSave").addEventListener("click",()=>{const v=$("#passNew").value.trim();
-  if(!/^\d{3,8}$/.test(v)){toast("Use 3–8 digits");return;}
-  if(v===SETTINGS_PASS){toast("Pick a passcode other than the default");return;}
-  data.settings.passcode=v;save();$("#passNew").value="";refreshPassWarn();toast("Passcode updated");});
-$("#subSave").addEventListener("click",()=>{const v=$("#subEdit").value.trim();
-  data.settings.headerSub=v;save();updateHdr();toast("Subtitle saved");});
-$("#nameOrderSel")?.addEventListener("change",e=>{const v=e.target.value==="last"?"last":"first";
-  data.settings.nameOrder=v; try{Store.setRaw("elt.staff.nameOrder",v);}catch(_){}
-  save(); toast("Name order: "+(v==="last"?"Last name first":"First name first"));});
 // settings helpers
 function curPass(){return (data.settings&&data.settings.passcode)||SETTINGS_PASS;}
 // styled masked passcode prompt (replaces cleartext prompt() so passcodes aren't shoulder-surfable).
@@ -1682,74 +1318,6 @@ function needsNose(loc,zone){return loc==="C4"||(loc==="South"&&(zone==="Lindy"|
 function invDetail(spot,nose){return [spot,nose?"#"+nose:""].filter(Boolean).join(" · ");}
 function topLocs(){const out=[],seen=new Set();invLocs().forEach(l=>{if(!seen.has(l)){seen.add(l);out.push(l);}});return out;}
 function locCovered(top){return inv.covered.includes(top);}
-/* ---- password-locked location editor (add/delete locations + sub-locations) ---- */
-async function openLocEdit(){
-  const pass=await askPass("Edit locations","Enter the settings passcode.");
-  if(pass===null)return;
-  if(pass!==curPass()){toast("Wrong passcode");return;}
-  // bake the FULL set of inventory locations (incl. any only referenced by equipment)
-  // into the editable list so every tile you see can be renamed or deleted
-  data.equipLocs=topLocs().slice(); data.locZones=data.locZones||{};
-  save();
-  renderLocEdit(); $("#locEditOverlay").classList.add("open");
-}
-function closeLocEdit(){$("#locEditOverlay").classList.remove("open");renderInventory();refreshAll();}
-function renderInventory(){ if(window.INV&&INV.refresh)INV.refresh(); }
-function renderLocEdit(){
-  const L=data.equipLocs;
-  $("#locEditBody").innerHTML=L.map((l,i)=>{
-    const subs=(data.locZones[l]||[]);
-    const cnt=data.equipment.filter(eq=>eq.location===l).length;
-    const subHtml=subs.map((s,j)=>`<span class="le-sub">${esc(s)}<button class="le-subdel" data-li="${i}" data-sj="${j}" title="Remove">✕</button></span>`).join("")
-      ||`<span class="le-none">No sub-locations</span>`;
-    return `<div class="le-row">
-      <div class="le-head"><button class="le-lname" data-li="${i}" title="Tap to rename">${esc(l)}</button>${cnt?`<span class="le-cnt">${cnt} unit${cnt===1?"":"s"}</span>`:""}<button class="iconbtn le-merge" data-li="${i}" title="Merge into another location">⤵</button><button class="iconbtn le-del" data-li="${i}" title="Delete location">✕</button></div>
-      <div class="le-subs">${subHtml}</div>
-      <div class="le-addrow"><input class="le-subin" data-li="${i}" placeholder="Add sub-location" autocomplete="off" /><button class="btn sm ghost le-subadd" data-li="${i}" style="width:auto">＋</button></div>
-    </div>`;
-  }).join("")||`<p class="hint">No locations yet — add one below.</p>`;
-}
-$("#locEditBody").addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
-  const i=+t.dataset.li,L=data.equipLocs;
-  if(t.classList.contains("le-del")){const name=L[i],cnt=data.equipment.filter(eq=>eq.location===name).length;
-    if(cnt&&!confirm(`"${name}" has ${cnt} unit${cnt===1?"":"s"} here. Delete this location? Those units move to unassigned (logged in Movement).`))return;
-    data.equipment.forEach(eq=>{if(eq.location===name){const from=eq.location;eq.location="";eq.spot="";eq.nose="";eq.oos=false;eq.updated=todayISO();eq.when=Date.now();logMove(eq,from,"","delete");}});
-    L.splice(i,1);delete data.locZones[name];}
-  else if(t.classList.contains("le-lname")){const old=L[i],v=(prompt("Rename location:",old)||"").trim();if(!v||v===old)return;
-    if(L.some((x,j)=>j!==i&&x.toLowerCase()===v.toLowerCase())){toast("Already in the list");return;}
-    L[i]=v;data.equipment.forEach(eq=>{if(eq.location===old){eq.location=v;eq.updated=todayISO();eq.when=Date.now();}});
-    if(data.locZones[old]){data.locZones[v]=data.locZones[old];delete data.locZones[old];}}
-  else if(t.classList.contains("le-subadd")){const inp=$(`.le-subin[data-li="${i}"]`);const v=(inp?.value||"").trim();if(!v)return;
-    const name=L[i];data.locZones[name]=data.locZones[name]||[];
-    if(data.locZones[name].some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already listed");return;}
-    data.locZones[name].push(v);}
-  else if(t.classList.contains("le-merge")){mergeLoc(L[i]);return;}
-  else if(t.classList.contains("le-subdel")){const j=+t.dataset.sj,name=L[i];if(data.locZones[name])data.locZones[name].splice(j,1);}
-  else return;
-  save();renderLocEdit();});
-// merge a location into a parent so it becomes a sub-location (e.g. C4 Hardstand → C4 / Hardstand)
-function mergeLoc(name){
-  const cnt=data.equipment.filter(e=>(e.location||"")===name).length;
-  const parent=(prompt(`Merge "${name}" under which location? It becomes a sub-location there (its ${cnt} unit${cnt===1?"":"s"} move with it).`,"")||"").trim();
-  if(!parent)return;
-  if(parent.toLowerCase()===name.toLowerCase()){toast("Pick a different location");return;}
-  // sub-location label: strip the parent prefix if present ("C4 Hardstand" under "C4" → "Hardstand")
-  let sub=name;const rx=new RegExp("^"+parent.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"[\\s/-]+","i");
-  sub=name.replace(rx,"").trim()||name;
-  if(!data.equipLocs.some(x=>x.toLowerCase()===parent.toLowerCase()))data.equipLocs.push(parent);
-  data.locZones[parent]=data.locZones[parent]||[];
-  if(!data.locZones[parent].some(x=>x.toLowerCase()===sub.toLowerCase()))data.locZones[parent].push(sub);
-  data.equipment.forEach(e=>{if((e.location||"")===name){e.location=parent;e.spot=sub;e.updated=todayISO();e.when=Date.now();}});
-  data.equipLocs=data.equipLocs.filter(x=>x!==name);delete data.locZones[name];
-  save();renderLocEdit();refreshAll();toast(`Merged ${name} → ${parent} · ${sub}`);
-}
-$("#locEditBody").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList.contains("le-subin")){e.preventDefault();const i=e.target.dataset.li;$(`.le-subadd[data-li="${i}"]`)?.click();}});
-$("#locEditAdd").addEventListener("click",()=>{const v=$("#locEditNew").value.trim();if(!v)return;
-  if(data.equipLocs.some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already in the list");return;}
-  data.equipLocs.push(v);$("#locEditNew").value="";save();renderLocEdit();toast("Location added");});
-$("#locEditNew").addEventListener("keydown",e=>{if(e.key==="Enter")$("#locEditAdd").click();});
-$("#locEditDone").addEventListener("click",closeLocEdit);
-$("#locEditOverlay").addEventListener("click",e=>{if(e.target.id==="locEditOverlay")closeLocEdit();});
 function closeInvPop(){$$(".invpop,.invpop-back").forEach(n=>n.remove());}
 // suggest aircraft from the fleet master list as you type a nose number
 function paintNoseSug(pop,q){const box=pop.querySelector("#invNoseSug");if(!box)return;
@@ -2349,91 +1917,7 @@ function downloadEquipText(scope){
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
 
-/* ---- settings: areas & spots ---- */
-let newSpotAc=false,bulkAc=true;
-function fillAreaList(){const o=[];data.locations.forEach(l=>{if(!o.includes(l.area))o.push(l.area);});$("#areaList").innerHTML=o.map(a=>`<option value="${esc(a)}">`).join("");}
-$("#acFlag").addEventListener("click",()=>{newSpotAc=!newSpotAc;$("#acFlag").classList.toggle("sel",newSpotAc);});
-$("#bAcFlag").addEventListener("click",()=>{bulkAc=!bulkAc;$("#bAcFlag").classList.toggle("sel",bulkAc);});
-function renderLocs(){
-  const hc=hiddenCount();
-  const toggle=hc?`<button class="btn ghost sm" id="showHiddenBtn" style="width:100%;margin-bottom:10px">${showHidden?'⦸ Hide hidden':'○ Show hidden ('+hc+')'}</button>`:"";
-  if(!data.locations.length){$("#locManage").innerHTML=`<p class="hint">No spots yet.</p>`;return;}
-  VIS_ALL=showHidden;
-  const body=regionsOrdered().map(rg=>{const as=areasInRegion(rg);if(!as.length)return "";
-    return regionHdr(rg)+as.map(a=>`<div class="areahdr">${esc(a)}</div>`+
-    spotsInArea(a).map(l=>{const i=data.locations.indexOf(l);
-      return `<div class="manage-row"${l.hidden?' style="opacity:.55"':''}><span>${esc(l.name)} ${l.holdsAircraft?'<span class="pill ac">✈</span>':'<span class="pill st">staging</span>'} ${l.hidden?'<span class="pill st">hidden</span>':''}</span>
-        <button class="iconbtn loc-hide" data-i="${i}" title="${l.hidden?'Unhide':'Hide'}">${l.hidden?'⦸':'○'}</button>
-        <button class="iconbtn loc-ac" data-i="${i}" title="Toggle aircraft">✈</button>
-        <button class="iconbtn loc-del" data-i="${i}" title="Remove">✕</button></div>`;}).join("")).join("");}).join("");
-  VIS_ALL=false;
-  $("#locManage").innerHTML=toggle+body;
-}
-$("#locManage").addEventListener("click",e=>{
-  const sh=e.target.closest("#showHiddenBtn");if(sh){showHidden=!showHidden;renderLocs();return;}
-  const ac=e.target.closest(".loc-ac"),d=e.target.closest(".loc-del"),hd=e.target.closest(".loc-hide");
-  if(hd){const l=data.locations[+hd.dataset.i];l.hidden=!l.hidden;save();renderLocs();fillAreaList();refreshAll();return;}
-  if(ac){const l=data.locations[+ac.dataset.i];l.holdsAircraft=!l.holdsAircraft;save();renderLocs();}
-  if(d){const l=data.locations[+d.dataset.i];if(!confirm(`Remove "${l.name}"?`))return;
-    data.locations.splice(+d.dataset.i,1);save();renderLocs();fillAreaList();refreshAll();}});
-$("#addSpotBtn").addEventListener("click",()=>{
-  const name=$("#newSpot").value.trim(),area=$("#newArea").value.trim()||name;
-  if(!name)return;
-  if(data.locations.some(l=>l.name.toLowerCase()===name.toLowerCase())){toast("That spot exists");return;}
-  data.locations.push({name,area,holdsAircraft:newSpotAc,region:regionOfArea(area)});
-  $("#newSpot").value="";save();renderLocs();fillAreaList();refreshAll();toast("Spot added");});
-$("#bulkBtn").addEventListener("click",()=>{
-  const pre=$("#bPrefix").value.trim(),s=parseInt($("#bStart").value,10),en=parseInt($("#bEnd").value,10),area=$("#bArea").value.trim()||pre;
-  if(isNaN(s)||isNaN(en)||en<s){toast("Enter a valid number range");return;}
-  if(en-s>500){toast("Range too large");return;}
-  let added=0;for(let i=s;i<=en;i++){const name=pre+i;
-    if(!data.locations.some(l=>l.name.toLowerCase()===name.toLowerCase())){data.locations.push({name,area,holdsAircraft:bulkAc,region:regionOfArea(area)});added++;}}
-  save();renderLocs();fillAreaList();refreshAll();toast(`Added ${added} spot(s)`);
-  $("#bPrefix").value=$("#bStart").value=$("#bEnd").value="";});
 
-/* ---- settings: types ---- */
-function renderTypes(){$("#typeManage").innerHTML=data.types.map((t,i)=>`<div class="manage-row"><span class="ty-name" data-i="${i}">${esc(t)}</span>
-  <button class="iconbtn ty-up" data-i="${i}" title="Up"${i===0?" disabled":""}>▲</button>
-  <button class="iconbtn ty-down" data-i="${i}" title="Down"${i===data.types.length-1?" disabled":""}>▼</button>
-  <button class="iconbtn ty-del" data-i="${i}" title="Remove">✕</button></div>`).join("")||`<p class="hint">No categories yet.</p>`;}
-$("#typeManage").addEventListener("click",e=>{const t=e.target.closest("button,.ty-name");if(!t)return;
-  const i=+t.dataset.i,T=data.types;
-  if(t.classList.contains("ty-del")){const old=T[i];
-    if(data.equipment.some(eq=>eq.type===old)&&!confirm(`"${old}" is in use. Remove anyway? (equipment keeps its label)`))return;T.splice(i,1);}
-  else if(t.classList.contains("ty-up")&&i>0){[T[i-1],T[i]]=[T[i],T[i-1]];}
-  else if(t.classList.contains("ty-down")&&i<T.length-1){[T[i+1],T[i]]=[T[i],T[i+1]];}
-  else if(t.classList.contains("ty-name")){const v=(prompt("Rename category:",T[i])||"").trim();if(!v||v===T[i])return;
-    if(T.some((x,j)=>j!==i&&x.toLowerCase()===v.toLowerCase())){toast("Category already exists");return;}
-    const old=T[i];T[i]=v;data.equipment.forEach(eq=>{if(eq.type===old)eq.type=v;});}
-  else return;
-  save();renderTypes();refreshAll();});
-$("#addTypeBtn").addEventListener("click",()=>{const v=$("#newType").value.trim();if(!v)return;
-  if(data.types.some(t=>t.toLowerCase()===v.toLowerCase())){toast("Category already exists");return;}
-  data.types.push(v);$("#newType").value="";save();renderTypes();toast("Category added");});
-$("#newType").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addTypeBtn").click();});
-function renderEquipLocs(){const ls=equipLocs();
-  $("#equipLocManage").innerHTML=ls.map((l,i)=>`<div class="manage-row"><span class="el-name" data-i="${i}">${esc(l)}</span>
-    <button class="iconbtn el-up" data-i="${i}" title="Up"${i===0?" disabled":""}>▲</button>
-    <button class="iconbtn el-down" data-i="${i}" title="Down"${i===ls.length-1?" disabled":""}>▼</button>
-    <button class="iconbtn el-del" data-i="${i}" title="Remove">✕</button></div>`).join("")||`<p class="hint">No locations yet.</p>`;}
-$("#equipLocManage").addEventListener("click",e=>{const t=e.target.closest("button,.el-name");if(!t)return;
-  const i=+t.dataset.i;data.equipLocs=equipLocs().slice();const L=data.equipLocs;
-  if(t.classList.contains("el-del")){const inUse=data.equipment.some(eq=>eq.location===L[i]);
-    if(inUse&&!confirm(`"${L[i]}" has equipment assigned. Remove from the list anyway? (equipment keeps its label)`))return;L.splice(i,1);}
-  else if(t.classList.contains("el-up")&&i>0){[L[i-1],L[i]]=[L[i],L[i-1]];}
-  else if(t.classList.contains("el-down")&&i<L.length-1){[L[i+1],L[i]]=[L[i],L[i+1]];}
-  else if(t.classList.contains("el-name")){const v=(prompt("Rename location:",L[i])||"").trim();if(!v)return;
-    const old=L[i];L[i]=v;data.equipment.forEach(eq=>{if(eq.location===old)eq.location=v;});}
-  else return;
-  save();renderEquipLocs();refreshAll();});
-$("#addEquipLocBtn").addEventListener("click",()=>{const v=$("#newEquipLoc").value.trim();if(!v)return;
-  const L=equipLocs().slice();if(L.some(x=>x.toLowerCase()===v.toLowerCase())){toast("Already in the list");return;}
-  L.push(v);data.equipLocs=L;$("#newEquipLoc").value="";save();renderEquipLocs();toast("Location added");});
-$("#newEquipLoc").addEventListener("keydown",e=>{if(e.key==="Enter")$("#addEquipLocBtn").click();});
-
-/* ---- fleet ---- */
-$("#reloadFleet").addEventListener("click",async()=>{$("#fleetStatus").textContent="Reloading fleet…";
-  const ok=await fetchFleet();updateFleetStatus();toast(ok?"Fleet reloaded":"Couldn't reach fleet file");});
 
 /* ---- output/backup ---- */
 // the master list is equipment/type/location data ONLY — never settings (passcode!),
@@ -2443,29 +1927,6 @@ function masterSubset(src){const o={};MASTER_FIELDS.forEach(k=>{if(src[k]!==unde
 function downloadJSON(name,msg,obj){const b=new Blob([JSON.stringify(obj||data,null,2)],{type:"application/json"});
   const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast(msg);}
-$("#exportMaster").addEventListener("click",()=>{if(!data.equipment.length){toast("Add some equipment first");return;}
-  downloadJSON("equipment.json","Saved equipment.json — equipment data only, safe to share",masterSubset(data));});
-$("#importBtn").addEventListener("click",()=>$("#importFile").click());
-$("#importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.equipment))throw 0;
-    if(!confirm(`Import ${d.equipment.length} items? This replaces your current data.`))return;
-    Store.setJSON(KEY,d);data=load();
-    save();refreshAll();renderTypes();renderLocs();fillAreaList();toast("Imported");
-  }catch(err){alert("That file isn't a valid backup.");}$("#importFile").value="";};r.readAsText(f);});
-$("#clearBtn").addEventListener("click",async()=>{
-  const p=await askPass("Delete ALL data","Enter the settings passcode.");if(p===null)return;
-  if(p!==curPass()){toast("Wrong passcode");return;}
-  const syncOn=(()=>{try{const c=Store.getJSON("elt.sync.cfg",null);return !!(c&&c.on&&c.url);}catch(_){return false;}})();
-  const warn="Delete ALL data on this device — equipment, movements, locations, manpower logs, drafts, supervisor codes, activity and settings? This cannot be undone."
-    +(syncOn?"\n\nSync is ON: anything the team still has (codes, logs, drafts, settings) will sync back to this device. To wipe it everywhere, turn sync off first, or have every device delete.":"");
-  if(!confirm(warn))return;
-  if(!confirm("Really delete everything?"))return;
-  // enumerate every app key (elt.*) rather than just the equipment blob, so nothing is left behind
-  const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf("elt.")===0)keys.push(k);}
-  keys.forEach(k=>Store.del(k));
-  Store.setRaw(SEEN_KEY,"1");   // keep the intro from replaying
-  data=load();
-  save();refreshAll();renderTypes();renderLocs();fillAreaList();toast("All data cleared");});
 
 /* ---- master list ---- */
 async function fetchMaster(){try{const r=await fetch(MASTER_URL+"?t="+todayISO(),{cache:"no-store"});
@@ -2473,13 +1934,6 @@ async function fetchMaster(){try{const r=await fetch(MASTER_URL+"?t="+todayISO()
 // merge only master fields — never let a fetched file overwrite local settings/passcode,
 // secure log, movements, or EOS data (an old master could carry them; a hostile one could too)
 function applyMaster(m){const cur=Store.getJSON(KEY,null)||data||{};Object.assign(cur,masterSubset(m));Store.setJSON(KEY,cur);data=load();save();}
-$("#syncMaster").addEventListener("click",async()=>{$("#masterStatus").textContent="Checking the page…";
-  const m=await fetchMaster();
-  if(!m){$("#masterStatus").textContent="No master list yet. Export your data, add it as equipment.json.";return;}
-  const n=m.equipment.length;
-  if(!data.equipment.length||confirm(`Master list has ${n} item(s). Replace your current data with it?`)){
-    applyMaster(m);Store.setRaw(SEEN_KEY,"1");refreshAll();renderTypes();renderLocs();fillAreaList();
-    $("#masterStatus").textContent=`Loaded ${n} item(s) from the master list.`;}});
 async function autoLoadMaster(){if(data.equipment.length||Store.getRaw(SEEN_KEY,null))return;
   const m=await fetchMaster();Store.setRaw(SEEN_KEY,"1");
   if(m&&m.equipment.length){applyMaster(m);refreshAll();toast(`Loaded ${m.equipment.length} items from master list`);}}
@@ -2521,26 +1975,9 @@ function applyBrandLabels(){ const L=(data.settings&&data.settings.labels)||{};
   const sl=document.querySelector('.sl-title'); if(sl)sl.textContent=wordmark;   // lock-screen splash
   const ib=document.querySelector('.inv-banner .ib-brand'); if(ib)ib.textContent=wordmark;
   try{document.title=wordmark+' — '+((L.eyebrow!=null?String(L.eyebrow):'Ground Ops')||'Ground Ops');}catch(_){} }
-// the rename tool: titles, area names, tug types — stored in settings.labels (synced team-wide)
-function renderLabelCfg(){ const wrap=$("#labelCfg"); if(!wrap)return; const L=(data.settings&&data.settings.labels)||{};
-  const val=(g,k)=>g==='top'?(L[k]!=null?L[k]:''):((L[g]&&L[g][k]!=null)?L[g][k]:'');
-  const field=(g,k,label,def)=>`<label class="lbl-row"><span>${esc(label)}</span><input data-lg="${g}" data-lk="${esc(k)}" placeholder="${esc(def)}" value="${esc(val(g,k))}" autocomplete="off" spellcheck="false"></label>`;
-  const top=[["sheetTitle","Staffing sheet title","EWR AMT STAFFING"],["briefTitle","Briefing title","DAILY MOVE TEAM SHIFT BRIEFING"],["wordmark","App name (header)","Operational Success"],["eyebrow","Header eyebrow — blank hides it","United Ground Ops"],["eosTitle","End-of-shift report title","EWR Move Team — Shift EWR Report"],["equipBrand","Equipment-list heading","EWR MOVE TEAM"]];
-  const areas=[["Ballpark","Ballpark"],["WestPark","WestPark"],["South Team","South Team"],["Terminal B","Terminal B"],["APU","APU/T.O.C.S"],["Support","Support"],["C4","C4"]];
-  const tugs=[["TBL-400","TBL-400"],["TBL-280","TBL-280"],["GOLDHOFER","GOLDHOFER"],["Kalmar","Kalmar"]];
-  wrap.innerHTML=`<div class="lbl-grp">Titles &amp; app name</div>`+top.map(([k,la,def])=>field('top',k,la,def)).join("")
-    +`<div class="lbl-grp">Area names</div>`+areas.map(([k,def])=>field('areas',k,def,def)).join("")
-    +`<div class="lbl-grp">Tug types</div>`+tugs.map(([k,def])=>field('tugTypes',k,def,def)).join("")
-    +`<div class="btnrow" style="margin-top:12px"><button class="btn sm navy" id="labelSave" style="width:auto">Save names</button><button class="btn sm ghost" id="labelReset" style="width:auto">Reset all</button></div>`;
-  $("#labelSave").onclick=()=>{ const lab={areas:{},tugTypes:{}};
-    wrap.querySelectorAll('input[data-lk]').forEach(inp=>{const g=inp.dataset.lg,k=inp.dataset.lk,v=inp.value.trim();
-      if(g==='top'){ if(k==='eyebrow')lab.eyebrow=v; else if(v)lab[k]=v; } else if(v)lab[g][k]=v; });
-    if(!Object.keys(lab.areas).length)delete lab.areas; if(!Object.keys(lab.tugTypes).length)delete lab.tugTypes;
-    data.settings=data.settings||{}; data.settings.labels=lab; save(); applyBrandLabels(); toast("Names saved — synced to the team"); renderLabelCfg(); };
-  $("#labelReset").onclick=()=>{ if(!confirm("Reset every name back to its default?"))return; data.settings=data.settings||{}; delete data.settings.labels; save(); applyBrandLabels(); toast("Names reset to defaults"); renderLabelCfg(); }; }
 
 /* ---- init ---- */
-(async function(){save();document.body.classList.toggle("demo-on",demoOn());if(!loadFleetCache())await fetchFleet();updateFleetStatus();refreshAll();applyTileVisibility();
+(async function(){save();document.body.classList.toggle("demo-on",demoOn());if(!loadFleetCache())await fetchFleet();refreshAll();applyTileVisibility();
   await autoLoadMaster();
   // boot settled: baseline the config signature so only genuine edits from here bump the sync timestamp
   _cfgSig=configSig(); cfgReady=true;
@@ -2584,5 +2021,6 @@ if("serviceWorker" in navigator){
 <script src="hub.js"></script>
 <script src="paats.js"></script>
 <script src="present.js"></script>
+<script src="settings.js"></script>
 </body>
 </html>

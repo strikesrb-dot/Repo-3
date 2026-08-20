@@ -48,10 +48,12 @@
           `<button class="ui-chip${grp===v?" on":""}" data-grp="${v}">${l}</button>`).join("")}</div>
       </div>
       <p class="eqd-count" id="eqdCount"></p>
-      <div id="eqdList"></div>`;
+      <div id="eqdList"></div>
+      <button class="rq-linkbtn" id="eqdCats" style="margin-top:12px">Manage categories &rsaquo;</button>`;
     UI.render(ROOT(),nav,{title:"Equipment list",sub:`${total} unit${total===1?"":"s"} · specs, tags, locations. Tap a unit for details.`,body,mount:r=>{
       wireLockRow(r,nav);
       $("#eqdAdd",r).onclick=()=>requireEditPass(()=>nav.go(editScreen(null)));
+      $("#eqdCats",r).onclick=()=>requireEditPass(()=>nav.go(SETTINGS.screens.types));
       $("#eqdSheet",r).onclick=()=>nav.go(sheetScreen);
       const q=$("#eqdQ",r);
       q.oninput=()=>{LQ=q.value;paintList(r,nav);};           // pure DOM repaint — focus survives
