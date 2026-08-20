@@ -854,12 +854,14 @@ function rMenu(){
         <span class="mp-ic">▤</span><span class="mp-tx"><b>Past Manpowers</b><span>${logs?logs+" logged · AM · PM · NH (read-only)":"Nothing logged yet"}</span></span><span class="mp-n">${logs||""}</span></button>
       <button class="mp-tile" id="mpActivity">
         <span class="mp-ic">↺</span><span class="mp-tx"><b>Activity Log</b><span>Track record of who did what &amp; when</span></span></button>
-    </div>`);
+    </div>
+    ${demoOn()?`<div class="btnrow" style="margin-top:12px"><button class="btn ghost" id="mpDemoSeed">Demo mode: load 2 weeks of past manpowers (all shifts)</button></div>`:""}`);
   $("#mpCreate").onclick=()=>{ ST.files={mp:null,ot:null,co:null}; ST.parsed=null; ST.bodies=null; ST.assign=null; ST.brief=null; ST.tug={}; ST.dispatch=null; ST.startedAt=Date.now(); logAct("Started manpower",""); ST.step="upload"; render(); };
   $("#mpDraft").onclick=()=>{ ST.step="drafts"; render(); };
   $("#mpPast").onclick=()=>{ ST.step="logs"; render(); };
   $("#mpActivity").onclick=()=>{ ST.step="activity"; render(); };
   $("#mpSwitch")?.addEventListener("click",()=>{ AUTH=null; authView="pick"; authPick=null; ST.step="auth"; render(); });
+  $("#mpDemoSeed")?.addEventListener("click",seedDemoHistory);
 }
 
 /* ---- step: activity log (track record of user actions) ---- */
@@ -917,10 +919,12 @@ function rUpload(){
     ${slot("co","Call-out sheet","Absence Monitor (.xls/.html)",".xls,.html,.htm,.xlsx")}
     <div id="upMsg" class="hint" style="margin-top:10px"></div>
     <div class="btnrow" style="margin-top:6px"><button class="btn navy" id="upBuild" ${f.mp?"":"disabled"}>Read files &amp; build pool ›</button></div>
+    ${demoOn()?`<div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="upDemoDocs">Demo mode: use 3 demo documents (staffing · overtime · call-outs)</button></div>`:""}
     ${back("menu","Manpower menu")}`);
   $$('#staffRoot input[type=file]').forEach(inp=>inp.addEventListener("change",e=>{
     const k=inp.dataset.k,file=inp.files[0];if(!file)return;ST.files[k]=file;render();}));
   $("#upBuild")?.addEventListener("click",doBuild);
+  $("#upDemoDocs")?.addEventListener("click",demoDocuments);
   $$('#staffRoot .stp-back').forEach(b=>b.onclick=()=>{ST.step=b.dataset.to;render();});
 }
 async function doBuild(){
@@ -1850,22 +1854,39 @@ function renderBriefTab(){
 // ---- demo seed: realistic past-manpower history + a "worked 7 days straight" fatigue person ------
 // Demo-gated. Fills the archive with ~2 weeks of boards and sets up a viewable current PM pool so
 // the fatigue ⚠ shows live on stage. Deterministic ids so it's idempotent/re-runnable.
+// ---- demo dataset (no real names, no company documents) --------------------------------------
+// One shared roster powers the seeded history AND the demo documents, so the fatigue streaks in
+// the logs line up with the people on the demo board. Streak design (live board counts as +1):
+//   D01 works a DOUBLE (AM+PM) all 14 days  -> shows 15 in a row
+//   D05 works a double the last 8 days      -> shows 9
+//   D04 works PM the last 6 days            -> shows 7 (right at the default threshold)
+//   D03 works a double the last 5 days      -> shows 6 (one shy — the gradient point)
+//   D02 works a double the last 3 days      -> shows 4
+const DEMO_FIRST=["Marcus","Devin","Ray","Luis","Andre","Sean","Priya","Tevin","Omar","Cole","Nate","Jamal","Rico","Vince","Hank","Iris"];
+const DEMO_LAST=["Fielding","Barrett","Okafor","Mendez","Cho","Vaughn","Nair","Ellis","Reid","Santos","Park","Doyle","Cruz","Lang","Boyd","Frey"];
+function demoRoster(){return DEMO_FIRST.map((f,i)=>({name:f+" "+DEMO_LAST[i],emp:"D"+String(i+1).padStart(2,"0")}));}
 function seedDemoHistory(){
-  const FIRST=["Marcus","Devin","Ray","Luis","Andre","Sean","Priya","Tevin","Omar","Cole","Nate","Jamal","Rico","Vince","Hank","Iris"];
-  const LAST=["Fielding","Barrett","Okafor","Mendez","Cho","Vaughn","Nair","Ellis","Reid","Santos","Park","Doyle","Cruz","Lang","Boyd","Frey"];
-  const roster=FIRST.map((f,i)=>({name:f+" "+LAST[i],emp:"D"+String(i+1).padStart(2,"0"),start:"13:00",end:"21:00",hours:"13:00-21:00",src:"sched"}));
-  const fatigue=roster[0];   // works PM every day for the last 6 days; the live board is today → 7 straight
+  const roster=demoRoster();
   const today=isoDate(todayLocalISO())||todayLocalISO();
-  // every day carries a full AM / PM / NH set so the archive reads like a complete operation
   const SHIFTS_SEED=[{sh:"AM",s:"05:00",e:"13:00"},{sh:"PM",s:"13:00",e:"21:00"},{sh:"NH",s:"21:00",e:"05:00"}];
-  const DAYS=7;   // a full week × 3 shifts = 21 boards (under the 24 sync cap)
+  const DAYS=14;   // two full weeks, every shift = 42 boards
+  // emp -> {days: how many trailing days they worked, dbl: worked AM+PM those days}
+  const STREAKS={D01:{days:14,dbl:true},D05:{days:8,dbl:true},D04:{days:6,dbl:false},D03:{days:5,dbl:true},D02:{days:3,dbl:true}};
   const entries=[];
   for(let d=1;d<=DAYS;d++){
     const date=addDaysISO(today,-d);
     SHIFTS_SEED.forEach((sh,si)=>{
       const day=[];
-      if(d<=6 && sh.sh==="PM")day.push(fatigue);   // one shift/day, consistently — realistic streak
-      roster.forEach((p,i)=>{ if(p===fatigue)return; if(((i*7+d*3+si*2)%5)!==0)day.push(p); });   // deterministic per-shift subset
+      roster.forEach((p,i)=>{
+        const st=STREAKS[p.emp];
+        if(st){ if(d<=st.days&&(sh.sh==="PM"||(st.dbl&&sh.sh==="AM")))day.push(p); return; }
+        // everyone else: works 3 days on / 2 days off, ONE shift per day. The streak counter
+        // tolerates a single missing day, so the off-block must be TWO days long — this keeps
+        // everyone outside the designed streaks safely under the fatigue threshold.
+        if(((i+d)%5)<2)return;                // two consecutive days off
+        if(si!==((i+d)%3))return;             // their one shift that day
+        day.push(p);
+      });
       const bodies=day.map(p=>({name:p.name,emp:p.emp,start:sh.s,end:sh.e,hours:sh.s+"-"+sh.e,src:"sched"}));
       const when=Date.now()-(d*86400000)-(si*3600000);
       entries.push({id:date+"|"+sh.sh,date,shift:sh.sh,when,startedAt:null,finishedAt:when,
@@ -1874,12 +1895,37 @@ function seedDemoHistory(){
     });
   }
   saveLogList(entries);
-  // set up a viewable current PM board so the pool screen shows the fatigue ⚠ live (no PDF needed)
+  // set up a viewable current PM board so the pool screen shows the fatigue flags live (no PDF needed)
   ST.shift="PM"; ST.numTugs=12; ST.dbl={}; ST.assign={tugs:{},areas:{}}; AREAS.forEach(a=>ST.assign.areas[a.key]=[]);
   ST.parsed={date:today,mpRecs:[],otRecs:[],coRows:[]};
-  ST.bodies=roster.map(p=>({name:p.name,emp:p.emp,start:p.start,end:p.end,hours:p.hours,src:"sched"}));
+  ST.bodies=roster.map(p=>({name:p.name,emp:p.emp,start:"13:00",end:"21:00",hours:"13:00-21:00",src:"sched"}));
   ST.startedAt=Date.now(); ST.step="pool"; render();
-  toast("Demo loaded — "+entries.length+" past boards + fatigue example");
+  toast("Demo loaded — "+entries.length+" past boards across two weeks, all shifts");
+}
+// ---- demo documents: three synthetic eTA exports so the real flow can be walked end-to-end -----
+// Builds a parsed result exactly like doBuild() produces, then continues at the shift picker —
+// no company document is ever uploaded or shipped. Streak people are on the sheet so the pool
+// screen shows the worked-too-much warnings at the end of the walk-through.
+function demoDocuments(){
+  const roster=demoRoster(),today=isoDate(todayLocalISO())||todayLocalISO();
+  const mpRecs=[];
+  roster.forEach((p,i)=>{
+    const dbl=["D01","D05"].includes(p.emp)||( ["D03","D02"].includes(p.emp) );
+    const start=dbl?"05:00":(i%4===0?"05:00":"13:00");
+    const end=(i%4===0&&!dbl)?"13:00":"21:00";
+    mpRecs.push({sec:"PUSH",name:p.name,emp:p.emp,start,end,code:"",covers:[]});
+  });
+  mpRecs.push({sec:"TRAINING",name:"Owen Tate",emp:"D90",start:"13:00",end:"21:00"});
+  const otRecs=[
+    {name:"Felix Marsh",emp:"D80",start:"13:00",end:"21:00",hours:"13:00-21:00",src:"ot"},
+    {name:"Gina Ortiz",emp:"D81",start:"17:00",end:"21:00",hours:"17:00-21:00",src:"ot"},
+    {name:"Theo Lam",emp:"D82",start:"13:00",end:"17:00",hours:"13:00-17:00",src:"ot"}];
+  const coRows=[{name:"Nate Park",emp:"D11"},{name:"Rico Cruz",emp:"D13"}];   // two call-outs drop from the pool
+  ST.files={mp:{name:"eTA-Manpower-DEMO.pdf"},ot:{name:"OT-Award-DEMO.pdf"},co:{name:"Absence-Monitor-DEMO.xls"}};
+  ST.parsed={mpRecs,otRecs,coRows,date:today};
+  ST.tug={};ST._tugSeeded=false;ST.dispatch=null;ST.assign=null;ST.brief=null;ST.bodies=null;
+  ST.step="shift";render();
+  toast("Demo documents loaded — staffing, overtime, call-outs");
 }
 
 /* expose entry points */
@@ -1896,6 +1942,7 @@ window.STAFF={
   removeTempSup:n=>{ const tw=Date.now(); const l=loadTempRaw(); l.push({name:n,del:true,when:tw}); saveTempSups(l); pushRow("tempsup","T|"+n,{id:"T|"+n,name:n,del:true,when:tw}); if(AUTH&&AUTH.name===n)AUTH=null; },
   who:()=>AUTH?AUTH.name:"",
   seedDemo:()=>seedDemoHistory(),
+  demoDocs:()=>demoDocuments(),
   refresh:()=>{ try{render();}catch(_){} }   // re-draw the current staffing view (e.g. after a demo-mode toggle)
 };
 window.BRIEF={ open:()=>{ loadBids(); briefTabView="edit"; renderBriefTab(); } };

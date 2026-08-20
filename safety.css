@@ -1,0 +1,12 @@
+/* safety.css — Safety module: stop-mark lookup verdicts + gate hazards. Kit anatomy elsewhere. */
+.saf-note{font:400 12.5px/1.5 var(--font);color:var(--muted);margin:14px 4px 0}
+.saf-no{opacity:.42}
+.saf-verdict{font:600 18px/1.35 var(--font);border-radius:var(--r-md);padding:14px 16px}
+.saf-verdict.ok{background:#e6f4ea;color:var(--ua-green)}
+.saf-verdict.no{background:#fdecee;color:var(--ua-red)}
+.saf-verdict span{font:400 14.5px/1.45 var(--font);color:inherit}
+.saf-meta{font:400 13.5px/1.4 var(--font);color:var(--muted);margin:8px 2px}
+.saf-ramp{font:400 14px/1.45 var(--font);color:var(--ink);background:var(--bg-inset);
+  border-radius:var(--r-md);padding:11px 14px;margin-top:10px}
+.saf-cross{font:400 14px/1.5 var(--font);color:var(--ink);background:var(--bg);
+  border-radius:var(--r-md);padding:12px 14px;margin-top:10px}

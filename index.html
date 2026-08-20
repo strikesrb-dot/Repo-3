@@ -20,6 +20,8 @@
 <link rel="stylesheet" href="equipment.css" />
 <link rel="stylesheet" href="inventory.css" />
 <link rel="stylesheet" href="paats.css" />
+<link rel="stylesheet" href="safety.css" />
+<link rel="stylesheet" href="present.css" />
 <style>
   /* ===== EWR MT HUB design tokens — Apple-structured, United-skinned (see CLAUDE.md) ===== */
   :root{
@@ -86,6 +88,11 @@
   .home-tile[data-home="gse"]{background:var(--ua-sky);color:var(--ink)}
   .home-tile[data-home="safety"]{background:var(--ua-lavender);color:var(--ink)}
   .home-tile[data-home="paats"]{background:var(--ua-plum)}
+  .home-grid.one{grid-template-columns:1fr;margin-top:14px}
+  .home-tile.present{background:#000;min-height:150px}
+  .home-div{display:flex;align-items:center;gap:14px;margin-top:26px;
+    font:600 12px/1.3 var(--font);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .home-div::before,.home-div::after{content:'';flex:1;height:1px;background:var(--hairline)}
   .home-tile .ht-ic{position:absolute;top:18px;left:20px;opacity:.9}
   .home-tile .ht-ic svg{width:32px;height:32px}
   .home-tile .ht-t{font:600 24px/1.125 var(--font);letter-spacing:0}
@@ -611,34 +618,15 @@
       <button class="home-tile" data-home="safety"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></span><span class="ht-t">Safety</span><span class="ht-s">Stop mark lookup &amp; references</span></button>
       <button class="home-tile" data-home="paats"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h13v8H1z"/><path d="M14 11h4l3 3v2h-7"/><circle cx="5.5" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/><path d="M7 5l2-3 2 3"/></svg></span><span class="ht-t">PAATS</span><span class="ht-s">Lightning-hold aircraft dispatch</span></button>
     </div>
+    <div class="home-div"><span>Presentation</span></div>
+    <div class="home-grid one">
+      <button class="home-tile present" data-home="present"><span class="ht-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m9 8 5 3-5 3z"/></svg></span><span class="ht-t">Presentation</span><span class="ht-s">The pitch — run it straight from the product</span></button>
+    </div>
   </section>
 
   <section id="view-requests" class="view"><div id="requestsRoot"></div></section>
 
-  <section id="view-hub" class="view">
-    <div class="hubsec">Operations</div>
-    <div class="hubgrid">
-      <button class="hubtile" data-go="staffing"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Manpower / Staffing</button>
-      <button class="hubtile" data-go="briefing"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span>Briefing &amp; Focus</button>
-      <button class="hubtile" data-go="eos"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>End of Shift Report</button>
-    </div>
-    <div class="hubsec">Field Logging</div>
-    <div class="hubgrid">
-      <button class="hubtile" data-go="inventory"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg></span>Do Inventory</button>
-      <button class="hubtile" data-go="secure"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>Aircraft Secure Log</button>
-    </div>
-    <div class="hubsec">Lookups &amp; Lists</div>
-    <div class="hubgrid">
-      <button class="hubtile" data-go="aircraft"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg></span>Aircraft Lookup</button>
-      <button class="hubtile" data-go="park"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg></span>Stop Mark Lookup</button>
-      <button class="hubtile" data-go="equipment"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg></span>Equipment List</button>
-      <button class="hubtile" data-go="movement"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13"/><path d="m13 6 6 6-6 6"/><path d="M21 4v16"/></svg></span>Equipment Movement</button>
-    </div>
-    <div class="hubsec">App</div>
-    <div class="hubgrid one">
-      <button class="hubtile" data-go="settings"><span class="hi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>Settings</button>
-    </div>
-  </section>
+  <section id="view-hub" class="view"><div id="hubRoot"></div></section>
 
   <section id="view-eos" class="view"><div id="eosRoot"></div></section>
 
@@ -663,7 +651,6 @@
   <section id="view-secure" class="view"><div id="secRoot"></div></section>
 
   <!-- PARK -->
-  <section id="view-park" class="view"><div id="parkRoot"></div></section>
   <section id="view-safety" class="view"><div id="safetyRoot"></div></section>
   <section id="view-paats" class="view"><div id="paatsRoot"></div></section>
 
@@ -1220,6 +1207,8 @@ function showTab(n){curTab=n;document.body.dataset.tab=n;$$(".view").forEach(v=>
 function goTab(t){
   // equipment / inventory / movement live inside the GSE module now — reroute
   if(t==="equipment"||t==="inventory"||t==="movement"){syncSite();showTab("gse");window.GSE&&GSE.openSub(t);return;}
+  // the stop-mark lookup lives inside the Safety module now
+  if(t==="park"){showTab("safety");window.SAFETY&&SAFETY.openSub("park");return;}
   showTab(t);
   // pull team changes when opening a synced area
   if(["equipment","inventory","movement","secure","settings"].includes(t))syncSite();
@@ -1230,12 +1219,11 @@ function goTab(t){
   if(t==="briefing"){window.BRIEF&&window.BRIEF.open();}
   if(t==="aircraft"){renderAircraftLookup();setTimeout(()=>$("#acSearch").focus(),120);}
   if(t==="secure")renderSecure();
-  if(t==="park"){parkFrom=null;renderPark();}
+  if(t==="hub"){window.HUB&&HUB.open();}
   if(t==="safety"){window.SAFETY&&SAFETY.open();}
   if(t==="paats"){window.PAATS&&PAATS.open();}
   if(t==="settings"){ if(!settingsUnlocked){openSettingsGate();return;} renderTypes();renderLocs();renderEquipLocs();updateFleetStatus();fillAreaList();renderSupCodes();renderMoveTrack();renderTileToggles();renderSubtypePresets();renderSyncCfg();renderDemoCfg();renderLogDelCfg();renderLabelCfg();refreshPassWarn();initSettingsCollapse();$("#subEdit").value=(data.settings&&data.settings.headerSub)||"";$("#passNew").value="";const nos=$("#nameOrderSel");if(nos)nos.value=(data.settings&&data.settings.nameOrder)==="last"?"last":"first";}}
-$$(".hubtile").forEach(b=>b.addEventListener("click",()=>goTab(b.dataset.go)));
-$$(".home-tile").forEach(b=>b.addEventListener("click",()=>{const d=b.dataset.home;if(d==="soon"){toast("Coming soon");return;}goTab(d);}));
+$$(".home-tile").forEach(b=>b.addEventListener("click",()=>{const d=b.dataset.home;if(d==="present"){window.PRESENT&&PRESENT.open();return;}goTab(d);}));
 
 /* settings passcode lock (3599) */
 let settingsUnlocked=false;
@@ -1275,23 +1263,17 @@ function goHome(){
 }
 $("#homeBtn").addEventListener("click",goHome);
 $("#hdrTitle")?.addEventListener("click",goHome);
-let parkFrom=null;   // "safety" when the lookup was opened from the Safety tile — back returns there
-function openParkFrom(src){goTab("park");parkFrom=src;}
-function parkBack(){const s=park.stage;
-  if(s==="spot")park.stage="area";else if(s==="ac")park.stage="spot";else if(s==="result")park.stage="ac";
-  else{ if(parkFrom==="safety"){parkFrom=null;goTab("safety");return;} showTab("hub");return; }renderPark();}
 function secBack(){const s=sec.stage;
   if(s==="area")sec.stage="home";else if(s==="spot")sec.stage="area";else if(s==="aircraft")sec.stage="spot";else if(s==="details")sec.stage="aircraft";
   else{showTab("hub");return;}renderSecure();}
 function goBack(){
-  if(curTab==="park")return parkBack();
   if(curTab==="secure")return secBack();
   if(curTab==="gse"){ if(window.GSE&&window.GSE.back&&window.GSE.back())return; return showTab("home"); }
   if(curTab==="safety"){ if(window.SAFETY&&SAFETY.back())return; return showTab("home"); }
   if(curTab==="paats"){ if(window.PAATS&&PAATS.back())return; return showTab("home"); }
   if(curTab==="staffing")return goHome();
   if(curTab==="requests"){ if(window.REQUESTS&&window.REQUESTS.back&&window.REQUESTS.back())return; return showTab("home"); }
-  if(curTab==="hub")return showTab("home");
+  if(curTab==="hub"){ if(window.HUB&&HUB.back())return; return showTab("home"); }
   showTab("hub");}
 $("#floatBack").addEventListener("click",goBack);
 
@@ -1394,12 +1376,7 @@ function renderTileToggles(){
     if(c.checked)set.delete(c.dataset.k);else set.add(c.dataset.k);
     data.hiddenTiles=[...set];save();applyTileVisibility();});
 }
-function applyTileVisibility(){
-  const hidden=new Set(data.hiddenTiles||[]);
-  $$('#view-hub .hubtile[data-go]').forEach(b=>{if(b.dataset.go==='settings')return;b.style.display=hidden.has(b.dataset.go)?'none':'';});
-  $$('#view-hub .hubgrid').forEach(g=>{const vis=[...g.querySelectorAll('.hubtile')].some(b=>b.style.display!=='none');
-    g.style.display=vis?'':'none';const prev=g.previousElementSibling;if(prev&&prev.classList.contains('hubsec'))prev.style.display=vis?'':'none';});
-}
+function applyTileVisibility(){ if(window.HUB)HUB.refresh(); }
 function updateExpandAllBtn(){const b=$("#setExpandAll");if(!b)return;
   const anyOpen=$$('#view-settings .section').some(s=>!s.classList.contains('collapsed'));
   b.textContent=anyOpen?'Collapse all':'Expand all';}
@@ -2290,83 +2267,6 @@ function parkLookup(area,spot,key){const sp=PARK[area].spots[spot];if(!sp)return
   for(const ln of["A","B","C"])if(sp.lines[ln]&&sp.lines[ln].includes(key))return{ok:true,line:ln,adg:sp.adg};
   return{ok:false,adg:sp.adg};}
 function crossFor(area,spot){return (PARK[area].cross||[]).filter(c=>c.blocks.includes(spot));}
-let park={stage:"area",area:null,spot:null,ac:null,acLabel:null,parkedOn:null};
-function newPark(){return{stage:"area",area:null,spot:null,ac:null,acLabel:null,parkedOn:null};}
-function renderPark(){const r=$("#parkRoot");
-  ({area:renderParkArea,spot:renderParkSpot,ac:renderParkAc,result:renderParkResult}[park.stage]||renderParkArea)(r);}
-function renderParkArea(r){
-  r.innerHTML=`<div class="card pad">
-    <h3 style="margin:0 0 2px">Where are you parking?</h3>
-    <p class="hint" style="margin-top:0">Pick the hardstand, then the spot and aircraft — it tells you the stop line &amp; restrictions.</p>
-    <div id="pkArea" style="display:flex;flex-direction:column;gap:12px;margin-top:10px">${Object.keys(PARK).map(a=>`<button class="chip big" data-a="${esc(a)}" style="width:100%;text-align:center;padding:26px 12px">${esc(a)}</button>`).join("")}</div></div>`;
-  $$("#pkArea .chip").forEach(c=>c.addEventListener("click",()=>{park.area=c.dataset.a;park.spot=null;park.stage="spot";renderPark();}));
-}
-function renderParkSpot(r){
-  const sp=PARK[park.area].spots,ord=PARK[park.area].order;
-  const sortN=a=>a.slice().sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
-  const std=sortN(ord.filter(s=>sp[s].adg===3)),wb=sortN(ord.filter(s=>sp[s].adg!==3));
-  const grid=arr=>`<div class="spotgrid">${arr.map(s=>`<button class="chip" data-s="${esc(s)}">${esc(s)}</button>`).join("")}</div>`;
-  r.innerHTML=`<div class="card pad">
-    <div class="crumbs">${esc(park.area)}</div>
-    <h3 style="margin:2px 0 10px">Pick a spot</h3>
-    <div id="pkSpot">
-      ${std.length?`<div class="spotgrp">Standard spots (ADG III)</div>${grid(std)}`:""}
-      ${wb.length?`<div class="spotgrp">Widebody spots · A (ADG IV/V)</div>${grid(wb)}`:""}
-    </div>
-    <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
-  $$("#pkSpot .chip").forEach(c=>c.addEventListener("click",()=>{park.spot=c.dataset.s;park.ac=null;park.parkedOn=null;park.stage="ac";renderPark();}));
-  $("#pkBack").addEventListener("click",()=>{park.stage="area";renderPark();});
-}
-function renderParkAc(r){
-  r.innerHTML=`<div class="card pad">
-    <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)}</div>
-    <h3 style="margin:2px 0 2px">Aircraft type</h3>
-    <p class="hint" style="margin-top:0">All United types shown. <b>Dimmed</b> = not allowed on spot ${esc(park.spot)} — tap to see why.</p>
-    ${UNITED_PARK.map(g=>`<div class="spotgrp">${esc(g.mfr)}</div><div class="chips">${g.items.map(([k,l])=>{const ok=parkLookup(park.area,park.spot,k).ok;
-      return `<button class="chip ${park.acLabel===l?'sel':''} ${ok?'':'noteligible'}" data-k="${esc(k)}" data-l="${esc(l)}">${esc(l)}${ok?'':' ⊘'}</button>`;}).join("")}</div>`).join("")}
-    <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="pkBack">← Back</button></div></div>`;
-  $$("#parkRoot .chip[data-k]").forEach(c=>c.addEventListener("click",()=>{park.ac=c.dataset.k;park.acLabel=c.dataset.l;park.stage="result";renderPark();}));
-  $("#pkBack").addEventListener("click",()=>{park.stage="spot";renderPark();});
-}
-function renderParkResult(r){
-  const res=parkLookup(park.area,park.spot,park.ac),rc=PARK[park.area].ramp[park.spot],cross=crossFor(park.area,park.spot);
-  const rampHtml=rc?`<div class="ac-ok" style="background:#eef2f5;color:#234;border-color:#cfd8e0"> Contact <b>${esc(rc[0])}</b> · ${esc(rc[1])} · Enter/exit via ${esc(rc[2])}</div>`
-    :`<div class="ac-ok" style="background:#eef2f5;color:#234;border-color:#cfd8e0"> Coordinate with Ramp Control (verify frequency on the chart)</div>`;
-  let body;
-  if(res.ok){
-    body=`<div id="pkVerdict" class="ac-ok" style="font-size:18px">✓ Park on <b>STOP LINE ${res.line}</b></div>
-      <p class="hint">Spot ${esc(park.spot)} · ${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} · ADG ${res.adg}</p>${rampHtml}`;
-    if(cross.length){
-      const ask=cross.map((c,i)=>`<div class="ac-no" style="margin-top:8px"><b>⚠ Restriction:</b> Spot ${esc(park.spot)} can't be used if a widebody is on ${c.wb.map(esc).join(" or ")}.
-        <div class="btnrow" style="margin-top:8px"><button class="btn ghost pk-cross" data-i="${i}" data-v="1">Yes, occupied</button><button class="btn ghost pk-cross" data-i="${i}" data-v="0">No, clear</button></div>
-        <div id="pkCrossR${i}"></div></div>`).join("");
-      body+=ask;
-    }
-  } else if(res.excluded){
-    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⊘ Aircraft not allowed to be parked</b><br>${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} is specifically restricted from spot ${esc(park.spot)}.</div>`;
-  } else {
-    body=`<div class="ac-no" style="font-size:17px;color:#b3261e"><b>⊘ Aircraft not allowed to be parked</b><br>${esc(park.acLabel||ACLABEL[park.ac]||park.ac)} doesn't have a stop line on spot ${esc(park.spot)}${res.adg?` (ADG ${res.adg} spot)`:""}.</div>`;
-  }
-  r.innerHTML=`<div class="card pad">
-    <div class="crumbs">${esc(park.area)} › Spot ${esc(park.spot)} › ${esc(park.acLabel||ACLABEL[park.ac]||park.ac)}</div>
-    ${body}
-    <p class="hint" style="margin-top:10px">⚠ Always verify against the official Hardstand ${esc(park.area)} chart before parking.</p>
-    <div class="btnrow"><button class="btn ghost" id="pkAgain">↻ New lookup</button><button class="btn navy" id="pkBack" style="flex:2">Change aircraft</button></div></div>`;
-  const crossState={};
-  $$(".pk-cross",r).forEach(b=>b.addEventListener("click",e=>{const i=b.dataset.i,occ=b.dataset.v==="1";
-    crossState[i]=occ;
-    // highlight the chosen button in its restriction group
-    $$(".pk-cross",r).forEach(x=>{if(x.dataset.i===i)x.classList.toggle("on",x===b);});
-    $("#pkCrossR"+i).innerHTML=occ?`<div class="ac-no" style="margin-top:8px;color:#b3261e"><b>⊘ Spot ${esc(park.spot)} cannot be used</b> while that widebody is parked.</div>`
-      :`<div class="ac-ok" style="margin-top:8px">✓ Clear — spot ${esc(park.spot)} is usable.</div>`;
-    // the top verdict must never contradict the restriction answer: blocked if ANY is occupied
-    const blocked=Object.values(crossState).some(v=>v===true),vEl=$("#pkVerdict");
-    if(vEl){ if(blocked){vEl.className="ac-no";vEl.style.cssText="font-size:18px;color:#b3261e";vEl.innerHTML=`<b>⊘ Do NOT park — Spot ${esc(park.spot)} is blocked</b> while a widebody occupies the restricted spot.`;}
-      else {vEl.className="ac-ok";vEl.style.cssText="font-size:18px";vEl.innerHTML=`✓ Park on <b>STOP LINE ${res.line}</b>`;} }
-  }));
-  $("#pkAgain").addEventListener("click",()=>{park=newPark();renderPark();});
-  $("#pkBack").addEventListener("click",()=>{park.stage="ac";renderPark();});
-}
 
 /* ---- sheet builder: area → spot → category ---- */
 function buildSheetHTML(spotNames,title){
@@ -2681,6 +2581,8 @@ if("serviceWorker" in navigator){
 <script src="inventory.js"></script>
 <script src="movement.js"></script>
 <script src="safety.js"></script>
+<script src="hub.js"></script>
 <script src="paats.js"></script>
+<script src="present.js"></script>
 </body>
 </html>

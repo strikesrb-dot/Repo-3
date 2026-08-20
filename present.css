@@ -1,0 +1,20 @@
+/* present.css — the built-in pitch deck overlay. Deep navy, big type, no motion. */
+.pr-ov{position:fixed;inset:0;z-index:9800;background:var(--ua-navy-deep,#001840);color:#fff;
+  display:flex;flex-direction:column;justify-content:center}
+.pr-x{position:absolute;top:14px;right:14px;z-index:3;width:44px;height:44px;border:0;border-radius:50%;
+  background:rgba(255,255,255,.12);color:#fff;font-size:17px;cursor:pointer}
+.pr-slide{padding:0 8vw;max-width:1100px}
+.pr-kicker{font:600 clamp(12px,1.6vw,16px)/1.3 var(--font);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ua-sky,#a6e3f5);margin-bottom:2vh}
+.pr-title{font:600 clamp(30px,5.4vw,64px)/1.08 var(--font);letter-spacing:-.01em;margin-bottom:3.5vh}
+.pr-lines{display:flex;flex-direction:column;gap:1.6vh}
+.pr-line{font:400 clamp(16px,2.3vw,26px)/1.4 var(--font);letter-spacing:-.01em;color:#e8edf6;max-width:60ch}
+.pr-slide.title .pr-title{font-size:clamp(40px,7vw,88px)}
+.pr-slide.title .pr-line{color:var(--dk-muted,#96a3bd)}
+.pr-slide.nums .pr-title{color:var(--ua-sky,#a6e3f5)}
+.pr-foot{position:absolute;bottom:16px;left:0;right:0;display:flex;justify-content:space-between;
+  padding:0 20px;font:600 13px/1.3 var(--font);color:var(--dk-muted,#96a3bd);font-variant-numeric:tabular-nums;z-index:1}
+.pr-hint{font-weight:400}
+.pr-zone{position:absolute;top:0;bottom:0;width:38%;background:none;border:0;cursor:pointer;z-index:2}
+.pr-zone.left{left:0}
+.pr-zone.right{right:0;width:62%}
