@@ -106,7 +106,7 @@
                 const rsn=invReason.get(e.id)||e.oosReason||"";
                 const oosChip=oos?`<span class="oostag">OUT OF SERVICE</span><span class="pill-oosbtn" data-oosr="${e.id}">${rsn?esc(rsn):'&#65291; reason'}</span>`
                   :(wasOos?`<span class="oostag" style="background:#fbe4e2;color:#8a1c12">&#8856; currently OOS${e.oosReason?" · "+esc(e.oosReason):""}</span>`:"");
-                return `<button class="selpill ${oos?'oos':on?'on':''} ${wasOos?'wasoos':''}" data-id="${e.id}"><span class="selc">${oos?'&#8856;':on?'&#10003;':''}</span>${esc(e.tag)}${spotChip}${oosChip}</button>`;}).join("")+`</div>`;
+                return `<button class="selpill ${oos?'oos':on?'on':''} ${wasOos?'wasoos':''}" data-id="${e.id}"><span class="selc">${oos?'&#8856;':on?'&#10003;':''}</span>${esc(dtag(e.tag))}${spotChip}${oosChip}</button>`;}).join("")+`</div>`;
           }).join(""):`<p class="rq-empty">Nothing left to count here — all units are accounted for at other locations.</p>`;
           $("#inv2Save",r).innerHTML=`&#10003; Save ${invSel.size} &rsaquo;`;
         }

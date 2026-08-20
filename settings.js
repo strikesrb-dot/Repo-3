@@ -40,7 +40,7 @@
     const std=((st.stdShifts&&st.stdShifts.AM)||STD_SHIFT_DEF.AM).start;
     const onN=TRACK_KEYS.filter(k=>st[k]).length;
     const tilesShown=HUB_TILES.length-(data.hiddenTiles||[]).length;
-    const labelsOn=!!(st.labels&&Object.keys(st.labels).length)||!!st.headerSub;
+    const labelsOn=!!(st.labels&&Object.keys(st.labels).length);
     const fc=Store.getJSON(FLEET_KEY,null);
     const age=(fc&&fc.cachedAt)?("loaded "+agoStr(fc.cachedAt)):"age unknown";
     const warn=curPass()===SETTINGS_PASS;
@@ -151,21 +151,17 @@
     const tugs=[["TBL-400","TBL-400"],["TBL-280","TBL-280"],["GOLDHOFER","GOLDHOFER"],["Kalmar","Kalmar"]];
     const body=
       UI.card(`<span class="ui-flabel">Hub tiles — turn off what you don't use</span>${tiles}`)
-      +`<div class="ui-card" style="margin-top:12px"><span class="ui-flabel">Header subtitle</span>
-        <p class="hint" style="margin:4px 0 8px">The small line under the title on the home screen. Blank = automatic count.</p>
-        <div class="toolbar" style="margin-bottom:0"><input id="setSub" type="text" value="${esc(st.headerSub||"")}" placeholder="Ground support equipment · staging &amp; audits" autocomplete="off"><button class="btn sm navy" id="setSubSave" style="width:auto">Save</button></div></div>`
       +`<div class="ui-card" style="margin-top:12px"><span class="ui-flabel">Names &amp; labels</span>
         <p class="hint" style="margin:4px 0 0">Rename titles, areas and tug types. Blank = keep the built-in name. Syncs to the whole team.</p>
         <div class="lbl-grp">Titles &amp; app name</div>${top.map(([k,la,def])=>lfield("top",k,la,def)).join("")}
         <div class="lbl-grp">Area names</div>${areas.map(([k,def])=>lfield("areas",k,def,def)).join("")}
         <div class="lbl-grp">Tug types</div>${tugs.map(([k,def])=>lfield("tugTypes",k,def,def)).join("")}
         <div class="btnrow" style="margin-top:12px"><button class="btn sm navy" id="setLblSave" style="width:auto">Save names</button><button class="btn sm ghost" id="setLblReset" style="width:auto">Reset all</button></div></div>`;
-    UI.render(nav.el,nav,{title:"Home screen & labels",sub:"Tiles, the header subtitle, and every rename.",body,mount:r=>{
+    UI.render(nav.el,nav,{title:"Home screen & labels",sub:"Tiles and every rename.",body,mount:r=>{
       $$(".tile-chk",r).forEach(c=>c.onchange=()=>{
         const set=new Set(data.hiddenTiles||[]);
         if(c.checked)set.delete(c.dataset.k);else set.add(c.dataset.k);
         data.hiddenTiles=[...set];save();applyTileVisibility();});
-      $("#setSubSave",r).onclick=()=>{st.headerSub=$("#setSub",r).value.trim();save();updateHdr();toast("Subtitle saved");};
       $("#setLblSave",r).onclick=()=>{const lab={areas:{},tugTypes:{}};
         $$("input[data-lk]",r).forEach(inp=>{const g=inp.dataset.lg,k=inp.dataset.lk,v=inp.value.trim();
           if(g==="top"){ if(k==="eyebrow")lab.eyebrow=v; else if(v)lab[k]=v; } else if(v)lab[g][k]=v; });
@@ -466,10 +462,10 @@
         <p class="hint" id="setSyncMsg" style="margin:6px 0 0"></p>
         <button class="ui-row" id="setSyncAdv" style="margin-top:8px;border-top:1px solid var(--line)"><div class="ui-row__main"><div class="ui-row__title" style="font-size:15px">Backend (advanced)</div><div class="ui-row__sub">URL &amp; key · test connection</div></div><span class="ui-row__chev" aria-hidden="true"></span></button></div>`
       +`<div class="ui-card" style="margin-top:12px"><span class="ui-flabel">Demo mode (mask names)</span>
-        <p class="hint" style="margin:4px 0 4px">Replaces every real name with a stable fake one across the pool, board, sheets and logs — pitch the tool without exposing anyone. Nothing changes in your saved data.</p>
+        <p class="hint" style="margin:4px 0 4px">Masks every real name AND every equipment tag with stable fakes across the pool, boards, lists, logs and sheets — pitch the tool without exposing anyone or any asset. Nothing changes in your saved data.</p>
         <label class="cfgrow" style="border:none;padding:6px 0"><span class="cfg-l">Demo mode<small>${demo?" · on — names masked":" · off — real names"}</small></span><input type="checkbox" id="setDemoOn" class="cfg-chk" ${demo?"checked":""}></label>
         ${demo?`<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px">
-          <p class="hint" style="margin:0 0 8px">Load a full pitch dataset: ~2 weeks of past manpowers with fatigue streaks, dummy staffing / overtime / callout documents, and demo super-tugs (one already out of service).</p>
+          <p class="hint" style="margin:0 0 8px">Load a full pitch dataset — manpower only: ~2 weeks of past boards with fatigue streaks plus dummy staffing / overtime / callout documents. Your real equipment stays; demo mode masks its tags on screen.</p>
           <div class="btnrow"><button class="btn navy" id="setDemoSeed" style="flex:1 1 0;width:auto">Load demo data</button><button class="btn ghost" id="setDemoClear" style="flex:1 1 0;width:auto">Clear demo data</button></div></div>`:""}</div>`
       +`<div class="rq-sechead" style="color:var(--ua-red)">Danger zone</div>
        <div class="ui-card"><button class="btn danger" id="setWipeAll" style="width:100%">Delete all my data</button>
@@ -498,7 +494,7 @@
         try{refreshAll();}catch(_){}
         try{if(window.STAFF&&window.STAFF.refresh)window.STAFF.refresh();}catch(_){}
         toast(on?"Demo mode on — names masked":"Demo mode off — real names");nav.refresh();};
-      const ds=$("#setDemoSeed",r);if(ds)ds.onclick=()=>{ seedDemoEquip(); if(window.STAFF&&window.STAFF.seedDemo)window.STAFF.seedDemo(); toast("Demo data loaded"); };
+      const ds=$("#setDemoSeed",r);if(ds)ds.onclick=()=>{ if(window.STAFF&&window.STAFF.seedDemo)window.STAFF.seedDemo(); toast("Demo data loaded"); };
       const dc=$("#setDemoClear",r);if(dc)dc.onclick=()=>{ if(confirm("Clear all demo data (seeded super-tugs + past manpowers)?"))clearDemoData(); };
       $("#setWipeAll",r).onclick=()=>wipeAll(nav);
     }});

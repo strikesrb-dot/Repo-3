@@ -49,7 +49,7 @@
         : `${(m.from?esc(m.from):'<span class="mv-none">unassigned</span>')+(m.fromSpot?` <span class="mv-fs">${esc(m.fromSpot)}</span>`:"")} <span class="mv-arrow">&rarr;</span> ${m.to?esc(m.to):'<span class="mv-none">unassigned</span>'}${det?`<span class="mv-det">${esc(det)}</span>`:""}`;
       const tag=SRCLBL[m.source]?`<span class="mv-src">${SRCLBL[m.source]}</span>`:"";
       const meta=[m.by?"by "+esc(nm(m.by)):"",(m.reason&&!samePlace)?'<span class="mv-reason">'+esc(m.reason)+'</span>':(m.reason&&samePlace?esc(m.reason):"")].filter(Boolean).join(" · ");
-      return `<li class="mv-row"><div class="mv-main"><span class="mv-tag">${esc(m.tag)}</span>${m.type?`<span class="mv-type">${esc(m.type)}</span>`:""}${m.oos&&!samePlace?'<span class="mv-oos">OOS</span>':""}${tag}</div>
+      return `<li class="mv-row"><div class="mv-main"><span class="mv-tag">${esc(dtag(m.tag))}</span>${m.type?`<span class="mv-type">${esc(m.type)}</span>`:""}${m.oos&&!samePlace?'<span class="mv-oos">OOS</span>':""}${tag}</div>
         <div class="mv-path">${path}</div>${meta?`<div class="mv-who">${meta}</div>`:""}</li>`;};
     const byDate={};mv.forEach(m=>{(byDate[m.date]=byDate[m.date]||[]).push(m);});
     box.innerHTML=Object.keys(byDate).map(d=>{

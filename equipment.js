@@ -81,7 +81,7 @@
     const row=e=>{const det=invDetail(e.spot,e.nose);
       return `<button class="ui-row" data-unit="${esc(e.id)}">
         <div class="ui-row__main">
-          <div class="ui-row__title">${esc(e.tag||"(no tag)")}${e.oos?`<span class="eqd-oos">OUT OF SERVICE</span>`:""}</div>
+          <div class="ui-row__title">${esc(dtag(e.tag)||"(no tag)")}${e.oos?`<span class="eqd-oos">OUT OF SERVICE</span>`:""}</div>
           <div class="ui-row__sub">${[e.type,e.subtype,specOf(e)].filter(Boolean).map(esc).join(" · ")||"&nbsp;"}</div>
         </div>
         <span class="ui-row__value">${e.location?esc(e.location)+(det?" · "+esc(det):""):"no location"}</span>
@@ -132,12 +132,12 @@
           ${e.oos?`<button class="btn green" id="eqdBackIn">Return to service</button>`
                  :`<button class="btn ghost" id="eqdOos" style="border-color:var(--ua-red);color:var(--ua-red)">Mark out of service</button>`}
         </div>`;
-      UI.render(ROOT(),nav,{title:e.tag||"(no tag)",sub:esc(e.type||"")+(e.location?" · "+esc(e.location):""),body,mount:r=>{
+      UI.render(ROOT(),nav,{title:dtag(e.tag)||"(no tag)",sub:esc(e.type||"")+(e.location?" · "+esc(e.location):""),body,mount:r=>{
         $("#eqdMove",r).onclick=()=>requireUnlock(()=>nav.go(moveScreen(id)));
         $("#eqdEdit",r).onclick=()=>requireEditPass(()=>nav.go(editScreen(id)));
         $("#eqdHist",r).onclick=()=>nav.go(historyScreen(id));
-        $("#eqdOos",r)&&($("#eqdOos").onclick=()=>pickReason(e.tag,"",v=>{setEqOos(e.id,true,v);capturePhoto(e.id);}));
-        $("#eqdBackIn",r)&&($("#eqdBackIn").onclick=()=>{if(confirm(`Return ${e.tag||"this unit"} to service?`))setEqOos(e.id,false,"");});
+        $("#eqdOos",r)&&($("#eqdOos").onclick=()=>pickReason(dtag(e.tag),"",v=>{setEqOos(e.id,true,v);capturePhoto(e.id);}));
+        $("#eqdBackIn",r)&&($("#eqdBackIn").onclick=()=>{if(confirm(`Return ${dtag(e.tag)||"this unit"} to service?`))setEqOos(e.id,false,"");});
         $("#eqdPhotoAdd",r)&&($("#eqdPhotoAdd").onclick=()=>capturePhoto(e.id));
         $("#eqdPhotoRe",r)&&($("#eqdPhotoRe").onclick=()=>capturePhoto(e.id));
         $("#eqdPhotoDel",r)&&($("#eqdPhotoDel").onclick=()=>{if(!confirm("Remove this photo?"))return;
@@ -175,7 +175,7 @@
           <button class="btn ghost" id="eqdCancel" style="flex:0 0 110px">Cancel</button>
         </div>
         ${e?`<div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="eqdDelete" style="border-color:var(--ua-red);color:var(--ua-red)">Delete equipment</button></div>`:""}`);
-      UI.render(ROOT(),nav,{title:e?"Edit equipment":"Add equipment",sub:e?esc(e.tag||""):"New unit joins the global list.",body,mount:r=>{
+      UI.render(ROOT(),nav,{title:e?"Edit equipment":"Add equipment",sub:e?esc(dtag(e.tag)||""):"New unit joins the global list.",body,mount:r=>{
         const refreshSpots=()=>{const loc=$("#eqdLoc",r).value,z=(locZonesFor(loc)||[]);
           $("#eqdSpotWrap",r).hidden=!z.length;
           if(z.length)$("#eqdSpot",r).innerHTML=`<option value="">— None —</option>`+z.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");};
@@ -229,7 +229,7 @@
           <button class="btn navy" id="eqdMvGo">Move</button>
           <button class="btn ghost" id="eqdMvCancel" style="flex:0 0 110px">Cancel</button>
         </div>`);
-      UI.render(ROOT(),nav,{title:`Move ${esc(e.tag||"unit")}`,sub:e.location?`Now at ${esc(e.location)}.`:"Currently unassigned.",body,mount:r=>{
+      UI.render(ROOT(),nav,{title:`Move ${esc(dtag(e.tag)||"unit")}`,sub:e.location?`Now at ${esc(e.location)}.`:"Currently unassigned.",body,mount:r=>{
         const refreshSpots=()=>{const z=(locZonesFor($("#eqdMvLoc",r).value)||[]);
           $("#eqdMvSpotWrap",r).hidden=!z.length;
           if(z.length)$("#eqdMvSpot",r).innerHTML=`<option value="">— None —</option>`+z.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");};
@@ -260,7 +260,7 @@
           <div class="ui-row__title" style="white-space:normal">${top}</div>
           <div class="ui-row__sub">${bits}${m.reason?` · <span style="color:var(--ua-red)">${esc(m.reason)}</span>`:""}</div></div></div>`;}).join("")
         :`<p class="rq-empty">No movement history for this unit yet.</p>`;
-      UI.render(ROOT(),nav,{title:`${esc(e.tag||"unit")} — history`,sub:e.location?`Now at ${esc(e.location)}.`:"Currently unassigned.",
+      UI.render(ROOT(),nav,{title:`${esc(dtag(e.tag)||"unit")} — history`,sub:e.location?`Now at ${esc(e.location)}.`:"Currently unassigned.",
         body:`<div class="ui-group">${rows}</div>`,mount:()=>{}});
     };
   }

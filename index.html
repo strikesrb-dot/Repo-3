@@ -276,6 +276,7 @@
   #siteLock.done{opacity:0;pointer-events:none}
   .sl-inner{display:flex;flex-direction:column;align-items:center;padding:24px;width:100%;max-width:360px}
   .sl-logo{width:60px;height:60px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);margin-bottom:14px}
+  .sl-priv{font:600 11px/1.4 var(--font);letter-spacing:.14em;text-transform:uppercase;color:#a6e3f5;margin-top:6px}
   .sl-title{font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:23px;font-weight:800;letter-spacing:1px}
   .sl-sub{font-size:13.5px;font-weight:600;opacity:.92;margin:6px 0 8px;min-height:18px}
   /* settings passcode gate */
@@ -571,6 +572,7 @@
   <div class="sl-inner">
     <div class="sl-logo"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
     <div class="sl-title">Operational Success</div>
+    <div class="sl-priv">Private · authorized eyes only · not for distribution</div>
     <div class="sl-sub" id="siteMsg">Draw your pattern to unlock</div>
     <div class="patpad sl-pad" id="sitePad"></div>
   </div>
@@ -590,11 +592,10 @@
   <div class="hdr-row">
     <div class="brand" id="hdrTitle">
       <span class="logo"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
-      <span class="brand-txt"><span class="eyebrow">United Ground Ops</span><span class="wordmark">Operational Success</span></span>
+      <span class="brand-txt"><span class="eyebrow" style="display:none"></span><span class="wordmark">Operational Success</span></span>
     </div>
     <button id="homeBtn" class="homebtn" hidden aria-label="Home" title="Home"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
   </div>
-  <p class="sub" id="hdrSub">Ground support equipment · staging &amp; audits</p>
 </header>
 
 <main>
@@ -868,6 +869,19 @@ function nm(name){return (demoOn()&&name)?_fakeName(name):name;}
 // EOS name fields arrive pre-joined; mask each part with the right separator (output only)
 const EOS_NAME_SEP={supervisors:" & ",asst:", ",manager:"",dispatcher:""};
 function eosMask(k,v){const sep=EOS_NAME_SEP[k];if(sep===undefined||!v)return v;return sep?String(v).split(sep).map(x=>nm(x.trim())).join(sep):nm(v);}
+// demo mode also masks equipment: stable fake tag, prefix kept (GPU-12 → GPU-47). Display-only —
+// edit fields, lookups and saved data always carry the real tag; the same real tag always maps
+// to the same fake one, so a pitch stays coherent screen to screen.
+const _tagMap=new Map(),_tagUsed=new Set();
+function _fakeTag(tag){const t=String(tag);if(_tagMap.has(t))return _tagMap.get(t);
+  // never hand out a fake that IS some other unit's real tag — that would mislabel the fleet
+  if(!_tagUsed.size&&window.data&&data.equipment)data.equipment.forEach(e=>{if(e.tag)_tagUsed.add(String(e.tag));});
+  const m=t.match(/^(.*?)(\d+)([^\d]*)$/);const h=_hashStr(t);let fake=t;
+  if(m){const w=Math.max(2,m[2].length),span=Math.pow(10,w);
+    for(let p=0;p<span;p++){fake=m[1]+String((h+p)%span).padStart(w,"0")+m[3];if(!_tagUsed.has(fake))break;}}
+  else{for(let p=0;p<999;p++){fake=(t.slice(0,3).toUpperCase()||"EQ")+"-"+String((h+p)%90+10);if(!_tagUsed.has(fake))break;}}
+  _tagUsed.add(fake);_tagMap.set(t,fake);return fake;}
+function dtag(t){return (demoOn()&&t)?_fakeTag(t):t;}
 
 /* ---- location helpers ---- */
 function locNames(){return data.locations.map(l=>l.name);}
@@ -1087,8 +1101,9 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
 /* ---- full-site lock screen (right-side L: 2-5-8-7-6) ---- */
 (function(){
   const PAT="25876",lock=$("#siteLock"),pad=$("#sitePad");if(!lock||!pad)return;
-  // remember an unlock for the shift so a reload (incl. a service-worker update) doesn't re-lock
-  const ULK="elt.lock.ok",ULWIN=12*3600*1000;
+  // remember an unlock only briefly — long enough that a service-worker update reload doesn't
+  // re-lock mid-tap, short enough that every real visit draws the pattern again (private app)
+  const ULK="elt.lock.ok",ULWIN=5*60*1000;
   const unlocked=()=>{try{const t=+(localStorage.getItem(ULK)||0);return t&&(Date.now()-t)<ULWIN;}catch(_){return false;}};
   const markUnlocked=()=>{try{localStorage.setItem(ULK,String(Date.now()));}catch(_){}};
   if(unlocked()){lock.remove();return;}
@@ -1188,7 +1203,7 @@ function eosAuto(date,shift){
   const mp=eosManpower(date,shift), snap=mp&&mp.snap;
   const moves=eosMoves(date,shift), oos=data.equipment.filter(e=>e.oos);
   const isPCA=t=>/pca|air|heat/i.test(t||"");
-  const pcAir=oos.filter(e=>isPCA(e.type)).map(e=>e.tag), other=oos.filter(e=>!isPCA(e.type)).map(e=>e.tag);
+  const pcAir=oos.filter(e=>isPCA(e.type)).map(e=>dtag(e.tag)), other=oos.filter(e=>!isPCA(e.type)).map(e=>dtag(e.tag));
   let tugsOos=[],gpuOos=[];
   if(snap&&snap.tug)Object.keys(snap.tug).forEach(id=>{const s=snap.tug[id];if(s==="oos")tugsOos.push(id);else if(s==="inop")gpuOos.push(id);});
   return {
@@ -1357,14 +1372,14 @@ function openInvPop(pill,id,after){
       const groups={},order=[];spots.forEach(s=>{if(!groups[s.area]){groups[s.area]=[];order.push(s.area);}groups[s.area].push(s);});
       const body=order.map(a=>`<div class="popgrp">${esc(a)}</div><div class="spotwrap">`+
         groups[a].map(s=>`<button class="spotbtn ${s.holdsAircraft?'ac':''} ${st.spot===s.name?'sel':''}" data-s="${esc(s.name)}">${esc(s.name)}</button>`).join("")+`</div>`).join("");
-      pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")} — which spot?</div><div class="spotscroll">${body}</div>`+
+      pop.innerHTML=`<div class="pophead">${esc(dtag(e.tag)||"unit")} — which spot?</div><div class="spotscroll">${body}</div>`+
         `<button class="confirmbtn" data-a="nospot">No specific spot · just here</button>`+
         (on||oos?`<button class="rmbtn" data-a="rm">Remove from inventory</button>`:"");
       pop.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{st.spot=b.dataset.s;st.spotObj=spots.find(x=>x.name===st.spot)||null;st.step="status";draw();});
       pop.querySelector('[data-a="nospot"]').onclick=()=>{st.spot=null;st.spotObj=null;finish(false);};
     }else{
       const nose=askNose();
-      pop.innerHTML=`<div class="pophead">${esc(e.tag||"unit")}${st.spot?` · ${esc(st.spot)}`:""}</div>`+
+      pop.innerHTML=`<div class="pophead">${esc(dtag(e.tag)||"unit")}${st.spot?` · ${esc(st.spot)}`:""}</div>`+
         (nose?`<input id="invNoseInput" inputmode="numeric" autocomplete="off" placeholder="Aircraft nose # (from fleet)" value="${esc(st.nose||"")}" /><div id="invNoseSug" class="nosesug"></div>`:"")+
         `<button class="confirmbtn" data-a="here">✓ It's here</button>`+
         `<button class="oosbtn" data-a="oos">⊘ Out of service</button>`+
@@ -1402,7 +1417,7 @@ function pickReason(tag,current,onSave,opts){
   setTimeout(()=>ti.focus(),60);
 }
 function openOosReason(pill,id,after){const e=data.equipment.find(x=>x.id===id);if(!e)return;
-  pickReason(e.tag,invReason.get(id)||e.oosReason||"",v=>{if(v)invReason.set(id,v);else invReason.delete(id);after&&after();},{cancelLabel:"Skip for now",onCancel:after});
+  pickReason(dtag(e.tag),invReason.get(id)||e.oosReason||"",v=>{if(v)invReason.set(id,v);else invReason.delete(id);after&&after();},{cancelLabel:"Skip for now",onCancel:after});
 }
 /* ---- GSE: out-of-service registry ---- */
 function gseList(){return data.equipment.filter(e=>e.oos).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"")||(a.tag||"").localeCompare(b.tag||"",undefined,{numeric:true,sensitivity:"base"}));}
@@ -1433,7 +1448,7 @@ function gseAck(id,replyText){const e=data.equipment.find(x=>x.id===id);if(!e||!
   e.oosAck={by:gseWho()||"GSE",at:Date.now(),reply:(replyText||"").trim()};e_when(e);save();renderGse();}
 const GSE_REPLIES=["Picked up — on our way","Mechanic en route","Parts ordered","Deferred — MEL","Back in service soon"];
 function gseDownloadText(){const list=gseList();const L=["GSE OUT OF SERVICE — "+fmtDate(todayISO()),"====================================",""];
-  list.forEach((e,i)=>{L.push(`${i+1}. ${e.tag||""}${e.type?" ("+e.type+")":""}`);L.push(`   Reason: ${e.oosReason||"—"}`);if(e.location)L.push(`   Location: ${e.location}`);L.push("");});
+  list.forEach((e,i)=>{L.push(`${i+1}. ${dtag(e.tag)||""}${e.type?" ("+e.type+")":""}`);L.push(`   Reason: ${e.oosReason||"—"}`);if(e.location)L.push(`   Location: ${e.location}`);L.push("");});
   if(!list.length)L.push("(none out of service)");
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download=`GSE-OOS-${todayISO()}.txt`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
@@ -1478,7 +1493,7 @@ function commitInv(){
   const clearing=data.equipment.filter(e=>invSel.has(e.id)&&e.oos&&!invOos.has(e.id));
   let keepOos=false;
   if(clearing.length){
-    keepOos=!confirm(clearing.length+" unit(s) are currently OUT OF SERVICE — "+clearing.map(e=>e.tag||"?").join(", ")+
+    keepOos=!confirm(clearing.length+" unit(s) are currently OUT OF SERVICE — "+clearing.map(e=>dtag(e.tag)||"?").join(", ")+
       ".\n\nOK = return them to service (clears the reason).\nCancel = keep them out of service.");
   }
   // additive: only the units you count get placed here. Units you don't tap keep
@@ -1505,7 +1520,7 @@ function buildInvSheet(locs,mode){mode=mode||invSheetMode;
     const cats=groupByType(items).slice().sort((a,b)=>(a.type||"").localeCompare(b.type||"",undefined,{numeric:true,sensitivity:"base"}));
     const body=cats.map(g=>{
       const rows=sortTags(g.items).map(e=>{const d=invDetail(e.spot,e.nose);
-        return `<div class="m-row">${ck?'<span class="m-ck"></span>':""}<span class="m-tag">${esc(e.tag)}</span>${e.subtype?`<span class="m-sub">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="m-volt">${esc(e.volt)}</span>`:""}${d?`<span class="m-det">${esc(d)}</span>`:""}${e.oos?'<span class="m-oos">OUT OF SERVICE</span>':""}</div>`;}).join("");
+        return `<div class="m-row">${ck?'<span class="m-ck"></span>':""}<span class="m-tag">${esc(dtag(e.tag))}</span>${e.subtype?`<span class="m-sub">${esc(e.subtype)}</span>`:""}${e.volt?`<span class="m-volt">${esc(e.volt)}</span>`:""}${d?`<span class="m-det">${esc(d)}</span>`:""}${e.oos?'<span class="m-oos">OUT OF SERVICE</span>':""}</div>`;}).join("");
       return `<div class="m-cat">${esc(g.type)}</div>${rows}`;
     }).join("");
     return `<div class="m-loc">${esc(loc)}<span class="m-locn">${items.length} unit${items.length===1?"":"s"}</span></div>${body}`;
@@ -1523,7 +1538,7 @@ function invProofHTML(){
   if(inv.mode==="complete"&&inv.startTs){
     const ns=data.equipment.filter(e=>!e.inv||e.inv.at<inv.startTs);
     if(ns.length)notSeen=`<div class="m-cat" style="color:#b45309">NOT SEEN (${ns.length}) — not counted this inventory</div>`+
-      ns.slice(0,40).map(e=>`<div class="m-row"><span class="m-tag">${esc(e.tag||"?")}</span><span class="m-sub">${esc(e.type||"")}</span><span class="m-det">${e.location?"last known "+esc(e.location):"no last location"}</span></div>`).join("")+
+      ns.slice(0,40).map(e=>`<div class="m-row"><span class="m-tag">${esc(dtag(e.tag)||"?")}</span><span class="m-sub">${esc(e.type||"")}</span><span class="m-det">${e.location?"last known "+esc(e.location):"no last location"}</span></div>`).join("")+
       (ns.length>40?`<div class="m-det" style="padding:4px 0">…and ${ns.length-40} more</div>`:"");
   }
   return `${notSeen}<div class="m-sub" style="margin-top:14px">Counted by ${esc(inv.by||data.invLastBy||"—")} · ${esc(fmtDate(todayISO()))} · ${modeTxt}</div>`;
@@ -1538,12 +1553,12 @@ function downloadInvText(locs){
     fmtDate(todayISO())+"  ·  "+locs.length+" location(s)  ·  "+tot+" item(s)"+(oosN?"  ·  "+oosN+" out of service":""),""];
   locs.forEach(loc=>{lines.push(loc.toUpperCase()+" ("+data.equipment.filter(e=>e.location===loc).length+")");
     groupByType(data.equipment.filter(e=>e.location===loc)).forEach(g=>{lines.push("  "+g.type+":");
-      sortTags(g.items).forEach(e=>{const d=invDetail(e.spot,e.nose);lines.push("    "+pre+e.tag+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(d?"  ["+d+"]":"")+(e.oos?"  ** OUT OF SERVICE"+(e.oosReason?" — "+e.oosReason:"")+" **":""));});});
+      sortTags(g.items).forEach(e=>{const d=invDetail(e.spot,e.nose);lines.push("    "+pre+dtag(e.tag)+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(d?"  ["+d+"]":"")+(e.oos?"  ** OUT OF SERVICE"+(e.oosReason?" — "+e.oosReason:"")+" **":""));});});
     lines.push("");});
   {const all=topLocs(),cov=inv.covered||[];
    lines.push("Counted by "+(inv.by||data.invLastBy||"—")+" · "+fmtDate(todayISO())+" · "+(inv.mode==="complete"?(cov.length>=all.length?"COMPLETE ("+cov.length+"/"+all.length+")":"PARTIAL ("+cov.length+"/"+all.length+")"):"PARTIAL — "+(cov.join(", ")||"one area")));
    if(inv.mode==="complete"&&inv.startTs){const ns=data.equipment.filter(e=>!e.inv||e.inv.at<inv.startTs);
-     if(ns.length){lines.push("","NOT SEEN ("+ns.length+") — not counted this inventory:");ns.forEach(e=>lines.push("  "+(e.tag||"?")+(e.type?" ("+e.type+")":"")+(e.location?" — last known "+e.location:"")));}}}
+     if(ns.length){lines.push("","NOT SEEN ("+ns.length+") — not counted this inventory:");ns.forEach(e=>lines.push("  "+(dtag(e.tag)||"?")+(e.type?" ("+e.type+")":"")+(e.location?" — last known "+e.location:"")));}}}
   const blob=new Blob([lines.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-inventory-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
 function downloadInvImage(locs){
@@ -1565,9 +1580,9 @@ function downloadInvImage(locs){
       const its=sortTags(g.items);
       its.forEach((e,idx)=>{const textX=ck?M+28:M;
         if(ck)ops.push({k:'box',x:M,y:y});
-        ops.push({k:'tx',x:textX,y,t:e.tag,f:tagF,c:tagc});
+        ops.push({k:'tx',x:textX,y,t:dtag(e.tag),f:tagF,c:tagc});
         const d=invDetail(e.spot,e.nose);
-        if(d)ops.push({k:'tx',x:textX+tw(e.tag,tagF)+10,y:y+3,t:d,f:detF,c:detc});
+        if(d)ops.push({k:'tx',x:textX+tw(dtag(e.tag),tagF)+10,y:y+3,t:d,f:detF,c:detc});
         if(e.oos)ops.push({k:'tx',x:cR,y:y+3,t:"OUT OF SERVICE",f:oosF,c:oosc,align:"right"});
         y+=24;if(idx<its.length-1)ops.push({k:'ln',x0:M,x1:cR,y,c:divc});y+=6;
       });
@@ -1854,7 +1869,7 @@ function buildSheetHTML(spotNames,title){
     if(!items.length){body=`<table class="audit"><tbody><tr><td style="text-align:center;color:#888;padding:12px">No equipment recorded.</td></tr></tbody></table>`;}
     else{const rows=groupByType(items).map(g=>
         `<tr class="cat"><td colspan="3"><b>${esc(g.type)}</b> · ${g.items.length}</td></tr>`+
-        g.items.map(e=>`<tr><td><b>${esc(e.tag)}</b></td><td>${esc(e.notes||"")}</td><td class="chk">☐</td></tr>`).join("")).join("");
+        g.items.map(e=>`<tr><td><b>${esc(dtag(e.tag))}</b></td><td>${esc(e.notes||"")}</td><td class="chk">☐</td></tr>`).join("")).join("");
       body=`<table class="audit"><thead><tr><th>Asset Tag</th><th>Notes</th><th>✓</th></tr></thead><tbody>${rows}</tbody></table>`;}
     return `<div class="spot-block"><div class="spot-h"><span class="sn">${esc(name)}</span>${acLine}</div>${body}</div>`;
   }
@@ -1889,7 +1904,7 @@ function equipScopeData(scope){
 function buildEquipSheetHTML(scope){
   const {title,mode,groups}=equipScopeData(scope);
   const date=fmtDate(todayISO()),by=$("#auditBy")?.value.trim()||"____________";
-  const rowFor=e=>{const sp=invDetail(e.spot,e.nose);return `<tr><td><b>${esc(e.tag)}</b>${sp?` <span style="color:#888;font-size:10px">· ${esc(sp)}</span>`:""}${e.oos?' <span style="color:#c0271e;font-size:10px;font-weight:800">OOS</span>':""}${e.volt?` <span style="color:#15622f;font-size:10px;font-weight:700">${esc(e.volt)}</span>`:""}</td><td>${esc(e.subtype||e.notes||"")}</td><td class="chk">☐</td></tr>`;};
+  const rowFor=e=>{const sp=invDetail(e.spot,e.nose);return `<tr><td><b>${esc(dtag(e.tag))}</b>${sp?` <span style="color:#888;font-size:10px">· ${esc(sp)}</span>`:""}${e.oos?' <span style="color:#c0271e;font-size:10px;font-weight:800">OOS</span>':""}${e.volt?` <span style="color:#15622f;font-size:10px;font-weight:700">${esc(e.volt)}</span>`:""}</td><td>${esc(e.subtype||e.notes||"")}</td><td class="chk">☐</td></tr>`;};
   let total=0;
   const blocks=groups.map(g=>{total+=g.items.length;let body;
     if(!g.items.length){body=`<table class="audit"><tbody><tr><td style="text-align:center;color:#888;padding:12px">No equipment.</td></tr></tbody></table>`;}
@@ -1911,8 +1926,8 @@ function downloadEquipText(scope){
     fmtDate(todayISO())+"  ·  "+total+" item(s)",""];
   const sp=e=>{const d=invDetail(e.spot,e.nose);return d?"  ["+d+"]":"";};
   groups.forEach(g=>{L.push(g.label.toUpperCase()+" ("+g.items.length+")");
-    if(mode==="type"){sortTags(g.items).forEach(e=>L.push("    [ ] "+e.tag+sp(e)+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));}
-    else{groupByType(g.items).forEach(c=>{L.push("  "+c.type+":");sortTags(c.items).forEach(e=>L.push("    [ ] "+e.tag+sp(e)+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));});}
+    if(mode==="type"){sortTags(g.items).forEach(e=>L.push("    [ ] "+dtag(e.tag)+sp(e)+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));}
+    else{groupByType(g.items).forEach(c=>{L.push("  "+c.type+":");sortTags(c.items).forEach(e=>L.push("    [ ] "+dtag(e.tag)+sp(e)+(e.subtype?"  – "+e.subtype:"")+(e.volt?"  ("+e.volt+")":"")+(e.oos?"  ** OOS **":"")));});}
     L.push("");});
   const blob=new Blob([L.join("\n")],{type:"text/plain"}),u=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=u;a.download="equipment-"+todayISO()+".txt";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);toast("Text file downloaded");}
@@ -1962,14 +1977,11 @@ function refreshAll(){updateHdr();renderGse();}
     },200);
   });
 })();
-function updateHdr(){applyBrandLabels();const cust=data.settings&&data.settings.headerSub;
-  if(cust){$("#hdrSub").textContent=cust;return;}
-  const n=data.equipment.length,locs=new Set(data.equipment.map(e=>e.location).filter(Boolean)).size;
-  $("#hdrSub").textContent=n?`${n} unit${n===1?"":"s"} across ${locs} location${locs===1?"":"s"}`:"Ground support equipment · staging & audits";}
+function updateHdr(){applyBrandLabels();}   // header is just the wordmark now — no eyebrow, no subtitle line
 // apply the user's custom app-name / eyebrow to the header (blank eyebrow hides it)
 function applyBrandLabels(){ const L=(data.settings&&data.settings.labels)||{};
   const eb=document.querySelector('.brand .eyebrow');
-  if(eb){const t=('eyebrow' in L)?String(L.eyebrow||'').trim():'United Ground Ops';eb.textContent=t;eb.style.display=t?'':'none';}
+  if(eb){const t=('eyebrow' in L)?String(L.eyebrow||'').trim():'';eb.textContent=t;eb.style.display=t?'':'none';}
   const wordmark=(L.wordmark&&String(L.wordmark).trim())||'Operational Success';
   const wm=document.querySelector('.brand .wordmark'); if(wm)wm.textContent=wordmark;
   const sl=document.querySelector('.sl-title'); if(sl)sl.textContent=wordmark;   // lock-screen splash

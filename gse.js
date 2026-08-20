@@ -19,7 +19,7 @@
     const oosAll=gseList(), awaiting=oosAll.filter(e=>!e.oosAck).length;
     const total=data.equipment.length;
     const lastMv=data.movements[data.movements.length-1];
-    const mvSub=lastMv?`${lastMv.tag||"unit"} ${lastMv.to?"&rarr; "+esc(lastMv.to):"updated"} · ${esc(fmtDate(lastMv.date))}`:"no moves yet";
+    const mvSub=lastMv?`${esc(dtag(lastMv.tag)||"unit")} ${lastMv.to?"&rarr; "+esc(lastMv.to):"updated"} · ${esc(fmtDate(lastMv.date))}`:"no moves yet";
     const body=`
       <div class="gsem-stats">
         <div class="ui-stat"><span class="ui-stat__eyebrow">Units</span>
@@ -89,7 +89,7 @@
           ? `<div class="gse-status ack">&#10003; Confirmed by <b>${esc(nm(ack.by))}</b>${ack.reply?` — &ldquo;${esc(ack.reply)}&rdquo;`:""}</div>`
           : `<div class="gse-status wait">Awaiting GSE</div>`;
         return `<li class="gse-row" data-id="${esc(e.id)}"><div class="gse-main">
-          <div class="gse-tag">${esc(e.tag||"(no tag)")}${e.oosAt?`<span class="gsem-age${e.oosAck?"":" hot"}">${age(e.oosAt)}</span>`:""}</div>
+          <div class="gse-tag">${esc(dtag(e.tag)||"(no tag)")}${e.oosAt?`<span class="gsem-age${e.oosAck?"":" hot"}">${age(e.oosAt)}</span>`:""}</div>
           <div class="gse-reason">&#8856; ${esc(e.oosReason||"no reason recorded — tap Reason")}</div>
           <div class="gse-meta">${e.location?esc(e.location):"no location"}${e.oosAt?` &middot; since ${esc(fmtDate(new Date(e.oosAt-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)))}`:ev?` &middot; since ${esc(fmtDate(ev.date))}`:""}${ev&&ev.by?" &middot; "+esc(nm(ev.by)):""}</div>
           ${photo?`<img class="gse-photo" src="${photo}" alt="OOS photo" data-id="${esc(e.id)}" />
@@ -125,7 +125,7 @@
           if(!eq)return;
           // camera auto-chains after the reason saves — the sheet opens with zero navigation;
           // cancel is harmless. pickReason's save click keeps user activation for inp.click().
-          pickReason(eq.tag,"",v=>{setEqOos(eq.id,true,v);capturePhoto(eq.id);});
+          pickReason(dtag(eq.tag),"",v=>{setEqOos(eq.id,true,v);capturePhoto(eq.id);});
         }});
         $$(".gse-rchip",r).forEach(b=>b.onclick=()=>gseAck(b.dataset.id,b.dataset.r));
         $$(".gse-confirm",r).forEach(b=>b.onclick=()=>{const i=b.closest(".gse-thread").querySelector(".gse-reply-in");gseAck(b.dataset.id,i?i.value:"");});
@@ -137,9 +137,9 @@
           delete eq.oosPhoto;delete eq.oosPhotoBy;e_when(eq);save();nav.refresh();});
         $$(".gse-photo",r).forEach(img=>img.onclick=()=>enlargePhoto(img.getAttribute("src")));
         $$(".gse-edit",r).forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
-          pickReason(eq.tag,eq.oosReason||"",v=>{eq.oosReason=v;e_when(eq);save();nav.refresh();});});
+          pickReason(dtag(eq.tag),eq.oosReason||"",v=>{eq.oosReason=v;e_when(eq);save();nav.refresh();});});
         $$(".gse-back2",r).forEach(b=>b.onclick=()=>{const eq=data.equipment.find(x=>x.id===b.dataset.id);if(!eq)return;
-          if(confirm(`Return ${eq.tag||"this unit"} to service?`))setEqOos(eq.id,false,"");});
+          if(confirm(`Return ${dtag(eq.tag)||"this unit"} to service?`))setEqOos(eq.id,false,"");});
       }});
     };
   }
