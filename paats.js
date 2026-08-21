@@ -402,17 +402,12 @@
                 ${dd?"":`<button class="btn sm navy" data-disp="${esc(g.id)}">Dispatch</button>`}
                 <button class="rq-linkbtn" data-gate="${esc(g.id)}">Gate</button>
                 <button class="rq-linkbtn" data-park="${esc(g.id)}">Parked</button>
-                <button class="rq-linkbtn" data-dep="${esc(g.id)}">Departed</button>
                 <button class="rq-linkbtn rq-linkbtn--red" data-rm="${esc(g.id)}">&#10005;</button>
               </span></div>`;})
           +sect("Parked",rows.filter(g=>g.status==="parked"),g=>`
             <div class="ui-row" style="cursor:default"><div class="ui-row__main">
               <div class="ui-row__title">${esc(g.tail)}${g.actype?` <span class="ptg-type">${esc(shortType(g.actype))}</span>`:""}</div>
               <div class="ui-row__sub" style="color:var(--ua-green)">&#10003; ${hhmm(g.endAt||g.addedAt)}${g.via==="dispatch"?` · PAATS${(x=>x?" "+x.truck:"")(load().find(y=>y.id===g.dispatchId))}`:" · marked by hand"}</div></div></div>`)
-          +sect("Departed on their own",rows.filter(g=>g.status==="departed"),g=>`
-            <div class="ui-row" style="cursor:default;opacity:.65"><div class="ui-row__main">
-              <div class="ui-row__title">${esc(g.tail)}</div>
-              <div class="ui-row__sub">left ${hhmm(g.endAt||g.addedAt)} — not counted against the rate</div></div></div>`)
           ||`<p class="rq-empty">Nothing on the board yet.<br>Type the tails currently on the ground — one by one, Enter adds.</p>`;
         // row actions
         $$("[data-disp]",r).forEach(b=>b.onclick=()=>{const g=gload().find(x=>x.id===b.dataset.disp);if(!g)return;
@@ -432,9 +427,6 @@
         $$("[data-park]",r).forEach(b=>b.onclick=()=>{const l=gload(),g=l.find(x=>x.id===b.dataset.park);if(!g)return;
           if(!confirm(`Mark ${g.tail} parked by hand? Use this when it was parked without a PAATS dispatch.`))return;
           g.status="parked";g.via="manual";g.endAt=Date.now();gsave(l);paintBoard();});
-        $$("[data-dep]",r).forEach(b=>b.onclick=()=>{const l=gload(),g=l.find(x=>x.id===b.dataset.dep);if(!g)return;
-          if(!confirm(`${g.tail} departed on its own? It comes out of the percentage entirely.`))return;
-          g.status="departed";g.endAt=Date.now();gsave(l);paintBoard();});
         $$("[data-rm]",r).forEach(b=>b.onclick=()=>{const l=gload(),g=l.find(x=>x.id===b.dataset.rm);if(!g)return;
           if(!confirm(`Remove ${g.tail} from the board? Only for entries logged in error.`))return;
           g.status="removed";g.endAt=Date.now();gsave(l);paintBoard();});
@@ -506,7 +498,6 @@
         <div class="ui-group">
           <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title">On the board</div></div><span class="ui-row__value">${v.total}</span></div>
           <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title">Parked</div></div><span class="ui-row__value">${v.parked}</span></div>
-          <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title">Departed on their own</div></div><span class="ui-row__value">${v.departed}</span></div>
           <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title">Not parked</div></div><span class="ui-row__value"${v.notParked?' style="color:var(--ua-red);font-weight:600"':""}>${v.notParked}</span></div>
         </div>
         ${waveHTML?`<div class="rq-sechead">Closures — derived from the day's activity</div><div class="ui-group">${waveHTML}</div>`:""}
