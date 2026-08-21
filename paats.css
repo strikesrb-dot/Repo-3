@@ -1,43 +1,58 @@
 /* paats.css — PAATS dispatch module. Kit anatomy; these are the module's local pieces. */
 .pt-trucks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
 .pt-trucks .ui-tile{min-height:104px;padding:16px 14px 14px}
-.pt-trucks .ui-tile-s b{color:var(--bad-dark,#ff5a5c)}
 #paatsRoot>.ui-screen .ui-tile[data-go="soc"]{width:100%}
+/* a truck with undispatched work flips action-blue and wears a white count pill — readable across the room */
+.pt-truck{position:relative}
+.pt-truck.waiting{background:var(--ua-action)}
+.pt-truck.waiting .ui-tile-s b{color:#fff}
+.pt-wcount{position:absolute;top:10px;right:10px;min-width:32px;height:32px;padding:0 8px;border-radius:var(--r-pill);
+  background:#fff;color:var(--ua-action);font:600 19px/32px var(--font);text-align:center;font-variant-numeric:tabular-nums}
 /* dispatch card — the gate is the figure the crew reads from across the cab */
 .pt-card{margin-bottom:12px}
-.pt-card.onit{box-shadow:inset 3px 0 0 var(--ua-green),var(--shadow-1)}
-.pt-eyebrow{font:600 11px/1.3 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pt-card.onit{box-shadow:inset 6px 0 0 var(--ua-green),var(--shadow-1)}
+.pt-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pt-eyebrow{font:600 12px/1.33 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .pt-eyebrow b{color:var(--ua-green)}
-.pt-gate{font:600 40px/1.05 var(--font);letter-spacing:.01em;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:6px}
-.pt-ac{font:600 19px/1.25 var(--font);color:var(--ua-blue);margin-top:2px}
-.pt-ac span{font:600 14px/1.3 var(--font);color:var(--muted)}
+.pt-gate{font:600 clamp(48px,13vw,68px)/1.02 var(--font);letter-spacing:.01em;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:6px}
+.pt-ac{font:600 24px/1.2 var(--font);color:var(--ink);margin-top:4px}
+.pt-ac span{font:600 15px/1.3 var(--font);color:var(--muted)}
 .pt-task{font:400 14px/1.4 var(--font);color:var(--muted);margin-top:2px}
+/* the SOC note reads as a warn banner inside the card — hazard text, one size up */
+.pt-card .rqp-note{background:#fdf2e2;border-radius:var(--r-md)}
+.pt-card .rqp-notetext{font-size:16px;color:var(--ua-amber-text)}
+/* outcome actions: full-width, stacked — bigger targets, vertical separation, 2px border vs glare */
+.pt-actrow{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.pt-act{min-height:56px;font-size:18px;width:100%}
+.pt-act2{min-height:48px;width:100%;border-width:2px;font-size:16px}
+/* couldn't-park reasons: one full-width 52px stripe per reason — no wrapping pills in the rain */
 .pt-declpick{margin-top:12px;padding:12px;background:var(--bg,#f7f4f0);border-radius:var(--r-md,10px)}
-/* status chips in SOC's in-flight list and the log */
+.pt-reasons{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.pt-reasons .ui-chip{display:flex;align-items:center;width:100%;min-height:52px;justify-content:flex-start;text-align:left;font-size:16px;border-radius:var(--r-md)}
+.pt-declpick .rqp-declrow input{min-height:48px;font-size:16px}
+/* status chips in SOC's list, the truck cards and the log */
 .pt-st{font:600 12px/1 var(--font);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);
   border:1.5px solid currentColor;border-radius:var(--r-pill,980px);padding:5px 10px}
 .pt-st.ok{color:var(--ua-green)}
 .pt-st.bad{color:var(--ua-red)}
+.pt-st.new,.pt-st.wait{color:var(--ua-amber-text)}
+.pt-stbig{font-size:13px;padding:6px 12px;flex:none}
 /* couldn't-park notifications back to SOC */
 .pt-alert{margin-bottom:12px;box-shadow:inset 3px 0 0 var(--ua-red),var(--shadow-1)}
 .pt-alert-line{font:600 18px/1.3 var(--font);color:var(--ink);margin-top:6px}
 .pt-alert-reason{font:600 14px/1.4 var(--font);color:var(--ua-red);margin-top:2px}
-/* ground board */
-.ptg-carry{margin-bottom:12px;box-shadow:inset 3px 0 0 var(--ua-amber-text,#b45309),var(--shadow-1)}
-.ptg-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0}
-.ptg-stats.four{grid-template-columns:1fr 1fr 1fr 1fr}
-.ptg-stat{background:var(--ua-navy);color:#fff;border-radius:var(--r-lg,18px);padding:13px 14px}
-.ptg-stat.royal{background:var(--ua-blue)}
-.ptg-stat.warn .ptg-num{color:#ffd08a}
-.ptg-eyebrow{font:600 9.5px/1.3 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--dk-link,#a6e3f5);display:block;margin-bottom:4px}
-.ptg-num{font:600 26px/1 var(--font);font-variant-numeric:tabular-nums}
+/* ground board — compact tier of the kit stat card (ground/radius/eyebrow spec inherit from .ui-stat) */
+.ptg-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}
+.ptg-stat.ui-stat{padding:12px 14px}
+.ptg-stat .ui-stat__num{font-size:24px}
 .ptg-type{font:600 13px/1.3 var(--font);color:var(--muted)}
 .ptg-acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:4px 0}
-.ptg-row.flash{background:#fdf3e7;transition:background .3s linear}
-/* report */
-.ptg-hero{background:var(--ua-navy);color:#fff;border-radius:var(--r-tile,22px);padding:22px 20px;margin-bottom:12px}
-.ptg-heropct{font:600 54px/1 var(--font);font-variant-numeric:tabular-nums}
-.ptg-herosub{font:400 14px/1.45 var(--font);color:var(--dk-muted,#96a3bd);margin-top:6px}
-.ptg-herosub b{color:#ffd08a}
-.pt-pctchip{font:600 11px/1 var(--font);color:var(--ua-blue);border:1.5px solid var(--ua-blue);
-  background:none;border-radius:var(--r-pill,980px);padding:4px 9px;cursor:pointer}
+.ptg-acts .rq-linkbtn{padding:10px 8px;min-height:var(--hit)}
+.ptg-row.flash{background:#fdf2e2;transition:background .3s linear}
+/* report — the hero is the single navy statement; the numbers live once, in quiet rows */
+.ptg-hero{margin-bottom:12px}
+.ptg-heropct{font-size:54px}
+.ptg-herosub{font-size:14px;line-height:1.45;color:var(--dk-muted,#96a3bd)}
+.pt-pctchip{position:relative;font:600 12px/1 var(--font);color:var(--ua-blue);border:1.5px solid var(--ua-blue);
+  background:none;border-radius:var(--r-pill,980px);padding:4px 10px;cursor:pointer}
+.pt-pctchip::before{content:'';position:absolute;inset:-10px -6px}

@@ -67,8 +67,8 @@
         <div class="pt-alert-line"><b>${esc(x.aircraft)}</b>${x.flight?" · "+esc(x.flight):""} at <b>${esc(x.gate)}</b></div>
         <div class="pt-alert-reason">${esc(x.reason||"no reason given")}</div>
         <div class="btnrow" style="margin-top:10px">
-          <button class="btn ghost sm pt-dismiss" data-id="${esc(x.id)}" style="flex:0 0 auto">Got it — dismiss</button>
-          <button class="rq-linkbtn pt-redis" data-id="${esc(x.id)}">Re-dispatch</button>
+          <button class="btn sm navy pt-redis" data-id="${esc(x.id)}" style="flex:0 0 auto">Re-dispatch</button>
+          <button class="rq-linkbtn pt-dismiss" data-id="${esc(x.id)}">Dismiss</button>
         </div></div>`).join("");
   }
   function wireAlerts(r,nav){
@@ -170,7 +170,8 @@
     const all=load();
     const openFor=n=>all.filter(x=>x.truck===n&&(x.status==="open"||x.status==="ack"));
     const truckTiles=TRUCKS.map(n=>{const q=openFor(n);const waiting=q.filter(x=>x.status==="open").length;
-      return `<button class="ui-tile t-navy pt-truck" data-truck="${n}">
+      return `<button class="ui-tile t-navy pt-truck${waiting?" waiting":""}" data-truck="${n}">
+        ${waiting?`<span class="pt-wcount">${waiting}</span>`:""}
         <span class="ui-tile-t">PAATS ${n}</span>
         <span class="ui-tile-s">${q.length?`${waiting?`<b>${waiting} waiting</b>`:""}${waiting&&q.length-waiting?" · ":""}${q.length-waiting?`${q.length-waiting} on it`:""}`:"clear"}</span>
       </button>`;}).join("");
@@ -198,7 +199,7 @@
           <span class="ui-row__chev" aria-hidden="true"></span>
         </button>
       </div>`;
-    UI.render(ROOT(),nav,{title:"PAATS",sub:"Lightning-hold dispatch — zero loss in translation.",body,mount:r=>{
+    UI.render(ROOT(),nav,{title:"PAATS",sub:"Lightning-hold dispatch — sent, acknowledged, parked, logged.",body,mount:r=>{
       wireAlerts(r,nav);
       $('[data-go="soc"]',r).onclick=()=>nav.go(socScreen);
       $('[data-go="board"]',r).onclick=()=>nav.go(boardScreen);
@@ -215,31 +216,32 @@
     const sentRows=sent.map(x=>`<div class="ui-row" style="cursor:default">
         <div class="ui-row__main"><div class="ui-row__title">PAATS ${x.truck} &middot; ${esc(x.gate||"—")} &middot; ${esc(x.aircraft||"")}</div>
           <div class="ui-row__sub">${x.flight?esc(x.flight)+" · ":""}${timeAgo(x.when)}</div></div>
-        <span class="ui-row__value">${x.status==="ack"?'<span class="pt-st ok">On it</span>':'<span class="pt-st">Sent</span>'}</span>
-        <button class="rq-linkbtn rq-linkbtn--red pt-del" data-id="${esc(x.id)}">Delete</button>
+        <span class="ui-row__value">${x.status==="ack"?'<span class="pt-st ok">On it</span>':'<span class="pt-st wait">Waiting</span>'}</span>
+        <button class="rq-linkbtn rq-linkbtn--red pt-del" data-id="${esc(x.id)}" aria-label="Delete dispatch">&#10005;</button>
       </div>`).join("");
     const og=openGround(todayOps());
     const body=`${alertsHTML()}
-      <button class="rq-linkbtn" data-go="board" style="margin:0 0 8px">Log aircraft on the ground &rsaquo;</button>
+      <button class="link-more" data-go="board" style="display:inline-block;margin:0 0 8px">Log aircraft on the ground</button>
       ${UI.card(`
         ${og.length?`<span class="ui-flabel">On the ground — tap to fill</span>
           <div class="ui-chips" style="margin:6px 0 12px">${og.slice(0,20).map(g=>
-            `<button class="ui-chip pt-ogchip" data-tail="${esc(g.tail)}">${esc(g.tail)}</button>`).join("")}</div>`:""}
-        <span class="ui-flabel">Which truck</span>
-        ${UI.chips(TRUCKS.map(n=>({v:String(n),label:"PAATS "+n})),String(d.truck),'data-set="truck" data-v')}
+            `<button class="ui-chip pt-ogchip${(d.aircraft&&acReg(g.tail)===acReg(d.aircraft))?" on":""}" data-tail="${esc(g.tail)}">${esc(g.tail)}</button>`).join("")}</div>`:""}
+        <div class="ui-ta-wrap">${UI.field({label:"Aircraft",id:"ptAc",value:d.aircraft,placeholder:"Tail or ship number"})}
+          <div class="ui-ta-list" id="ptAcList" hidden></div></div>
         <div class="rq-two" style="margin-top:12px">
           <div>${UI.field({label:"Gate",id:"ptGate",value:d.gate,placeholder:"e.g. C109"})}</div>
           <div>${UI.field({label:"Flight (optional)",id:"ptFlight",value:d.flight,placeholder:"e.g. UA1234"})}</div>
         </div>
-        <div class="ui-ta-wrap" style="margin-top:12px">${UI.field({label:"Aircraft",id:"ptAc",value:d.aircraft,placeholder:"Tail or ship number"})}
-          <div class="ui-ta-list" id="ptAcList" hidden></div></div>
         ${UI.field({label:"Note (optional)",id:"ptNote",value:d.note,placeholder:"Anything the crew should know…"})}
+        <span class="ui-flabel" style="margin-top:14px">Which truck</span>
+        ${UI.chips(TRUCKS.map(n=>({v:String(n),label:"PAATS "+n})),String(d.truck),'data-set="truck" data-v')}
         <div class="btnrow" style="margin-top:14px"><button class="btn" id="ptSend">Send to PAATS ${d.truck}</button></div>`)}
-      ${sent.length?`<div class="rq-sechead" style="margin-top:18px">In flight <b>${sent.length}</b></div><div class="ui-group">${sentRows}</div>`:""}`;
+      ${sent.length?`<div class="rq-sechead" style="margin-top:18px">Out with the trucks <b>${sent.length}</b></div><div class="ui-group">${sentRows}</div>`:""}`;
     UI.render(ROOT(),nav,{title:"SOC dispatch",sub:"The crew gets the whole assignment — nothing read over the radio.",body,mount:r=>{
       const sync=()=>{d.gate=$("#ptGate",r).value;d.flight=$("#ptFlight",r).value;d.aircraft=$("#ptAc",r).value;d.note=$("#ptNote",r).value;};
       $('[data-go="board"]',r).onclick=()=>{sync();nav.go(boardScreen);};
-      $$(".pt-ogchip",r).forEach(b=>b.onclick=()=>{d.aircraft=b.dataset.tail;$("#ptAc",r).value=b.dataset.tail;});
+      $$(".pt-ogchip",r).forEach(b=>b.onclick=()=>{d.aircraft=b.dataset.tail;$("#ptAc",r).value=b.dataset.tail;
+        $$(".pt-ogchip",r).forEach(x=>x.classList.toggle("on",x===b));});
       $$('.ui-chip[data-set="truck"]',r).forEach(b=>b.onclick=()=>{sync();d.truck=+b.dataset.v;nav.refresh();});
       const acIn=$("#ptAc",r),acList=$("#ptAcList",r);
       if(acIn&&acList)UI.typeahead(acIn,acList,{min:2,source:q=>{
@@ -279,19 +281,22 @@
         const acts=declining===x.id
           ?`<div class="pt-declpick">
               <span class="ui-flabel">Why couldn't it be parked?</span>
-              <div class="ui-chips" style="margin-top:6px">${CANT_REASONS.map(rr=>`<button class="ui-chip pt-reason" data-id="${esc(x.id)}" data-r="${esc(rr)}">${esc(rr)}</button>`).join("")}</div>
-              <div class="rqp-declrow"><input id="ptReasonTxt" placeholder="Or type what happened…" autocomplete="off">
-                <button class="btn sm pt-reasonsend" data-id="${esc(x.id)}">Log it</button>
-                <button class="btn ghost sm pt-declcancel">Cancel</button></div>
+              <div class="pt-reasons">${CANT_REASONS.map(rr=>`<button class="ui-chip pt-reason" data-id="${esc(x.id)}" data-r="${esc(rr)}">${esc(rr)}</button>`).join("")}</div>
+              <div class="rqp-declrow" style="margin-top:10px"><input id="ptReasonTxt" placeholder="Or type what happened…" autocomplete="off">
+                <button class="btn pt-reasonsend" data-id="${esc(x.id)}" style="width:auto">Log it</button></div>
+              <button class="btn ghost sm pt-declcancel" style="margin-top:10px">Cancel</button>
             </div>`
           :x.status==="open"
-            ?`<div class="btnrow" style="margin-top:12px"><button class="btn" data-ack="${esc(x.id)}">Acknowledge — on it</button></div>`
-            :`<div class="btnrow" style="margin-top:12px">
-                <button class="btn green" data-done="${esc(x.id)}">&#10003; Parked</button>
-                <button class="btn ghost" data-cant="${esc(x.id)}" style="flex:0 0 44%">Couldn't park</button>
+            ?`<div class="pt-actrow"><button class="btn pt-act" data-ack="${esc(x.id)}">Acknowledge — on it</button></div>`
+            :`<div class="pt-actrow">
+                <button class="btn green pt-act" data-done="${esc(x.id)}">&#10003; Parked</button>
+                <button class="btn ghost pt-act2" data-cant="${esc(x.id)}">Couldn't park</button>
               </div>`;
         return `<div class="ui-card pt-card${x.status==="ack"?" onit":""}">
-          <div class="pt-eyebrow">SOC &rarr; PAATS ${n} · ${x.by?esc(x.by)+" · ":""}${timeAgo(x.when)}${x.status==="ack"?' · <b>acknowledged</b>':""}</div>
+          <div class="pt-head">
+            <div class="pt-eyebrow">SOC &rarr; PAATS ${n} · ${x.by?esc(x.by)+" · ":""}${timeAgo(x.when)}</div>
+            ${x.status==="ack"?'<span class="pt-st ok pt-stbig">On it</span>':'<span class="pt-st new pt-stbig">New</span>'}
+          </div>
           <div class="pt-gate">${esc(x.gate)}</div>
           <div class="pt-ac">${esc(x.aircraft)}${x.actype?` <span>${esc(shortType(x.actype))}</span>`:""}${x.flight?` · ${esc(x.flight)}`:""}</div>
           ${x.note?`<div class="rqp-note" style="margin:10px 0 0"><span class="rqp-dot" aria-hidden="true"></span><span class="rqp-notetext">${esc(x.note)}</span></div>`:""}
@@ -348,20 +353,18 @@
     const day=todayOps();
     const yOpen=gload().filter(g=>g.status==="open"&&g.day<day);
     const body=`
-      ${yOpen.length?`<div class="ui-card ptg-carry"><span class="ui-flabel" style="color:var(--ua-amber-text,#b45309)">${yOpen.length} tail${yOpen.length===1?"":"s"} from an earlier day still open</span>
-        <div class="ui-chips" style="margin-top:6px">${yOpen.slice(0,12).map(g=>`<span class="ui-chip" style="pointer-events:none">${esc(g.tail)}</span>`).join("")}</div>
-        <p class="saf-note" style="margin:8px 0 0">They stay on their own day's report — nothing auto-closes.</p></div>`:""}
+      ${yOpen.length?`<div class="ui-banner ui-banner--warn">${yOpen.length} tail${yOpen.length===1?"":"s"} from an earlier day still open — ${yOpen.slice(0,12).map(g=>esc(g.tail)).join(", ")}. They stay on their own day's report.</div>`:""}
       ${UI.card(`
         <div class="ui-ta-wrap">${UI.field({label:"Aircraft on the ground — tail or ship number",id:"ptgTail",value:"",placeholder:"e.g. 4732 — Enter adds it"})}
           <div class="ui-ta-list" id="ptgTaList" hidden></div></div>
         <div class="btnrow" style="margin-top:10px"><button class="btn" id="ptgAdd">Add to the board</button></div>`)}
       <div class="ptg-stats">
-        <div class="ptg-stat"><span class="ptg-eyebrow">On ground</span><div class="ptg-num" id="ptgNOpen">0</div></div>
-        <div class="ptg-stat"><span class="ptg-eyebrow">Parked</span><div class="ptg-num" id="ptgNParked">0</div></div>
-        <div class="ptg-stat royal"><span class="ptg-eyebrow">Parked rate</span><div class="ptg-num" id="ptgNPct">—</div></div>
+        <div class="ui-stat ptg-stat"><span class="ui-stat__eyebrow">On ground</span><div class="ui-stat__num" id="ptgNOpen">0</div></div>
+        <div class="ui-stat ptg-stat"><span class="ui-stat__eyebrow">Parked</span><div class="ui-stat__num" id="ptgNParked">0</div></div>
+        <div class="ui-stat ui-stat--royal ptg-stat"><span class="ui-stat__eyebrow">Parked rate</span><div class="ui-stat__num" id="ptgNPct">—</div></div>
       </div>
       <div id="ptgList"></div>`;
-    UI.render(ROOT(),nav,{title:"Ground board",sub:fmtOpsDay(day)+" — the 5AM-to-5AM operational day. Every closure today lands on this one board.",body,mount:r=>{
+    UI.render(ROOT(),nav,{title:"Ground board",sub:fmtOpsDay(day)+" — one board for the whole 5AM-to-5AM ops day.",body,mount:r=>{
       const inp=$("#ptgTail",r);
       function paintBoard(){
         const s=dayStats(day);
@@ -380,8 +383,8 @@
                 <div class="ui-row__sub">added ${hhmm(g.addedAt)}${dd?` · <b>dispatched — PAATS ${dd.truck}</b>`:""}${att?` · <span style="color:var(--ua-red)">${att} failed attempt${att===1?"":"s"}</span>`:""}</div></div>
               <span class="ptg-acts">
                 ${dd?"":`<button class="btn sm navy" data-disp="${esc(g.id)}">Dispatch</button>`}
-                <button class="btn ghost sm" data-park="${esc(g.id)}">Parked</button>
-                <button class="btn ghost sm" data-dep="${esc(g.id)}">Departed</button>
+                <button class="rq-linkbtn" data-park="${esc(g.id)}">Parked</button>
+                <button class="rq-linkbtn" data-dep="${esc(g.id)}">Departed</button>
                 <button class="rq-linkbtn rq-linkbtn--red" data-rm="${esc(g.id)}">&#10005;</button>
               </span></div>`;})
           +sect("Parked",rows.filter(g=>g.status==="parked"),g=>`
@@ -466,13 +469,15 @@
         ${days.length>1?`<div class="ui-chips" style="margin-bottom:12px">${chips.map(c=>
           `<button class="ui-chip${c.v===day?" on":""}" data-day="${esc(c.v)}">${esc(c.label)}</button>`).join("")}</div>`:""}
         ${v?`
-        <div class="ptg-hero"><div class="ptg-heropct">${v.pct!=null?v.pct+"%":"—"}</div>
-          <div class="ptg-herosub">${v.parked} of ${v.total-v.departed-v.removed} parked${v.departed?` · ${v.departed} departed on their own`:""}${v.notParked?` · <b style="color:var(--ua-red)">${v.notParked} not parked</b>`:""}</div></div>
-        <div class="ptg-stats four">
-          <div class="ptg-stat"><span class="ptg-eyebrow">On board</span><div class="ptg-num">${v.total}</div></div>
-          <div class="ptg-stat"><span class="ptg-eyebrow">Parked</span><div class="ptg-num">${v.parked}</div></div>
-          <div class="ptg-stat"><span class="ptg-eyebrow">Departed</span><div class="ptg-num">${v.departed}</div></div>
-          <div class="ptg-stat${v.notParked?" warn":""}"><span class="ptg-eyebrow">Not parked</span><div class="ptg-num">${v.notParked}</div></div>
+        <div class="ui-stat ptg-hero"><span class="ui-stat__eyebrow">Parked rate</span>
+          <div class="ui-stat__num ptg-heropct">${v.pct!=null?v.pct+"%":"—"}</div>
+          <div class="ui-stat__cap ptg-herosub">${v.parked} of ${v.total-v.departed-v.removed} parked</div></div>
+        <div class="rq-sechead">The day's numbers</div>
+        <div class="ui-group">
+          <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title">On the board</div></div><span class="ui-row__value">${v.total}</span></div>
+          <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title">Parked</div></div><span class="ui-row__value">${v.parked}</span></div>
+          <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title">Departed on their own</div></div><span class="ui-row__value">${v.departed}</span></div>
+          <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title">Not parked</div></div><span class="ui-row__value"${v.notParked?' style="color:var(--ua-red);font-weight:600"':""}>${v.notParked}</span></div>
         </div>
         ${waveHTML?`<div class="rq-sechead">Closures — derived from the day's activity</div><div class="ui-group">${waveHTML}</div>`:""}
         ${reasonHTML?`<div class="rq-sechead" style="color:var(--ua-red)">Couldn't-park reasons</div><div class="ui-group">${reasonHTML}</div>`:""}
