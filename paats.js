@@ -1,10 +1,15 @@
-/* paats.js — PAATS lightning-hold dispatch. During ramp closures the PAATS guide trucks bring
-   aircraft in; today the assignment travels by radio and handwriting. Here SOC sends a structured
-   dispatch (gate · aircraft · flight) to PAATS 1/2/3 — one job, park the plane —; the truck acknowledges with one tap,
-   then logs the outcome — Parked, or Couldn't park with a reason. Every dispatch is kept in the
-   log, so there is zero loss in translation and a record of what blocked the failures.
+/* paats.js — PAATS lightning-hold dispatch + the Ground Board. SOC sends structured dispatches
+   (gate · aircraft · flight) to PAATS 1/2/3; the truck acknowledges, then logs Parked or
+   Couldn't-park with a reason. NEW: the Ground Board — when lightning approaches, dispatch logs
+   every tail currently on the ground (elt.paats.ground, one entry per aircraft instance) on a
+   5AM→5AM OPERATIONAL-DAY clock; dispatch outcomes auto-link back to board entries (groundId
+   stamped at send, tail-matched at done/unable), so the day report reads "34 on the ground,
+   29 parked — 85%" with closures DERIVED from timestamp gaps (GAP_MIN) — nothing for a gloved
+   dispatcher to start, name, or end. Frozen day summaries (elt.paats.daysum) outlive the 14-day
+   raw purge so the monthly proof survives. The board is never a gate: dispatching straight from
+   SOC works byte-for-byte as before.
    UI-kit module: screens are fn(nav) on a UI.nav stack; storage-event mirror keeps SOC and the
-   trucks live across devices with no network. */
+   trucks live across devices with no network (guarded so it never eats a half-typed tail). */
 (function(){
   const esc=UI.esc;
   const $=(s,r)=>(r||document).querySelector(s);
@@ -13,13 +18,35 @@
   let navApi=null;
 
   const KEY="elt.paats";
+  const GKEY="elt.paats.ground";     // ground-board entries (one per aircraft instance)
+  const SKEY="elt.paats.daysum";     // frozen per-ops-day summaries — outlive the raw purge
   const TRUCKS=[1,2,3];
   const CANT_REASONS=["Equipment blocking the gate","Gate occupied","Aircraft not there","Sent to another gate","Called off"];
   const KEEP_DAYS=14;
+  const SUM_KEEP_DAYS=400;           // ~a year of storm summaries, a few KB
+  const GAP_MIN=90;                  // ≥90min of silence splits a day into separate closures (derived)
 
   const load=()=>{const d=Store.getJSON(KEY,[]);return Array.isArray(d)?d:[];};
   const saveAll=l=>{Store.setJSON(KEY,l);updateAttn();};
-  const purge=()=>{const cut=Date.now()-KEEP_DAYS*86400000;const l=load();const k=l.filter(x=>(x.when||0)>cut);if(k.length!==l.length)saveAll(k);};
+  const gload=()=>{const d=Store.getJSON(GKEY,[]);return Array.isArray(d)?d:[];};
+  const gsave=l=>Store.setJSON(GKEY,l);
+  const sload=()=>{const d=Store.getJSON(SKEY,[]);return Array.isArray(d)?d:[];};
+  const ssave=l=>Store.setJSON(SKEY,l);
+  const pad2=n=>String(n).padStart(2,"0");
+  // ops day = 5AM→5AM, LOCAL date components (never toISOString). The fixed 5h subtraction
+  // wobbles an hour across DST — irrelevant while the operation is dark 00:00–05:00.
+  const opsDay=t=>{const d=new Date(t-5*3600000);return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());};
+  const todayOps=()=>opsDay(Date.now());
+  const fmtOpsDay=day=>{const d=new Date(day+"T12:00:00");return isNaN(d)?day:d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});};
+  const purge=()=>{
+    const cut=Date.now()-KEEP_DAYS*86400000;
+    const l=load();const k=l.filter(x=>(x.when||0)>cut);if(k.length!==l.length)saveAll(k);
+    // freeze summaries for any completed ops day that never got one, then age out raw + old sums
+    const today=todayOps(),sums=sload();
+    [...new Set(gload().map(g=>g.day))].forEach(day=>{ if(day<today&&!sums.some(x=>x.day===day))freezeDay(day); });
+    const g=gload(),g2=g.filter(x=>(x.addedAt||0)>cut);if(g2.length!==g.length)gsave(g2);
+    const s=sload(),s2=s.filter(x=>(Date.now()-(x.frozenAt||0))<SUM_KEEP_DAYS*86400000);if(s2.length!==s.length)ssave(s2);
+  };
   const uid=()=>"p"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
   const timeAgo=t=>{const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?"just now":m<60?m+"m ago":Math.round(m/60)+"h ago";};
   const hhmm=t=>new Date(t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
@@ -59,7 +86,83 @@
   const acType=t=>{if(!FLEET||!t)return "";const n=String(t).trim().toUpperCase();
     const hit=FLEET.find(a=>a.reg===n||a.reg.slice(1)===n||a.ship===n||("N"+n)===a.reg);
     return hit?hit.type:"";};
+  // canonical tail for MATCHING — resolved fresh on both sides of every comparison, so "4732",
+  // "37502" and "N37502" collide correctly even if the fleet file loaded after an entry was written
+  const acReg=t=>{if(!t)return "";const n=String(t).trim().toUpperCase();if(!FLEET)return n;
+    const hit=FLEET.find(a=>a.reg===n||a.reg.slice(1)===n||a.ship===n||("N"+n)===a.reg);
+    return hit?hit.reg:n;};
   const shortType=t=>String(t||"").replace(/^(Boeing|Airbus|Embraer|Bombardier)\s*/,"");
+
+  /* ================= ground board: data layer ================= */
+  // entries are independent records (instance model): a tail towed back out during closure 2
+  // legitimately re-enters as a fresh entry; dedupe only blocks a tail that is still OPEN.
+  const openGround=day=>gload().filter(g=>g.status==="open"&&(!day||g.day===day));
+  function findOpenByTail(tail){
+    const R=acReg(tail),now=Date.now(),today=todayOps();
+    const all=gload().filter(g=>g.status==="open"&&acReg(g.tail)===R);
+    const pick=list=>list.sort((a,b)=>b.addedAt-a.addedAt)[0]||null;
+    return pick(all.filter(g=>g.day===today))||pick(all.filter(g=>now-g.addedAt<86400000));
+  }
+  // a truck's "Parked" credits the board entry it was working (groundId from send, else tail match)
+  function linkParked(disp){
+    const l=gload();let g=(disp.groundId&&l.find(x=>x.id===disp.groundId))||null;
+    if(!g){const f=findOpenByTail(disp.aircraft);if(f)g=l.find(x=>x.id===f.id);}
+    if(!g||g.status!=="open")return;
+    g.status="parked";g.via="dispatch";g.dispatchId=disp.id;g.endAt=disp.endAt||Date.now();
+    gsave(l);
+    if(g.day<todayOps()&&sload().some(x=>x.day===g.day))freezeDay(g.day);   // late park re-freezes its day
+  }
+  // a couldn't-park keeps the entry OPEN (that is the truth) and records the attempt + reason
+  function linkAttempt(disp){
+    const l=gload();let g=(disp.groundId&&l.find(x=>x.id===disp.groundId))||null;
+    if(!g){const f=findOpenByTail(disp.aircraft);if(f)g=l.find(x=>x.id===f.id);}
+    if(!g)return;
+    (g.attempts=g.attempts||[]).push({dispatchId:disp.id,truck:disp.truck,reason:disp.reason||"",at:Date.now()});
+    gsave(l);
+  }
+  // the metric: parked / (total − departed − removed). Departures were never PAATS's to park;
+  // open-never-parked counts against — that is the honest "ran out of trucks" number.
+  function dayStats(day){
+    const rows=gload().filter(g=>g.day===day);
+    const n=st=>rows.filter(g=>g.status===st).length;
+    const total=rows.length,parked=n("parked"),departed=n("departed"),removed=n("removed");
+    const denom=total-departed-removed;
+    return {rows,total,parked,departed,removed,open:n("open"),denom,
+      pct:denom?Math.round(parked/denom*100):null};
+  }
+  // dispatches that parked a tail never logged on the board: an additive footnote, never a
+  // fabricated entry — the board alone defines the denominator, so no phantom 100% days
+  function unboardedParked(day){
+    const boarded=new Set(gload().filter(g=>g.day===day).map(g=>acReg(g.tail)));
+    return load().filter(x=>x.status==="done"&&opsDay(x.endAt||x.when)===day
+      &&!x.groundId&&!boarded.has(acReg(x.aircraft))).length;
+  }
+  // closures are DERIVED, never stored: cluster the day's activity, gaps ≥ GAP_MIN split waves
+  function wavesFor(day){
+    const rows=gload().filter(g=>g.day===day);
+    const ids=new Set(rows.map(g=>g.id));
+    const ts=[];
+    rows.forEach(g=>{ts.push(g.addedAt);if(g.endAt)ts.push(g.endAt);});
+    load().forEach(x=>{if(x.groundId&&ids.has(x.groundId)){ts.push(x.when);if(x.endAt)ts.push(x.endAt);}});
+    ts.sort((a,b)=>a-b);
+    const waves=[];let cur=null;
+    ts.forEach(t=>{ if(!cur||t-cur.end>GAP_MIN*60000){cur={start:t,end:t};waves.push(cur);} else cur.end=t; });
+    return waves.map(w=>({start:w.start,end:w.end,
+      tails:rows.filter(g=>g.addedAt>=w.start&&g.addedAt<=w.end).length,
+      parked:rows.filter(g=>g.status==="parked"&&(g.endAt||0)>=w.start&&(g.endAt||0)<=w.end).length}));
+  }
+  function freezeDay(day){
+    const s=dayStats(day);if(!s.total)return;
+    const reasons={};
+    s.rows.forEach(g=>(g.attempts||[]).forEach(a=>{if(a.reason)reasons[a.reason]=(reasons[a.reason]||0)+1;}));
+    const sums=sload().filter(x=>x.day!==day);
+    sums.push({day,frozenAt:Date.now(),total:s.total,parked:s.parked,
+      parkedDispatch:s.rows.filter(g=>g.via==="dispatch").length,
+      parkedManual:s.rows.filter(g=>g.via==="manual").length,
+      departed:s.departed,removed:s.removed,notParked:s.open,pct:s.pct,
+      unboardedParked:unboardedParked(day),reasons,waves:wavesFor(day)});
+    ssave(sums);
+  }
 
   /* ================= home: SOC + the three trucks + the log ================= */
   function homeScreen(nav){
@@ -74,6 +177,10 @@
     const body=`
       ${alertsHTML()}
       ${UI.tile({title:"SOC — dispatch a truck",sub:"gate · aircraft · flight, straight to the crew",attr:'data-go="soc"'})}
+      ${(()=>{const s=dayStats(todayOps());
+        return UI.tile({title:"Ground board",tone:"teal",attr:'data-go="board"',
+          sub:s.total?`${s.open} on ground · ${s.parked} parked${s.pct!=null?" — <b>"+s.pct+"%</b>":""}`
+                     :"Log aircraft on the ground during a hold"});})()}
       <div class="pt-trucks">${truckTiles}</div>
       <div class="ui-group" style="margin-top:12px">
         <button class="ui-row" data-go="log">
@@ -82,10 +189,20 @@
           <span class="ui-row__value">${all.filter(x=>x.status==="done"||x.status==="unable").length||""}</span>
           <span class="ui-row__chev" aria-hidden="true"></span>
         </button>
+        <button class="ui-row" data-go="report">
+          <div class="ui-row__main"><div class="ui-row__title">Reports</div>
+            <div class="ui-row__sub">${(()=>{const days=[...new Set([...gload().map(g=>g.day),...sload().map(x=>x.day)])].sort().reverse();
+              if(!days.length)return "Entered vs parked, day by day";
+              const d0=days[0],s=sload().find(x=>x.day===d0),v=(d0===todayOps()||!s)?dayStats(d0):s;
+              return `${fmtOpsDay(d0)} — ${v.total} on board · ${v.parked} parked${v.pct!=null?" · "+v.pct+"%":""}`;})()}</div></div>
+          <span class="ui-row__chev" aria-hidden="true"></span>
+        </button>
       </div>`;
     UI.render(ROOT(),nav,{title:"PAATS",sub:"Lightning-hold dispatch — zero loss in translation.",body,mount:r=>{
       wireAlerts(r,nav);
       $('[data-go="soc"]',r).onclick=()=>nav.go(socScreen);
+      $('[data-go="board"]',r).onclick=()=>nav.go(boardScreen);
+      $('[data-go="report"]',r).onclick=()=>nav.go(reportScreen(null));
       $$(".pt-truck",r).forEach(t=>t.onclick=()=>nav.go(truckScreen(+t.dataset.truck)));
       $('[data-go="log"]',r).onclick=()=>nav.go(logScreen);
     }});
@@ -101,7 +218,13 @@
         <span class="ui-row__value">${x.status==="ack"?'<span class="pt-st ok">On it</span>':'<span class="pt-st">Sent</span>'}</span>
         <button class="rq-linkbtn rq-linkbtn--red pt-del" data-id="${esc(x.id)}">Delete</button>
       </div>`).join("");
-    const body=`${alertsHTML()}${UI.card(`
+    const og=openGround(todayOps());
+    const body=`${alertsHTML()}
+      <button class="rq-linkbtn" data-go="board" style="margin:0 0 8px">Log aircraft on the ground &rsaquo;</button>
+      ${UI.card(`
+        ${og.length?`<span class="ui-flabel">On the ground — tap to fill</span>
+          <div class="ui-chips" style="margin:6px 0 12px">${og.slice(0,20).map(g=>
+            `<button class="ui-chip pt-ogchip" data-tail="${esc(g.tail)}">${esc(g.tail)}</button>`).join("")}</div>`:""}
         <span class="ui-flabel">Which truck</span>
         ${UI.chips(TRUCKS.map(n=>({v:String(n),label:"PAATS "+n})),String(d.truck),'data-set="truck" data-v')}
         <div class="rq-two" style="margin-top:12px">
@@ -115,6 +238,8 @@
       ${sent.length?`<div class="rq-sechead" style="margin-top:18px">In flight <b>${sent.length}</b></div><div class="ui-group">${sentRows}</div>`:""}`;
     UI.render(ROOT(),nav,{title:"SOC dispatch",sub:"The crew gets the whole assignment — nothing read over the radio.",body,mount:r=>{
       const sync=()=>{d.gate=$("#ptGate",r).value;d.flight=$("#ptFlight",r).value;d.aircraft=$("#ptAc",r).value;d.note=$("#ptNote",r).value;};
+      $('[data-go="board"]',r).onclick=()=>{sync();nav.go(boardScreen);};
+      $$(".pt-ogchip",r).forEach(b=>b.onclick=()=>{d.aircraft=b.dataset.tail;$("#ptAc",r).value=b.dataset.tail;});
       $$('.ui-chip[data-set="truck"]',r).forEach(b=>b.onclick=()=>{sync();d.truck=+b.dataset.v;nav.refresh();});
       const acIn=$("#ptAc",r),acList=$("#ptAcList",r);
       if(acIn&&acList)UI.typeahead(acIn,acList,{min:2,source:q=>{
@@ -132,9 +257,11 @@
         if(!d.gate.trim()){toast("Enter the gate");$("#ptGate",r).focus();return;}
         if(!d.aircraft.trim()){toast("Enter the aircraft");$("#ptAc",r).focus();return;}
         const l=load();
-        l.push({id:uid(),truck:d.truck,gate:d.gate.trim(),aircraft:d.aircraft.trim().toUpperCase(),
+        const rec={id:uid(),truck:d.truck,gate:d.gate.trim(),aircraft:d.aircraft.trim().toUpperCase(),
           actype:acType(d.aircraft),flight:d.flight.trim().toUpperCase(),note:d.note.trim(),
-          by:(window.oosWho&&oosWho())||"SOC",when:Date.now(),status:"open"});
+          by:(window.oosWho&&oosWho())||"SOC",when:Date.now(),status:"open"};
+        const g=findOpenByTail(rec.aircraft);if(g)rec.groundId=g.id;   // link to the board — nothing is ever CREATED here
+        l.push(rec);
         saveAll(l);
         toast(`Sent to PAATS ${d.truck}`);
         d={truck:d.truck,gate:"",aircraft:"",flight:"",note:""};
@@ -172,7 +299,10 @@
         </div>`;}).join("")
         ||`<p class="rq-empty">Nothing dispatched to PAATS ${n} right now.<br>New assignments from SOC appear here live.</p>`;
       UI.render(ROOT(),nav,{title:`PAATS ${n}`,sub:q.length?`${q.length} assignment${q.length===1?"":"s"} — oldest first.`:"Standing by.",body:cards,mount:r=>{
-        const upd=(id,patch)=>{const l=load();const it=l.find(y=>y.id===id);if(it)Object.assign(it,patch);saveAll(l);declining=null;nav.refresh();};
+        const upd=(id,patch)=>{const l=load();const it=l.find(y=>y.id===id);if(it)Object.assign(it,patch);saveAll(l);
+          if(it&&patch.status==="done")linkParked(it);        // credit the board entry
+          if(it&&patch.status==="unable")linkAttempt(it);     // record the attempt; entry stays open
+          declining=null;nav.refresh();};
         $$("[data-ack]",r).forEach(b=>b.onclick=()=>upd(b.dataset.ack,{status:"ack",ackAt:Date.now()}));
         $$("[data-done]",r).forEach(b=>b.onclick=()=>{upd(b.dataset.done,{status:"done",endAt:Date.now()});toast("Logged — parked");});
         $$("[data-cant]",r).forEach(b=>b.onclick=()=>{declining=b.dataset.cant;nav.refresh();});
@@ -190,8 +320,12 @@
     const done=load().filter(x=>x.status==="done"||x.status==="unable").sort((a,b)=>(b.endAt||b.when)-(a.endAt||a.when));
     const byDate={};
     done.forEach(x=>{const k=new Date(x.endAt||x.when).toDateString();(byDate[k]=byDate[k]||[]).push(x);});
-    const body=Object.keys(byDate).map(dk=>`
-      <div class="rq-sechead">${esc(dk)}</div>
+    const body=Object.keys(byDate).map(dk=>{
+      const od=opsDay(byDate[dk][0].endAt||byDate[dk][0].when);
+      const st=(od===todayOps())?dayStats(od):(sload().find(x=>x.day===od)||dayStats(od));
+      const chip=(st&&st.total&&st.pct!=null)?`<button class="pt-pctchip" data-day="${esc(od)}">${st.pct}%</button>`:"";
+      return `
+      <div class="rq-sechead" style="display:flex;align-items:center;gap:8px">${esc(dk)}${chip}</div>
       <div class="ui-group">${byDate[dk].map(x=>`
         <div class="ui-row" style="cursor:default">
           <div class="ui-row__main">
@@ -199,17 +333,176 @@
             <div class="ui-row__sub">${x.flight?esc(x.flight)+" · ":""}${hhmm(x.endAt||x.when)}${x.status==="unable"&&x.reason?` · <span style="color:var(--ua-red)">${esc(x.reason)}</span>`:""}</div>
           </div>
           <span class="ui-row__value">${x.status==="done"?'<span class="pt-st ok">&#10003; Parked</span>':'<span class="pt-st bad">&#10005; Not parked</span>'}</span>
-        </div>`).join("")}</div>`).join("")
+        </div>`).join("")}</div>`;}).join("")
       ||`<p class="rq-empty">No completed dispatches yet.<br>Parked and couldn't-park outcomes land here.</p>`;
-    UI.render(ROOT(),nav,{title:"PAATS log",sub:`Every outcome, kept ${KEEP_DAYS} days.`,body,mount:()=>{}});
+    UI.render(ROOT(),nav,{title:"PAATS log",sub:`Every outcome, kept ${KEEP_DAYS} days.`,body,mount:r=>{
+      $$(".pt-pctchip",r).forEach(b=>b.onclick=()=>nav.go(reportScreen(b.dataset.day)));
+    }});
+  }
+
+  /* ================= ground board: the screen ================= */
+  // Entry and live view are ONE screen — zero navigation at the pressure moment. Adds repaint
+  // only the list + stat numbers (the input sits outside), so the keyboard never drops.
+  function boardScreen(nav){
+    purge();
+    const day=todayOps();
+    const yOpen=gload().filter(g=>g.status==="open"&&g.day<day);
+    const body=`
+      ${yOpen.length?`<div class="ui-card ptg-carry"><span class="ui-flabel" style="color:var(--ua-amber-text,#b45309)">${yOpen.length} tail${yOpen.length===1?"":"s"} from an earlier day still open</span>
+        <div class="ui-chips" style="margin-top:6px">${yOpen.slice(0,12).map(g=>`<span class="ui-chip" style="pointer-events:none">${esc(g.tail)}</span>`).join("")}</div>
+        <p class="saf-note" style="margin:8px 0 0">They stay on their own day's report — nothing auto-closes.</p></div>`:""}
+      ${UI.card(`
+        <div class="ui-ta-wrap">${UI.field({label:"Aircraft on the ground — tail or ship number",id:"ptgTail",value:"",placeholder:"e.g. 4732 — Enter adds it"})}
+          <div class="ui-ta-list" id="ptgTaList" hidden></div></div>
+        <div class="btnrow" style="margin-top:10px"><button class="btn" id="ptgAdd">Add to the board</button></div>`)}
+      <div class="ptg-stats">
+        <div class="ptg-stat"><span class="ptg-eyebrow">On ground</span><div class="ptg-num" id="ptgNOpen">0</div></div>
+        <div class="ptg-stat"><span class="ptg-eyebrow">Parked</span><div class="ptg-num" id="ptgNParked">0</div></div>
+        <div class="ptg-stat royal"><span class="ptg-eyebrow">Parked rate</span><div class="ptg-num" id="ptgNPct">—</div></div>
+      </div>
+      <div id="ptgList"></div>`;
+    UI.render(ROOT(),nav,{title:"Ground board",sub:fmtOpsDay(day)+" — the 5AM-to-5AM operational day. Every closure today lands on this one board.",body,mount:r=>{
+      const inp=$("#ptgTail",r);
+      function paintBoard(){
+        const s=dayStats(day);
+        $("#ptgNOpen",r).textContent=s.open;
+        $("#ptgNParked",r).textContent=s.parked;
+        $("#ptgNPct",r).textContent=s.pct!=null?s.pct+"%":"—";
+        const dispFor=g=>load().find(x=>x.groundId===g.id&&(x.status==="open"||x.status==="ack"));
+        const rows=s.rows.slice().sort((a,b)=>b.addedAt-a.addedAt);
+        const sect=(head,list,html)=>list.length?`<div class="rq-sechead">${head} <b>${list.length}</b></div><div class="ui-group">${list.map(html).join("")}</div>`:"";
+        $("#ptgList",r).innerHTML=
+          sect("Still on ground",rows.filter(g=>g.status==="open"),g=>{
+            const dd=dispFor(g);
+            const att=(g.attempts||[]).length;
+            return `<div class="ui-row ptg-row" data-gid="${esc(g.id)}" style="cursor:default;flex-wrap:wrap">
+              <div class="ui-row__main"><div class="ui-row__title">${esc(g.tail)}${g.actype?` <span class="ptg-type">${esc(shortType(g.actype))}</span>`:""}</div>
+                <div class="ui-row__sub">added ${hhmm(g.addedAt)}${dd?` · <b>dispatched — PAATS ${dd.truck}</b>`:""}${att?` · <span style="color:var(--ua-red)">${att} failed attempt${att===1?"":"s"}</span>`:""}</div></div>
+              <span class="ptg-acts">
+                ${dd?"":`<button class="btn sm navy" data-disp="${esc(g.id)}">Dispatch</button>`}
+                <button class="btn ghost sm" data-park="${esc(g.id)}">Parked</button>
+                <button class="btn ghost sm" data-dep="${esc(g.id)}">Departed</button>
+                <button class="rq-linkbtn rq-linkbtn--red" data-rm="${esc(g.id)}">&#10005;</button>
+              </span></div>`;})
+          +sect("Parked",rows.filter(g=>g.status==="parked"),g=>`
+            <div class="ui-row" style="cursor:default"><div class="ui-row__main">
+              <div class="ui-row__title">${esc(g.tail)}${g.actype?` <span class="ptg-type">${esc(shortType(g.actype))}</span>`:""}</div>
+              <div class="ui-row__sub" style="color:var(--ua-green)">&#10003; ${hhmm(g.endAt||g.addedAt)}${g.via==="dispatch"?` · PAATS${(x=>x?" "+x.truck:"")(load().find(y=>y.id===g.dispatchId))}`:" · marked by hand"}</div></div></div>`)
+          +sect("Departed on their own",rows.filter(g=>g.status==="departed"),g=>`
+            <div class="ui-row" style="cursor:default;opacity:.65"><div class="ui-row__main">
+              <div class="ui-row__title">${esc(g.tail)}</div>
+              <div class="ui-row__sub">left ${hhmm(g.endAt||g.addedAt)} — not counted against the rate</div></div></div>`)
+          ||`<p class="rq-empty">Nothing on the board yet.<br>Type the tails currently on the ground — one by one, Enter adds.</p>`;
+        // row actions
+        $$("[data-disp]",r).forEach(b=>b.onclick=()=>{const g=gload().find(x=>x.id===b.dataset.disp);if(!g)return;
+          d.aircraft=g.tail;nav.go(socScreen);});
+        $$("[data-park]",r).forEach(b=>b.onclick=()=>{const l=gload(),g=l.find(x=>x.id===b.dataset.park);if(!g)return;
+          if(!confirm(`Mark ${g.tail} parked by hand? Use this when it was parked without a PAATS dispatch.`))return;
+          g.status="parked";g.via="manual";g.endAt=Date.now();gsave(l);paintBoard();});
+        $$("[data-dep]",r).forEach(b=>b.onclick=()=>{const l=gload(),g=l.find(x=>x.id===b.dataset.dep);if(!g)return;
+          if(!confirm(`${g.tail} departed on its own? It comes out of the percentage entirely.`))return;
+          g.status="departed";g.endAt=Date.now();gsave(l);paintBoard();});
+        $$("[data-rm]",r).forEach(b=>b.onclick=()=>{const l=gload(),g=l.find(x=>x.id===b.dataset.rm);if(!g)return;
+          if(!confirm(`Remove ${g.tail} from the board? Only for entries logged in error.`))return;
+          g.status="removed";g.endAt=Date.now();gsave(l);paintBoard();});
+      }
+      const add=v=>{
+        const t=String(v==null?inp.value:v).trim().toUpperCase();
+        if(!t)return;
+        const R=acReg(t);
+        const l=gload();
+        const dup=l.find(g=>g.status==="open"&&acReg(g.tail)===R);
+        if(dup){toast(t+" is already on the board");
+          const row=$(`.ptg-row[data-gid="${dup.id}"]`,r);if(row){row.classList.add("flash");setTimeout(()=>row.classList.remove("flash"),650);}
+          inp.value="";inp.focus();return;}
+        l.push({id:"g"+uid().slice(1),tail:t,reg:R,actype:acType(t),gate:"",day:todayOps(),
+          addedAt:Date.now(),by:(window.oosWho&&oosWho())||"SOC",status:"open"});
+        gsave(l);
+        inp.value="";inp.focus();
+        paintBoard();
+      };
+      UI.typeahead(inp,$("#ptgTaList",r),{min:2,source:q=>{
+        if(!FLEET)return [];
+        const Q=q.toUpperCase();
+        const openRegs=new Set(openGround(day).map(g=>acReg(g.tail)));
+        return FLEET.filter(a=>a.reg.includes(Q)||a.ship.startsWith(Q)).slice(0,12)
+          .map(a=>({v:a.reg,label:a.reg,cap:(a.ship?"ship "+a.ship+" · ":"")+a.type+(openRegs.has(a.reg)?" · on board":"")}));
+      },onPick:v=>add(v)});
+      inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();add();}};
+      $("#ptgAdd",r).onclick=()=>add();
+      paintBoard();
+      setTimeout(()=>inp.focus(),80);
+    }});
+  }
+
+  /* ================= reports: the day, its closures, the number ================= */
+  function reportScreen(day0){
+    return function(nav){
+      purge();
+      const days=[...new Set([...gload().map(g=>g.day),...sload().map(x=>x.day)])].sort().reverse();
+      const day=day0||days[0]||todayOps();
+      const frozen=(day!==todayOps())?sload().find(x=>x.day===day):null;
+      const live=dayStats(day);
+      const useLive=live.total>0;               // raw rows still here → richest view
+      const v=useLive?{total:live.total,parked:live.parked,departed:live.departed,removed:live.removed,
+          notParked:live.open,pct:live.pct,
+          parkedDispatch:live.rows.filter(g=>g.via==="dispatch").length,
+          parkedManual:live.rows.filter(g=>g.via==="manual").length,
+          unboarded:unboardedParked(day),waves:wavesFor(day),
+          reasons:(()=>{const o={};live.rows.forEach(g=>(g.attempts||[]).forEach(a=>{if(a.reason)o[a.reason]=(o[a.reason]||0)+1;}));return o;})()}
+        :(frozen?{total:frozen.total,parked:frozen.parked,departed:frozen.departed,removed:frozen.removed,
+          notParked:frozen.notParked,pct:frozen.pct,parkedDispatch:frozen.parkedDispatch,
+          parkedManual:frozen.parkedManual,unboarded:frozen.unboardedParked,waves:frozen.waves||[],
+          reasons:frozen.reasons||{}}:null);
+      const chips=days.slice(0,14).map(dd=>({v:dd,label:(dd===todayOps()?"Today":fmtOpsDay(dd))}));
+      const waveHTML=(v&&v.waves.length>1)?v.waves.map((w,i)=>`
+        <div class="ui-row" style="cursor:default"><div class="ui-row__main">
+          <div class="ui-row__title">Closure ${i+1} <span class="ptg-type">${hhmm(w.start)}&ndash;${hhmm(w.end)}</span></div>
+          <div class="ui-row__sub">${w.tails} on ground · ${w.parked} parked</div></div></div>`).join(""):"";
+      const reasonHTML=v&&Object.keys(v.reasons).length?Object.entries(v.reasons).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`
+        <div class="ui-row" style="cursor:default"><div class="ui-row__main"><div class="ui-row__title" style="font-size:15px">${esc(t)}</div></div>
+          <span class="ui-row__value">${n}&times;</span></div>`).join(""):"";
+      const body=`
+        ${days.length>1?`<div class="ui-chips" style="margin-bottom:12px">${chips.map(c=>
+          `<button class="ui-chip${c.v===day?" on":""}" data-day="${esc(c.v)}">${esc(c.label)}</button>`).join("")}</div>`:""}
+        ${v?`
+        <div class="ptg-hero"><div class="ptg-heropct">${v.pct!=null?v.pct+"%":"—"}</div>
+          <div class="ptg-herosub">${v.parked} of ${v.total-v.departed-v.removed} parked${v.departed?` · ${v.departed} departed on their own`:""}${v.notParked?` · <b style="color:var(--ua-red)">${v.notParked} not parked</b>`:""}</div></div>
+        <div class="ptg-stats four">
+          <div class="ptg-stat"><span class="ptg-eyebrow">On board</span><div class="ptg-num">${v.total}</div></div>
+          <div class="ptg-stat"><span class="ptg-eyebrow">Parked</span><div class="ptg-num">${v.parked}</div></div>
+          <div class="ptg-stat"><span class="ptg-eyebrow">Departed</span><div class="ptg-num">${v.departed}</div></div>
+          <div class="ptg-stat${v.notParked?" warn":""}"><span class="ptg-eyebrow">Not parked</span><div class="ptg-num">${v.notParked}</div></div>
+        </div>
+        ${waveHTML?`<div class="rq-sechead">Closures — derived from the day's activity</div><div class="ui-group">${waveHTML}</div>`:""}
+        ${reasonHTML?`<div class="rq-sechead" style="color:var(--ua-red)">Couldn't-park reasons</div><div class="ui-group">${reasonHTML}</div>`:""}
+        <p class="saf-note">${v.parkedDispatch||0} parked via PAATS dispatch · ${v.parkedManual||0} marked by hand${v.unboarded?` · +${v.unboarded} parked by PAATS that were never on the board`:""}${(!useLive&&frozen)?" · detail rows past the 14-day window — summary preserved":""}</p>`
+        :`<p class="rq-empty">No board data yet.<br>During the next hold, log the aircraft on the ground and this report builds itself.</p>`}`;
+      UI.render(ROOT(),nav,{title:"PAATS report",sub:fmtOpsDay(day)+" — entered vs parked, closures split automatically.",body,mount:r=>{
+        $$(".ui-chip[data-day]",r).forEach(b=>b.onclick=()=>nav.go(reportScreen(b.dataset.day)));
+      }});
+    };
   }
 
   /* ---- cross-window mirror: SOC sends here → the truck sees it there, live ---- */
-  window.addEventListener("storage",e=>{ if(e.key!==KEY)return; updateAttn(); if(navApi&&ROOT())navApi.refresh(); });
+  // guarded: while SOC is mid-word in any PAATS input (tail entry!), a truck's write must NOT
+  // repaint the screen and eat the keystrokes — hold the refresh and flush it on blur.
+  let pendingRefresh=false;
+  window.addEventListener("storage",e=>{
+    if(e.key!==KEY&&e.key!==GKEY&&e.key!==SKEY)return;
+    updateAttn();
+    if(!navApi||!ROOT())return;
+    const ae=document.activeElement;
+    if(ae&&ae.tagName==="INPUT"&&ROOT().contains(ae)){pendingRefresh=true;return;}
+    navApi.refresh();
+  });
   updateAttn();   // set the home-tile pulse on load
 
   window.PAATS={
-    open:()=>{ const r=ROOT(); if(!r)return; navApi=UI.nav(r,{onExit:()=>{try{window.goHome&&window.goHome();}catch(_){}}}); navApi.reset(homeScreen); },
+    open:()=>{ const r=ROOT(); if(!r)return;
+      if(!r._ptFlush){r._ptFlush=true;
+        r.addEventListener("focusout",()=>{ if(pendingRefresh){pendingRefresh=false;setTimeout(()=>{if(navApi&&ROOT())navApi.refresh();},120);} });}
+      navApi=UI.nav(r,{onExit:()=>{try{window.goHome&&window.goHome();}catch(_){}}}); navApi.reset(homeScreen); },
     back:()=>navApi?navApi.back():false,
     refresh:()=>{ if(navApi&&ROOT())navApi.refresh(); }
   };

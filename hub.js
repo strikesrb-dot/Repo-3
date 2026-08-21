@@ -39,14 +39,14 @@
   function hubScreen(nav){
     const hidden=new Set((window.data&&data.hiddenTiles)||[]);
     const body=GROUPS.map(g=>{
-      const rows=g.items.filter(([k])=>k==="settings"||!hidden.has(k)).map(([k,t,s])=>`
-        <button class="ui-row" data-go="${esc(k)}">
+      const tiles=g.items.filter(([k])=>k==="settings"||!hidden.has(k)).map(([k,t,s])=>`
+        <button class="hub2-tile" data-go="${esc(k)}">
           <span class="hub2-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]||""}</svg></span>
-          <div class="ui-row__main"><div class="ui-row__title">${esc(t)}</div><div class="ui-row__sub">${esc(s)}</div></div>
-          <span class="ui-row__chev" aria-hidden="true"></span>
+          <span class="hub2-t">${esc(t)}</span>
+          <span class="hub2-s">${esc(s)}</span>
         </button>`).join("");
-      if(!rows)return "";
-      return `<div class="rq-sechead">${esc(g.head)}</div><div class="ui-group">${rows}</div>`;
+      if(!tiles)return "";
+      return `<div class="rq-sechead">${esc(g.head)}</div><div class="hub2-grid">${tiles}</div>`;
     }).join("");
     UI.render(ROOT(),nav,{title:"Move Team Hub",sub:"Staffing, field logging, lookups and reports.",body,mount:r=>{
       $$("[data-go]",r).forEach(b=>b.onclick=()=>goTab(b.dataset.go));
