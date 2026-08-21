@@ -1,7 +1,7 @@
 /* paats.css — PAATS dispatch module. Kit anatomy; these are the module's local pieces. */
 .pt-trucks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
 .pt-trucks .ui-tile{min-height:104px;padding:16px 14px 14px}
-#paatsRoot>.ui-screen .ui-tile[data-go="soc"]{width:100%}
+#paatsRoot .ui-tile[data-go="soc"],#paatsRoot .ui-tile[data-go="board"]{width:100%}
 /* a truck with undispatched work flips action-blue and wears a white count pill — readable across the room */
 .pt-truck{position:relative}
 .pt-truck.waiting{background:var(--ua-action)}
@@ -56,3 +56,7 @@
 .pt-pctchip{position:relative;font:600 12px/1 var(--font);color:var(--ua-blue);border:1.5px solid var(--ua-blue);
   background:none;border-radius:var(--r-pill,980px);padding:4px 10px;cursor:pointer}
 .pt-pctchip::before{content:'';position:absolute;inset:-10px -6px}
+/* the at-the-gate prompt pulses until tapped — "tell us you're at the gate" (attention exception) */
+@keyframes pt-atgate-ring{0%,100%{box-shadow:0 0 0 0 rgba(20,20,210,.5)}50%{box-shadow:0 0 0 10px rgba(20,20,210,0)}}
+.pt-atgate{animation:pt-atgate-ring 2s cubic-bezier(.4,0,.6,1) infinite}
+.ptg-gate{font:600 13px/1 var(--font);color:var(--ua-blue);border:1.5px solid var(--ua-blue);border-radius:var(--r-pill,980px);padding:3px 8px;margin-left:4px;vertical-align:2px}

@@ -23,6 +23,15 @@
   const TRUCKS=[1,2,3];
   const CANT_REASONS=["Equipment blocking the gate","Gate occupied","Aircraft not there","Sent to another gate","Called off"];
   const KEEP_DAYS=14;
+  const SOC_CODE="0001";             // SOC access code — gates dispatch + the ground board
+  let socOk=false;                   // session-cached once entered correctly
+  async function requireSoc(cb){
+    if(socOk){cb();return;}
+    const p=await askPass("SOC access","Enter the SOC code.");
+    if(p===null)return;
+    if(p!==SOC_CODE){toast("Wrong code");return;}
+    socOk=true;cb();
+  }
   const SUM_KEEP_DAYS=400;           // ~a year of storm summaries, a few KB
   const GAP_MIN=90;                  // ≥90min of silence splits a day into separate closures (derived)
 
@@ -75,9 +84,10 @@
     $$(".pt-dismiss",r).forEach(b=>b.onclick=()=>{const l=load();const it=l.find(y=>y.id===b.dataset.id);
       if(it)it.socSeen=true;saveAll(l);nav.refresh();});
     $$(".pt-redis",r).forEach(b=>b.onclick=()=>{const x=load().find(y=>y.id===b.dataset.id);if(!x)return;
-      const l=load();const it=l.find(y=>y.id===b.dataset.id);if(it)it.socSeen=true;saveAll(l);
-      d={truck:x.truck,gate:x.gate,aircraft:x.aircraft,flight:x.flight||"",note:x.note||""};
-      nav.go(socScreen);});
+      requireSoc(()=>{
+        const l=load();const it=l.find(y=>y.id===b.dataset.id);if(it)it.socSeen=true;saveAll(l);
+        d={truck:x.truck,gate:x.gate,aircraft:x.aircraft,flight:x.flight||"",note:x.note||""};
+        nav.go(socScreen);});});
   }
 
   // fleet lookup — same source as Requests (aircraft.json: {ship, reg, type})
@@ -177,11 +187,10 @@
       </button>`;}).join("");
     const body=`
       ${alertsHTML()}
-      ${UI.tile({title:"SOC — dispatch a truck",sub:"gate · aircraft · flight, straight to the crew",attr:'data-go="soc"'})}
       ${(()=>{const s=dayStats(todayOps());
-        return UI.tile({title:"Ground board",tone:"teal",attr:'data-go="board"',
-          sub:s.total?`${s.open} on ground · ${s.parked} parked${s.pct!=null?" — <b>"+s.pct+"%</b>":""}`
-                     :"Log aircraft on the ground during a hold"});})()}
+        return UI.tile({title:"SOC — dispatch & ground board",attr:'data-go="soc"',
+          sub:s.total?`${s.open} on ground · ${s.parked} parked${s.pct!=null?" — <b>"+s.pct+"%</b>":""} · code required`
+                     :"gate · aircraft · flight, straight to the crew · code required"});})()}
       <div class="pt-trucks">${truckTiles}</div>
       <div class="ui-group" style="margin-top:12px">
         <button class="ui-row" data-go="log">
@@ -201,8 +210,7 @@
       </div>`;
     UI.render(ROOT(),nav,{title:"PAATS",sub:"Lightning-hold dispatch — sent, acknowledged, parked, logged.",body,mount:r=>{
       wireAlerts(r,nav);
-      $('[data-go="soc"]',r).onclick=()=>nav.go(socScreen);
-      $('[data-go="board"]',r).onclick=()=>nav.go(boardScreen);
+      $('[data-go="soc"]',r).onclick=()=>requireSoc(()=>nav.go(socScreen));
       $('[data-go="report"]',r).onclick=()=>nav.go(reportScreen(null));
       $$(".pt-truck",r).forEach(t=>t.onclick=()=>nav.go(truckScreen(+t.dataset.truck)));
       $('[data-go="log"]',r).onclick=()=>nav.go(logScreen);
@@ -216,12 +224,15 @@
     const sentRows=sent.map(x=>`<div class="ui-row" style="cursor:default">
         <div class="ui-row__main"><div class="ui-row__title">PAATS ${x.truck} &middot; ${esc(x.gate||"—")} &middot; ${esc(x.aircraft||"")}</div>
           <div class="ui-row__sub">${x.flight?esc(x.flight)+" · ":""}${timeAgo(x.when)}</div></div>
-        <span class="ui-row__value">${x.status==="ack"?'<span class="pt-st ok">On it</span>':'<span class="pt-st wait">Waiting</span>'}</span>
+        <span class="ui-row__value">${x.status==="ack"?(x.atGateAt?'<span class="pt-st ok">At the gate</span>':'<span class="pt-st ok">On it</span>'):'<span class="pt-st wait">Waiting</span>'}</span>
         <button class="rq-linkbtn rq-linkbtn--red pt-del" data-id="${esc(x.id)}" aria-label="Delete dispatch">&#10005;</button>
       </div>`).join("");
     const og=openGround(todayOps());
     const body=`${alertsHTML()}
-      <button class="link-more" data-go="board" style="display:inline-block;margin:0 0 8px">Log aircraft on the ground</button>
+      ${(()=>{const s=dayStats(todayOps());
+        return UI.tile({title:"Ground board",tone:"teal",attr:'data-go="board"',
+          sub:s.total?`${s.open} on ground · ${s.parked} parked${s.pct!=null?" — <b>"+s.pct+"%</b>":""}`
+                     :"Log aircraft on the ground during a hold"});})()}
       ${UI.card(`
         ${og.length?`<span class="ui-flabel">On the ground — tap to fill</span>
           <div class="ui-chips" style="margin:6px 0 12px">${og.slice(0,20).map(g=>
@@ -262,7 +273,10 @@
         const rec={id:uid(),truck:d.truck,gate:d.gate.trim(),aircraft:d.aircraft.trim().toUpperCase(),
           actype:acType(d.aircraft),flight:d.flight.trim().toUpperCase(),note:d.note.trim(),
           by:(window.oosWho&&oosWho())||"SOC",when:Date.now(),status:"open"};
-        const g=findOpenByTail(rec.aircraft);if(g)rec.groundId=g.id;   // link to the board — nothing is ever CREATED here
+        const g=findOpenByTail(rec.aircraft);
+        if(g){rec.groundId=g.id;
+          const gl=gload(),ge=gl.find(x=>x.id===g.id);
+          if(ge&&ge.gate!==rec.gate){ge.gate=rec.gate;gsave(gl);}}   // board shows where it's being sent
         l.push(rec);
         saveAll(l);
         toast(`Sent to PAATS ${d.truck}`);
@@ -289,16 +303,18 @@
           :x.status==="open"
             ?`<div class="pt-actrow"><button class="btn pt-act" data-ack="${esc(x.id)}">Acknowledge — on it</button></div>`
             :`<div class="pt-actrow">
+                ${x.atGateAt?"":`<button class="btn pt-act pt-atgate" data-atgate="${esc(x.id)}">PAATS at the gate</button>`}
                 <button class="btn green pt-act" data-done="${esc(x.id)}">&#10003; Parked</button>
                 <button class="btn ghost pt-act2" data-cant="${esc(x.id)}">Couldn't park</button>
               </div>`;
         return `<div class="ui-card pt-card${x.status==="ack"?" onit":""}">
           <div class="pt-head">
             <div class="pt-eyebrow">SOC &rarr; PAATS ${n} · ${x.by?esc(x.by)+" · ":""}${timeAgo(x.when)}</div>
-            ${x.status==="ack"?'<span class="pt-st ok pt-stbig">On it</span>':'<span class="pt-st new pt-stbig">New</span>'}
+            ${x.status==="ack"?(x.atGateAt?`<span class="pt-st ok pt-stbig">At the gate · ${hhmm(x.atGateAt)}</span>`:'<span class="pt-st ok pt-stbig">On it</span>'):'<span class="pt-st new pt-stbig">New</span>'}
           </div>
           <div class="pt-gate">${esc(x.gate)}</div>
           <div class="pt-ac">${esc(x.aircraft)}${x.actype?` <span>${esc(shortType(x.actype))}</span>`:""}${x.flight?` · ${esc(x.flight)}`:""}</div>
+          ${(x.gateHist&&x.gateHist.length)?`<div class="pt-task" style="color:var(--ua-amber-text)">Gate changed from ${esc(x.gateHist[x.gateHist.length-1].from||"—")} · ${hhmm(x.gateHist[x.gateHist.length-1].at)}</div>`:""}
           ${x.note?`<div class="rqp-note" style="margin:10px 0 0"><span class="rqp-dot" aria-hidden="true"></span><span class="rqp-notetext">${esc(x.note)}</span></div>`:""}
           ${acts}
         </div>`;}).join("")
@@ -309,6 +325,7 @@
           if(it&&patch.status==="unable")linkAttempt(it);     // record the attempt; entry stays open
           declining=null;nav.refresh();};
         $$("[data-ack]",r).forEach(b=>b.onclick=()=>upd(b.dataset.ack,{status:"ack",ackAt:Date.now()}));
+        $$("[data-atgate]",r).forEach(b=>b.onclick=()=>{upd(b.dataset.atgate,{atGateAt:Date.now()});toast("SOC sees you at the gate");});
         $$("[data-done]",r).forEach(b=>b.onclick=()=>{upd(b.dataset.done,{status:"done",endAt:Date.now()});toast("Logged — parked");});
         $$("[data-cant]",r).forEach(b=>b.onclick=()=>{declining=b.dataset.cant;nav.refresh();});
         $$(".pt-declcancel",r).forEach(b=>b.onclick=()=>{declining=null;nav.refresh();});
@@ -335,7 +352,7 @@
         <div class="ui-row" style="cursor:default">
           <div class="ui-row__main">
             <div class="ui-row__title">PAATS ${x.truck} &middot; ${esc(x.gate)} &middot; ${esc(x.aircraft)}${x.actype?` <span style="color:var(--muted);font-size:13px">${esc(shortType(x.actype))}</span>`:""}</div>
-            <div class="ui-row__sub">${x.flight?esc(x.flight)+" · ":""}${hhmm(x.endAt||x.when)}${x.status==="unable"&&x.reason?` · <span style="color:var(--ua-red)">${esc(x.reason)}</span>`:""}</div>
+            <div class="ui-row__sub">${x.flight?esc(x.flight)+" · ":""}${[["sent",x.when],["on it",x.ackAt],["at gate",x.atGateAt],[x.status==="done"?"parked":"logged",x.endAt]].filter(p=>p[1]).map(p=>p[0]+" "+hhmm(p[1])).join(" · ")}${(x.gateHist||[]).map(h=>` · <span style="color:var(--ua-amber-text)">gate ${esc(h.from||"—")}&rarr;${esc(h.to)} ${hhmm(h.at)}</span>`).join("")}${x.status==="unable"&&x.reason?` · <span style="color:var(--ua-red)">${esc(x.reason)}</span>`:""}</div>
           </div>
           <span class="ui-row__value">${x.status==="done"?'<span class="pt-st ok">&#10003; Parked</span>':'<span class="pt-st bad">&#10005; Not parked</span>'}</span>
         </div>`).join("")}</div>`;}).join("")
@@ -379,10 +396,11 @@
             const dd=dispFor(g);
             const att=(g.attempts||[]).length;
             return `<div class="ui-row ptg-row" data-gid="${esc(g.id)}" style="cursor:default;flex-wrap:wrap">
-              <div class="ui-row__main"><div class="ui-row__title">${esc(g.tail)}${g.actype?` <span class="ptg-type">${esc(shortType(g.actype))}</span>`:""}</div>
+              <div class="ui-row__main"><div class="ui-row__title">${esc(g.tail)}${g.actype?` <span class="ptg-type">${esc(shortType(g.actype))}</span>`:""}${g.gate?` <span class="ptg-gate">${esc(g.gate)}</span>`:""}</div>
                 <div class="ui-row__sub">added ${hhmm(g.addedAt)}${dd?` · <b>dispatched — PAATS ${dd.truck}</b>`:""}${att?` · <span style="color:var(--ua-red)">${att} failed attempt${att===1?"":"s"}</span>`:""}</div></div>
               <span class="ptg-acts">
                 ${dd?"":`<button class="btn sm navy" data-disp="${esc(g.id)}">Dispatch</button>`}
+                <button class="rq-linkbtn" data-gate="${esc(g.id)}">Gate</button>
                 <button class="rq-linkbtn" data-park="${esc(g.id)}">Parked</button>
                 <button class="rq-linkbtn" data-dep="${esc(g.id)}">Departed</button>
                 <button class="rq-linkbtn rq-linkbtn--red" data-rm="${esc(g.id)}">&#10005;</button>
@@ -398,7 +416,19 @@
           ||`<p class="rq-empty">Nothing on the board yet.<br>Type the tails currently on the ground — one by one, Enter adds.</p>`;
         // row actions
         $$("[data-disp]",r).forEach(b=>b.onclick=()=>{const g=gload().find(x=>x.id===b.dataset.disp);if(!g)return;
-          d.aircraft=g.tail;nav.go(socScreen);});
+          d.aircraft=g.tail;if(g.gate)d.gate=g.gate;nav.go(socScreen);});
+        // gate change: updates the board entry AND any live dispatch — the truck sees it instantly,
+        // and the change is kept on the dispatch record (gateHist) so the log tells the whole story
+        $$("[data-gate]",r).forEach(b=>b.onclick=()=>{const l=gload(),g=l.find(x=>x.id===b.dataset.gate);if(!g)return;
+          const v=(prompt(`Gate for ${g.tail}:`,g.gate||"")||"").trim().toUpperCase();
+          if(!v||v===g.gate)return;
+          const old=g.gate||"";g.gate=v;gsave(l);
+          const dl=load();let moved=0;
+          dl.forEach(x=>{ if(x.groundId===g.id&&(x.status==="open"||x.status==="ack")&&x.gate!==v){
+            (x.gateHist=x.gateHist||[]).push({from:x.gate,to:v,at:Date.now()});x.gate=v;moved++; }});
+          if(moved)saveAll(dl);
+          toast(moved?`Gate updated — PAATS sees ${v} now`:`Gate set to ${v}`);
+          paintBoard();});
         $$("[data-park]",r).forEach(b=>b.onclick=()=>{const l=gload(),g=l.find(x=>x.id===b.dataset.park);if(!g)return;
           if(!confirm(`Mark ${g.tail} parked by hand? Use this when it was parked without a PAATS dispatch.`))return;
           g.status="parked";g.via="manual";g.endAt=Date.now();gsave(l);paintBoard();});
