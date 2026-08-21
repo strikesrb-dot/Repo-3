@@ -32,6 +32,27 @@
     if(p!==SOC_CODE){toast("Wrong code");return;}
     socOk=true;cb();
   }
+
+  /* ---- gate fences + live position (the gate-area map) ----
+     A fence is captured by standing at the gate once: {gate, lat, lon, r} in elt.paats.gates.
+     GPS needs no internet, so the map and the auto-confirm work fully offline; positions are
+     per-device (this phone sees its own dot). Equirectangular math — exact enough at ramp scale. */
+  const MKEY="elt.paats.gates";
+  const mload=()=>{const d=Store.getJSON(MKEY,[]);return Array.isArray(d)?d:[];};
+  const msave=l=>Store.setJSON(MKEY,l);
+  const gateFence=g=>mload().find(x=>String(x.gate).toUpperCase()===String(g||"").trim().toUpperCase());
+  function distM(a,b){const kx=111320*Math.cos((a.lat+b.lat)/2*Math.PI/180),ky=110540;
+    return Math.hypot((a.lon-b.lon)*kx,(a.lat-b.lat)*ky);}
+  let geoWatch=null,lastPos=null;
+  function stopGeo(){ if(geoWatch!=null){try{navigator.geolocation.clearWatch(geoWatch);}catch(_){}geoWatch=null;} }
+  function startGeo(onPos){
+    if(!("geolocation" in navigator))return false;
+    stopGeo();
+    geoWatch=navigator.geolocation.watchPosition(
+      p=>{lastPos={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy||0,at:Date.now()};if(onPos)onPos(lastPos);},
+      ()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+    return true;
+  }
   const SUM_KEEP_DAYS=400;           // ~a year of storm summaries, a few KB
   const GAP_MIN=90;                  // ≥90min of silence splits a day into separate closures (derived)
 
@@ -199,6 +220,11 @@
           <span class="ui-row__value">${all.filter(x=>x.status==="done"||x.status==="unable").length||""}</span>
           <span class="ui-row__chev" aria-hidden="true"></span>
         </button>
+        <button class="ui-row" data-go="map">
+          <div class="ui-row__main"><div class="ui-row__title">Gate map</div>
+            <div class="ui-row__sub">${mload().length?mload().length+" gates mapped · live position":"Capture gates from SOC to enable auto at-the-gate"}</div></div>
+          <span class="ui-row__chev" aria-hidden="true"></span>
+        </button>
         <button class="ui-row" data-go="report">
           <div class="ui-row__main"><div class="ui-row__title">Reports</div>
             <div class="ui-row__sub">${(()=>{const days=[...new Set([...gload().map(g=>g.day),...sload().map(x=>x.day)])].sort().reverse();
@@ -212,6 +238,7 @@
       wireAlerts(r,nav);
       $('[data-go="soc"]',r).onclick=()=>requireSoc(()=>nav.go(socScreen));
       $('[data-go="report"]',r).onclick=()=>nav.go(reportScreen(null));
+      $('[data-go="map"]',r).onclick=()=>nav.go(mapScreen(null));
       $$(".pt-truck",r).forEach(t=>t.onclick=()=>nav.go(truckScreen(+t.dataset.truck)));
       $('[data-go="log"]',r).onclick=()=>nav.go(logScreen);
     }});
@@ -233,6 +260,7 @@
         return UI.tile({title:"Ground board",tone:"teal",attr:'data-go="board"',
           sub:s.total?`${s.open} on ground · ${s.parked} parked${s.pct!=null?" — <b>"+s.pct+"%</b>":""}`
                      :"Log aircraft on the ground during a hold"});})()}
+      <button class="link-more" data-go="map" style="display:inline-block;margin:0 0 8px">Gate map${mload().length?"":" — capture your gates"}</button>
       ${UI.card(`
         ${og.length?`<span class="ui-flabel">On the ground — tap to fill</span>
           <div class="ui-chips" style="margin:6px 0 12px">${og.slice(0,20).map(g=>
@@ -251,6 +279,7 @@
     UI.render(ROOT(),nav,{title:"SOC dispatch",sub:"The crew gets the whole assignment — nothing read over the radio.",body,mount:r=>{
       const sync=()=>{d.gate=$("#ptGate",r).value;d.flight=$("#ptFlight",r).value;d.aircraft=$("#ptAc",r).value;d.note=$("#ptNote",r).value;};
       $('[data-go="board"]',r).onclick=()=>{sync();nav.go(boardScreen);};
+      $('[data-go="map"]',r).onclick=()=>{sync();nav.go(mapScreen(null));};
       $$(".pt-ogchip",r).forEach(b=>b.onclick=()=>{d.aircraft=b.dataset.tail;$("#ptAc",r).value=b.dataset.tail;
         $$(".pt-ogchip",r).forEach(x=>x.classList.toggle("on",x===b));});
       $$('.ui-chip[data-set="truck"]',r).forEach(b=>b.onclick=()=>{sync();d.truck=+b.dataset.v;nav.refresh();});
@@ -315,6 +344,7 @@
           <div class="pt-gate">${esc(x.gate)}</div>
           <div class="pt-ac">${esc(x.aircraft)}${x.actype?` <span>${esc(shortType(x.actype))}</span>`:""}${x.flight?` · ${esc(x.flight)}`:""}</div>
           ${(x.gateHist&&x.gateHist.length)?`<div class="pt-task" style="color:var(--ua-amber-text)">Gate changed from ${esc(x.gateHist[x.gateHist.length-1].from||"—")} · ${hhmm(x.gateHist[x.gateHist.length-1].at)}</div>`:""}
+          ${gateFence(x.gate)?`<button class="link-more" data-map="${esc(x.gate)}" style="font-size:15px;margin-top:6px">Gate map</button>`:""}
           ${x.note?`<div class="rqp-note" style="margin:10px 0 0"><span class="rqp-dot" aria-hidden="true"></span><span class="rqp-notetext">${esc(x.note)}</span></div>`:""}
           ${acts}
         </div>`;}).join("")
@@ -326,6 +356,20 @@
           declining=null;nav.refresh();};
         $$("[data-ack]",r).forEach(b=>b.onclick=()=>upd(b.dataset.ack,{status:"ack",ackAt:Date.now()}));
         $$("[data-atgate]",r).forEach(b=>b.onclick=()=>{upd(b.dataset.atgate,{atGateAt:Date.now()});toast("SOC sees you at the gate");});
+        $$("[data-map]",r).forEach(b=>b.onclick=()=>nav.go(mapScreen(b.dataset.map)));
+        // GPS assist: while this truck screen shows an acknowledged card whose gate is fenced,
+        // watch position; entering the fence auto-stamps at-the-gate. The manual pulse stays
+        // the ground truth — GPS only saves the tap when it agrees.
+        const fenced=q.filter(x=>x.status==="ack"&&!x.atGateAt&&gateFence(x.gate));
+        if(fenced.length){
+          startGeo(pos=>{
+            if(!ROOT()||!ROOT().querySelector("[data-atgate]")){stopGeo();return;}   // left the screen
+            fenced.forEach(x=>{const f=gateFence(x.gate);if(!f)return;
+              const cur=load().find(y=>y.id===x.id);
+              if(!cur||cur.status!=="ack"||cur.atGateAt)return;
+              if(distM(pos,f)<=(f.r||40)){upd(x.id,{atGateAt:Date.now(),atGateBy:"gps"});toast("GPS confirms — at the gate");}});
+          });
+        }
         $$("[data-done]",r).forEach(b=>b.onclick=()=>{upd(b.dataset.done,{status:"done",endAt:Date.now()});toast("Logged — parked");});
         $$("[data-cant]",r).forEach(b=>b.onclick=()=>{declining=b.dataset.cant;nav.refresh();});
         $$(".pt-declcancel",r).forEach(b=>b.onclick=()=>{declining=null;nav.refresh();});
@@ -510,12 +554,107 @@
     };
   }
 
+  /* ================= gate map: the live gate-area schematic ================= */
+  // A diagram, not map tiles: gates as their captured circles, your live GPS dot on top.
+  // Works fully offline (GPS needs no internet). SOC (code entered) also manages fences here.
+  function mapScreen(focusGate){
+    return function(nav){
+      const gates=mload();
+      const openDisp=load().filter(x=>x.status==="open"||x.status==="ack");
+      const hot=new Set(openDisp.map(x=>String(x.gate).toUpperCase()));
+      if(focusGate)hot.add(String(focusGate).toUpperCase());
+      function svgHTML(){
+        if(!gates.length)return "";
+        const pts=gates.map(g=>({lat:+g.lat,lon:+g.lon}));
+        if(lastPos)pts.push({lat:lastPos.lat,lon:lastPos.lon});
+        const lat0=pts.reduce((a,p)=>a+p.lat,0)/pts.length;
+        const kx=111320*Math.cos(lat0*Math.PI/180),ky=110540;
+        const xs=pts.map(p=>p.lon*kx),ys=pts.map(p=>p.lat*ky);
+        const pad=Math.max(...gates.map(g=>+g.r||40))+30;
+        const minX=Math.min(...xs)-pad,maxX=Math.max(...xs)+pad;
+        const minY=Math.min(...ys)-pad,maxY=Math.max(...ys)+pad;
+        const W=maxX-minX,H=maxY-minY;
+        const X=lon=>lon*kx-minX, Y=lat=>maxY-lat*ky;   // north up
+        const circles=gates.map(g=>{
+          const isHot=hot.has(String(g.gate).toUpperCase());
+          const inR=lastPos&&distM(lastPos,g)<=(+g.r||40);
+          return `<circle cx="${X(+g.lon)}" cy="${Y(+g.lat)}" r="${+g.r||40}"
+              fill="${inR?"rgba(0,128,9,.14)":isHot?"rgba(20,20,210,.10)":"rgba(0,51,160,.06)"}"
+              stroke="${inR?"var(--ua-green)":isHot?"var(--ua-action)":"var(--ua-blue)"}" stroke-width="${isHot||inR?3:1.5}"/>
+            <text x="${X(+g.lon)}" y="${Y(+g.lat)+5}" text-anchor="middle"
+              font-size="${Math.max(14,Math.min(22,(+g.r||40)*.55))}" font-weight="600"
+              fill="${inR?"var(--ua-green)":isHot?"var(--ua-action)":"var(--ua-navy)"}">${esc(g.gate)}</text>`;}).join("");
+        const me=lastPos?`
+          <circle cx="${X(lastPos.lon)}" cy="${Y(lastPos.lat)}" r="${Math.max(6,lastPos.acc)}" fill="rgba(10,31,68,.08)" stroke="var(--ua-navy)" stroke-width="1" stroke-dasharray="4 4"/>
+          <circle cx="${X(lastPos.lon)}" cy="${Y(lastPos.lat)}" r="7" fill="var(--ua-navy)" stroke="#fff" stroke-width="2.5"/>`:"";
+        const bar=Math.min(100,Math.round(W/4/10)*10)||50;
+        const fs=Math.max(8,W*0.035);   // SVG units are meters — keep annotation text proportional
+        const scale=`<line x1="12" y1="${H-fs}" x2="${12+bar}" y2="${H-fs}" stroke="var(--ua-navy)" stroke-width="${Math.max(1,W*0.006)}"/>
+          <text x="12" y="${H-fs*1.4}" font-size="${fs}" fill="var(--muted)">${bar} m</text>`;
+        return `<svg id="ptMapSvg" viewBox="0 0 ${W} ${H}" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg">${circles}${me}${scale}</svg>`;
+      }
+      const statusLine=()=>{
+        if(!gates.length)return "";
+        if(!lastPos)return `<p class="saf-note" id="ptMapStatus">Waiting for a GPS fix… allow location when asked.</p>`;
+        const near=gates.map(g=>({g,d:distM(lastPos,g)})).sort((a,b)=>a.d-b.d)[0];
+        const inside=near&&near.d<=(+near.g.r||40);
+        return `<p class="saf-note" id="ptMapStatus">${inside?`<b style="color:var(--ua-green)">Inside ${esc(near.g.gate)}</b> · ${Math.round(near.d)} m from center`:near?`Nearest gate ${esc(near.g.gate)} · ${Math.round(near.d)} m away`:""} · accuracy ±${Math.round(lastPos.acc)} m</p>`;
+      };
+      const manage=socOk?`
+        <div class="rq-sechead">Capture a gate <span style="font-weight:400;text-transform:none;letter-spacing:0">— stand at the stop mark, then tap</span></div>
+        ${UI.card(`
+          <div class="rq-two">
+            <div>${UI.field({label:"Gate",id:"ptmGate",value:"",placeholder:"e.g. C109"})}</div>
+            <div>${UI.field({label:"Radius (m)",id:"ptmR",value:"40",inputmode:"numeric"})}</div>
+          </div>
+          <div class="btnrow" style="margin-top:12px"><button class="btn" id="ptmCap">Capture this spot</button></div>
+          <p class="hint" id="ptmMsg" style="margin:8px 0 0"></p>`)}
+        ${gates.length?`<div class="ui-group" style="margin-top:12px">${gates.map((g,i)=>`
+          <div class="ui-row" style="cursor:default">
+            <div class="ui-row__main"><div class="ui-row__title">${esc(g.gate)}</div>
+              <div class="ui-row__sub">radius ${+g.r||40} m${lastPos?` · ${Math.round(distM(lastPos,g))} m from you`:""}</div></div>
+            <button class="rq-linkbtn rq-linkbtn--red" data-mrm="${i}">&#10005;</button>
+          </div>`).join("")}</div>`:""}`:"";
+      const body=`
+        ${gates.length
+          ?`<div class="ui-card ptm-wrap" id="ptMapBox">${svgHTML()}</div>${statusLine()}`
+          :`<p class="rq-empty">No gates captured yet.${socOk?"<br>Stand at a gate's stop mark and capture it below — that circle becomes its area of effect.":"<br>SOC captures the gates (code required); then trucks get auto at-the-gate."}</p>`}
+        ${manage}`;
+      UI.render(nav.el||ROOT(),nav,{title:"Gate map",sub:"The gate areas of effect and your live position — works offline.",body,mount:r=>{
+        startGeo(()=>{
+          const box=$("#ptMapBox",r);
+          if(!box){ if(!ROOT()||!$("#ptmCap",r))stopGeo(); return; }
+          box.innerHTML=svgHTML();
+          const st=$("#ptMapStatus",r);const tmp=document.createElement("div");tmp.innerHTML=statusLine();
+          if(st&&tmp.firstElementChild)st.replaceWith(tmp.firstElementChild);
+        });
+        const cap=$("#ptmCap",r);
+        if(cap)cap.onclick=()=>{
+          const name=($("#ptmGate",r).value||"").trim().toUpperCase();
+          const rad=Math.max(15,Math.min(200,parseInt($("#ptmR",r).value)||40));
+          if(!name){toast("Enter the gate name");$("#ptmGate",r).focus();return;}
+          if(!("geolocation" in navigator)){$("#ptmMsg",r).textContent="This device has no location services.";return;}
+          $("#ptmMsg",r).textContent="Getting a GPS fix…";
+          navigator.geolocation.getCurrentPosition(p=>{
+            const l=mload().filter(x=>String(x.gate).toUpperCase()!==name);
+            l.push({gate:name,lat:p.coords.latitude,lon:p.coords.longitude,r:rad,acc:Math.round(p.coords.accuracy||0),at:Date.now()});
+            msave(l);toast(`${name} captured (±${Math.round(p.coords.accuracy||0)} m)`);nav.refresh();
+          },()=>{$("#ptmMsg",r).textContent="Couldn't get a fix — allow location access and try in the open.";},
+          {enableHighAccuracy:true,timeout:20000,maximumAge:5000});
+        };
+        $$("[data-mrm]",r).forEach(b=>b.onclick=()=>{const l=mload();const g=l[+b.dataset.mrm];
+          if(!g||!confirm(`Remove the fence for ${g.gate}?`))return;
+          l.splice(+b.dataset.mrm,1);msave(l);nav.refresh();});
+      }});
+    };
+  }
+
   /* ---- cross-window mirror: SOC sends here → the truck sees it there, live ---- */
   // guarded: while SOC is mid-word in any PAATS input (tail entry!), a truck's write must NOT
   // repaint the screen and eat the keystrokes — hold the refresh and flush it on blur.
   let pendingRefresh=false;
   window.addEventListener("storage",e=>{
-    if(e.key!==KEY&&e.key!==GKEY&&e.key!==SKEY)return;
+    if(e.key!==KEY&&e.key!==GKEY&&e.key!==SKEY&&e.key!==MKEY)return;
     updateAttn();
     if(!navApi||!ROOT())return;
     const ae=document.activeElement;

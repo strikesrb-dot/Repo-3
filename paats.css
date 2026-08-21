@@ -60,3 +60,6 @@
 @keyframes pt-atgate-ring{0%,100%{box-shadow:0 0 0 0 rgba(20,20,210,.5)}50%{box-shadow:0 0 0 10px rgba(20,20,210,0)}}
 .pt-atgate{animation:pt-atgate-ring 2s cubic-bezier(.4,0,.6,1) infinite}
 .ptg-gate{font:600 13px/1 var(--font);color:var(--ua-blue);border:1.5px solid var(--ua-blue);border-radius:var(--r-pill,980px);padding:3px 8px;margin-left:4px;vertical-align:2px}
+/* gate map */
+.ptm-wrap{padding:10px;overflow:hidden}
+.ptm-wrap svg text{font-family:var(--font)}
