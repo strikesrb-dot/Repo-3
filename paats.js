@@ -43,6 +43,15 @@
   const gateFence=g=>mload().find(x=>String(x.gate).toUpperCase()===String(g||"").trim().toUpperCase());
   function distM(a,b){const kx=111320*Math.cos((a.lat+b.lat)/2*Math.PI/180),ky=110540;
     return Math.hypot((a.lon-b.lon)*kx,(a.lat-b.lat)*ky);}
+  // a fence is a drawn POLYGON ({gate, poly:[{lat,lon},...]}) or a legacy circle ({gate,lat,lon,r}).
+  // With a drawn boundary, GPS slop stops mattering — the gate area is far larger than the error.
+  function pointInPoly(p,poly){let inn=false;
+    for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];
+      if(((a.lat>p.lat)!==(b.lat>p.lat))&&(p.lon<(b.lon-a.lon)*(p.lat-a.lat)/(b.lat-a.lat)+a.lon))inn=!inn;}
+    return inn;}
+  const insideFence=(p,f)=>(f.poly&&f.poly.length>=3)?pointInPoly(p,f.poly):distM(p,f)<=(+f.r||40);
+  const fenceCenter=f=>(f.poly&&f.poly.length)?{lat:f.poly.reduce((a,x)=>a+x.lat,0)/f.poly.length,lon:f.poly.reduce((a,x)=>a+x.lon,0)/f.poly.length}:f;
+  let mapDraft=null;   // {gate, pts:[{lat,lon}]} being walked/drawn — survives refreshes
   let geoWatch=null,lastPos=null;
   function stopGeo(){ if(geoWatch!=null){try{navigator.geolocation.clearWatch(geoWatch);}catch(_){}geoWatch=null;} }
   function startGeo(onPos){
@@ -367,7 +376,7 @@
             fenced.forEach(x=>{const f=gateFence(x.gate);if(!f)return;
               const cur=load().find(y=>y.id===x.id);
               if(!cur||cur.status!=="ack"||cur.atGateAt)return;
-              if(distM(pos,f)<=(f.r||40)){upd(x.id,{atGateAt:Date.now(),atGateBy:"gps"});toast("GPS confirms — at the gate");}});
+              if(insideFence(pos,f)){upd(x.id,{atGateAt:Date.now(),atGateBy:"gps"});toast("GPS confirms — at the gate");}});
           });
         }
         $$("[data-done]",r).forEach(b=>b.onclick=()=>{upd(b.dataset.done,{status:"done",endAt:Date.now()});toast("Logged — parked");});
@@ -554,96 +563,182 @@
     };
   }
 
-  /* ================= gate map: the live gate-area schematic ================= */
-  // A diagram, not map tiles: gates as their captured circles, your live GPS dot on top.
-  // Works fully offline (GPS needs no internet). SOC (code entered) also manages fences here.
+  /* ================= gate map: drawn boundaries + live position ================= */
+  // Hybrid: SOC draws each gate's real boundary — walk the corners with GPS, or tap the map to
+  // place/adjust points. Inside/outside is point-in-polygon, so a 10-15 m GPS error is nothing
+  // against a gate-sized area. Legacy single-spot circles still work. Diagram, not map tiles —
+  // fully offline.
   function mapScreen(focusGate){
     return function(nav){
       const gates=mload();
       const openDisp=load().filter(x=>x.status==="open"||x.status==="ack");
       const hot=new Set(openDisp.map(x=>String(x.gate).toUpperCase()));
       if(focusGate)hot.add(String(focusGate).toUpperCase());
-      function svgHTML(){
-        if(!gates.length)return "";
-        const pts=gates.map(g=>({lat:+g.lat,lon:+g.lon}));
+      let proj=null;   // the current meters<->latlon frame, for tap-to-draw inversion
+      function allPts(){
+        const pts=[];
+        gates.forEach(g=>{ if(g.poly&&g.poly.length)g.poly.forEach(p=>pts.push({lat:+p.lat,lon:+p.lon}));
+          else pts.push({lat:+g.lat,lon:+g.lon}); });
+        if(mapDraft)mapDraft.pts.forEach(p=>pts.push(p));
         if(lastPos)pts.push({lat:lastPos.lat,lon:lastPos.lon});
+        return pts;
+      }
+      function svgHTML(){
+        const pts=allPts();
+        if(!pts.length)return "";
         const lat0=pts.reduce((a,p)=>a+p.lat,0)/pts.length;
         const kx=111320*Math.cos(lat0*Math.PI/180),ky=110540;
         const xs=pts.map(p=>p.lon*kx),ys=pts.map(p=>p.lat*ky);
-        const pad=Math.max(...gates.map(g=>+g.r||40))+30;
+        const maxR=Math.max(30,...gates.filter(g=>!g.poly).map(g=>+g.r||40));
+        const pad=maxR+30;
         const minX=Math.min(...xs)-pad,maxX=Math.max(...xs)+pad;
         const minY=Math.min(...ys)-pad,maxY=Math.max(...ys)+pad;
         const W=maxX-minX,H=maxY-minY;
-        const X=lon=>lon*kx-minX, Y=lat=>maxY-lat*ky;   // north up
-        const circles=gates.map(g=>{
+        const X=lon=>lon*kx-minX, Y=lat=>maxY-lat*ky;
+        proj={kx,ky,minX,maxY,W,H};
+        const shapes=gates.map(g=>{
           const isHot=hot.has(String(g.gate).toUpperCase());
-          const inR=lastPos&&distM(lastPos,g)<=(+g.r||40);
-          return `<circle cx="${X(+g.lon)}" cy="${Y(+g.lat)}" r="${+g.r||40}"
-              fill="${inR?"rgba(0,128,9,.14)":isHot?"rgba(20,20,210,.10)":"rgba(0,51,160,.06)"}"
-              stroke="${inR?"var(--ua-green)":isHot?"var(--ua-action)":"var(--ua-blue)"}" stroke-width="${isHot||inR?3:1.5}"/>
-            <text x="${X(+g.lon)}" y="${Y(+g.lat)+5}" text-anchor="middle"
-              font-size="${Math.max(14,Math.min(22,(+g.r||40)*.55))}" font-weight="600"
-              fill="${inR?"var(--ua-green)":isHot?"var(--ua-action)":"var(--ua-navy)"}">${esc(g.gate)}</text>`;}).join("");
+          const inR=lastPos&&insideFence(lastPos,g);
+          const stroke=inR?"var(--ua-green)":isHot?"var(--ua-action)":"var(--ua-blue)";
+          const fill=inR?"rgba(0,128,9,.14)":isHot?"rgba(20,20,210,.10)":"rgba(0,51,160,.06)";
+          const c=fenceCenter(g);
+          let shape;
+          if(g.poly&&g.poly.length>=3){
+            const d=g.poly.map((p,i)=>(i?"L":"M")+X(+p.lon)+","+Y(+p.lat)).join(" ")+" Z";
+            shape=`<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${isHot||inR?3:1.5}" stroke-linejoin="round"/>`;
+          }else{
+            shape=`<circle cx="${X(+g.lon)}" cy="${Y(+g.lat)}" r="${+g.r||40}" fill="${fill}" stroke="${stroke}" stroke-width="${isHot||inR?3:1.5}"/>`;
+          }
+          const fs=Math.max(10,Math.min(26,W*0.05));
+          return shape+`<text x="${X(c.lon)}" y="${Y(c.lat)+fs*.35}" text-anchor="middle" font-size="${fs}" font-weight="600"
+            fill="${inR?"var(--ua-green)":isHot?"var(--ua-action)":"var(--ua-navy)"}">${esc(g.gate)}</text>`;
+        }).join("");
+        let draft="";
+        if(mapDraft&&mapDraft.pts.length){
+          const hr=Math.max(3,W*0.012);
+          const d=mapDraft.pts.map((p,i)=>(i?"L":"M")+X(p.lon)+","+Y(p.lat)).join(" ")+(mapDraft.pts.length>2?" Z":"");
+          draft=`<path d="${d}" fill="rgba(20,20,210,.08)" stroke="var(--ua-action)" stroke-width="2" stroke-dasharray="6 5" stroke-linejoin="round"/>`
+            +mapDraft.pts.map((p,i)=>`<circle cx="${X(p.lon)}" cy="${Y(p.lat)}" r="${hr}" fill="var(--ua-action)" stroke="#fff" stroke-width="${hr*.4}"/>`).join("");
+        }
         const me=lastPos?`
           <circle cx="${X(lastPos.lon)}" cy="${Y(lastPos.lat)}" r="${Math.max(6,lastPos.acc)}" fill="rgba(10,31,68,.08)" stroke="var(--ua-navy)" stroke-width="1" stroke-dasharray="4 4"/>
-          <circle cx="${X(lastPos.lon)}" cy="${Y(lastPos.lat)}" r="7" fill="var(--ua-navy)" stroke="#fff" stroke-width="2.5"/>`:"";
-        const bar=Math.min(100,Math.round(W/4/10)*10)||50;
-        const fs=Math.max(8,W*0.035);   // SVG units are meters — keep annotation text proportional
+          <circle cx="${X(lastPos.lon)}" cy="${Y(lastPos.lat)}" r="${Math.max(4,W*0.014)}" fill="var(--ua-navy)" stroke="#fff" stroke-width="${Math.max(1.5,W*0.005)}"/>`:"";
+        const bar=Math.min(200,Math.round(W/4/10)*10)||50;
+        const fs=Math.max(8,W*0.035);
         const scale=`<line x1="12" y1="${H-fs}" x2="${12+bar}" y2="${H-fs}" stroke="var(--ua-navy)" stroke-width="${Math.max(1,W*0.006)}"/>
           <text x="12" y="${H-fs*1.4}" font-size="${fs}" fill="var(--muted)">${bar} m</text>`;
-        return `<svg id="ptMapSvg" viewBox="0 0 ${W} ${H}" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg">${circles}${me}${scale}</svg>`;
+        return `<svg id="ptMapSvg" viewBox="0 0 ${W} ${H}" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg">${shapes}${draft}${me}${scale}</svg>`;
       }
       const statusLine=()=>{
         if(!gates.length)return "";
         if(!lastPos)return `<p class="saf-note" id="ptMapStatus">Waiting for a GPS fix… allow location when asked.</p>`;
-        const near=gates.map(g=>({g,d:distM(lastPos,g)})).sort((a,b)=>a.d-b.d)[0];
-        const inside=near&&near.d<=(+near.g.r||40);
-        return `<p class="saf-note" id="ptMapStatus">${inside?`<b style="color:var(--ua-green)">Inside ${esc(near.g.gate)}</b> · ${Math.round(near.d)} m from center`:near?`Nearest gate ${esc(near.g.gate)} · ${Math.round(near.d)} m away`:""} · accuracy ±${Math.round(lastPos.acc)} m</p>`;
+        const scored=gates.map(g=>({g,inn:insideFence(lastPos,g),d:Math.round(distM(lastPos,fenceCenter(g)))}))
+          .sort((a,b)=>(a.inn?0:1)-(b.inn?0:1)||a.d-b.d);
+        const n=scored[0];
+        return `<p class="saf-note" id="ptMapStatus">${n.inn?`<b style="color:var(--ua-green)">Inside ${esc(n.g.gate)}</b>`:`Nearest gate ${esc(n.g.gate)} · ${n.d} m away`} · accuracy ±${Math.round(lastPos.acc)} m</p>`;
       };
+      const draftBar=mapDraft?`<div class="ui-banner ui-banner--info" id="ptmDraftBar">Drawing <b>&nbsp;${esc(mapDraft.gate)}&nbsp;</b> — ${mapDraft.pts.length} point${mapDraft.pts.length===1?"":"s"}. Tap the map to add a corner, or use GPS below.</div>`:"";
       const manage=socOk?`
-        <div class="rq-sechead">Capture a gate <span style="font-weight:400;text-transform:none;letter-spacing:0">— stand at the stop mark, then tap</span></div>
+        <div class="rq-sechead">Define a gate area</div>
         ${UI.card(`
           <div class="rq-two">
-            <div>${UI.field({label:"Gate",id:"ptmGate",value:"",placeholder:"e.g. C109"})}</div>
-            <div>${UI.field({label:"Radius (m)",id:"ptmR",value:"40",inputmode:"numeric"})}</div>
+            <div>${UI.field({label:"Gate",id:"ptmGate",value:mapDraft?mapDraft.gate:"",placeholder:"e.g. C109"})}</div>
+            <div>${UI.field({label:"Circle radius (m) — quick mode",id:"ptmR",value:"40",inputmode:"numeric"})}</div>
           </div>
-          <div class="btnrow" style="margin-top:12px"><button class="btn" id="ptmCap">Capture this spot</button></div>
-          <p class="hint" id="ptmMsg" style="margin:8px 0 0"></p>`)}
+          <div class="btnrow" style="margin-top:12px">
+            <button class="btn" id="ptmCorner">${mapDraft?"Add corner here (GPS)":"Start boundary — corner here (GPS)"}</button>
+          </div>
+          <div class="btnrow" style="margin-top:8px">
+            <button class="btn ghost" id="ptmDraw" style="flex:1 1 0">${mapDraft?"Tap map = add point":"Draw on the map"}</button>
+            <button class="btn ghost" id="ptmCap" style="flex:1 1 0">Quick circle here</button>
+          </div>
+          ${mapDraft?`<div class="btnrow" style="margin-top:8px">
+            <button class="btn green" id="ptmSave"${mapDraft.pts.length>=3?"":" disabled"}>&#10003; Save ${esc(mapDraft.gate)} (${mapDraft.pts.length})</button>
+            <button class="btn ghost sm" id="ptmUndo" style="flex:0 0 auto">Undo</button>
+            <button class="btn ghost sm" id="ptmClear" style="flex:0 0 auto">Discard</button>
+          </div>`:""}
+          <p class="hint" id="ptmMsg" style="margin:8px 0 0">${mapDraft?"Walk the perimeter and add a corner at each turn — or tap corners straight onto the map. 3+ points make the area.":"Boundaries beat circles: walk the gate's corners (or tap them on the map) and GPS slop stops mattering — the area is way bigger than the error."}</p>`)}
         ${gates.length?`<div class="ui-group" style="margin-top:12px">${gates.map((g,i)=>`
           <div class="ui-row" style="cursor:default">
             <div class="ui-row__main"><div class="ui-row__title">${esc(g.gate)}</div>
-              <div class="ui-row__sub">radius ${+g.r||40} m${lastPos?` · ${Math.round(distM(lastPos,g))} m from you`:""}</div></div>
+              <div class="ui-row__sub">${g.poly?g.poly.length+" corners drawn":"circle · radius "+(+g.r||40)+" m"}${lastPos?` · ${Math.round(distM(lastPos,fenceCenter(g)))} m from you`:""}</div></div>
+            <button class="rq-linkbtn" data-medit="${i}">Redraw</button>
             <button class="rq-linkbtn rq-linkbtn--red" data-mrm="${i}">&#10005;</button>
           </div>`).join("")}</div>`:""}`:"";
       const body=`
-        ${gates.length
-          ?`<div class="ui-card ptm-wrap" id="ptMapBox">${svgHTML()}</div>${statusLine()}`
-          :`<p class="rq-empty">No gates captured yet.${socOk?"<br>Stand at a gate's stop mark and capture it below — that circle becomes its area of effect.":"<br>SOC captures the gates (code required); then trucks get auto at-the-gate."}</p>`}
+        ${draftBar}
+        ${(gates.length||mapDraft)
+          ?`<div class="ui-card ptm-wrap" id="ptMapBox">${svgHTML()||'<p class="rq-empty">Waiting for a GPS fix to anchor the map…</p>'}</div>${statusLine()}`
+          :`<p class="rq-empty">No gate areas yet.${socOk?"<br>Walk a gate's corners with the GPS button, or start a boundary and tap it onto the map.":"<br>SOC defines the gate areas (code required); then trucks get auto at-the-gate."}</p>`}
         ${manage}`;
-      UI.render(nav.el||ROOT(),nav,{title:"Gate map",sub:"The gate areas of effect and your live position — works offline.",body,mount:r=>{
+      UI.render(nav.el||ROOT(),nav,{title:"Gate map",sub:"Drawn gate boundaries and your live position — works offline.",body,mount:r=>{
         startGeo(()=>{
           const box=$("#ptMapBox",r);
-          if(!box){ if(!ROOT()||!$("#ptmCap",r))stopGeo(); return; }
-          box.innerHTML=svgHTML();
+          if(!box){ if(!ROOT()||!$("#ptmCorner",r))stopGeo(); return; }
+          box.innerHTML=svgHTML()||box.innerHTML;
           const st=$("#ptMapStatus",r);const tmp=document.createElement("div");tmp.innerHTML=statusLine();
           if(st&&tmp.firstElementChild)st.replaceWith(tmp.firstElementChild);
         });
-        const cap=$("#ptmCap",r);
-        if(cap)cap.onclick=()=>{
-          const name=($("#ptmGate",r).value||"").trim().toUpperCase();
-          const rad=Math.max(15,Math.min(200,parseInt($("#ptmR",r).value)||40));
-          if(!name){toast("Enter the gate name");$("#ptmGate",r).focus();return;}
-          if(!("geolocation" in navigator)){$("#ptmMsg",r).textContent="This device has no location services.";return;}
-          $("#ptmMsg",r).textContent="Getting a GPS fix…";
+        const gateName=()=>(($("#ptmGate",r)&&$("#ptmGate",r).value)||"").trim().toUpperCase();
+        const needName=()=>{const n=gateName();if(!n){toast("Enter the gate name first");const i=$("#ptmGate",r);i&&i.focus();}return n;};
+        const ensureDraft=n=>{ if(!mapDraft)mapDraft={gate:n,pts:[]}; else mapDraft.gate=n; };
+        // tap the map to place a corner (only while a draft is active, SOC only)
+        const box=$("#ptMapBox",r);
+        if(box&&socOk)box.onclick=e=>{
+          if(!mapDraft||!proj)return;
+          const svg=$("#ptMapSvg",r);if(!svg)return;
+          const rc=svg.getBoundingClientRect();
+          const x=(e.clientX-rc.left)/rc.width*proj.W, y=(e.clientY-rc.top)/rc.height*proj.H;
+          mapDraft.pts.push({lat:(proj.maxY-y)/proj.ky, lon:(x+proj.minX)/proj.kx});
+          nav.refresh();
+        };
+        const corner=$("#ptmCorner",r);
+        if(corner)corner.onclick=()=>{
+          const n=needName();if(!n)return;
+          if(!("geolocation" in navigator)){toast("No location services on this device");return;}
+          const msg=$("#ptmMsg",r);if(msg)msg.textContent="Getting a GPS fix…";
           navigator.geolocation.getCurrentPosition(p=>{
-            const l=mload().filter(x=>String(x.gate).toUpperCase()!==name);
-            l.push({gate:name,lat:p.coords.latitude,lon:p.coords.longitude,r:rad,acc:Math.round(p.coords.accuracy||0),at:Date.now()});
-            msave(l);toast(`${name} captured (±${Math.round(p.coords.accuracy||0)} m)`);nav.refresh();
-          },()=>{$("#ptmMsg",r).textContent="Couldn't get a fix — allow location access and try in the open.";},
+            ensureDraft(n);
+            mapDraft.pts.push({lat:p.coords.latitude,lon:p.coords.longitude});
+            toast(`Corner ${mapDraft.pts.length} set (±${Math.round(p.coords.accuracy||0)} m)`);
+            nav.refresh();
+          },()=>{if(msg)msg.textContent="Couldn't get a fix — try in the open.";},
           {enableHighAccuracy:true,timeout:20000,maximumAge:5000});
         };
+        const draw=$("#ptmDraw",r);
+        if(draw)draw.onclick=()=>{
+          const n=needName();if(!n)return;
+          if(!mapDraft){ ensureDraft(n);
+            if(!gates.length&&!lastPos){toast("Need a GPS fix or an existing gate to anchor the map");mapDraft=null;return;}
+            toast("Now tap the map to place corners");nav.refresh(); }
+        };
+        const cap=$("#ptmCap",r);
+        if(cap)cap.onclick=()=>{
+          const n=needName();if(!n)return;
+          const rad=Math.max(15,Math.min(200,parseInt($("#ptmR",r).value)||40));
+          if(!("geolocation" in navigator)){toast("No location services on this device");return;}
+          const msg=$("#ptmMsg",r);if(msg)msg.textContent="Getting a GPS fix…";
+          navigator.geolocation.getCurrentPosition(p=>{
+            const l=mload().filter(x=>String(x.gate).toUpperCase()!==n);
+            l.push({gate:n,lat:p.coords.latitude,lon:p.coords.longitude,r:rad,at:Date.now()});
+            msave(l);mapDraft=null;toast(`${n} captured (±${Math.round(p.coords.accuracy||0)} m)`);nav.refresh();
+          },()=>{if(msg)msg.textContent="Couldn't get a fix — try in the open.";},
+          {enableHighAccuracy:true,timeout:20000,maximumAge:5000});
+        };
+        const sv=$("#ptmSave",r);
+        if(sv)sv.onclick=()=>{
+          if(!mapDraft||mapDraft.pts.length<3)return;
+          const l=mload().filter(x=>String(x.gate).toUpperCase()!==mapDraft.gate);
+          l.push({gate:mapDraft.gate,poly:mapDraft.pts,at:Date.now()});
+          msave(l);toast(`${mapDraft.gate} boundary saved — ${mapDraft.pts.length} corners`);mapDraft=null;nav.refresh();
+        };
+        const un=$("#ptmUndo",r);if(un)un.onclick=()=>{mapDraft.pts.pop();nav.refresh();};
+        const cl=$("#ptmClear",r);if(cl)cl.onclick=()=>{mapDraft=null;nav.refresh();};
+        $$("[data-medit]",r).forEach(b=>b.onclick=()=>{const g=mload()[+b.dataset.medit];if(!g)return;
+          mapDraft={gate:String(g.gate).toUpperCase(),pts:(g.poly||[]).map(p=>({lat:+p.lat,lon:+p.lon}))};
+          toast(`Redrawing ${g.gate} — tap the map or add GPS corners, then Save`);nav.refresh();});
         $$("[data-mrm]",r).forEach(b=>b.onclick=()=>{const l=mload();const g=l[+b.dataset.mrm];
-          if(!g||!confirm(`Remove the fence for ${g.gate}?`))return;
+          if(!g||!confirm(`Remove the area for ${g.gate}?`))return;
           l.splice(+b.dataset.mrm,1);msave(l);nav.refresh();});
       }});
     };
