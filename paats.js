@@ -563,18 +563,21 @@
     };
   }
 
-  /* ================= gate map: drawn boundaries + live position ================= */
-  // Hybrid: SOC draws each gate's real boundary — walk the corners with GPS, or tap the map to
-  // place/adjust points. Inside/outside is point-in-polygon, so a 10-15 m GPS error is nothing
-  // against a gate-sized area. Legacy single-spot circles still work. Diagram, not map tiles —
-  // fully offline.
+  /* ================= gate map: satellite basemap + drawn boundaries ================= */
+  // The real-map look: Leaflet (vendored) over Esri World Imagery tiles — pan/zoom satellite view
+  // of the ramp with the gate polygons painted on top. Tiles are network-loaded and cached by the
+  // service worker for reuse; with no network and no cached tiles the screen falls back to the
+  // self-contained SVG schematic, so the feature never dies offline. Boundaries: walk corners with
+  // GPS and/or tap them onto the map; inside/outside is point-in-polygon.
+  let lmap=null,mapView=null,meDot=null,meAcc=null,fenceLayers=[];
   function mapScreen(focusGate){
     return function(nav){
       const gates=mload();
       const openDisp=load().filter(x=>x.status==="open"||x.status==="ack");
       const hot=new Set(openDisp.map(x=>String(x.gate).toUpperCase()));
       if(focusGate)hot.add(String(focusGate).toUpperCase());
-      let proj=null;   // the current meters<->latlon frame, for tap-to-draw inversion
+      const hasL=!!window.L;
+      let proj=null;
       function allPts(){
         const pts=[];
         gates.forEach(g=>{ if(g.poly&&g.poly.length)g.poly.forEach(p=>pts.push({lat:+p.lat,lon:+p.lon}));
@@ -583,6 +586,7 @@
         if(lastPos)pts.push({lat:lastPos.lat,lon:lastPos.lon});
         return pts;
       }
+      /* ---- offline fallback: the SVG schematic ---- */
       function svgHTML(){
         const pts=allPts();
         if(!pts.length)return "";
@@ -618,7 +622,7 @@
           const hr=Math.max(3,W*0.012);
           const d=mapDraft.pts.map((p,i)=>(i?"L":"M")+X(p.lon)+","+Y(p.lat)).join(" ")+(mapDraft.pts.length>2?" Z":"");
           draft=`<path d="${d}" fill="rgba(20,20,210,.08)" stroke="var(--ua-action)" stroke-width="2" stroke-dasharray="6 5" stroke-linejoin="round"/>`
-            +mapDraft.pts.map((p,i)=>`<circle cx="${X(p.lon)}" cy="${Y(p.lat)}" r="${hr}" fill="var(--ua-action)" stroke="#fff" stroke-width="${hr*.4}"/>`).join("");
+            +mapDraft.pts.map(p=>`<circle cx="${X(p.lon)}" cy="${Y(p.lat)}" r="${hr}" fill="var(--ua-action)" stroke="#fff" stroke-width="${hr*.4}"/>`).join("");
         }
         const me=lastPos?`
           <circle cx="${X(lastPos.lon)}" cy="${Y(lastPos.lat)}" r="${Math.max(6,lastPos.acc)}" fill="rgba(10,31,68,.08)" stroke="var(--ua-navy)" stroke-width="1" stroke-dasharray="4 4"/>
@@ -637,6 +641,48 @@
         const n=scored[0];
         return `<p class="saf-note" id="ptMapStatus">${n.inn?`<b style="color:var(--ua-green)">Inside ${esc(n.g.gate)}</b>`:`Nearest gate ${esc(n.g.gate)} · ${n.d} m away`} · accuracy ±${Math.round(lastPos.acc)} m</p>`;
       };
+      /* ---- the Leaflet build ---- */
+      function fenceStyle(g){
+        const isHot=hot.has(String(g.gate).toUpperCase());
+        const inn=lastPos&&insideFence(lastPos,g);
+        return {color:inn?"#3ddc74":isHot?"#5b8dff":"#bcd7ff",weight:inn||isHot?4:2.5,
+          fillColor:inn?"#3ddc74":"#5b8dff",fillOpacity:inn?.28:isHot?.28:.15};
+      }
+      function buildMap(r,nav){
+        const el=$("#ptMap",r); if(!el||!hasL)return;
+        if(lmap){try{lmap.remove();}catch(_){}}
+        lmap=L.map(el,{zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false,attributionControl:true});
+        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          {maxZoom:19,attribution:"Imagery &copy; Esri &middot; Maxar"}).addTo(lmap);
+        const pts=allPts();
+        if(mapView)lmap.setView(mapView.center,mapView.zoom);
+        else if(pts.length>1)lmap.fitBounds(pts.map(p=>[p.lat,p.lon]),{padding:[40,40],maxZoom:18});
+        else if(pts.length===1)lmap.setView([pts[0].lat,pts[0].lon],17);
+        else lmap.setView([40.6895,-74.1807],15);   // EWR
+        lmap.on("moveend zoomend",()=>{mapView={center:lmap.getCenter(),zoom:lmap.getZoom()};});
+        fenceLayers=[];
+        gates.forEach(g=>{
+          const st=fenceStyle(g);
+          const layer=(g.poly&&g.poly.length>=3)
+            ?L.polygon(g.poly.map(p=>[+p.lat,+p.lon]),st)
+            :L.circle([+g.lat,+g.lon],{radius:+g.r||40,...st});
+          layer.addTo(lmap);
+          const c=fenceCenter(g);
+          layer.bindTooltip(esc(g.gate),{permanent:true,direction:"center",className:"ptm-lbl"});
+          fenceLayers.push({g,layer});
+        });
+        if(mapDraft&&mapDraft.pts.length){
+          L.polygon(mapDraft.pts.map(p=>[p.lat,p.lon]),{color:"#ffd08a",weight:3,dashArray:"8 6",fillColor:"#ffd08a",fillOpacity:.15}).addTo(lmap);
+          mapDraft.pts.forEach(p=>L.circleMarker([p.lat,p.lon],{radius:6,color:"#fff",weight:2,fillColor:"#f5a623",fillOpacity:1}).addTo(lmap));
+        }
+        meAcc=lastPos?L.circle([lastPos.lat,lastPos.lon],{radius:Math.max(6,lastPos.acc),color:"#fff",weight:1,dashArray:"4 4",fillColor:"#1414d2",fillOpacity:.08}).addTo(lmap):null;
+        meDot=lastPos?L.circleMarker([lastPos.lat,lastPos.lon],{radius:8,color:"#fff",weight:3,fillColor:"#1414d2",fillOpacity:1}).addTo(lmap):null;
+        if(socOk)lmap.on("click",e=>{ if(!mapDraft)return;
+          mapDraft.pts.push({lat:e.latlng.lat,lon:e.latlng.lng});
+          mapView={center:lmap.getCenter(),zoom:lmap.getZoom()};
+          nav.refresh(); });
+        setTimeout(()=>{try{lmap.invalidateSize();}catch(_){}},60);
+      }
       const draftBar=mapDraft?`<div class="ui-banner ui-banner--info" id="ptmDraftBar">Drawing <b>&nbsp;${esc(mapDraft.gate)}&nbsp;</b> — ${mapDraft.pts.length} point${mapDraft.pts.length===1?"":"s"}. Tap the map to add a corner, or use GPS below.</div>`:"";
       const manage=socOk?`
         <div class="rq-sechead">Define a gate area</div>
@@ -657,7 +703,7 @@
             <button class="btn ghost sm" id="ptmUndo" style="flex:0 0 auto">Undo</button>
             <button class="btn ghost sm" id="ptmClear" style="flex:0 0 auto">Discard</button>
           </div>`:""}
-          <p class="hint" id="ptmMsg" style="margin:8px 0 0">${mapDraft?"Walk the perimeter and add a corner at each turn — or tap corners straight onto the map. 3+ points make the area.":"Boundaries beat circles: walk the gate's corners (or tap them on the map) and GPS slop stops mattering — the area is way bigger than the error."}</p>`)}
+          <p class="hint" id="ptmMsg" style="margin:8px 0 0">${mapDraft?"Walk the perimeter and add a corner at each turn — or tap corners straight onto the satellite view. 3+ points make the area.":"Zoom to your gate on the satellite view, then draw its real boundary — corners on screen, or walk them with GPS."}</p>`)}
         ${gates.length?`<div class="ui-group" style="margin-top:12px">${gates.map((g,i)=>`
           <div class="ui-row" style="cursor:default">
             <div class="ui-row__main"><div class="ui-row__title">${esc(g.gate)}</div>
@@ -667,24 +713,34 @@
           </div>`).join("")}</div>`:""}`:"";
       const body=`
         ${draftBar}
-        ${(gates.length||mapDraft)
-          ?`<div class="ui-card ptm-wrap" id="ptMapBox">${svgHTML()||'<p class="rq-empty">Waiting for a GPS fix to anchor the map…</p>'}</div>${statusLine()}`
-          :`<p class="rq-empty">No gate areas yet.${socOk?"<br>Walk a gate's corners with the GPS button, or start a boundary and tap it onto the map.":"<br>SOC defines the gate areas (code required); then trucks get auto at-the-gate."}</p>`}
+        ${hasL
+          ?`<div class="ui-card ptm-wrap"><div id="ptMap" class="ptm-map"></div></div>${statusLine()}`
+          :((gates.length||mapDraft)
+            ?`<div class="ui-card ptm-wrap" id="ptMapBox">${svgHTML()||'<p class="rq-empty">Waiting for a GPS fix to anchor the map…</p>'}</div>${statusLine()}
+               <p class="saf-note">Offline schematic — the satellite view returns when the map library loads.</p>`
+            :`<p class="rq-empty">No gate areas yet.${socOk?"<br>Zoom the satellite view to your gate and draw its boundary.":"<br>SOC defines the gate areas (code required); then trucks get auto at-the-gate."}</p>`)}
         ${manage}`;
-      UI.render(nav.el||ROOT(),nav,{title:"Gate map",sub:"Drawn gate boundaries and your live position — works offline.",body,mount:r=>{
+      UI.render(nav.el||ROOT(),nav,{title:"Gate map",sub:"Satellite view · drawn gate boundaries · your live position.",body,mount:r=>{
+        buildMap(r,nav);
         startGeo(()=>{
-          const box=$("#ptMapBox",r);
-          if(!box){ if(!ROOT()||!$("#ptmCorner",r))stopGeo(); return; }
-          box.innerHTML=svgHTML()||box.innerHTML;
+          if(!ROOT()||(!$("#ptMap",ROOT())&&!$("#ptMapBox",ROOT())&&!$("#ptmCorner",ROOT()))){stopGeo();return;}
+          if(hasL&&lmap){
+            if(meDot){meDot.setLatLng([lastPos.lat,lastPos.lon]);meAcc&&meAcc.setLatLng([lastPos.lat,lastPos.lon]).setRadius(Math.max(6,lastPos.acc));}
+            else buildMap(r,nav);
+            fenceLayers.forEach(({g,layer})=>layer.setStyle(fenceStyle(g)));
+          }else{
+            const box=$("#ptMapBox",r);
+            if(box)box.innerHTML=svgHTML()||box.innerHTML;
+          }
           const st=$("#ptMapStatus",r);const tmp=document.createElement("div");tmp.innerHTML=statusLine();
           if(st&&tmp.firstElementChild)st.replaceWith(tmp.firstElementChild);
         });
         const gateName=()=>(($("#ptmGate",r)&&$("#ptmGate",r).value)||"").trim().toUpperCase();
         const needName=()=>{const n=gateName();if(!n){toast("Enter the gate name first");const i=$("#ptmGate",r);i&&i.focus();}return n;};
         const ensureDraft=n=>{ if(!mapDraft)mapDraft={gate:n,pts:[]}; else mapDraft.gate=n; };
-        // tap the map to place a corner (only while a draft is active, SOC only)
+        // offline-fallback tap-to-draw on the schematic
         const box=$("#ptMapBox",r);
-        if(box&&socOk)box.onclick=e=>{
+        if(box&&socOk&&!hasL)box.onclick=e=>{
           if(!mapDraft||!proj)return;
           const svg=$("#ptMapSvg",r);if(!svg)return;
           const rc=svg.getBoundingClientRect();
@@ -708,9 +764,7 @@
         const draw=$("#ptmDraw",r);
         if(draw)draw.onclick=()=>{
           const n=needName();if(!n)return;
-          if(!mapDraft){ ensureDraft(n);
-            if(!gates.length&&!lastPos){toast("Need a GPS fix or an existing gate to anchor the map");mapDraft=null;return;}
-            toast("Now tap the map to place corners");nav.refresh(); }
+          if(!mapDraft){ ensureDraft(n); toast("Now tap the map to place corners"); nav.refresh(); }
         };
         const cap=$("#ptmCap",r);
         if(cap)cap.onclick=()=>{

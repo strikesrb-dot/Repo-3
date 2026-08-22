@@ -1,9 +1,10 @@
 /* ELT service worker — network-first with offline cache fallback */
-const CACHE = 'elt-v194';
+const CACHE = 'elt-v195';
+const TILES = 'elt-tiles';   // satellite imagery — survives app deploys, trimmed by count
 const CORE = ['./', './index.html', './manifest.webmanifest', './aircraft.json', './equipment.json',
               './store.js', './staffing.js', './staffing.css', './ui.js', './ui.css', './requests.js', './requests.css',
               './gse.js', './gse.css', './equipment.js', './equipment.css', './inventory.js', './inventory.css', './movement.js', './safety.js', './safety.css', './hub.js', './hub.css', './paats.js', './paats.css', './present.js', './present.css', './settings.js', './settings.css',
-              './vendor/pdf.min.mjs', './vendor/pdf.worker.min.mjs',
+              './vendor/pdf.min.mjs', './vendor/pdf.worker.min.mjs', './vendor/leaflet.js', './vendor/leaflet.css',
               './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
@@ -17,7 +18,7 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== TILES).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -29,6 +30,24 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // satellite tiles: cache-first with a size-capped dedicated cache, so mapped areas keep
+  // working offline and a deploy never wipes them
+  if (url.hostname === 'server.arcgisonline.com') {
+    e.respondWith((async () => {
+      const c = await caches.open(TILES);
+      const hit = await c.match(req);
+      if (hit) return hit;
+      try {
+        const res = await fetch(req);
+        if (res && (res.ok || res.type === 'opaque')) {
+          c.put(req, res.clone()).catch(() => {});
+          c.keys().then(ks => { if (ks.length > 900) ks.slice(0, ks.length - 900).forEach(k => c.delete(k)); }).catch(() => {});
+        }
+        return res;
+      } catch (_) { return Response.error(); }
+    })());
+    return;
+  }
   // only handle our own origin. Cross-origin GETs (e.g. the Supabase sync API) pass straight
   // through untouched — never cached, never given the app-shell fallback.
   if (url.origin !== self.location.origin) return;

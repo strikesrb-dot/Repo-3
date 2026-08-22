@@ -63,3 +63,9 @@
 /* gate map */
 .ptm-wrap{padding:10px;overflow:hidden}
 .ptm-wrap svg text{font-family:var(--font)}
+/* satellite map */
+.ptm-map{height:62vh;min-height:340px;border-radius:var(--r-md);overflow:hidden;z-index:0}
+.leaflet-tooltip.ptm-lbl{background:none;border:0;box-shadow:none;color:#fff;font:600 15px/1.2 var(--font);
+  text-shadow:0 1px 4px rgba(0,0,0,.9),0 0 12px rgba(0,0,0,.6)}
+.leaflet-tooltip.ptm-lbl::before{display:none}
+.leaflet-container{font-family:var(--font)}
