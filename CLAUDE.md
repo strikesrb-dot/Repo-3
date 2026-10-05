@@ -120,6 +120,8 @@ the equipment record is the source of truth for SuperTug OOS.
 
 - Storage keys are namespaced `elt.*`. Real employee names never ship in source; demo mode
   (`elt.demo`) masks names on screen.
+- Hosting: Netlify, auto-deploying the repo root from `main` (`netlify.toml` — no build step;
+  sw.js/index.html served no-cache so updates reach phones immediately).
 - Deploy = bump `sw.js` `CACHE` + add files to `CORE`, commit, push.
 - Test UI changes in a real browser (Chromium at `/opt/pw-browsers/chromium-1194/...`) before
   claiming done.
