@@ -567,6 +567,15 @@
     @page{margin:13mm}
   }
   #printArea{display:none}
+  /* moved-notice takeover — shows only on the old GitHub Pages origin */
+  #movedOv{position:fixed;inset:0;z-index:10001;background:linear-gradient(160deg,#14305e,#0a1f44 65%,#001840);
+    display:flex;align-items:center;justify-content:center;padding:20px}
+  #movedOv .mv-box{max-width:440px;width:100%;color:#fff;text-align:center;display:flex;flex-direction:column;align-items:center}
+  #movedOv .mv-new{font:600 22px/1.2 var(--font);color:var(--ua-sky,#a6e3f5);margin:2px 0 14px;word-break:break-all}
+  #movedOv .mv-steps{text-align:left;font:400 14.5px/1.55 var(--font);color:#e8edf6;margin:0 0 14px;padding-left:20px}
+  #movedOv .mv-steps li{margin-bottom:8px}
+  #movedOv .btn{width:100%}
+  #movedOv .btn.ghost{color:#cfe0ff;border-color:rgba(255,255,255,.45)}
 </style>
 </head>
 <body>
@@ -1123,6 +1132,28 @@ $("#lockOverlay").addEventListener("click",e=>{if(e.target.id==="lockOverlay")cl
     if(sel.join("")===PAT){markUnlocked();lock.classList.add("done");setTimeout(()=>lock.remove(),360);}
     else if(sel.length>1)fail();else build();});
   build();
+})();
+/* ---- moved notice: the app now lives at base-ops.netlify.app. The old GitHub Pages origin
+   gets a full-screen takeover so crews export their device data (localStorage is per-origin)
+   and switch before Pages is unpublished. Hostname-gated — inert on the new origin. ---- */
+(function(){
+  if(!/github\.io$/i.test(location.hostname))return;
+  try{ if(sessionStorage.getItem("elt.moved.ack"))return; }catch(_){}
+  const NEW_URL="https://base-ops.netlify.app";
+  const ov=document.createElement("div");ov.id="movedOv";
+  ov.innerHTML=`<div class="mv-box">
+    <div class="sl-title" style="margin-bottom:4px">We've moved</div>
+    <div class="mv-new">base-ops.netlify.app</div>
+    <ol class="mv-steps">
+      <li>Export your data here first — Settings &rarr; Fleet &amp; backup &rarr; <b>Export all data</b>.</li>
+      <li>Open the new address and <b>Import</b> the file. On team sync? Just sign in there instead.</li>
+      <li>Add the new address to your home screen — this old one shuts down soon.</li>
+    </ol>
+    <a class="btn" href="${NEW_URL}" style="text-decoration:none;margin-top:6px">Open the new app</a>
+    <button class="btn ghost" id="movedStay" style="margin-top:8px">Stay here — I need to export first</button>
+  </div>`;
+  document.body.appendChild(ov);
+  document.getElementById("movedStay").onclick=()=>{try{sessionStorage.setItem("elt.moved.ack","1");}catch(_){}ov.remove();};
 })();
 /* ---- configurable app settings ---- */
 const HUB_TILES=[["staffing","Manpower / Staffing"],["briefing","Briefing & Focus"],["eos","End of Shift Report"],
